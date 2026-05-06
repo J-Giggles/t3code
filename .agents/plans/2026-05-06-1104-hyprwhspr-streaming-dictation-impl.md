@@ -236,7 +236,7 @@ export type DictationStartResult = typeof DictationStartResult.Type;
 
 export const DictationAudioFrameInput = Schema.Struct({
   sessionId: DictationSessionId,
-  seq: Schema.Number.check(Schema.greaterThanOrEqualTo(0)),
+  seq: NonNegativeInt,
   pcm: Base64Pcm,
 });
 export type DictationAudioFrameInput = typeof DictationAudioFrameInput.Type;

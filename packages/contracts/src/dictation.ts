@@ -1,11 +1,15 @@
 import { Schema } from "effect";
 import * as Rpc from "effect/unstable/rpc/Rpc";
-import { ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
+import { NonNegativeInt, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
 
-const DictationSessionId = TrimmedNonEmptyString;
+export const DictationSessionId = TrimmedNonEmptyString;
 export type DictationSessionId = typeof DictationSessionId.Type;
 
-const Base64Pcm = Schema.String.check(Schema.isMaxLength(8192));
+const Base64Pcm = Schema.String.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(8192),
+  Schema.isPattern(/^[A-Za-z0-9+/]*={0,2}$/),
+);
 
 export const DictationCapability = Schema.Struct({
   available: Schema.Boolean,
@@ -29,7 +33,7 @@ export type DictationStartResult = typeof DictationStartResult.Type;
 
 export const DictationAudioFrameInput = Schema.Struct({
   sessionId: DictationSessionId,
-  seq: Schema.Number.check(Schema.isGreaterThanOrEqualTo(0)),
+  seq: NonNegativeInt,
   pcm: Base64Pcm,
 });
 export type DictationAudioFrameInput = typeof DictationAudioFrameInput.Type;
@@ -59,13 +63,11 @@ export const DictationErrorCode = Schema.Literals([
 ]);
 export type DictationErrorCode = typeof DictationErrorCode.Type;
 
-export const DictationError = Schema.Struct({
-  _tag: Schema.Literal("DictationError"),
+export class DictationError extends Schema.TaggedErrorClass<DictationError>()("DictationError", {
   code: DictationErrorCode,
   message: TrimmedNonEmptyString,
   sessionId: Schema.NullOr(DictationSessionId),
-});
-export type DictationError = typeof DictationError.Type;
+}) {}
 
 const DictationEventStarted = Schema.Struct({
   type: Schema.Literal("started"),

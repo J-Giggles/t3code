@@ -3,11 +3,21 @@ import { describe, expect, it } from "vitest";
 import {
   DictationAudioFrameInput,
   DictationCapability,
+  DictationError,
   DictationStartInput,
   DictationStartResult,
   DictationStopInput,
   DictationStreamEvent,
 } from "./dictation.ts";
+
+function decodes<S extends Schema.Top>(schema: S, input: unknown): boolean {
+  try {
+    Schema.decodeUnknownSync(schema as never)(input);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 describe("dictation schemas", () => {
   it("roundtrips DictationStartInput", () => {
@@ -73,5 +83,88 @@ describe("dictation schemas", () => {
       modelLabel: "ggml-base.en",
     });
     expect(decoded.sessionId).toBe("sess_1");
+  });
+});
+
+describe("dictation schema constraints", () => {
+  it("rejects DictationAudioFrameInput.seq < 0", () => {
+    expect(decodes(DictationAudioFrameInput, { sessionId: "s", seq: -1, pcm: "AAAA" })).toBe(false);
+  });
+
+  it("rejects DictationAudioFrameInput.seq non-integer", () => {
+    expect(decodes(DictationAudioFrameInput, { sessionId: "s", seq: 1.5, pcm: "AAAA" })).toBe(
+      false,
+    );
+  });
+
+  it("rejects DictationAudioFrameInput.pcm > 8192 chars", () => {
+    const tooBig = "A".repeat(8193);
+    expect(decodes(DictationAudioFrameInput, { sessionId: "s", seq: 0, pcm: tooBig })).toBe(false);
+  });
+
+  it("rejects DictationAudioFrameInput.pcm with non-base64 chars", () => {
+    expect(decodes(DictationAudioFrameInput, { sessionId: "s", seq: 0, pcm: "not base64!" })).toBe(
+      false,
+    );
+  });
+
+  it("rejects DictationAudioFrameInput.pcm empty string", () => {
+    expect(decodes(DictationAudioFrameInput, { sessionId: "s", seq: 0, pcm: "" })).toBe(false);
+  });
+
+  it("rejects DictationStartInput.threadId empty/whitespace", () => {
+    expect(decodes(DictationStartInput, { threadId: "", language: null })).toBe(false);
+    expect(decodes(DictationStartInput, { threadId: "   ", language: null })).toBe(false);
+  });
+
+  it("rejects DictationStopInput unknown reason", () => {
+    expect(decodes(DictationStopInput, { sessionId: "s", reason: "nope" })).toBe(false);
+  });
+
+  it("rejects DictationStreamEvent unknown type", () => {
+    expect(decodes(DictationStreamEvent, { type: "bogus", sessionId: "s", text: "hi" })).toBe(
+      false,
+    );
+  });
+
+  it("rejects DictationError unknown code", () => {
+    expect(
+      () =>
+        new DictationError({
+          code: "not-a-code" as never,
+          message: "x",
+          sessionId: null,
+        }),
+    ).toThrow();
+  });
+});
+
+describe("dictation event variants", () => {
+  it("roundtrips DictationStreamEvent started", () => {
+    const decoded = Schema.decodeUnknownSync(DictationStreamEvent)({
+      type: "started",
+      sessionId: "s",
+      modelLabel: "ggml-base.en",
+    });
+    expect(decoded.type).toBe("started");
+  });
+
+  it("roundtrips DictationStreamEvent stopped", () => {
+    const decoded = Schema.decodeUnknownSync(DictationStreamEvent)({
+      type: "stopped",
+      sessionId: "s",
+      reason: "client-stop",
+    });
+    expect(decoded.type).toBe("stopped");
+  });
+
+  it("roundtrips DictationStreamEvent error", () => {
+    const decoded = Schema.decodeUnknownSync(DictationStreamEvent)({
+      type: "error",
+      sessionId: null,
+      code: "internal",
+      message: "boom",
+    });
+    expect(decoded.type).toBe("error");
   });
 });

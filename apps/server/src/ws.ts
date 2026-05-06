@@ -19,7 +19,7 @@ import {
   OrchestrationReplayEventsError,
   FilesystemBrowseError,
   ThreadId,
-  type DictationError,
+  DictationError,
   type DictationStreamEvent,
   type TerminalEvent,
   WS_METHODS,
@@ -1140,26 +1140,29 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
         // contracts only). Real implementation lands with the dictation
         // service in subsequent tasks.
         [WS_METHODS.dictationStart]: () =>
-          Effect.fail<DictationError>({
-            _tag: "DictationError",
-            code: "internal",
-            message: "dictation not yet implemented",
-            sessionId: null,
-          }),
+          Effect.fail(
+            new DictationError({
+              code: "internal",
+              message: "dictation not yet implemented",
+              sessionId: null,
+            }),
+          ),
         [WS_METHODS.dictationAudioFrame]: () =>
-          Effect.fail<DictationError>({
-            _tag: "DictationError",
-            code: "internal",
-            message: "dictation not yet implemented",
-            sessionId: null,
-          }),
+          Effect.fail(
+            new DictationError({
+              code: "internal",
+              message: "dictation not yet implemented",
+              sessionId: null,
+            }),
+          ),
         [WS_METHODS.dictationStop]: () =>
-          Effect.fail<DictationError>({
-            _tag: "DictationError",
-            code: "internal",
-            message: "dictation not yet implemented",
-            sessionId: null,
-          }),
+          Effect.fail(
+            new DictationError({
+              code: "internal",
+              message: "dictation not yet implemented",
+              sessionId: null,
+            }),
+          ),
         [WS_METHODS.subscribeDictation]: () => Stream.empty as Stream.Stream<DictationStreamEvent>,
       });
     }),
