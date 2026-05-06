@@ -2,6 +2,13 @@ import { Schema } from "effect";
 import * as Rpc from "effect/unstable/rpc/Rpc";
 import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 
+import {
+  DICTATION_WS_METHODS,
+  WsDictationAudioFrameRpc,
+  WsDictationStartRpc,
+  WsDictationStopRpc,
+  WsSubscribeDictationRpc,
+} from "./dictation.ts";
 import { OpenError, OpenInEditorInput } from "./editor.ts";
 import { AuthAccessStreamEvent } from "./auth.ts";
 import {
@@ -138,6 +145,12 @@ export const WS_METHODS = {
   sourceControlLookupRepository: "sourceControl.lookupRepository",
   sourceControlCloneRepository: "sourceControl.cloneRepository",
   sourceControlPublishRepository: "sourceControl.publishRepository",
+
+  // Dictation methods
+  dictationStart: DICTATION_WS_METHODS.start,
+  dictationAudioFrame: DICTATION_WS_METHODS.audioFrame,
+  dictationStop: DICTATION_WS_METHODS.stop,
+  subscribeDictation: DICTATION_WS_METHODS.subscribe,
 
   // Streaming subscriptions
   subscribeVcsStatus: "subscribeVcsStatus",
@@ -454,4 +467,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationReplayEventsRpc,
   WsOrchestrationSubscribeShellRpc,
   WsOrchestrationSubscribeThreadRpc,
+  WsDictationStartRpc,
+  WsDictationAudioFrameRpc,
+  WsDictationStopRpc,
+  WsSubscribeDictationRpc,
 );

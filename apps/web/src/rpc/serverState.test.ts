@@ -92,6 +92,12 @@ const baseServerConfig: ServerConfig = {
     otlpMetricsEnabled: false,
   },
   settings: DEFAULT_SERVER_SETTINGS,
+  dictation: {
+    available: false,
+    reason: "not-yet-probed",
+    modelLabel: null,
+    binaryPath: null,
+  },
 };
 
 const serverApi = {

@@ -19,6 +19,8 @@ import {
   OrchestrationReplayEventsError,
   FilesystemBrowseError,
   ThreadId,
+  type DictationError,
+  type DictationStreamEvent,
   type TerminalEvent,
   WS_METHODS,
   WsRpcGroup,
@@ -553,6 +555,12 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             otlpMetricsEnabled: config.otlpMetricsUrl !== undefined,
           },
           settings,
+          dictation: {
+            available: false,
+            reason: "not-yet-probed",
+            modelLabel: null,
+            binaryPath: null,
+          },
         };
       });
 
@@ -1128,6 +1136,31 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             }),
             { "rpc.aggregate": "auth" },
           ),
+        // Dictation handlers are stubs in this commit (Task 1: wire protocol
+        // contracts only). Real implementation lands with the dictation
+        // service in subsequent tasks.
+        [WS_METHODS.dictationStart]: () =>
+          Effect.fail<DictationError>({
+            _tag: "DictationError",
+            code: "internal",
+            message: "dictation not yet implemented",
+            sessionId: null,
+          }),
+        [WS_METHODS.dictationAudioFrame]: () =>
+          Effect.fail<DictationError>({
+            _tag: "DictationError",
+            code: "internal",
+            message: "dictation not yet implemented",
+            sessionId: null,
+          }),
+        [WS_METHODS.dictationStop]: () =>
+          Effect.fail<DictationError>({
+            _tag: "DictationError",
+            code: "internal",
+            message: "dictation not yet implemented",
+            sessionId: null,
+          }),
+        [WS_METHODS.subscribeDictation]: () => Stream.empty as Stream.Stream<DictationStreamEvent>,
       });
     }),
   );

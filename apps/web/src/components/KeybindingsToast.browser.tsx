@@ -127,6 +127,12 @@ function createBaseServerConfig(): ServerConfig {
         },
       },
     },
+    dictation: {
+      available: false,
+      reason: "not-yet-probed",
+      modelLabel: null,
+      binaryPath: null,
+    },
   };
 }
 
