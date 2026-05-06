@@ -362,4 +362,64 @@ it.layer(TestLayer)("GitVcsDriver core integration", (it) => {
       }),
     );
   });
+
+  describe("listWorktrees", () => {
+    it.effect("returns one entry per git worktree with correct fields", () =>
+      Effect.gen(function* () {
+        const cwd = yield* makeTmpDir();
+        yield* initRepoWithCommit(cwd);
+        const driver = yield* GitVcsDriver.GitVcsDriver;
+        const pathService = yield* Path.Path;
+        const worktreePath = pathService.join(yield* makeTmpDir("git-worktrees-"), "feat-test");
+
+        yield* driver.createWorktree({
+          cwd,
+          path: worktreePath,
+          refName: yield* git(cwd, ["branch", "--show-current"]),
+          newRefName: "feat/test",
+        });
+
+        const result = yield* driver.listWorktrees(cwd);
+
+        assert.equal(result.length, 2);
+
+        const main = result.find((w) => w.isMain);
+        assert.ok(main, "should have a main worktree");
+        assert.equal(main?.path, cwd);
+
+        const feature = result.find((w) => !w.isMain);
+        assert.ok(feature, "should have a linked worktree");
+        assert.equal(feature?.branch, "feat/test");
+        assert.equal(feature?.isLocked, false);
+      }),
+    );
+
+    it.effect("handles a detached HEAD worktree", () =>
+      Effect.gen(function* () {
+        const cwd = yield* makeTmpDir();
+        yield* initRepoWithCommit(cwd);
+        const driver = yield* GitVcsDriver.GitVcsDriver;
+        const pathService = yield* Path.Path;
+        const worktreePath = pathService.join(yield* makeTmpDir("git-worktrees-"), "detached-test");
+
+        // Create a worktree checked out at the current commit (detached HEAD)
+        const commitSha = yield* git(cwd, ["rev-parse", "HEAD"]);
+        yield* driver.execute({
+          operation: "GitVcsDriver.test.addDetachedWorktree",
+          cwd,
+          args: ["worktree", "add", "--detach", worktreePath, commitSha],
+          timeoutMs: 10_000,
+        });
+
+        const result = yield* driver.listWorktrees(cwd);
+        assert.equal(result.length, 2);
+
+        const detached = result.find((w) => !w.isMain);
+        assert.ok(detached, "should have a linked worktree");
+        assert.equal(detached?.branch, null);
+        assert.equal(detached?.isMain, false);
+        assert.ok(detached?.headRef, "headRef should be set for detached HEAD");
+      }),
+    );
+  });
 });

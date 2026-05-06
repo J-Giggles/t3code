@@ -147,6 +147,14 @@ export interface GitSetBranchUpstreamInput {
   remoteBranch: string;
 }
 
+export interface VcsWorktreeInfo {
+  readonly path: string;
+  readonly branch: string | null;
+  readonly headRef: string | null;
+  readonly isMain: boolean;
+  readonly isLocked: boolean;
+}
+
 export interface GitVcsDriverShape {
   readonly execute: (input: ExecuteGitInput) => Effect.Effect<ExecuteGitResult, GitCommandError>;
   readonly status: (input: VcsStatusInput) => Effect.Effect<VcsStatusResult, GitCommandError>;
@@ -206,6 +214,9 @@ export interface GitVcsDriverShape {
   ) => Effect.Effect<VcsSwitchRefResult, GitCommandError>;
   readonly initRepo: (input: VcsInitInput) => Effect.Effect<void, GitCommandError>;
   readonly listLocalBranchNames: (cwd: string) => Effect.Effect<string[], GitCommandError>;
+  readonly listWorktrees: (
+    cwd: string,
+  ) => Effect.Effect<readonly VcsWorktreeInfo[], GitCommandError>;
 }
 
 export class GitVcsDriver extends Context.Service<GitVcsDriver, GitVcsDriverShape>()(
