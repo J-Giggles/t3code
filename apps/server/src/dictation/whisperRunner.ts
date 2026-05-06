@@ -1,6 +1,11 @@
 import type { ChildProcess } from "node:child_process";
 import { makeWhisperStdoutParser } from "./whisperStdoutParser.ts";
 
+/**
+ * Runner-internal events. Note that this internal event uses `kind`, whereas
+ * the wire-facing `DictationStreamEvent` (in `@t3tools/contracts/dictation`)
+ * uses `type`. The conversion happens in `dictationService` at the wire boundary.
+ */
 export type WhisperRunnerEvent =
   | { kind: "partial"; text: string }
   | { kind: "commit"; text: string }
@@ -18,7 +23,6 @@ export interface WhisperRunnerOptions {
   modelPath: string;
   onEvent: (event: WhisperRunnerEvent) => void;
   backpressureTimeoutMs: number;
-  idleTimeoutMs: number;
   now: () => number;
   language?: string | null;
 }
@@ -80,10 +84,11 @@ export function startWhisperRunner(options: WhisperRunnerOptions): WhisperRunner
     if (!ok && pendingWriteSince === null) {
       pendingWriteSince = options.now();
       backpressureTimer = setTimeout(() => {
+        const stalledMs = options.now() - (pendingWriteSince ?? 0);
         options.onEvent({
           kind: "error",
           code: "backpressure",
-          message: `stdin stalled > ${options.backpressureTimeoutMs}ms`,
+          message: `stdin stalled ${stalledMs}ms (limit ${options.backpressureTimeoutMs}ms)`,
         });
       }, options.backpressureTimeoutMs);
     }

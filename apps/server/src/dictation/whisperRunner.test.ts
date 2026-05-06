@@ -1,7 +1,11 @@
 import { EventEmitter } from "node:events";
 import { Writable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
-import { startWhisperRunner, type WhisperRunner } from "./whisperRunner.ts";
+import {
+  startWhisperRunner,
+  type WhisperRunner,
+  type WhisperRunnerEvent,
+} from "./whisperRunner.ts";
 
 class FakeStdin extends Writable {
   public chunks: Buffer[] = [];
@@ -50,7 +54,6 @@ describe("startWhisperRunner", () => {
       modelPath: "/m",
       onEvent: (e) => events.push(e),
       backpressureTimeoutMs: 500,
-      idleTimeoutMs: 30_000,
       now: () => Date.now(),
     });
     child.stdout.emit("data", "hello\r");
@@ -66,7 +69,6 @@ describe("startWhisperRunner", () => {
       modelPath: "/m",
       onEvent: () => {},
       backpressureTimeoutMs: 500,
-      idleTimeoutMs: 30_000,
       now: () => Date.now(),
     });
     runner.writeFrame(pcmFrame());
@@ -87,7 +89,6 @@ describe("startWhisperRunner", () => {
         modelPath: "/m",
         onEvent: (e) => events.push(e),
         backpressureTimeoutMs: 500,
-        idleTimeoutMs: 30_000,
         now: () => Date.now(),
       });
       runner.writeFrame(pcmFrame());
@@ -108,7 +109,6 @@ describe("startWhisperRunner", () => {
       modelPath: "/m",
       onEvent: (e) => events.push(e),
       backpressureTimeoutMs: 500,
-      idleTimeoutMs: 30_000,
       now: () => Date.now(),
     });
     child.emit("exit", 1, null);
@@ -124,12 +124,29 @@ describe("startWhisperRunner", () => {
       modelPath: "/m",
       onEvent: () => {},
       backpressureTimeoutMs: 500,
-      idleTimeoutMs: 30_000,
       now: () => Date.now(),
     });
     const stopped = runner.stop();
     setImmediate(() => child.emit("exit", 0, null));
     await stopped;
     // Verifies stop() awaits the exit event without timing out.
+  });
+
+  it("graceful stop with non-zero exit code does NOT emit child-crashed", async () => {
+    const child = makeFakeChild();
+    const events: WhisperRunnerEvent[] = [];
+    const runner = startWhisperRunner({
+      spawn: () => child as never,
+      binary: "/x",
+      modelPath: "/m",
+      onEvent: (e) => events.push(e),
+      backpressureTimeoutMs: 500,
+      now: () => Date.now(),
+    });
+    const stopped = runner.stop();
+    // Child exits non-zero (e.g., SIGPIPE on stdin close), but stop() was called → graceful.
+    setImmediate(() => child.emit("exit", 1, null));
+    await stopped;
+    expect(events.some((e) => e.kind === "error" && e.code === "child-crashed")).toBe(false);
   });
 });
