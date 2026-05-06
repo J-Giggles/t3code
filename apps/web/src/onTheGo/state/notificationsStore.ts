@@ -27,6 +27,7 @@ export function createNotificationsStore(): NotificationsStore {
         ...notifications.value.filter((item) => item.threadId !== notification.threadId),
         notification,
       ]);
+      fireSystemNotification(notification);
     },
     dismiss(threadId) {
       setNotifications(notifications.value.filter((item) => item.threadId !== threadId));
@@ -46,4 +47,25 @@ function sortNotifications(notifications: Notification[]): Notification[] {
 
 function statusRank(status: NotificationStatus): number {
   return status === "errored" ? 0 : 1;
+}
+
+function fireSystemNotification(notification: Notification): void {
+  const systemNotification = globalThis.Notification;
+  const currentDocument = globalThis.document;
+
+  if (
+    !systemNotification ||
+    !currentDocument?.hidden ||
+    systemNotification.permission !== "granted"
+  ) {
+    return;
+  }
+
+  Reflect.construct(systemNotification, [
+    "T3 Code",
+    {
+      body: `${notification.threadTitle}\n${notification.agentLastMessage}`,
+      tag: notification.threadId,
+    },
+  ]);
 }

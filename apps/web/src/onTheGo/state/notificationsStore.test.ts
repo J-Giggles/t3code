@@ -1,8 +1,18 @@
 import type { ThreadId } from "@t3tools/contracts";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Notification } from "../types";
 import { createNotificationsStore } from "./notificationsStore";
+
+const originalBrowserGlobals = {
+  document: Object.getOwnPropertyDescriptor(globalThis, "document"),
+  notification: Object.getOwnPropertyDescriptor(globalThis, "Notification"),
+};
+
+afterEach(() => {
+  restoreGlobalProperty("document", originalBrowserGlobals.document);
+  restoreGlobalProperty("Notification", originalBrowserGlobals.notification);
+});
 
 function threadId(value: string): ThreadId {
   return value as ThreadId;
@@ -98,4 +108,92 @@ describe("NotificationsStore", () => {
     expect(store.notifications.value).toEqual([second]);
     expect(store.count.value).toBe(1);
   });
+
+  it("fires a system notification when adding while hidden and permission is granted", () => {
+    const systemNotification = mockSystemNotifications({
+      hidden: true,
+      permission: "granted",
+    });
+    const store = createNotificationsStore();
+
+    store.add(
+      notification(threadId("thread-1"), {
+        threadTitle: "Fix mobile auth",
+        agentLastMessage: "The auth callback now needs a guarded redirect before resume.",
+      }),
+    );
+
+    expect(systemNotification).toHaveBeenCalledWith("T3 Code", {
+      body: "Fix mobile auth\nThe auth callback now needs a guarded redirect before resume.",
+      tag: "thread-1",
+    });
+  });
+
+  it("does not fire a system notification when adding while visible", () => {
+    const systemNotification = mockSystemNotifications({
+      hidden: false,
+      permission: "granted",
+    });
+    const store = createNotificationsStore();
+
+    store.add(notification(threadId("thread-1")));
+
+    expect(systemNotification).not.toHaveBeenCalled();
+  });
+
+  it("does not fire a system notification when permission is not granted", () => {
+    const systemNotification = mockSystemNotifications({
+      hidden: true,
+      permission: "denied",
+    });
+    const store = createNotificationsStore();
+
+    store.add(notification(threadId("thread-1")));
+
+    expect(systemNotification).not.toHaveBeenCalled();
+  });
 });
+
+function mockSystemNotifications(options: {
+  hidden: boolean;
+  permission: globalThis.NotificationPermission;
+}): ReturnType<typeof vi.fn> {
+  const systemNotification = vi.fn();
+  const mockDocument = {};
+
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: mockDocument,
+  });
+  Object.defineProperty(globalThis.document, "hidden", {
+    configurable: true,
+    get: () => options.hidden,
+  });
+
+  class MockNotification {
+    static permission = options.permission;
+
+    constructor(title: string, notificationOptions?: globalThis.NotificationOptions) {
+      systemNotification(title, notificationOptions);
+    }
+  }
+
+  Object.defineProperty(globalThis, "Notification", {
+    configurable: true,
+    value: MockNotification,
+  });
+
+  return systemNotification;
+}
+
+function restoreGlobalProperty(
+  property: "document" | "Notification",
+  descriptor: PropertyDescriptor | undefined,
+): void {
+  if (descriptor) {
+    Object.defineProperty(globalThis, property, descriptor);
+    return;
+  }
+
+  Reflect.deleteProperty(globalThis, property);
+}
