@@ -44,6 +44,7 @@ import {
   type SidebarProjectGroupingMode,
   type ThreadEnvMode,
   ThreadId,
+  type VcsWorktree,
 } from "@t3tools/contracts";
 import {
   parseScopedThreadKey,
@@ -185,6 +186,9 @@ import {
   type SidebarProjectGroupMember,
   type SidebarProjectSnapshot,
 } from "../sidebarProjectGrouping";
+import { buildProjectWorktreeTree } from "../sidebarWorktreeGrouping";
+import { selectWorktreesForProject } from "../storeSelectors";
+import { SidebarWorktreeGroup } from "./sidebar/SidebarWorktreeGroup";
 const THREAD_PREVIEW_LIMIT = 6;
 const SIDEBAR_SORT_LABELS: Record<SidebarProjectSortOrder, string> = {
   updated_at: "Last user message",
@@ -709,6 +713,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
 
 interface SidebarProjectThreadListProps {
   projectKey: string;
+  projectId: ProjectId;
   projectExpanded: boolean;
   hasOverflowingThreads: boolean;
   hiddenThreadStatus: ThreadStatusPill | null;
@@ -718,6 +723,7 @@ interface SidebarProjectThreadListProps {
   shouldShowThreadPanel: boolean;
   isThreadListExpanded: boolean;
   projectCwd: string;
+  worktrees: readonly VcsWorktree[];
   activeRouteThreadKey: string | null;
   threadJumpLabelByKey: ReadonlyMap<string, string>;
   appSettingsConfirmThreadArchive: boolean;
@@ -759,6 +765,7 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
 ) {
   const {
     projectKey,
+    projectId,
     projectExpanded,
     hasOverflowingThreads,
     hiddenThreadStatus,
@@ -768,6 +775,7 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
     shouldShowThreadPanel,
     isThreadListExpanded,
     projectCwd,
+    worktrees,
     activeRouteThreadKey,
     threadJumpLabelByKey,
     appSettingsConfirmThreadArchive,
@@ -795,6 +803,75 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
   const showMoreButtonRender = useMemo(() => <button type="button" />, []);
   const showLessButtonRender = useMemo(() => <button type="button" />, []);
 
+  const worktreeTree = useMemo(
+    () =>
+      buildProjectWorktreeTree({
+        projectId,
+        projectCwd,
+        threads: renderedThreads,
+        worktrees,
+      }),
+    [projectId, projectCwd, renderedThreads, worktrees],
+  );
+
+  const renderThreadRow = useCallback(
+    (thread: SidebarThreadSummary) => {
+      const threadKey = scopedThreadKey(scopeThreadRef(thread.environmentId, thread.id));
+      return (
+        <SidebarThreadRow
+          key={threadKey}
+          thread={thread}
+          projectCwd={projectCwd}
+          orderedProjectThreadKeys={orderedProjectThreadKeys}
+          isActive={activeRouteThreadKey === threadKey}
+          jumpLabel={threadJumpLabelByKey.get(threadKey) ?? null}
+          appSettingsConfirmThreadArchive={appSettingsConfirmThreadArchive}
+          renamingThreadKey={renamingThreadKey}
+          renamingTitle={renamingTitle}
+          setRenamingTitle={setRenamingTitle}
+          renamingInputRef={renamingInputRef}
+          renamingCommittedRef={renamingCommittedRef}
+          confirmingArchiveThreadKey={confirmingArchiveThreadKey}
+          setConfirmingArchiveThreadKey={setConfirmingArchiveThreadKey}
+          confirmArchiveButtonRefs={confirmArchiveButtonRefs}
+          handleThreadClick={handleThreadClick}
+          navigateToThread={navigateToThread}
+          handleMultiSelectContextMenu={handleMultiSelectContextMenu}
+          handleThreadContextMenu={handleThreadContextMenu}
+          clearSelection={clearSelection}
+          commitRename={commitRename}
+          cancelRename={cancelRename}
+          attemptArchiveThread={attemptArchiveThread}
+          openPrLink={openPrLink}
+        />
+      );
+    },
+    [
+      activeRouteThreadKey,
+      appSettingsConfirmThreadArchive,
+      attemptArchiveThread,
+      cancelRename,
+      clearSelection,
+      commitRename,
+      confirmArchiveButtonRefs,
+      confirmingArchiveThreadKey,
+      handleMultiSelectContextMenu,
+      handleThreadClick,
+      handleThreadContextMenu,
+      navigateToThread,
+      openPrLink,
+      orderedProjectThreadKeys,
+      projectCwd,
+      renamingCommittedRef,
+      renamingInputRef,
+      renamingThreadKey,
+      renamingTitle,
+      setConfirmingArchiveThreadKey,
+      setRenamingTitle,
+      threadJumpLabelByKey,
+    ],
+  );
+
   return (
     <SidebarMenuSub
       ref={attachThreadListAutoAnimateRef}
@@ -811,37 +888,9 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
         </SidebarMenuSubItem>
       ) : null}
       {shouldShowThreadPanel &&
-        renderedThreads.map((thread) => {
-          const threadKey = scopedThreadKey(scopeThreadRef(thread.environmentId, thread.id));
-          return (
-            <SidebarThreadRow
-              key={threadKey}
-              thread={thread}
-              projectCwd={projectCwd}
-              orderedProjectThreadKeys={orderedProjectThreadKeys}
-              isActive={activeRouteThreadKey === threadKey}
-              jumpLabel={threadJumpLabelByKey.get(threadKey) ?? null}
-              appSettingsConfirmThreadArchive={appSettingsConfirmThreadArchive}
-              renamingThreadKey={renamingThreadKey}
-              renamingTitle={renamingTitle}
-              setRenamingTitle={setRenamingTitle}
-              renamingInputRef={renamingInputRef}
-              renamingCommittedRef={renamingCommittedRef}
-              confirmingArchiveThreadKey={confirmingArchiveThreadKey}
-              setConfirmingArchiveThreadKey={setConfirmingArchiveThreadKey}
-              confirmArchiveButtonRefs={confirmArchiveButtonRefs}
-              handleThreadClick={handleThreadClick}
-              navigateToThread={navigateToThread}
-              handleMultiSelectContextMenu={handleMultiSelectContextMenu}
-              handleThreadContextMenu={handleThreadContextMenu}
-              clearSelection={clearSelection}
-              commitRename={commitRename}
-              cancelRename={cancelRename}
-              attemptArchiveThread={attemptArchiveThread}
-              openPrLink={openPrLink}
-            />
-          );
-        })}
+        worktreeTree.nodes.map((node) => (
+          <SidebarWorktreeGroup key={node.id} node={node} renderThreadRow={renderThreadRow} />
+        ))}
 
       {projectExpanded && hasOverflowingThreads && !isThreadListExpanded && (
         <SidebarMenuSubItem className="w-full">
@@ -1008,6 +1057,12 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
       );
     });
   }, []);
+  const worktrees = useStore(
+    useMemo(
+      () => (state: import("../store").AppState) => selectWorktreesForProject(state, project.id),
+      [project.id],
+    ),
+  );
   const sidebarThreads = useStore(
     useShallow(
       useMemo(
@@ -2064,6 +2119,7 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
 
       <SidebarProjectThreadList
         projectKey={project.projectKey}
+        projectId={project.id}
         projectExpanded={projectExpanded}
         hasOverflowingThreads={hasOverflowingThreads}
         hiddenThreadStatus={hiddenThreadStatus}
@@ -2073,6 +2129,7 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
         shouldShowThreadPanel={shouldShowThreadPanel}
         isThreadListExpanded={isThreadListExpanded}
         projectCwd={project.cwd}
+        worktrees={worktrees}
         activeRouteThreadKey={activeRouteThreadKey}
         threadJumpLabelByKey={threadJumpLabelByKey}
         appSettingsConfirmThreadArchive={appSettingsConfirmThreadArchive}
