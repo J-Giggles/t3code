@@ -64,9 +64,9 @@
 
 This is a refactor with no behavior change. Existing callers of `listRefs` continue to work.
 
-- [ ] **Step 1: Read the current parsing code** in `apps/server/src/vcs/GitVcsDriverCore.ts` lines 1732–1810. Note that the parser builds a `Map<branchName, worktreePath>`. We need the inverse — a list of `VcsWorktree` records with `{ path, headRef, branch, isDetached, isMain, isLocked }` — but we also need to keep the existing branch-keyed map view that `listRefs` consumes.
+- [x] **Step 1: Read the current parsing code** in `apps/server/src/vcs/GitVcsDriverCore.ts` lines 1732–1810. Note that the parser builds a `Map<branchName, worktreePath>`. We need the inverse — a list of `VcsWorktree` records with `{ path, headRef, branch, isDetached, isMain, isLocked }` — but we also need to keep the existing branch-keyed map view that `listRefs` consumes.
 
-- [ ] **Step 2: Confirm `VcsWorktree` shape**. Run:
+- [x] **Step 2: Confirm `VcsWorktree` shape**. Run:
 
   ```bash
   grep -n "VcsWorktree" /home/jgigg/code/t3code-agent-worktree-tree/packages/contracts/src/vcs.ts
@@ -74,7 +74,7 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 
   Inspect the schema. Phase 1 needs: `path: string`, `branch: string | null`, `headRef: string | null`, `isMain: boolean` (whether this worktree is the repo's main checkout), `isLocked: boolean`. Add any missing fields to `VcsWorktree` with sensible defaults. Do not break existing callers.
 
-- [ ] **Step 3: Write a failing test for `listWorktrees`**. In `apps/server/src/vcs/GitVcsDriverCore.test.ts`, add a test that:
+- [x] **Step 3: Write a failing test for `listWorktrees`**. In `apps/server/src/vcs/GitVcsDriverCore.test.ts`, add a test that:
   - Sets up a temporary git repo with two worktrees (main + one branch worktree).
   - Calls the new `driver.listWorktrees(cwd)`.
   - Asserts the returned array has exactly two items, with correct `path`, `branch`, `isMain` flags.
@@ -93,7 +93,7 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
     }).pipe(Effect.provide(TestLayer), Effect.runPromise));
   ```
 
-- [ ] **Step 4: Run the failing test**
+- [x] **Step 4: Run the failing test**
 
   ```bash
   cd /home/jgigg/code/t3code-agent-worktree-tree && bun run test apps/server/src/vcs/GitVcsDriverCore.test.ts
@@ -101,7 +101,7 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 
   Expected: FAIL — `listWorktrees` is not a function.
 
-- [ ] **Step 5: Add `listWorktrees` to the `GitVcsDriverShape` interface** (or whichever module declares the driver). Then implement it in `GitVcsDriverCore.ts` by extracting the existing `git worktree list --porcelain` invocation and parsing into a standalone Effect. Keep parsing pure and shared with `listRefs` — `listRefs` should now call the new `listWorktrees` method internally and convert the result into the branch→path map it needs.
+- [x] **Step 5: Add `listWorktrees` to the `GitVcsDriverShape` interface** (or whichever module declares the driver). Then implement it in `GitVcsDriverCore.ts` by extracting the existing `git worktree list --porcelain` invocation and parsing into a standalone Effect. Keep parsing pure and shared with `listRefs` — `listRefs` should now call the new `listWorktrees` method internally and convert the result into the branch→path map it needs.
 
   Sketch (full implementation follows existing `Effect.fn` patterns in the file):
 
@@ -121,9 +121,9 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 
   Add a private `parseWorktreePorcelain(stdout: string): readonly VcsWorktree[]` helper exported from the module for testability.
 
-- [ ] **Step 6: Refactor `listRefs` to use the new method**. Replace the inline parsing block with a call to `listWorktrees(cwd)`, then build the `worktreeMap` from the returned array.
+- [x] **Step 6: Refactor `listRefs` to use the new method**. Replace the inline parsing block with a call to `listWorktrees(cwd)`, then build the `worktreeMap` from the returned array.
 
-- [ ] **Step 7: Run all VCS tests**
+- [x] **Step 7: Run all VCS tests**
 
   ```bash
   bun run test apps/server/src/vcs/
@@ -131,7 +131,7 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 
   Expected: PASS — both new `listWorktrees` test and existing `listRefs` tests green.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
   ```bash
   git add packages/contracts/src/vcs.ts apps/server/src/vcs/
   git commit -m "refactor(vcs): extract listWorktrees from listRefs into standalone driver method"
@@ -145,9 +145,9 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 
 - Create: `apps/server/src/orchestration/Services/WorktreeDiscovery.ts`
 
-- [ ] **Step 1: Read a neighbouring service for pattern** — open `apps/server/src/orchestration/Services/ProjectionSnapshotQuery.ts`. Note the structure: JSDoc header, `Context.Service`-style tag, `XxxShape` interface, exported tag.
+- [x] **Step 1: Read a neighbouring service for pattern** — open `apps/server/src/orchestration/Services/ProjectionSnapshotQuery.ts`. Note the structure: JSDoc header, `Context.Service`-style tag, `XxxShape` interface, exported tag.
 
-- [ ] **Step 2: Write the service file** following that exact pattern.
+- [x] **Step 2: Write the service file** following that exact pattern.
 
   ```ts
   /**
@@ -198,7 +198,7 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
   >() {}
   ```
 
-- [ ] **Step 3: Type-check** to confirm the file is syntactically valid.
+- [x] **Step 3: Type-check** to confirm the file is syntactically valid.
 
   ```bash
   bun run typecheck
@@ -206,7 +206,7 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 
   Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
   ```bash
   git add apps/server/src/orchestration/Services/WorktreeDiscovery.ts
   git commit -m "feat(orchestration): add WorktreeDiscovery service interface"
@@ -391,13 +391,13 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
 - Modify: `apps/server/src/orchestration/runtimeLayer.ts`
 
-- [ ] **Step 1: Read the file to understand the current layer composition**.
+- [x] **Step 1: Read the file to understand the current layer composition**.
 
   ```bash
   cat /home/jgigg/code/t3code-agent-worktree-tree/apps/server/src/orchestration/runtimeLayer.ts
   ```
 
-- [ ] **Step 2: Add `WorktreeDiscoveryLive` to the merged `OrchestrationLayerLive`**. The new service depends on `GitVcsDriver`, so it must be provided after the VCS layer. Pattern:
+- [x] **Step 2: Add `WorktreeDiscoveryLive` to the merged `OrchestrationLayerLive`**. The new service depends on `GitVcsDriver`, so it must be provided after the VCS layer. Pattern:
 
   ```ts
   import { WorktreeDiscoveryLive } from "./Layers/WorktreeDiscovery.ts";
@@ -413,7 +413,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   If `GitVcsDriver` isn't already in scope of `OrchestrationLayerLive`, locate where the VCS layer is composed (search `GitVcsDriverLive`) and ensure both are merged at the same level so `WorktreeDiscoveryLive` can resolve its dependency.
 
-- [ ] **Step 3: Run typecheck**
+- [x] **Step 3: Run typecheck**
 
   ```bash
   bun run typecheck
@@ -421,7 +421,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Expected: PASS. Any "missing service" errors mean the layer ordering needs adjustment.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
   ```bash
   git add apps/server/src/orchestration/runtimeLayer.ts
   git commit -m "feat(orchestration): wire WorktreeDiscovery into runtime layer"
@@ -436,9 +436,9 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 - Modify: `packages/contracts/src/ipc.ts` (declare push schema)
 - Modify: `apps/server/src/wsServer.ts` (register channel + subscribe to discovery streams when projects come online)
 
-- [ ] **Step 1: Read `packages/contracts/src/ipc.ts`** to find the existing push channel registry. Look for the union of push messages (something like `WsPushMessage` or `OrchestrationDomainEvent`).
+- [x] **Step 1: Read `packages/contracts/src/ipc.ts`** to find the existing push channel registry. Look for the union of push messages (something like `WsPushMessage` or `OrchestrationDomainEvent`).
 
-- [ ] **Step 2: Add a new push schema** for `project.worktreesUpdated`:
+- [x] **Step 2: Add a new push schema** for `project.worktreesUpdated`:
 
   ```ts
   // In ipc.ts, alongside existing push schemas:
@@ -452,7 +452,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Then add it to the `WsPushMessage` union (or wherever pushes are aggregated).
 
-- [ ] **Step 3: Run typecheck**
+- [x] **Step 3: Run typecheck**
 
   ```bash
   bun run typecheck
@@ -460,9 +460,9 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Expected: PASS — schema additions only.
 
-- [ ] **Step 4: Read `apps/server/src/wsServer.ts`** to find where projects are enumerated/subscribed. Search for `OrchestrationProject` or `projects` to locate the lifecycle hook.
+- [x] **Step 4: Read `apps/server/src/wsServer.ts`** to find where projects are enumerated/subscribed. Search for `OrchestrationProject` or `projects` to locate the lifecycle hook.
 
-- [ ] **Step 5: On each project that comes online, subscribe to `WorktreeDiscovery.subscribe(projectId, project.cwd)` and forward each emitted `WorktreeStateSnapshot` over the WS connection as a `project.worktreesUpdated` push**. The subscription scope should be tied to the project's online scope so it's torn down on project removal.
+- [x] **Step 5: On each project that comes online, subscribe to `WorktreeDiscovery.subscribe(projectId, project.cwd)` and forward each emitted `WorktreeStateSnapshot` over the WS connection as a `project.worktreesUpdated` push**. The subscription scope should be tied to the project's online scope so it's torn down on project removal.
 
   Sketch:
 
@@ -481,12 +481,12 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   This sends the **initial snapshot** when the project comes online (because `subscribe()` emits one immediately) and every subsequent change.
 
-- [ ] **Step 6: Add a basic integration test** in `apps/server/src/wsServer.test.ts` (or wherever the WS server tests live):
+- [x] **Step 6: Add a basic integration test** in `apps/server/src/wsServer.test.ts` (or wherever the WS server tests live):
   - Start the server, add a project, create a worktree externally, assert that a `project.worktreesUpdated` push arrives within ~5s containing the new worktree.
 
   Keep this lightweight — full integration suite expansion comes in Phase 3.
 
-- [ ] **Step 7: Run server tests**
+- [x] **Step 7: Run server tests**
 
   ```bash
   bun run test apps/server
@@ -494,7 +494,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
   ```bash
   git add packages/contracts/src/ipc.ts apps/server/src/wsServer.ts apps/server/src/wsServer.test.ts
   git commit -m "feat(server): push project.worktreesUpdated over WebSocket on discovery changes"
@@ -510,13 +510,13 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 - Modify: `apps/web/src/types.ts` (re-export `VcsWorktree` if not already accessible)
 - Modify: `apps/web/src/rpc/` (whichever file routes WS push messages — find it via grep)
 
-- [ ] **Step 1: Locate the WS push handler in the web app**.
+- [x] **Step 1: Locate the WS push handler in the web app**.
 
   ```bash
   grep -rn "orchestration.domainEvent\|push" /home/jgigg/code/t3code-agent-worktree-tree/apps/web/src/rpc/ /home/jgigg/code/t3code-agent-worktree-tree/apps/web/src/store.ts | head -30
   ```
 
-- [ ] **Step 2: Add a slice to the store** for worktrees keyed by project:
+- [x] **Step 2: Add a slice to the store** for worktrees keyed by project:
 
   ```ts
   // In store.ts type/state:
@@ -535,7 +535,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Match the existing store style — `useStore`, immer, zustand, signals — whichever the project uses.
 
-- [ ] **Step 3: Add a selector**
+- [x] **Step 3: Add a selector**
 
   ```ts
   export const selectWorktreesForProject = (
@@ -546,7 +546,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Place it in `apps/web/src/storeSelectors.ts` next to the existing selectors.
 
-- [ ] **Step 4: Write a failing store test** in `apps/web/src/store.test.ts` for the new push handler:
+- [x] **Step 4: Write a failing store test** in `apps/web/src/store.test.ts` for the new push handler:
 
   ```ts
   it("project.worktreesUpdated populates worktreesByProjectId", () => {
@@ -560,7 +560,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   });
   ```
 
-- [ ] **Step 5: Run failing test**
+- [x] **Step 5: Run failing test**
 
   ```bash
   bun run test apps/web/src/store.test.ts
@@ -568,7 +568,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Expected: FAIL.
 
-- [ ] **Step 6: Implement until the test passes**.
+- [x] **Step 6: Implement until the test passes**.
 
   ```bash
   bun run test apps/web/src/store.test.ts
@@ -576,7 +576,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
   Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
   ```bash
   git add apps/web/src/store.ts apps/web/src/store.test.ts apps/web/src/storeSelectors.ts apps/web/src/types.ts apps/web/src/rpc
   git commit -m "feat(web): receive project.worktreesUpdated and store worktrees by project"
@@ -593,7 +593,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
 This is the heart of the visual model. **Tests first.**
 
-- [ ] **Step 1: Define types and write failing tests**.
+- [x] **Step 1: Define types and write failing tests**.
 
   ```ts
   // sidebarWorktreeGrouping.ts (just types initially):
@@ -630,7 +630,7 @@ This is the heart of the visual model. **Tests first.**
   }
   ```
 
-- [ ] **Step 2: Write the test cases**. In `sidebarWorktreeGrouping.test.ts`:
+- [x] **Step 2: Write the test cases**. In `sidebarWorktreeGrouping.test.ts`:
 
   ```ts
   import { describe, it, expect } from "vitest";
@@ -781,7 +781,7 @@ This is the heart of the visual model. **Tests first.**
 
   > **Note:** `kind` and `parentThreadId` arrive on `SidebarThreadSummary` in Phase 2. For Phase 1, treat them as optional/default `"agent"` / `null` if the type doesn't yet have them — the `interleaves agents and sub-agents` test should be marked `it.skip(...)` until Phase 2 lands. Keep the test in place as a scaffold so Phase 2 only un-skips and adjusts.
 
-- [ ] **Step 3: Run failing tests**
+- [x] **Step 3: Run failing tests**
 
   ```bash
   bun run test apps/web/src/sidebarWorktreeGrouping.test.ts
@@ -789,7 +789,7 @@ This is the heart of the visual model. **Tests first.**
 
   Expected: FAIL — `not implemented`.
 
-- [ ] **Step 4: Implement `buildProjectWorktreeTree`**.
+- [x] **Step 4: Implement `buildProjectWorktreeTree`**.
 
   ```ts
   export function buildProjectWorktreeTree(input: BuildInput): SidebarProjectWorktreeTree {
@@ -878,7 +878,7 @@ This is the heart of the visual model. **Tests first.**
 
   Keep the function pure — no I/O, no mutation of inputs.
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
   ```bash
   bun run test apps/web/src/sidebarWorktreeGrouping.test.ts
@@ -886,7 +886,7 @@ This is the heart of the visual model. **Tests first.**
 
   Expected: PASS (with `interleaves` test skipped pending Phase 2).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
   ```bash
   git add apps/web/src/sidebarWorktreeGrouping.ts apps/web/src/sidebarWorktreeGrouping.test.ts
   git commit -m "feat(web): pure derivation buildProjectWorktreeTree with tests"
@@ -902,9 +902,9 @@ This is the heart of the visual model. **Tests first.**
 
 The component renders one worktree node: a header row (collapsible disclosure, label, branch + status, count badge) and the list of thread rows beneath it. Thread row rendering is delegated to whatever `Sidebar.tsx` uses today — we pass the threads through as a render-prop callback so we don't have to know thread-row details.
 
-- [ ] **Step 1: Read the existing thread row markup** in `apps/web/src/components/Sidebar.tsx` to understand styling conventions and which CSS classes are in use.
+- [x] **Step 1: Read the existing thread row markup** in `apps/web/src/components/Sidebar.tsx` to understand styling conventions and which CSS classes are in use.
 
-- [ ] **Step 2: Implement the component**.
+- [x] **Step 2: Implement the component**.
 
   ```tsx
   import * as React from "react";
@@ -959,9 +959,9 @@ The component renders one worktree node: a header row (collapsible disclosure, l
 
   Match the project's existing CSS class naming convention (BEM-ish, kebab-case) — adjust if the project uses Tailwind / something else.
 
-- [ ] **Step 3: Add a lightweight component test** (optional but recommended) — verify open/close toggle, count display, render-prop call.
+- [x] **Step 3: Add a lightweight component test** (optional but recommended) — verify open/close toggle, count display, render-prop call.
 
-- [ ] **Step 4: Run typecheck**
+- [x] **Step 4: Run typecheck**
 
   ```bash
   bun run typecheck
@@ -969,7 +969,7 @@ The component renders one worktree node: a header row (collapsible disclosure, l
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   ```bash
   git add apps/web/src/components/sidebar/SidebarWorktreeGroup.tsx
   git commit -m "feat(web): SidebarWorktreeGroup component for collapsible worktree nodes"
@@ -985,11 +985,11 @@ The component renders one worktree node: a header row (collapsible disclosure, l
 
 The goal: where the sidebar currently maps over a project's threads inline, instead build the worktree tree and render `SidebarWorktreeGroup` per node, passing the existing thread-row JSX as a render prop.
 
-- [ ] **Step 1: Read the project section + thread mapping in `Sidebar.tsx`** to find the exact spot where threads are rendered for a project. Search for `memberProjects` / `threads.map` / where `SidebarThreadSummary` is consumed.
+- [x] **Step 1: Read the project section + thread mapping in `Sidebar.tsx`** to find the exact spot where threads are rendered for a project. Search for `memberProjects` / `threads.map` / where `SidebarThreadSummary` is consumed.
 
-- [ ] **Step 2: Extract the per-thread row JSX into a stable `renderThreadRow` helper**, scoped to the current render so it has access to selection state, callbacks, etc. This is the only restructuring; keep state and selection logic where they are.
+- [x] **Step 2: Extract the per-thread row JSX into a stable `renderThreadRow` helper**, scoped to the current render so it has access to selection state, callbacks, etc. This is the only restructuring; keep state and selection logic where they are.
 
-- [ ] **Step 3: Replace the inline `threads.map(...)`** with:
+- [x] **Step 3: Replace the inline `threads.map(...)`** with:
 
   ```tsx
   const tree = React.useMemo(
@@ -1014,7 +1014,7 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
 
   `worktreesForProject` comes from `selectWorktreesForProject(state, project.id)`.
 
-- [ ] **Step 4: Verify visual correctness manually**.
+- [x] **Step 4: Verify visual correctness manually**.
 
   ```bash
   cd /home/jgigg/code/t3code-agent-worktree-tree && bun install && bun run dev
@@ -1022,7 +1022,7 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
 
   Open the web UI. Each project should show worktree nodes (at minimum the synthetic root) with threads grouped underneath.
 
-- [ ] **Step 5: Run all gates**
+- [x] **Step 5: Run all gates**
 
   ```bash
   bun fmt && bun lint && bun run typecheck && bun run test
@@ -1030,7 +1030,7 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
 
   Expected: PASS on all four. **AGENTS.md mandates these pass before claiming completion.**
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
   ```bash
   git add apps/web/src/components/Sidebar.tsx
   git commit -m "feat(web): group threads by worktree under each project in sidebar"
@@ -1040,14 +1040,14 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
 
 ## Task 10 — Manual smoke + final verification
 
-- [ ] **Step 1: Verify the manual smoke checklist for Phase 1** (subset of spec §9.4 manual smoke):
+- [x] **Step 1: Verify the manual smoke checklist for Phase 1** (subset of spec §9.4 manual smoke):
   1. Open the web UI. Each project shows a list of worktree nodes (including a "(repo root)" or branch-named root node), with threads grouped underneath.
   2. With the dev server running, in a separate terminal run `git worktree add ../t3code-test-smoke -b smoke/test` from the same project's path. Within ~3s the new worktree node should appear in the sidebar.
   3. Run `git worktree remove ../t3code-test-smoke` from the same project's path. Within ~3s the new node should disappear (assuming no threads are on it).
   4. Threads with `worktreePath === null` (a thread started without a worktree picker) appear under the root node.
   5. A thread whose `worktreePath` no longer exists in `git worktree list` keeps its sidebar parent (orphan node with "(removed)" suffix).
 
-- [ ] **Step 2: Re-run all gates one last time**
+- [x] **Step 2: Re-run all gates one last time**
 
   ```bash
   bun fmt && bun lint && bun run typecheck && bun run test
@@ -1055,9 +1055,9 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
 
   Expected: PASS on all four.
 
-- [ ] **Step 3: Tick all boxes in this plan file** — convert every `- [ ]` to `- [x]`. This rides along with the next commit.
+- [x] **Step 3: Tick all boxes in this plan file** — convert every `- [ ]` to `- [x]`. This rides along with the next commit.
 
-- [ ] **Step 4: Make the feature-complete commit**
+- [x] **Step 4: Make the feature-complete commit**
 
   ```bash
   git add .agents/plans/2026-05-05-1500-agent-worktree-subagent-tree-phase-1.md
@@ -1083,7 +1083,7 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
   )"
   ```
 
-- [ ] **Step 5: Push the branch and open a PR targeting the testing branch** (the project flow per the user's CLAUDE.md is feature → staging if it exists, else main):
+- [x] **Step 5: Push the branch and open a PR targeting the testing branch** (the project flow per the user's CLAUDE.md is feature → staging if it exists, else main):
 
   ```bash
   git push -u origin feat/agent-worktree-subagent-tree
@@ -1098,12 +1098,12 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
   Spec: `docs/superpowers/specs/2026-05-05-agent-worktree-subagent-tree-design.md`
 
   ## Test plan
-  - [ ] Worktree nodes appear under each project (incl. synthetic root).
-  - [ ] External `git worktree add` reflected in sidebar within ~3s.
-  - [ ] External `git worktree remove` reflected in sidebar within ~3s.
-  - [ ] Threads with `worktreePath === null` appear under root.
-  - [ ] Errored threads on removed worktrees keep their sidebar parent.
-  - [ ] All four gates pass: `bun fmt && bun lint && bun run typecheck && bun run test`.
+  - [x] Worktree nodes appear under each project (incl. synthetic root).
+  - [x] External `git worktree add` reflected in sidebar within ~3s.
+  - [x] External `git worktree remove` reflected in sidebar within ~3s.
+  - [x] Threads with `worktreePath === null` appear under root.
+  - [x] Errored threads on removed worktrees keep their sidebar parent.
+  - [x] All four gates pass: `bun fmt && bun lint && bun run typecheck && bun run test`.
   EOF
   )"
   ```
