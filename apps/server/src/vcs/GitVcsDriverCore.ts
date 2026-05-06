@@ -18,7 +18,7 @@ import {
 } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { GitCommandError, type VcsRef } from "@t3tools/contracts";
+import { GitCommandError, type VcsRef, type VcsWorktree } from "@t3tools/contracts";
 import { dedupeRemoteBranchesWithLocalMatches } from "@t3tools/shared/git";
 import { compactTraceAttributes } from "../observability/Attributes.ts";
 import { gitCommandDuration, gitCommandsTotal, withMetrics } from "../observability/Metrics.ts";
@@ -615,8 +615,8 @@ const collectOutput = Effect.fn("collectOutput")(function* <E>(
  *   locked [reason]            (optional – present only when locked)
  *   bare                       (optional – for bare clones)
  */
-export function parseWorktreePorcelain(stdout: string): readonly GitVcsDriver.VcsWorktreeInfo[] {
-  const worktrees: GitVcsDriver.VcsWorktreeInfo[] = [];
+export function parseWorktreePorcelain(stdout: string): readonly VcsWorktree[] {
+  const worktrees: VcsWorktree[] = [];
   let path: string | null = null;
   let headRef: string | null = null;
   let branch: string | null = null;
@@ -629,7 +629,6 @@ export function parseWorktreePorcelain(stdout: string): readonly GitVcsDriver.Vc
     }
   };
 
-  let firstBlock = true;
   for (const rawLine of stdout.split("\n")) {
     const line = rawLine.trimEnd();
     if (line === "") {
@@ -639,15 +638,11 @@ export function parseWorktreePorcelain(stdout: string): readonly GitVcsDriver.Vc
       branch = null;
       isLocked = false;
       isMain = false; // every block after the first is a linked worktree
-      firstBlock = false;
       continue;
     }
 
     if (line.startsWith("worktree ")) {
       path = line.slice("worktree ".length);
-      if (firstBlock) {
-        isMain = true;
-      }
     } else if (line.startsWith("HEAD ")) {
       headRef = line.slice("HEAD ".length);
     } else if (line.startsWith("branch refs/heads/")) {
@@ -1804,7 +1799,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
               },
             ),
             listWorktrees(input.cwd).pipe(
-              Effect.catch(() => Effect.succeed([] as readonly GitVcsDriver.VcsWorktreeInfo[])),
+              Effect.catch(() => Effect.succeed([] as readonly VcsWorktree[])),
             ),
             remoteBranchResultEffect,
             remoteNamesResultEffect,
@@ -2177,13 +2172,13 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       const checked = yield* Effect.all(
         parsed.map((w) =>
           fileSystem.stat(w.path).pipe(
-            Effect.map(() => w as GitVcsDriver.VcsWorktreeInfo | null),
+            Effect.map(() => w as VcsWorktree | null),
             Effect.catch(() => Effect.succeed(null)),
           ),
         ),
         { concurrency: "unbounded" },
       );
-      return checked.filter((w): w is GitVcsDriver.VcsWorktreeInfo => w !== null);
+      return checked.filter((w): w is VcsWorktree => w !== null);
     },
   );
 

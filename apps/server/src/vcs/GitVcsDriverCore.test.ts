@@ -5,6 +5,7 @@ import { Effect, FileSystem, Layer, Path, PlatformError, Scope } from "effect";
 import { GitCommandError } from "@t3tools/contracts";
 import { ServerConfig } from "../config.ts";
 import * as GitVcsDriver from "./GitVcsDriver.ts";
+import { parseWorktreePorcelain } from "./GitVcsDriverCore.ts";
 
 const ServerConfigLayer = ServerConfig.layerTest(process.cwd(), {
   prefix: "t3-git-vcs-driver-test-",
@@ -70,6 +71,130 @@ const initRepoWithCommit = (
     const initialBranch = yield* git(cwd, ["branch", "--show-current"]);
     return { initialBranch };
   });
+
+// ---------------------------------------------------------------------------
+// Unit tests for parseWorktreePorcelain (no Effect, no driver)
+// ---------------------------------------------------------------------------
+
+describe("parseWorktreePorcelain", () => {
+  it("parses a single main worktree (normal branch)", () => {
+    const raw = [
+      "worktree /repo",
+      "HEAD abc1234abc1234abc1234abc1234abc1234abc1234",
+      "branch refs/heads/main",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreePorcelain(raw);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0], {
+      path: "/repo",
+      headRef: "abc1234abc1234abc1234abc1234abc1234abc1234",
+      branch: "main",
+      isMain: true,
+      isLocked: false,
+    });
+  });
+
+  it("returns headRef: null when the HEAD line is missing (corrupted entry)", () => {
+    // A block with a worktree line but no HEAD line is treated as a corrupted
+    // entry — it is still flushed (path is set), but headRef stays null.
+    const raw = ["worktree /repo", "branch refs/heads/main", ""].join("\n");
+
+    const result = parseWorktreePorcelain(raw);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.headRef, null);
+    assert.equal(result[0]?.branch, "main");
+  });
+
+  it("produces no spurious entries for multiple consecutive blank lines", () => {
+    const raw = [
+      "worktree /repo",
+      "HEAD aaa",
+      "branch refs/heads/main",
+      "",
+      "",
+      "",
+      "worktree /linked",
+      "HEAD bbb",
+      "branch refs/heads/feat",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreePorcelain(raw);
+    assert.equal(result.length, 2);
+    assert.equal(result[0]?.path, "/repo");
+    assert.equal(result[1]?.path, "/linked");
+  });
+
+  it("handles a bare-repo block (bare line instead of branch/detached)", () => {
+    // A bare worktree has a HEAD sha but no branch ref checked out.
+    // The parser should leave branch as null but preserve headRef.
+    const raw = ["worktree /bare-repo.git", "HEAD aaa", "bare", ""].join("\n");
+
+    const result = parseWorktreePorcelain(raw);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.branch, null);
+    assert.equal(result[0]?.headRef, "aaa");
+  });
+
+  it("sets isLocked: true for a 'locked <reason>' line", () => {
+    const raw = [
+      "worktree /repo",
+      "HEAD aaa",
+      "branch refs/heads/main",
+      "",
+      "worktree /locked-tree",
+      "HEAD bbb",
+      "branch refs/heads/feat",
+      "locked working on it",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreePorcelain(raw);
+    assert.equal(result.length, 2);
+    assert.equal(result[0]?.isLocked, false);
+    assert.equal(result[1]?.isLocked, true);
+  });
+
+  it("sets isLocked: true for a bare 'locked' token (no reason)", () => {
+    const raw = [
+      "worktree /repo",
+      "HEAD aaa",
+      "branch refs/heads/main",
+      "",
+      "worktree /locked-tree",
+      "HEAD bbb",
+      "branch refs/heads/feat",
+      "locked",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreePorcelain(raw);
+    assert.equal(result.length, 2);
+    assert.equal(result[1]?.isLocked, true);
+  });
+
+  it("parses CRLF-terminated lines correctly", () => {
+    const raw = [
+      "worktree /repo\r",
+      "HEAD abc\r",
+      "branch refs/heads/main\r",
+      "\r",
+      "worktree /linked\r",
+      "HEAD def\r",
+      "branch refs/heads/feat\r",
+      "\r",
+    ].join("\n");
+
+    const result = parseWorktreePorcelain(raw);
+    assert.equal(result.length, 2);
+    assert.equal(result[0]?.path, "/repo");
+    assert.equal(result[0]?.branch, "main");
+    assert.equal(result[1]?.path, "/linked");
+    assert.equal(result[1]?.branch, "feat");
+  });
+});
 
 it.layer(TestLayer)("GitVcsDriver core integration", (it) => {
   describe("repository status", () => {
@@ -419,6 +544,38 @@ it.layer(TestLayer)("GitVcsDriver core integration", (it) => {
         assert.equal(detached?.branch, null);
         assert.equal(detached?.isMain, false);
         assert.ok(detached?.headRef, "headRef should be set for detached HEAD");
+      }),
+    );
+
+    it.effect("reports isLocked: true for a locked worktree", () =>
+      Effect.gen(function* () {
+        const cwd = yield* makeTmpDir();
+        yield* initRepoWithCommit(cwd);
+        const driver = yield* GitVcsDriver.GitVcsDriver;
+        const pathService = yield* Path.Path;
+        const worktreePath = pathService.join(yield* makeTmpDir("git-worktrees-"), "locked-test");
+
+        yield* driver.createWorktree({
+          cwd,
+          path: worktreePath,
+          refName: yield* git(cwd, ["branch", "--show-current"]),
+          newRefName: "feat/locked-test",
+        });
+
+        // Lock the worktree via raw git command
+        yield* driver.execute({
+          operation: "GitVcsDriver.test.lockWorktree",
+          cwd,
+          args: ["worktree", "lock", worktreePath],
+          timeoutMs: 10_000,
+        });
+
+        const result = yield* driver.listWorktrees(cwd);
+        assert.equal(result.length, 2);
+
+        const locked = result.find((w) => !w.isMain);
+        assert.ok(locked, "should have a linked worktree");
+        assert.equal(locked?.isLocked, true);
       }),
     );
   });
