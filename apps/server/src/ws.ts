@@ -23,6 +23,7 @@ import {
   WS_METHODS,
   WsRpcGroup,
 } from "@t3tools/contracts";
+import { WorktreeDiscovery } from "./orchestration/Services/WorktreeDiscovery.ts";
 import { clamp } from "effect/Number";
 import { HttpRouter, HttpServerRequest } from "effect/unstable/http";
 import { RpcSerialization, RpcServer } from "effect/unstable/rpc";
@@ -166,6 +167,7 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
       const sourceControlRepositories = yield* SourceControlRepositoryService;
       const bootstrapCredentials = yield* BootstrapCredentialService;
       const sessions = yield* SessionCredentialService;
+      const worktreeDiscovery = yield* WorktreeDiscovery;
       const serverCommandId = (tag: string) =>
         CommandId.make(`server:${tag}:${crypto.randomUUID()}`);
 
@@ -770,6 +772,20 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
                 liveStream,
               );
             }),
+            { "rpc.aggregate": "orchestration" },
+          ),
+        [ORCHESTRATION_WS_METHODS.subscribeProjectWorktrees]: (input) =>
+          observeRpcStream(
+            ORCHESTRATION_WS_METHODS.subscribeProjectWorktrees,
+            worktreeDiscovery.subscribe(input.projectId, input.cwd).pipe(
+              Stream.mapError(
+                (cause) =>
+                  new OrchestrationGetSnapshotError({
+                    message: `Failed to subscribe to worktrees for project ${input.projectId}`,
+                    cause,
+                  }),
+              ),
+            ),
             { "rpc.aggregate": "orchestration" },
           ),
         [WS_METHODS.serverGetConfig]: (_input) =>

@@ -113,6 +113,10 @@ import * as GitWorkflowService from "./git/GitWorkflowService.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import { ServerSecretStoreLive } from "./auth/Layers/ServerSecretStore.ts";
 import { ServerAuthLive } from "./auth/Layers/ServerAuth.ts";
+import {
+  WorktreeDiscovery,
+  type WorktreeDiscoveryShape,
+} from "./orchestration/Services/WorktreeDiscovery.ts";
 
 const defaultProjectId = ProjectId.make("project-default");
 const defaultThreadId = ThreadId.make("thread-default");
@@ -334,6 +338,7 @@ const buildAppUnderTest = (options?: {
     serverRuntimeStartup?: Partial<ServerRuntimeStartupShape>;
     serverEnvironment?: Partial<ServerEnvironmentShape>;
     repositoryIdentityResolver?: Partial<RepositoryIdentityResolverShape>;
+    worktreeDiscovery?: Partial<WorktreeDiscoveryShape>;
   };
 }) =>
   Effect.gen(function* () {
@@ -642,6 +647,13 @@ const buildAppUnderTest = (options?: {
         Layer.mock(RepositoryIdentityResolver)({
           resolve: () => Effect.succeed(null),
           ...options?.layers?.repositoryIdentityResolver,
+        }),
+      ),
+      Layer.provide(
+        Layer.mock(WorktreeDiscovery)({
+          subscribe: () => Stream.empty,
+          invalidate: () => Effect.void,
+          ...options?.layers?.worktreeDiscovery,
         }),
       ),
       Layer.provideMerge(makeAuthTestLayer()),
@@ -4168,5 +4180,47 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
       assertFailure(result, terminalError);
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect(
+    "routes websocket rpc orchestration.subscribeProjectWorktrees emits initial snapshot from WorktreeDiscovery",
+    () =>
+      Effect.gen(function* () {
+        const testProjectId = ProjectId.make("worktree-test-project");
+        const testCwd = "/tmp/worktree-test-project";
+
+        const initialWorktrees = [
+          {
+            path: testCwd,
+            branch: "main",
+            headRef: "abc123",
+            isMain: true,
+            isLocked: false,
+          },
+        ];
+
+        yield* buildAppUnderTest({
+          layers: {
+            worktreeDiscovery: {
+              subscribe: (_projectId, _cwd) =>
+                Stream.make({ projectId: testProjectId, worktrees: initialWorktrees }),
+            },
+          },
+        });
+
+        const wsUrl = yield* getWsServerUrl("/ws");
+        const snapshots = yield* Effect.scoped(
+          withWsRpcClient(wsUrl, (client) =>
+            client[ORCHESTRATION_WS_METHODS.subscribeProjectWorktrees]({
+              projectId: testProjectId,
+              cwd: testCwd,
+            }).pipe(Stream.take(1), Stream.runCollect),
+          ),
+        );
+
+        const [first] = Array.from(snapshots);
+        assert.equal(first?.projectId, testProjectId);
+        assert.deepEqual(first?.worktrees, initialWorktrees);
+      }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 });
