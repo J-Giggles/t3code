@@ -888,6 +888,7 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
         </SidebarMenuSubItem>
       ) : null}
       {shouldShowThreadPanel &&
+        !showEmptyThreadState &&
         worktreeTree.nodes.map((node) => (
           <SidebarWorktreeGroup key={node.id} node={node} renderThreadRow={renderThreadRow} />
         ))}
