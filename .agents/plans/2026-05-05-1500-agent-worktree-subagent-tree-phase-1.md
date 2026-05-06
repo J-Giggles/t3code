@@ -15,6 +15,7 @@
 **Phasing:** Phase 1 of 4. Phase 2 (sub-agent thread kind + read-only view), Phase 3 (MCP server + cross-worktree spawn), Phase 4 (native sub-agent tool interception) follow as separate plans in their own worktrees.
 
 **Acceptance criteria for Phase 1:**
+
 - Every project in the sidebar shows a list of worktree nodes under it, including a synthetic root node ("(repo root)").
 - Threads with `worktreePath !== null` render under their matching worktree node.
 - Threads with `worktreePath === null` render under the synthetic root.
@@ -28,16 +29,19 @@
 ## File structure
 
 **New files (server):**
+
 - `apps/server/src/orchestration/Services/WorktreeDiscovery.ts` — service interface + Context tag.
 - `apps/server/src/orchestration/Layers/WorktreeDiscovery.ts` — Layer implementation (poller + diff + per-project subscription stream).
 - `apps/server/src/orchestration/Layers/WorktreeDiscovery.test.ts` — unit tests.
 
 **New files (web):**
+
 - `apps/web/src/sidebarWorktreeGrouping.ts` — pure derivation function.
 - `apps/web/src/sidebarWorktreeGrouping.test.ts` — unit tests.
 - `apps/web/src/components/sidebar/SidebarWorktreeGroup.tsx` — UI component for one worktree node + its threads.
 
 **Modified files:**
+
 - `apps/server/src/vcs/GitVcsDriverCore.ts` — extract embedded worktree-list parsing in `listRefs` into a new top-level `listWorktrees(cwd)` driver method.
 - `packages/contracts/src/vcs.ts` — audit `VcsWorktree` for completeness; add fields only if needed.
 - `apps/server/src/orchestration/runtimeLayer.ts` — provide `WorktreeDiscovery` layer.
@@ -53,6 +57,7 @@
 ## Task 1 — Extract `listWorktrees` into a standalone driver method
 
 **Files:**
+
 - Modify: `apps/server/src/vcs/GitVcsDriverCore.ts` (currently embeds worktree parsing in `listRefs`, lines ~1732–1800)
 - Modify: `packages/contracts/src/vcs.ts` (the `VcsDriver` shape — add `listWorktrees` to driver capabilities)
 - Test: `apps/server/src/vcs/GitVcsDriverCore.test.ts` (extend existing)
@@ -62,9 +67,11 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 - [ ] **Step 1: Read the current parsing code** in `apps/server/src/vcs/GitVcsDriverCore.ts` lines 1732–1810. Note that the parser builds a `Map<branchName, worktreePath>`. We need the inverse — a list of `VcsWorktree` records with `{ path, headRef, branch, isDetached, isMain, isLocked }` — but we also need to keep the existing branch-keyed map view that `listRefs` consumes.
 
 - [ ] **Step 2: Confirm `VcsWorktree` shape**. Run:
+
   ```bash
   grep -n "VcsWorktree" /home/jgigg/code/t3code-agent-worktree-tree/packages/contracts/src/vcs.ts
   ```
+
   Inspect the schema. Phase 1 needs: `path: string`, `branch: string | null`, `headRef: string | null`, `isMain: boolean` (whether this worktree is the repo's main checkout), `isLocked: boolean`. Add any missing fields to `VcsWorktree` with sensible defaults. Do not break existing callers.
 
 - [ ] **Step 3: Write a failing test for `listWorktrees`**. In `apps/server/src/vcs/GitVcsDriverCore.test.ts`, add a test that:
@@ -87,23 +94,29 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
   ```
 
 - [ ] **Step 4: Run the failing test**
+
   ```bash
   cd /home/jgigg/code/t3code-agent-worktree-tree && bun run test apps/server/src/vcs/GitVcsDriverCore.test.ts
   ```
+
   Expected: FAIL — `listWorktrees` is not a function.
 
 - [ ] **Step 5: Add `listWorktrees` to the `GitVcsDriverShape` interface** (or whichever module declares the driver). Then implement it in `GitVcsDriverCore.ts` by extracting the existing `git worktree list --porcelain` invocation and parsing into a standalone Effect. Keep parsing pure and shared with `listRefs` — `listRefs` should now call the new `listWorktrees` method internally and convert the result into the branch→path map it needs.
 
   Sketch (full implementation follows existing `Effect.fn` patterns in the file):
+
   ```ts
-  const listWorktrees: GitVcsDriverShape["listWorktrees"] = Effect.fn("listWorktrees")(
-    function* (cwd: string) {
-      const result = yield* executeGit("GitVcsDriver.listWorktrees", cwd, [
-        "worktree", "list", "--porcelain",
-      ], { fallbackErrorMessage: "git worktree list failed" });
-      return parseWorktreePorcelain(result.stdout);
-    },
-  );
+  const listWorktrees: GitVcsDriverShape["listWorktrees"] = Effect.fn("listWorktrees")(function* (
+    cwd: string,
+  ) {
+    const result = yield* executeGit(
+      "GitVcsDriver.listWorktrees",
+      cwd,
+      ["worktree", "list", "--porcelain"],
+      { fallbackErrorMessage: "git worktree list failed" },
+    );
+    return parseWorktreePorcelain(result.stdout);
+  });
   ```
 
   Add a private `parseWorktreePorcelain(stdout: string): readonly VcsWorktree[]` helper exported from the module for testability.
@@ -111,9 +124,11 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 - [ ] **Step 6: Refactor `listRefs` to use the new method**. Replace the inline parsing block with a call to `listWorktrees(cwd)`, then build the `worktreeMap` from the returned array.
 
 - [ ] **Step 7: Run all VCS tests**
+
   ```bash
   bun run test apps/server/src/vcs/
   ```
+
   Expected: PASS — both new `listWorktrees` test and existing `listRefs` tests green.
 
 - [ ] **Step 8: Commit**
@@ -127,6 +142,7 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 ## Task 2 — Define `WorktreeDiscovery` service interface
 
 **Files:**
+
 - Create: `apps/server/src/orchestration/Services/WorktreeDiscovery.ts`
 
 - [ ] **Step 1: Read a neighbouring service for pattern** — open `apps/server/src/orchestration/Services/ProjectionSnapshotQuery.ts`. Note the structure: JSDoc header, `Context.Service`-style tag, `XxxShape` interface, exported tag.
@@ -183,9 +199,11 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
   ```
 
 - [ ] **Step 3: Type-check** to confirm the file is syntactically valid.
+
   ```bash
   bun run typecheck
   ```
+
   Expected: PASS.
 
 - [ ] **Step 4: Commit**
@@ -199,12 +217,13 @@ This is a refactor with no behavior change. Existing callers of `listRefs` conti
 ## Task 3 — Implement `WorktreeDiscovery` Layer (poller + diff)
 
 **Files:**
+
 - Create: `apps/server/src/orchestration/Layers/WorktreeDiscovery.ts`
 - Create: `apps/server/src/orchestration/Layers/WorktreeDiscovery.test.ts`
 
 The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub`) that subscribers consume from. A scheduled fiber polls `GitVcsDriver.listWorktrees(cwd)` every 3s, diffs, and publishes a new snapshot only when the set has changed (by `path`).
 
-- [ ] **Step 1: Write the failing test for initial-snapshot emission**.
+- [x] **Step 1: Write the failing test for initial-snapshot emission**.
 
   ```ts
   it("subscribe emits an initial snapshot within one tick", () =>
@@ -217,13 +236,12 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
       expect(Option.isSome(first)).toBe(true);
       expect(Option.getOrThrow(first).worktrees).toHaveLength(1);
-    }).pipe(Effect.scoped, Effect.runPromise),
-  );
+    }).pipe(Effect.scoped, Effect.runPromise));
   ```
 
   Pattern after similar Stream-based service tests in the codebase (search `Stream.runHead` for examples).
 
-- [ ] **Step 2: Write the failing test for diff-on-add**.
+- [x] **Step 2: Write the failing test for diff-on-add**.
 
   ```ts
   it("emits a new snapshot when listWorktrees adds a worktree", () =>
@@ -245,11 +263,10 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
       const collected = yield* Fiber.join(fiber);
       expect(Chunk.toReadonlyArray(collected)).toHaveLength(2);
       expect(Chunk.toReadonlyArray(collected)[1]?.worktrees).toHaveLength(2);
-    }).pipe(Effect.scoped, Effect.runPromise),
-  );
+    }).pipe(Effect.scoped, Effect.runPromise));
   ```
 
-- [ ] **Step 3: Write the failing test for no-change-no-emit**.
+- [x] **Step 3: Write the failing test for no-change-no-emit**.
 
   ```ts
   it("does not emit a duplicate snapshot when listWorktrees returns the same set", () =>
@@ -271,11 +288,10 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
         Effect.delay(Effect.succeed(Option.none()), "200 millis"),
       );
       expect(Option.isNone(next)).toBe(true);
-    }).pipe(Effect.scoped, Effect.runPromise),
-  );
+    }).pipe(Effect.scoped, Effect.runPromise));
   ```
 
-- [ ] **Step 4: Write the failing test for transient-error recovery**.
+- [x] **Step 4: Write the failing test for transient-error recovery**.
 
   ```ts
   it("recovers from transient listWorktrees failures", () =>
@@ -286,7 +302,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
       const stream = discovery.subscribe(testProjectId, "/repo");
       yield* Stream.runHead(Stream.take(stream, 1));
 
-      stub.failNext();          // next call throws
+      stub.failNext(); // next call throws
       yield* discovery.invalidate(testProjectId); // poll happens, fails, logged
       stub.set([
         { path: "/repo", branch: "main", isMain: true },
@@ -296,17 +312,18 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 
       const next = yield* Stream.runHead(Stream.take(stream, 1));
       expect(Option.getOrThrow(next).worktrees).toHaveLength(2);
-    }).pipe(Effect.scoped, Effect.runPromise),
-  );
+    }).pipe(Effect.scoped, Effect.runPromise));
   ```
 
-- [ ] **Step 5: Run the failing tests**
+- [x] **Step 5: Run the failing tests**
+
   ```bash
   bun run test apps/server/src/orchestration/Layers/WorktreeDiscovery.test.ts
   ```
+
   Expected: 4 FAILures (no implementation yet).
 
-- [ ] **Step 6: Implement the Layer**. Skeleton:
+- [x] **Step 6: Implement the Layer**. Skeleton:
 
   ```ts
   /**
@@ -327,10 +344,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   const POLL_INTERVAL_MS = 3000;
 
   // worktreeSetEqual: compare by sorted paths (set semantics by path).
-  const worktreeSetEqual = (
-    a: readonly VcsWorktree[],
-    b: readonly VcsWorktree[],
-  ): boolean => {
+  const worktreeSetEqual = (a: readonly VcsWorktree[], b: readonly VcsWorktree[]): boolean => {
     if (a.length !== b.length) return false;
     const aPaths = [...a].map((w) => w.path).sort();
     const bPaths = [...b].map((w) => w.path).sort();
@@ -347,19 +361,23 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   - `invalidate(projectId)`: looks up the project state and triggers a one-shot `tick()` immediately.
   - Use `Layer.scoped` so polling fibers are interrupted on Layer release.
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
+
   ```bash
   bun run test apps/server/src/orchestration/Layers/WorktreeDiscovery.test.ts
   ```
+
   Expected: 4 PASS.
 
-- [ ] **Step 8: Run full server gates**
+- [x] **Step 8: Run full server gates**
+
   ```bash
   bun run typecheck && bun run test apps/server
   ```
+
   Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
   ```bash
   git add apps/server/src/orchestration/Layers/WorktreeDiscovery.ts apps/server/src/orchestration/Layers/WorktreeDiscovery.test.ts
   git commit -m "feat(orchestration): WorktreeDiscovery Live layer with polling and invalidation"
@@ -370,9 +388,11 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 ## Task 4 — Wire `WorktreeDiscovery` into the orchestration runtime layer
 
 **Files:**
+
 - Modify: `apps/server/src/orchestration/runtimeLayer.ts`
 
 - [ ] **Step 1: Read the file to understand the current layer composition**.
+
   ```bash
   cat /home/jgigg/code/t3code-agent-worktree-tree/apps/server/src/orchestration/runtimeLayer.ts
   ```
@@ -394,9 +414,11 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   If `GitVcsDriver` isn't already in scope of `OrchestrationLayerLive`, locate where the VCS layer is composed (search `GitVcsDriverLive`) and ensure both are merged at the same level so `WorktreeDiscoveryLive` can resolve its dependency.
 
 - [ ] **Step 3: Run typecheck**
+
   ```bash
   bun run typecheck
   ```
+
   Expected: PASS. Any "missing service" errors mean the layer ordering needs adjustment.
 
 - [ ] **Step 4: Commit**
@@ -410,6 +432,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 ## Task 5 — Add WebSocket push channel for worktree updates
 
 **Files:**
+
 - Modify: `packages/contracts/src/ipc.ts` (declare push schema)
 - Modify: `apps/server/src/wsServer.ts` (register channel + subscribe to discovery streams when projects come online)
 
@@ -430,9 +453,11 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   Then add it to the `WsPushMessage` union (or wherever pushes are aggregated).
 
 - [ ] **Step 3: Run typecheck**
+
   ```bash
   bun run typecheck
   ```
+
   Expected: PASS — schema additions only.
 
 - [ ] **Step 4: Read `apps/server/src/wsServer.ts`** to find where projects are enumerated/subscribed. Search for `OrchestrationProject` or `projects` to locate the lifecycle hook.
@@ -440,16 +465,18 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 - [ ] **Step 5: On each project that comes online, subscribe to `WorktreeDiscovery.subscribe(projectId, project.cwd)` and forward each emitted `WorktreeStateSnapshot` over the WS connection as a `project.worktreesUpdated` push**. The subscription scope should be tied to the project's online scope so it's torn down on project removal.
 
   Sketch:
+
   ```ts
-  yield* Stream.runForEach(discovery.subscribe(project.id, project.cwd), (snapshot) =>
-    Effect.sync(() => {
-      sendPush({
-        type: "project.worktreesUpdated",
-        projectId: snapshot.projectId,
-        worktrees: snapshot.worktrees,
-      });
-    }),
-  ).pipe(Effect.forkScoped);
+  yield *
+    Stream.runForEach(discovery.subscribe(project.id, project.cwd), (snapshot) =>
+      Effect.sync(() => {
+        sendPush({
+          type: "project.worktreesUpdated",
+          projectId: snapshot.projectId,
+          worktrees: snapshot.worktrees,
+        });
+      }),
+    ).pipe(Effect.forkScoped);
   ```
 
   This sends the **initial snapshot** when the project comes online (because `subscribe()` emits one immediately) and every subsequent change.
@@ -460,9 +487,11 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   Keep this lightweight — full integration suite expansion comes in Phase 3.
 
 - [ ] **Step 7: Run server tests**
+
   ```bash
   bun run test apps/server
   ```
+
   Expected: PASS.
 
 - [ ] **Step 8: Commit**
@@ -476,11 +505,13 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 ## Task 6 — Receive `project.worktreesUpdated` in the web store
 
 **Files:**
+
 - Modify: `apps/web/src/store.ts`
 - Modify: `apps/web/src/types.ts` (re-export `VcsWorktree` if not already accessible)
 - Modify: `apps/web/src/rpc/` (whichever file routes WS push messages — find it via grep)
 
 - [ ] **Step 1: Locate the WS push handler in the web app**.
+
   ```bash
   grep -rn "orchestration.domainEvent\|push" /home/jgigg/code/t3code-agent-worktree-tree/apps/web/src/rpc/ /home/jgigg/code/t3code-agent-worktree-tree/apps/web/src/store.ts | head -30
   ```
@@ -505,12 +536,14 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   Match the existing store style — `useStore`, immer, zustand, signals — whichever the project uses.
 
 - [ ] **Step 3: Add a selector**
+
   ```ts
   export const selectWorktreesForProject = (
     state: AppState,
     projectId: ProjectId,
   ): readonly VcsWorktree[] => state.worktreesByProjectId.get(projectId) ?? [];
   ```
+
   Place it in `apps/web/src/storeSelectors.ts` next to the existing selectors.
 
 - [ ] **Step 4: Write a failing store test** in `apps/web/src/store.test.ts` for the new push handler:
@@ -528,15 +561,19 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
   ```
 
 - [ ] **Step 5: Run failing test**
+
   ```bash
   bun run test apps/web/src/store.test.ts
   ```
+
   Expected: FAIL.
 
 - [ ] **Step 6: Implement until the test passes**.
+
   ```bash
   bun run test apps/web/src/store.test.ts
   ```
+
   Expected: PASS.
 
 - [ ] **Step 7: Commit**
@@ -550,6 +587,7 @@ The Layer holds per-project state: last-known worktree set + a `PubSub` (or `Hub
 ## Task 7 — Build `sidebarWorktreeGrouping.ts` (pure derivation + tests)
 
 **Files:**
+
 - Create: `apps/web/src/sidebarWorktreeGrouping.ts`
 - Create: `apps/web/src/sidebarWorktreeGrouping.test.ts`
 
@@ -567,7 +605,7 @@ This is the heart of the visual model. **Tests first.**
 
   export interface SidebarWorktreeNode {
     readonly id: WorktreeNodeId;
-    readonly displayLabel: string;     // e.g. "(repo root)" or "feat/pdf-export"
+    readonly displayLabel: string; // e.g. "(repo root)" or "feat/pdf-export"
     readonly worktreePath: string | null; // null = synthetic root
     readonly branch: string | null;
     readonly isMain: boolean;
@@ -698,9 +736,24 @@ This is the heart of the visual model. **Tests first.**
       const tree = buildProjectWorktreeTree(
         project({
           threads: [
-            makeThread({ id: "a1", worktreePath: null, kind: "agent",    createdAt: "2026-01-01T00:00:00Z" }),
-            makeThread({ id: "s1", worktreePath: null, kind: "subagent", createdAt: "2026-01-02T00:00:00Z" }),
-            makeThread({ id: "a2", worktreePath: null, kind: "agent",    createdAt: "2026-01-03T00:00:00Z" }),
+            makeThread({
+              id: "a1",
+              worktreePath: null,
+              kind: "agent",
+              createdAt: "2026-01-01T00:00:00Z",
+            }),
+            makeThread({
+              id: "s1",
+              worktreePath: null,
+              kind: "subagent",
+              createdAt: "2026-01-02T00:00:00Z",
+            }),
+            makeThread({
+              id: "a2",
+              worktreePath: null,
+              kind: "agent",
+              createdAt: "2026-01-03T00:00:00Z",
+            }),
           ],
         }),
       );
@@ -729,9 +782,11 @@ This is the heart of the visual model. **Tests first.**
   > **Note:** `kind` and `parentThreadId` arrive on `SidebarThreadSummary` in Phase 2. For Phase 1, treat them as optional/default `"agent"` / `null` if the type doesn't yet have them — the `interleaves agents and sub-agents` test should be marked `it.skip(...)` until Phase 2 lands. Keep the test in place as a scaffold so Phase 2 only un-skips and adjusts.
 
 - [ ] **Step 3: Run failing tests**
+
   ```bash
   bun run test apps/web/src/sidebarWorktreeGrouping.test.ts
   ```
+
   Expected: FAIL — `not implemented`.
 
 - [ ] **Step 4: Implement `buildProjectWorktreeTree`**.
@@ -744,9 +799,7 @@ This is the heart of the visual model. **Tests first.**
 
     // 1. Always insert the synthetic root node.
     //    If a main worktree matches projectCwd, fold its metadata in.
-    const mainWorktree = input.worktrees.find(
-      (w) => w.isMain && w.path === input.projectCwd,
-    );
+    const mainWorktree = input.worktrees.find((w) => w.isMain && w.path === input.projectCwd);
     nodesById.set(ROOT_WORKTREE_ID, {
       id: ROOT_WORKTREE_ID,
       displayLabel: mainWorktree?.branch ?? "(repo root)",
@@ -797,7 +850,9 @@ This is the heart of the visual model. **Tests first.**
 
     // 4. Sort threads within each node by createdAt desc.
     for (const node of nodesById.values()) {
-      node.threads.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+      node.threads.sort((a, b) =>
+        a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
+      );
     }
 
     // 5. Order nodes: root first, then non-root by branch alpha (null branches last).
@@ -824,9 +879,11 @@ This is the heart of the visual model. **Tests first.**
   Keep the function pure — no I/O, no mutation of inputs.
 
 - [ ] **Step 5: Run tests**
+
   ```bash
   bun run test apps/web/src/sidebarWorktreeGrouping.test.ts
   ```
+
   Expected: PASS (with `interleaves` test skipped pending Phase 2).
 
 - [ ] **Step 6: Commit**
@@ -840,6 +897,7 @@ This is the heart of the visual model. **Tests first.**
 ## Task 8 — Build `SidebarWorktreeGroup.tsx` component
 
 **Files:**
+
 - Create: `apps/web/src/components/sidebar/SidebarWorktreeGroup.tsx`
 
 The component renders one worktree node: a header row (collapsible disclosure, label, branch + status, count badge) and the list of thread rows beneath it. Thread row rendering is delegated to whatever `Sidebar.tsx` uses today — we pass the threads through as a render-prop callback so we don't have to know thread-row details.
@@ -904,9 +962,11 @@ The component renders one worktree node: a header row (collapsible disclosure, l
 - [ ] **Step 3: Add a lightweight component test** (optional but recommended) — verify open/close toggle, count display, render-prop call.
 
 - [ ] **Step 4: Run typecheck**
+
   ```bash
   bun run typecheck
   ```
+
   Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -920,6 +980,7 @@ The component renders one worktree node: a header row (collapsible disclosure, l
 ## Task 9 — Surgical integration into `Sidebar.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/components/Sidebar.tsx` (3393 lines — minimize edits)
 
 The goal: where the sidebar currently maps over a project's threads inline, instead build the worktree tree and render `SidebarWorktreeGroup` per node, passing the existing thread-row JSX as a render prop.
@@ -945,11 +1006,7 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
   return (
     <>
       {tree.nodes.map((node) => (
-        <SidebarWorktreeGroup
-          key={node.id}
-          node={node}
-          renderThreadRow={renderThreadRow}
-        />
+        <SidebarWorktreeGroup key={node.id} node={node} renderThreadRow={renderThreadRow} />
       ))}
     </>
   );
@@ -958,15 +1015,19 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
   `worktreesForProject` comes from `selectWorktreesForProject(state, project.id)`.
 
 - [ ] **Step 4: Verify visual correctness manually**.
+
   ```bash
   cd /home/jgigg/code/t3code-agent-worktree-tree && bun install && bun run dev
   ```
+
   Open the web UI. Each project should show worktree nodes (at minimum the synthetic root) with threads grouped underneath.
 
 - [ ] **Step 5: Run all gates**
+
   ```bash
   bun fmt && bun lint && bun run typecheck && bun run test
   ```
+
   Expected: PASS on all four. **AGENTS.md mandates these pass before claiming completion.**
 
 - [ ] **Step 6: Commit**
@@ -987,14 +1048,17 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
   5. A thread whose `worktreePath` no longer exists in `git worktree list` keeps its sidebar parent (orphan node with "(removed)" suffix).
 
 - [ ] **Step 2: Re-run all gates one last time**
+
   ```bash
   bun fmt && bun lint && bun run typecheck && bun run test
   ```
+
   Expected: PASS on all four.
 
 - [ ] **Step 3: Tick all boxes in this plan file** — convert every `- [ ]` to `- [x]`. This rides along with the next commit.
 
 - [ ] **Step 4: Make the feature-complete commit**
+
   ```bash
   git add .agents/plans/2026-05-05-1500-agent-worktree-subagent-tree-phase-1.md
   git commit -m "$(cat <<'EOF'
@@ -1020,6 +1084,7 @@ The goal: where the sidebar currently maps over a project's threads inline, inst
   ```
 
 - [ ] **Step 5: Push the branch and open a PR targeting the testing branch** (the project flow per the user's CLAUDE.md is feature → staging if it exists, else main):
+
   ```bash
   git push -u origin feat/agent-worktree-subagent-tree
   gh pr create --title "feat(web): worktree-grouped sidebar (Phase 1 of agent tree feature)" --body "$(cat <<'EOF'
