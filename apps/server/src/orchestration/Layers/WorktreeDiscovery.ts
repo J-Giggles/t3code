@@ -12,7 +12,7 @@
  * @module WorktreeDiscoveryLive
  */
 import type { ProjectId, VcsWorktree } from "@t3tools/contracts";
-import { Cause, Effect, Exit, Layer, PubSub, Ref, Scope, Stream } from "effect";
+import { Cause, Effect, Exit, Layer, PubSub, Ref, Scope, Stream, SynchronizedRef } from "effect";
 
 import { GitVcsDriver } from "../../vcs/GitVcsDriver.ts";
 import { WorktreeDiscovery } from "../Services/WorktreeDiscovery.ts";
@@ -41,6 +41,11 @@ interface ProjectState {
 
 /**
  * Compare two worktree sets by sorted paths (set semantics — order ignored).
+ *
+ * NOTE: Equality is intentionally path-set only. Branch or HEAD changes
+ * inside an existing worktree do not trigger a new snapshot. The set's
+ * shape is what determines the sidebar tree topology; consumers that need
+ * branch updates should subscribe to other VCS events.
  */
 const worktreeSetEqual = (a: readonly VcsWorktree[], b: readonly VcsWorktree[]): boolean => {
   if (a.length !== b.length) return false;
@@ -66,8 +71,10 @@ const make = Effect.gen(function* () {
   );
 
   // Map<ProjectId, ProjectState> — per-project state lazily initialised on
-  // the first subscribe() call.
-  const stateMapRef = yield* Ref.make(new Map<ProjectId, ProjectState>());
+  // the first subscribe() call. SynchronizedRef ensures that concurrent
+  // subscribe() calls for the same project are serialised atomically,
+  // preventing double-fork of polling fibers (TOCTOU guard).
+  const stateMapRef = yield* SynchronizedRef.make(new Map<ProjectId, ProjectState>());
 
   // ---------------------------------------------------------------------------
   // Per-tick logic
@@ -89,7 +96,10 @@ const make = Effect.gen(function* () {
     }).pipe(
       Effect.catchCause((cause) => {
         if (Cause.hasInterruptsOnly(cause)) {
-          return Effect.interrupt;
+          // hasInterruptsOnly === true ⇒ cause carries no Fail values; the
+          // E channel is effectively `never`. Cast preserves the original
+          // interrupt cause for fiber-id and annotations (codebase convention).
+          return Effect.failCause(cause as Cause.Cause<never>);
         }
         return Effect.logWarning("WorktreeDiscovery: listWorktrees failed; will retry", {
           projectId,
@@ -101,7 +111,8 @@ const make = Effect.gen(function* () {
 
   /**
    * Background polling loop — runs forever until interrupted.
-   * Sleeps for POLL_INTERVAL_MS between each tick.
+   * Sleep first because createProjectState already ran the initial tick
+   * synchronously. Ticking here too would double-fire on first subscribe.
    */
   const pollLoop = (projectId: ProjectId, state: ProjectState): Effect.Effect<void> =>
     Effect.forever(Effect.sleep(POLL_INTERVAL_MS).pipe(Effect.andThen(runTick(projectId, state))));
@@ -111,52 +122,48 @@ const make = Effect.gen(function* () {
   // ---------------------------------------------------------------------------
 
   /**
-   * Initialise state for a project that has never been subscribed before.
-   * Runs the first tick immediately so subscribers get the initial snapshot
-   * within one tick, then forks the background polling loop into layerScope.
-   */
-  const createProjectState = (projectId: ProjectId, cwd: string): Effect.Effect<ProjectState> =>
-    Effect.gen(function* () {
-      const lastSet = yield* Ref.make<readonly VcsWorktree[]>([]);
-      const pubsub = yield* PubSub.unbounded<WorktreeStateSnapshot>();
-
-      const state: ProjectState = { cwd, lastSet, pubsub };
-
-      // Run the initial tick to populate lastSet. subscribe() will prepend
-      // the current lastSet value so new subscribers see the initial snapshot
-      // without needing a live PubSub delivery (which would race).
-      yield* runTick(projectId, state);
-
-      // Fork the polling loop into the Layer scope so it lives for the
-      // lifetime of the Layer, not just the current subscriber's scope.
-      yield* Effect.forkIn(pollLoop(projectId, state), layerScope);
-
-      yield* Ref.update(stateMapRef, (m) => {
-        const next = new Map(m);
-        next.set(projectId, state);
-        return next;
-      });
-
-      return state;
-    });
-
-  /**
    * Retrieve existing state or lazily create it for the given project.
    * If state already exists, the supplied cwd is ignored (first caller wins).
+   *
+   * Uses SynchronizedRef.modifyEffect so the read-check-write is a single
+   * atomic operation — prevents two concurrent subscribe() calls from each
+   * passing the existence check and forking duplicate polling fibers.
    */
   const getOrCreateProjectState = (
     projectId: ProjectId,
     cwd: string,
   ): Effect.Effect<ProjectState> =>
-    Ref.get(stateMapRef).pipe(
-      Effect.flatMap((m) => {
-        const existing = m.get(projectId);
-        if (existing !== undefined) {
-          return Effect.succeed(existing);
-        }
-        return createProjectState(projectId, cwd);
-      }),
-    );
+    SynchronizedRef.modifyEffect(stateMapRef, (m) => {
+      const existing = m.get(projectId);
+      if (existing !== undefined) {
+        return Effect.succeed([existing, m] as const);
+      }
+
+      return Effect.gen(function* () {
+        const lastSet = yield* Ref.make<readonly VcsWorktree[]>([]);
+        const pubsub = yield* PubSub.unbounded<WorktreeStateSnapshot>();
+        // Bind shutdown to the Layer scope so subscribers never hang on
+        // Queue.take after the layer is released. Using Scope.addFinalizer
+        // (rather than Effect.acquireRelease) keeps this Effect's R channel
+        // free of `Scope` so it can run inside SynchronizedRef.modifyEffect.
+        yield* Scope.addFinalizer(layerScope, PubSub.shutdown(pubsub));
+
+        const state: ProjectState = { cwd, lastSet, pubsub };
+
+        // Run the initial tick to populate lastSet. subscribe() will prepend
+        // the current lastSet value so new subscribers see the initial snapshot
+        // without needing a live PubSub delivery (which would race).
+        yield* runTick(projectId, state);
+
+        // Fork the polling loop into the Layer scope so it lives for the
+        // lifetime of the Layer, not just the current subscriber's scope.
+        yield* Effect.forkIn(pollLoop(projectId, state), layerScope);
+
+        const next = new Map(m);
+        next.set(projectId, state);
+        return [state, next] as const;
+      });
+    });
 
   // ---------------------------------------------------------------------------
   // Service implementation
@@ -176,7 +183,7 @@ const make = Effect.gen(function* () {
 
   const invalidate: WorktreeDiscoveryShape["invalidate"] = (projectId) =>
     Effect.gen(function* () {
-      const stateMap = yield* Ref.get(stateMapRef);
+      const stateMap = yield* SynchronizedRef.get(stateMapRef);
       const state = stateMap.get(projectId);
       if (state === undefined) {
         // Silent no-op — project has not been subscribed yet.

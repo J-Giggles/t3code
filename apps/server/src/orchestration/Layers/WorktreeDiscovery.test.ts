@@ -18,6 +18,7 @@ import { GitCommandError, ProjectId } from "@t3tools/contracts";
 
 import { GitVcsDriver } from "../../vcs/GitVcsDriver.ts";
 import { WorktreeDiscovery } from "../Services/WorktreeDiscovery.ts";
+import type { WorktreeStateSnapshot } from "../Services/WorktreeDiscovery.ts";
 import { WorktreeDiscoveryLive } from "./WorktreeDiscovery.ts";
 
 // ---------------------------------------------------------------------------
@@ -90,8 +91,8 @@ describe("WorktreeDiscovery", () => {
     };
     return Effect.gen(function* () {
       const discovery = yield* WorktreeDiscovery;
-      // Collect items from the stream into a queue
-      const queue = yield* Queue.unbounded<unknown>();
+      // Collect items from the stream into a strongly-typed queue
+      const queue = yield* Queue.unbounded<WorktreeStateSnapshot>();
       // fork the stream drainer
       yield* Effect.forkScoped(
         Stream.runForEach(discovery.subscribe(testProjectId, "/repo"), (item) =>
@@ -100,7 +101,7 @@ describe("WorktreeDiscovery", () => {
       );
       // Wait for the initial item to land
       const first = yield* Queue.take(queue);
-      expect((first as { worktrees: VcsWorktree[] }).worktrees).toHaveLength(1);
+      expect(first.worktrees).toHaveLength(1);
       // Update state and invalidate
       state.worktrees = [
         makeWorktree("/repo", "main", true),
@@ -108,15 +109,15 @@ describe("WorktreeDiscovery", () => {
       ];
       yield* discovery.invalidate(testProjectId);
       const second = yield* Queue.take(queue);
-      expect((second as { worktrees: VcsWorktree[] }).worktrees).toHaveLength(2);
+      expect(second.worktrees).toHaveLength(2);
     }).pipe(Effect.provide(makeLayerWithState(state)), Effect.scoped, Effect.runPromise);
   });
 
   it("does not emit a duplicate snapshot when listWorktrees returns the same set", () =>
     Effect.gen(function* () {
       const discovery = yield* WorktreeDiscovery;
-      // Collect items from the stream into a queue
-      const queue = yield* Queue.unbounded<unknown>();
+      // Collect items from the stream into a strongly-typed queue
+      const queue = yield* Queue.unbounded<WorktreeStateSnapshot>();
       yield* Effect.forkScoped(
         Stream.runForEach(discovery.subscribe(testProjectId, "/repo"), (item) =>
           Queue.offer(queue, item),
@@ -124,15 +125,17 @@ describe("WorktreeDiscovery", () => {
       );
       // Wait for the initial item
       yield* Queue.take(queue);
-      // Trigger two no-change invalidations
+      // Trigger two no-change invalidations. invalidate() is synchronous
+      // (runs runTick directly in the calling fiber), so by the time both
+      // calls return the diff check has already completed. No snapshot should
+      // have been published for identical worktree sets.
       yield* discovery.invalidate(testProjectId);
       yield* discovery.invalidate(testProjectId);
-      // Race: if a second item arrives within 200ms, that's a bug
-      const maybeSecond = yield* Effect.race(
-        Queue.take(queue).pipe(Effect.map(Option.some)),
-        Effect.as(Effect.sleep("200 millis"), Option.none()),
-      );
-      expect(Option.isNone(maybeSecond)).toBe(true);
+      // Brief settle to allow any inadvertent async publish to land
+      yield* Effect.sleep("50 millis");
+      // A deterministic size check: queue must still be empty
+      const remaining = yield* Queue.size(queue);
+      expect(remaining).toBe(0);
     }).pipe(
       Effect.provide(
         makeLayerWithState({ worktrees: [makeWorktree("/repo", "main", true)], failNext: false }),
@@ -148,7 +151,7 @@ describe("WorktreeDiscovery", () => {
     };
     return Effect.gen(function* () {
       const discovery = yield* WorktreeDiscovery;
-      const queue = yield* Queue.unbounded<unknown>();
+      const queue = yield* Queue.unbounded<WorktreeStateSnapshot>();
       yield* Effect.forkScoped(
         Stream.runForEach(discovery.subscribe(testProjectId, "/repo"), (item) =>
           Queue.offer(queue, item),
@@ -166,7 +169,7 @@ describe("WorktreeDiscovery", () => {
       ];
       yield* discovery.invalidate(testProjectId);
       const next = yield* Queue.take(queue);
-      expect((next as { worktrees: VcsWorktree[] }).worktrees).toHaveLength(2);
+      expect(next.worktrees).toHaveLength(2);
     }).pipe(Effect.provide(makeLayerWithState(state)), Effect.scoped, Effect.runPromise);
   });
 });

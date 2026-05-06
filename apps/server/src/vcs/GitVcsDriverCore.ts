@@ -615,6 +615,20 @@ const collectOutput = Effect.fn("collectOutput")(function* <E>(
  *   locked [reason]            (optional – present only when locked)
  *   bare                       (optional – for bare clones)
  */
+/**
+ * Normalize a worktree path so trailing slashes / double slashes don't
+ * cause spurious "changed" diffs in WorktreeDiscovery.worktreeSetEqual.
+ * Pure string transform — no filesystem access (intentionally).
+ */
+function normalizeWorktreePath(raw: string): string {
+  // Collapse runs of forward slashes, strip trailing slash (except root "/").
+  const collapsed = raw.replace(/\/+/g, "/");
+  if (collapsed.length > 1 && collapsed.endsWith("/")) {
+    return collapsed.slice(0, -1);
+  }
+  return collapsed;
+}
+
 export function parseWorktreePorcelain(stdout: string): readonly VcsWorktree[] {
   const worktrees: VcsWorktree[] = [];
   let path: string | null = null;
@@ -642,7 +656,7 @@ export function parseWorktreePorcelain(stdout: string): readonly VcsWorktree[] {
     }
 
     if (line.startsWith("worktree ")) {
-      path = line.slice("worktree ".length);
+      path = normalizeWorktreePath(line.slice("worktree ".length));
     } else if (line.startsWith("HEAD ")) {
       headRef = line.slice("HEAD ".length);
     } else if (line.startsWith("branch refs/heads/")) {
