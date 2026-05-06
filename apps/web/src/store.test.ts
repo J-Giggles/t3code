@@ -23,6 +23,7 @@ import {
   selectThreadExistsByRef,
   setThreadBranch,
   selectThreadsAcrossEnvironments,
+  useStore,
   type AppState,
   type EnvironmentState,
 } from "./store";
@@ -56,6 +57,7 @@ function withActiveEnvironmentState(
   return {
     activeEnvironmentId,
     environmentStateById,
+    worktreesByProjectId: new Map(),
   };
 }
 
@@ -262,6 +264,7 @@ describe("environment state removal", () => {
         [remoteEnvironmentId]: removedState,
         [localEnvironmentId]: keptState,
       },
+      worktreesByProjectId: new Map(),
     };
 
     const next = removeEnvironmentState(state, remoteEnvironmentId);
@@ -421,6 +424,7 @@ describe("setThreadBranch", () => {
         [localEnvironmentId]: environmentStateOf(makeState(localThread), localEnvironmentId),
         [remoteEnvironmentId]: environmentStateOf(makeState(remoteThread), remoteEnvironmentId),
       },
+      worktreesByProjectId: new Map(),
     };
 
     const next = setThreadBranch(
@@ -1048,5 +1052,33 @@ describe("incremental orchestration updates", () => {
       state: "running",
     });
     expect(threadsOf(next)[0]?.latestTurn?.sourceProposedPlan).toBeUndefined();
+  });
+});
+
+describe("worktreesByProjectId", () => {
+  it("syncServerProjectWorktrees populates worktreesByProjectId", () => {
+    const projectId = ProjectId.make("p-worktree-test");
+    useStore
+      .getState()
+      .syncServerProjectWorktrees(projectId, [
+        { path: "/repo", branch: "main", headRef: null, isMain: true, isLocked: false },
+      ]);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)).toHaveLength(1);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)?.[0]?.path).toBe("/repo");
+  });
+
+  it("syncServerProjectWorktrees replaces existing worktrees for a project", () => {
+    const projectId = ProjectId.make("p-worktree-replace");
+    useStore.getState().syncServerProjectWorktrees(projectId, [
+      { path: "/repo/a", branch: "feat/a", headRef: null, isMain: false, isLocked: false },
+      { path: "/repo/b", branch: "feat/b", headRef: null, isMain: true, isLocked: false },
+    ]);
+    useStore
+      .getState()
+      .syncServerProjectWorktrees(projectId, [
+        { path: "/repo/c", branch: "main", headRef: null, isMain: true, isLocked: false },
+      ]);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)).toHaveLength(1);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)?.[0]?.path).toBe("/repo/c");
   });
 });
