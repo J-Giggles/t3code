@@ -1,3 +1,6 @@
+import { spawn } from "node:child_process";
+import * as fsp from "node:fs/promises";
+import * as os from "node:os";
 import { Cause, Duration, Effect, Layer, Option, Queue, Ref, Schema, Stream } from "effect";
 import {
   type AuthAccessStreamEvent,
@@ -31,6 +34,7 @@ import { RpcSerialization, RpcServer } from "effect/unstable/rpc";
 
 import { CheckpointDiffQuery } from "./checkpointing/Services/CheckpointDiffQuery.ts";
 import { ServerConfig } from "./config.ts";
+import { probeDictationCapability } from "./dictation/capability.ts";
 import { Keybindings } from "./keybindings.ts";
 import { Open, resolveAvailableEditors } from "./open.ts";
 import { normalizeDispatchCommand } from "./orchestration/Normalizer.ts";
@@ -100,6 +104,66 @@ function isThreadDetailEvent(event: OrchestrationEvent): event is Extract<
 }
 
 const PROVIDER_STATUS_DEBOUNCE_MS = 200;
+
+const DICTATION_HELP_TIMEOUT_MS = 2000;
+
+const dictationProbeIo = {
+  which: (binary: string): Promise<string | null> =>
+    new Promise((resolve) => {
+      const child = spawn("which", [binary], { stdio: ["ignore", "pipe", "ignore"] });
+      let out = "";
+      child.stdout.on("data", (chunk) => {
+        out += String(chunk);
+      });
+      child.on("close", (code) => {
+        resolve(code === 0 ? out.trim() || null : null);
+      });
+      child.on("error", () => resolve(null));
+    }),
+
+  spawnHelp: (binPath: string): Promise<string> =>
+    new Promise((resolve) => {
+      const child = spawn(binPath, ["--help"], { stdio: ["ignore", "pipe", "pipe"] });
+      let out = "";
+      let settled = false;
+      const settle = (value: string) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try {
+          child.kill("SIGTERM");
+        } catch {
+          // child already exited; ignore.
+        }
+        resolve(value);
+      };
+      const timer = setTimeout(() => settle(""), DICTATION_HELP_TIMEOUT_MS);
+      child.stdout.on("data", (chunk) => {
+        out += String(chunk);
+      });
+      child.stderr.on("data", (chunk) => {
+        out += String(chunk);
+      });
+      child.on("close", () => settle(out));
+      child.on("error", () => settle(""));
+    }),
+
+  fileExists: async (p: string): Promise<boolean> => {
+    try {
+      await fsp.access(p);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  readEnv: (): string | null => process.env.WHISPER_MODEL ?? null,
+
+  // Config-file integration lands with the dictation TOML loader (see plan).
+  readConfigModel: async (): Promise<string | null> => null,
+
+  homeDir: (): string => os.homedir(),
+};
 
 function toAuthAccessStreamEvent(
   change: BootstrapCredentialChange | SessionCredentialChange,
@@ -534,6 +598,7 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
         const settings = redactServerSettingsForClient(yield* serverSettings.getSettings);
         const environment = yield* serverEnvironment.getDescriptor;
         const auth = yield* serverAuth.getDescriptor();
+        const dictation = yield* Effect.promise(() => probeDictationCapability(dictationProbeIo));
 
         return {
           environment,
@@ -555,12 +620,7 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             otlpMetricsEnabled: config.otlpMetricsUrl !== undefined,
           },
           settings,
-          dictation: {
-            available: false,
-            reason: "not-yet-probed",
-            modelLabel: null,
-            binaryPath: null,
-          },
+          dictation,
         };
       });
 

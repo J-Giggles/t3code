@@ -21,8 +21,8 @@ So the chosen approach **does not depend on hyprwhspr at runtime**. We build our
 ## Plan
 
 - [x] Define wire protocol schemas in `packages/contracts/dictation.ts` (effect/Schema, JSON tagged-union messages)
-- [ ] Extend the existing server→client handshake with a `dictation` capability field
-- [ ] Implement server capability probe (`apps/server/src/dictation/capability.ts`) — locate whisper.cpp binary, verify stream mode support, resolve model path, expose flag in handshake
+- [x] Extend the existing server→client handshake with a `dictation` capability field
+- [x] Implement server capability probe (`apps/server/src/dictation/capability.ts`) — locate whisper.cpp binary, verify stream mode support, resolve model path, expose flag in handshake
 - [ ] Implement `whisperRunner.ts` — child_process lifecycle, Int16 frames to stdin, line-oriented stdout parser (`[partial]` / `[commit]`), backpressure detection, idle timeout
 - [ ] Implement `dictationService.ts` — per-WS session state, warm-pool-of-one (30s idle keepalive), thread-switch cancel, stop-reason routing
 - [ ] Wire server WS handlers in `wsServer.ts` for `dictation.start | dictation.audioFrame | dictation.stop`
