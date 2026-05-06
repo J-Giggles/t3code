@@ -1913,12 +1913,31 @@ export function removeEnvironmentState(state: AppState, environmentId: Environme
     return state;
   }
 
+  const removedEnvState = state.environmentStateById[environmentId];
   const { [environmentId]: _removed, ...environmentStateById } = state.environmentStateById;
+
+  // Drop worktree state for the removed environment's projects so the Map
+  // does not retain stale snapshots after the environment is gone.
+  let worktreesByProjectId = state.worktreesByProjectId;
+  if (removedEnvState && removedEnvState.projectIds.length > 0) {
+    let mutated = false;
+    const next = new Map(state.worktreesByProjectId);
+    for (const projectId of removedEnvState.projectIds) {
+      if (next.delete(projectId)) {
+        mutated = true;
+      }
+    }
+    if (mutated) {
+      worktreesByProjectId = next;
+    }
+  }
+
   return {
     ...state,
     activeEnvironmentId:
       state.activeEnvironmentId === environmentId ? null : state.activeEnvironmentId,
     environmentStateById,
+    worktreesByProjectId,
   };
 }
 

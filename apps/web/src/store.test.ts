@@ -10,6 +10,7 @@ import {
   ThreadId,
   TurnId,
   type OrchestrationEvent,
+  type VcsWorktree,
 } from "@t3tools/contracts";
 import { describe, expect, it } from "vitest";
 
@@ -280,6 +281,38 @@ describe("environment state removal", () => {
     const next = removeEnvironmentState(state, remoteEnvironmentId);
 
     expect(next).toBe(state);
+  });
+
+  it("clears worktreesByProjectId for projects in the removed environment", () => {
+    const removedProjectId = ProjectId.make("p-removed");
+    const keptProjectId = ProjectId.make("p-kept");
+    const baseEnvState: EnvironmentState =
+      makeEmptyState().environmentStateById[localEnvironmentId]!;
+    const removedEnvState: EnvironmentState = { ...baseEnvState, projectIds: [removedProjectId] };
+    const keptEnvState: EnvironmentState = { ...baseEnvState, projectIds: [keptProjectId] };
+    const worktreesByProjectId = new Map<ProjectId, readonly VcsWorktree[]>([
+      [
+        removedProjectId,
+        [{ path: "/r", branch: "main", headRef: null, isMain: true, isLocked: false }],
+      ],
+      [
+        keptProjectId,
+        [{ path: "/k", branch: "main", headRef: null, isMain: true, isLocked: false }],
+      ],
+    ]);
+    const state: AppState = {
+      activeEnvironmentId: localEnvironmentId,
+      environmentStateById: {
+        [remoteEnvironmentId]: removedEnvState,
+        [localEnvironmentId]: keptEnvState,
+      },
+      worktreesByProjectId,
+    };
+
+    const next = removeEnvironmentState(state, remoteEnvironmentId);
+
+    expect(next.worktreesByProjectId.has(removedProjectId)).toBe(false);
+    expect(next.worktreesByProjectId.has(keptProjectId)).toBe(true);
   });
 });
 

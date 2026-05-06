@@ -217,4 +217,12 @@ describe("buildProjectWorktreeTree", () => {
       ThreadId.make("older"),
     ]);
   });
+
+  // Phase 2 scaffolding: when SidebarThreadSummary gains `kind` and
+  // `parentThreadId`, the existing `createdAt desc` ordering should still
+  // interleave agents and sub-agents (badge differentiates them; no special
+  // sort by kind). Un-skip in Phase 2 once the type carries the new fields.
+  it.skip("interleaves agents and sub-agents within a node by createdAt (Phase 2)", () => {
+    // intentionally empty until Phase 2 lands
+  });
 });
