@@ -30,6 +30,7 @@ import {
   type ServerProviderDraft,
 } from "../providerSnapshot.ts";
 import { AcpSessionRuntime } from "../acp/AcpSessionRuntime.ts";
+import { stripAnsi } from "../../utils/stripAnsi.ts";
 
 const PROVIDER = ProviderDriverKind.make("cursor");
 const CURSOR_PRESENTATION = {
@@ -682,12 +683,6 @@ export function getCursorFallbackModels(
 
 /** Timeout for `agent about` — it's slower than a simple `--version` probe. */
 const ABOUT_TIMEOUT_MS = 8_000;
-
-/** Strip ANSI escape sequences so we can parse plain key-value lines. */
-function stripAnsi(text: string): string {
-  // eslint-disable-next-line no-control-regex
-  return text.replace(/\x1b\[[0-9;]*[A-Za-z]|\x1b\].*?\x07/g, "");
-}
 
 /**
  * Extract a value from `agent about` key-value output.

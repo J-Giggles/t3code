@@ -706,53 +706,107 @@ Tick spec checkbox: `[x] Implement server capability probe (apps/server/src/dict
 
 ## Task 3: Whisper stdout parser (`apps/server/src/dictation/whisperStdoutParser.ts`)
 
-Pure function. Takes a single stdout line, returns a parsed event or `null` for unrecognized lines. Factored out so the runner test doesn't need to mock parsing.
+Stateful stream consumer. Vanilla whisper.cpp `--stream` does NOT emit
+`[partial]`/`[commit]` tagged lines — it uses `\r` to overwrite the partial
+transcript and `\n` to finalize commits, with ANSI cursor escapes for terminal
+rewriting. The parser maintains a buffer across chunks and emits events when
+it sees those terminators. ANSI stripping uses an ESC-anchored regex extracted
+into a shared util at `apps/server/src/utils/stripAnsi.ts` so the parser and
+`CursorProvider` share one definition.
 
 **Files:**
+- Create: `apps/server/src/utils/stripAnsi.ts`
 - Create: `apps/server/src/dictation/whisperStdoutParser.ts`
 - Create: `apps/server/src/dictation/whisperStdoutParser.test.ts`
+- Update: `apps/server/src/provider/Layers/CursorProvider.ts` (import the shared util)
 
 - [ ] **Step 3.1: Write the failing test**
 
 ```ts
 // apps/server/src/dictation/whisperStdoutParser.test.ts
 import { describe, expect, it } from "vitest";
-import { parseWhisperStdoutLine } from "./whisperStdoutParser.ts";
+import { makeWhisperStdoutParser } from "./whisperStdoutParser.ts";
 
-describe("parseWhisperStdoutLine", () => {
-  it("parses partial events", () => {
-    expect(parseWhisperStdoutLine("[partial] hello world")).toEqual({
-      kind: "partial",
-      text: "hello world",
-    });
+describe("makeWhisperStdoutParser", () => {
+  it("emits partial on \\r and commit on \\n", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("hello\r")).toEqual([{ kind: "partial", text: "hello" }]);
+    expect(parser.feed("hello world\r")).toEqual([{ kind: "partial", text: "hello world" }]);
+    expect(parser.feed("hello world.\n")).toEqual([{ kind: "commit", text: "hello world." }]);
   });
 
-  it("parses commit events", () => {
-    expect(parseWhisperStdoutLine("[commit] hello world.")).toEqual({
-      kind: "commit",
-      text: "hello world.",
-    });
+  it("strips ESC-anchored ANSI escapes from emitted text", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("\x1b[2K\x1b[1Ghello\r")).toEqual([{ kind: "partial", text: "hello" }]);
   });
 
-  it("trims trailing whitespace and ANSI escapes from text", () => {
-    expect(parseWhisperStdoutLine("[partial] [2K[1G hello [0m  ")).toEqual({
-      kind: "partial",
-      text: "hello",
-    });
+  it("preserves bracket-number patterns in transcript text (no false ANSI strip)", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("meeting at [3pm]\n")).toEqual([
+      { kind: "commit", text: "meeting at [3pm]" },
+    ]);
   });
 
-  it("returns null for empty lines", () => {
-    expect(parseWhisperStdoutLine("")).toBeNull();
-    expect(parseWhisperStdoutLine("   ")).toBeNull();
+  it("buffers across chunks until a terminator arrives", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("hel")).toEqual([]);
+    expect(parser.feed("lo wor")).toEqual([]);
+    expect(parser.feed("ld\r")).toEqual([{ kind: "partial", text: "hello world" }]);
   });
 
-  it("returns null for unrecognized lines (logged separately)", () => {
-    expect(parseWhisperStdoutLine("loading model...")).toBeNull();
-    expect(parseWhisperStdoutLine("whisper_init: loaded ggml-base.en.bin")).toBeNull();
+  it("emits multiple events from one chunk containing several terminators", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("hello\rhello world\rhello world.\n")).toEqual([
+      { kind: "partial", text: "hello" },
+      { kind: "partial", text: "hello world" },
+      { kind: "commit", text: "hello world." },
+    ]);
   });
 
-  it("treats whitespace-only payload as empty text (still emitted)", () => {
-    expect(parseWhisperStdoutLine("[partial]   ")).toEqual({ kind: "partial", text: "" });
+  it("emits empty partial when \\r appears with no buffered text (clear-partial signal)", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("\r")).toEqual([{ kind: "partial", text: "" }]);
+  });
+
+  it("skips empty commits (empty \\n carries no transcribed content)", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("\n")).toEqual([]);
+  });
+
+  it("trims whitespace from emitted text", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("   hello   \r")).toEqual([{ kind: "partial", text: "hello" }]);
+  });
+
+  it("handles ANSI-only payload by emitting empty partial", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("\x1b[2K\x1b[1G\r")).toEqual([{ kind: "partial", text: "" }]);
+  });
+
+  it("flush() emits a final commit for buffered text when stream ends without \\n", () => {
+    const parser = makeWhisperStdoutParser();
+    parser.feed("incomplete utterance");
+    expect(parser.flush()).toEqual([{ kind: "commit", text: "incomplete utterance" }]);
+  });
+
+  it("flush() returns no event when buffer is empty", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.flush()).toEqual([]);
+  });
+
+  it("reset() drops buffered text silently", () => {
+    const parser = makeWhisperStdoutParser();
+    parser.feed("about to be cancelled");
+    parser.reset();
+    expect(parser.flush()).toEqual([]);
+  });
+
+  it("buffers ANSI escape that spans across two chunks", () => {
+    const parser = makeWhisperStdoutParser();
+    // chunk 1 ends mid-escape: \x1b alone (no closing letter yet)
+    expect(parser.feed("hello\x1b")).toEqual([]);
+    // chunk 2 completes the escape and adds the terminator
+    expect(parser.feed("[2K world\r")).toEqual([{ kind: "partial", text: "hello world" }]);
   });
 });
 ```
@@ -765,32 +819,103 @@ bun run test apps/server/src/dictation/whisperStdoutParser.test.ts
 
 - [ ] **Step 3.3: Implement parser**
 
+First, the shared ANSI util:
+
+```ts
+// apps/server/src/utils/stripAnsi.ts
+/**
+ * Strip ANSI escape sequences (CSI and OSC) from a string.
+ *
+ * Anchored on the ESC byte (\x1b) to avoid false positives on text that
+ * contains bracket-number patterns like "meeting at [3pm]". Matches:
+ *   - CSI sequences: ESC `[` digits/semicolons letter (e.g. \x1b[2K, \x1b[1;31m)
+ *   - OSC sequences: ESC `]` text BEL (e.g. \x1b]0;title\x07)
+ */
+// eslint-disable-next-line no-control-regex
+export const ANSI_ESCAPE_RE = /\x1b\[[0-9;]*[A-Za-z]|\x1b\].*?\x07/g;
+
+export function stripAnsi(text: string): string {
+  return text.replace(ANSI_ESCAPE_RE, "");
+}
+```
+
+Then the parser, consuming the shared util:
+
 ```ts
 // apps/server/src/dictation/whisperStdoutParser.ts
+import { stripAnsi } from "../utils/stripAnsi.ts";
+
+/**
+ * Internal events emitted by the whisper.cpp stdout parser.
+ *
+ * Note on the discriminator: this internal event uses `kind`, whereas the
+ * wire-facing `DictationStreamEvent` (in `@t3tools/contracts/dictation`) uses
+ * `type`. The conversion happens in `dictationService` at the wire boundary.
+ */
 export type WhisperStdoutEvent =
   | { kind: "partial"; text: string }
   | { kind: "commit"; text: string };
 
-const ANSI_ESCAPE_RE = /\[[0-9;]*[a-zA-Z]/g;
-
-function clean(text: string): string {
-  return text.replace(ANSI_ESCAPE_RE, "").trim();
+export interface WhisperStdoutParser {
+  /**
+   * Feed a chunk of stdout text. Returns events emitted by terminator
+   * characters (`\r` for partial, `\n` for commit) inside this chunk.
+   * Buffered text without a terminator is held until the next call.
+   */
+  feed(chunk: string): WhisperStdoutEvent[];
+  /**
+   * Emit any buffered text as a final commit (called when the stream ends).
+   * Returns at most one event; empty buffer returns an empty array.
+   */
+  flush(): WhisperStdoutEvent[];
+  /** Discard buffered text without emitting anything (called on cancel/kill). */
+  reset(): void;
 }
 
-export function parseWhisperStdoutLine(line: string): WhisperStdoutEvent | null {
-  if (line.trim().length === 0) return null;
+function clean(text: string): string {
+  return stripAnsi(text).trim();
+}
 
-  if (line.startsWith("[partial]")) {
-    return { kind: "partial", text: clean(line.slice("[partial]".length)) };
-  }
-  if (line.startsWith("[commit]")) {
-    return { kind: "commit", text: clean(line.slice("[commit]".length)) };
-  }
-  return null;
+export function makeWhisperStdoutParser(): WhisperStdoutParser {
+  let buffer = "";
+
+  return {
+    feed(chunk) {
+      const events: WhisperStdoutEvent[] = [];
+      for (const char of chunk) {
+        if (char === "\r") {
+          // Always emit on \r — even an empty partial is a meaningful
+          // "clear the visible partial" signal.
+          events.push({ kind: "partial", text: clean(buffer) });
+          buffer = "";
+        } else if (char === "\n") {
+          // Skip empty commits — no transcribed content to surface.
+          const text = clean(buffer);
+          buffer = "";
+          if (text.length > 0) events.push({ kind: "commit", text });
+        } else {
+          buffer += char;
+        }
+      }
+      return events;
+    },
+    flush() {
+      const text = clean(buffer);
+      buffer = "";
+      return text.length > 0 ? [{ kind: "commit", text }] : [];
+    },
+    reset() {
+      buffer = "";
+    },
+  };
 }
 ```
 
-- [ ] **Step 3.4: Run, verify PASS**
+Also update `apps/server/src/provider/Layers/CursorProvider.ts` to import
+`stripAnsi` from `../../utils/stripAnsi.ts` and remove its inline copy of
+the regex/function.
+
+- [ ] **Step 3.4: Run, verify PASS, 13/13**
 
 - [ ] **Step 3.5: Commit**
 
@@ -862,7 +987,7 @@ describe("startWhisperRunner", () => {
       idleTimeoutMs: 30_000,
       now: () => Date.now(),
     });
-    child.stdout.emit("data", Buffer.from("[partial] hello\n"));
+    child.stdout.emit("data", "hello\r");
     expect(events).toEqual([{ kind: "partial", text: "hello" }]);
     runner.kill();
   });
@@ -951,7 +1076,7 @@ describe("startWhisperRunner", () => {
 ```ts
 // apps/server/src/dictation/whisperRunner.ts
 import type { ChildProcess } from "node:child_process";
-import { parseWhisperStdoutLine } from "./whisperStdoutParser.ts";
+import { makeWhisperStdoutParser } from "./whisperStdoutParser.ts";
 
 export type WhisperRunnerEvent =
   | { kind: "partial"; text: string }
@@ -987,23 +1112,21 @@ export function startWhisperRunner(options: WhisperRunnerOptions): WhisperRunner
   let pendingWriteSince: number | null = null;
   let backpressureTimer: NodeJS.Timeout | null = null;
   const child = options.spawn(options.binary, args);
+  const parser = makeWhisperStdoutParser();
 
   child.stdout?.setEncoding("utf8");
-  let stdoutBuffer = "";
   child.stdout?.on("data", (chunk: string) => {
-    stdoutBuffer += chunk;
-    let nl: number;
-    while ((nl = stdoutBuffer.indexOf("\n")) >= 0) {
-      const line = stdoutBuffer.slice(0, nl);
-      stdoutBuffer = stdoutBuffer.slice(nl + 1);
-      const parsed = parseWhisperStdoutLine(line);
-      if (parsed) options.onEvent(parsed);
-    }
+    for (const event of parser.feed(chunk)) options.onEvent(event);
   });
 
   let exitResolver: ((value: void) => void) | null = null;
   child.on("exit", (code) => {
     if (backpressureTimer) clearTimeout(backpressureTimer);
+    // On graceful exit, drain any buffered partial as a final commit so the
+    // last utterance isn't lost when whisper.cpp closes without a trailing \n.
+    if (!killed && exitResolver !== null) {
+      for (const event of parser.flush()) options.onEvent(event);
+    }
     if (!killed && code !== 0 && exitResolver === null) {
       options.onEvent({
         kind: "error",
@@ -1045,11 +1168,16 @@ export function startWhisperRunner(options: WhisperRunnerOptions): WhisperRunner
     return new Promise<void>((resolve) => {
       exitResolver = resolve;
       child.stdin?.end();
+      // The exit handler above will call parser.flush() before resolving so any
+      // final buffered partial is emitted as a commit.
     });
   }
 
   function kill(): void {
     killed = true;
+    // Discard any buffered text from a cancelled session — no leakage of a
+    // half-formed partial after the user explicitly cancels.
+    parser.reset();
     if (backpressureTimer) clearTimeout(backpressureTimer);
     child.kill("SIGTERM");
   }
