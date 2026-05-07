@@ -5,9 +5,9 @@ import { BrowserVoiceAdapter } from "./BrowserVoiceAdapter";
 
 type MockUtterance = {
   text: string;
-  onend: (() => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onstart: (() => void) | null;
+  emitEnd: () => void;
+  emitError: (event: { error: string }) => void;
+  emitStart: () => void;
 };
 
 type MockRecognitionEvent = {
@@ -76,6 +76,13 @@ class MockSpeechRecognition {
   }
 }
 
+function setDocumentHidden(hidden: boolean): void {
+  Object.defineProperty(document, "hidden", {
+    configurable: true,
+    get: () => hidden,
+  });
+}
+
 if (typeof window === "undefined") {
   describe.skip("BrowserVoiceAdapter", () => {});
 } else {
@@ -97,7 +104,7 @@ if (typeof window === "undefined") {
       spokenUtterances = [];
       speak = vi.fn((utterance: MockUtterance) => {
         spokenUtterances.push(utterance);
-        utterance.onstart?.();
+        utterance.emitStart();
       });
       cancel = vi.fn();
 
@@ -109,12 +116,46 @@ if (typeof window === "undefined") {
         configurable: true,
         value: class SpeechSynthesisUtteranceMock {
           text: string;
-          onend: (() => void) | null = null;
-          onerror: ((event: { error: string }) => void) | null = null;
-          onstart: (() => void) | null = null;
+          private readonly listeners = {
+            end: new Set<() => void>(),
+            error: new Set<(event: { error: string }) => void>(),
+            start: new Set<() => void>(),
+          };
 
           constructor(text: string) {
             this.text = text;
+          }
+
+          addEventListener(
+            type: "end" | "error" | "start",
+            listener: (() => void) | ((event: { error: string }) => void),
+          ): void {
+            this.listeners[type].add(listener as never);
+          }
+
+          removeEventListener(
+            type: "end" | "error" | "start",
+            listener: (() => void) | ((event: { error: string }) => void),
+          ): void {
+            this.listeners[type].delete(listener as never);
+          }
+
+          emitStart(): void {
+            for (const listener of this.listeners.start) {
+              listener();
+            }
+          }
+
+          emitEnd(): void {
+            for (const listener of this.listeners.end) {
+              listener();
+            }
+          }
+
+          emitError(event: { error: string }): void {
+            for (const listener of this.listeners.error) {
+              listener(event);
+            }
           }
         },
       });
@@ -163,13 +204,6 @@ if (typeof window === "undefined") {
       const adapter = new BrowserVoiceAdapter();
       constructedAdapters.add(adapter);
       return adapter;
-    };
-
-    const setDocumentHidden = (hidden: boolean) => {
-      Object.defineProperty(document, "hidden", {
-        configurable: true,
-        get: () => hidden,
-      });
     };
 
     it("aborts in-flight listen when document becomes hidden", async () => {
@@ -248,7 +282,7 @@ if (typeof window === "undefined") {
       expect(onStart).toHaveBeenCalledOnce();
       expect(onEnd).not.toHaveBeenCalled();
 
-      spokenUtterances[0]?.onend?.();
+      spokenUtterances[0]?.emitEnd();
 
       await expect(pending).resolves.toBeUndefined();
       expect(onEnd).toHaveBeenCalledOnce();
@@ -270,7 +304,7 @@ if (typeof window === "undefined") {
       const onEnd = vi.fn();
 
       const pending = adapter.speak("This fails.", { onEnd });
-      spokenUtterances[0]?.onerror?.({ error: "synthesis-failed" });
+      spokenUtterances[0]?.emitError({ error: "synthesis-failed" });
 
       await expect(pending).rejects.toThrow("synthesis-failed");
       expect(onEnd).toHaveBeenCalledOnce();
@@ -306,7 +340,7 @@ if (typeof window === "undefined") {
       expect(cancel).toHaveBeenCalledOnce();
       await expect(first).rejects.toBeInstanceOf(AbortError);
 
-      spokenUtterances[1]?.onend?.();
+      spokenUtterances[1]?.emitEnd();
       await expect(second).resolves.toBeUndefined();
     });
 
@@ -347,7 +381,7 @@ if (typeof window === "undefined") {
         },
       });
 
-      spokenUtterances[0]?.onend?.();
+      spokenUtterances[0]?.emitEnd();
 
       await expect(pending).resolves.toBeUndefined();
     });

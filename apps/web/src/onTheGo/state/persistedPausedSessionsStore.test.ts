@@ -72,7 +72,7 @@ describe("createPersistedPausedSessionsStore", () => {
   });
 
   afterEach(() => {
-    localStorage.removeItem(BACKUP_KEY);
+    globalThis.localStorage?.removeItem?.(BACKUP_KEY);
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -114,6 +114,35 @@ describe("createPersistedPausedSessionsStore", () => {
     const store = await createPersistedPausedSessionsStore(transport);
 
     expect(store.list.value).toEqual([backedUp]);
+  });
+
+  it("hydrates from transport and skips backup writes when localStorage is unavailable", async () => {
+    vi.stubGlobal("localStorage", undefined);
+    const session = pausedSession(threadId("thread-1"));
+    const transport = fakeTransport([session]);
+
+    const store = await createPersistedPausedSessionsStore(transport);
+    await store.save(pausedSession(threadId("thread-2")));
+    await store.drop(threadId("thread-1"));
+
+    expect(store.list.value).toEqual([pausedSession(threadId("thread-2"))]);
+    expect(transport.upsert).toHaveBeenCalledWith(pausedSession(threadId("thread-2")));
+    expect(transport.remove).toHaveBeenCalledWith(threadId("thread-1"));
+  });
+
+  it("treats localStorage without setItem as unavailable", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => {
+        throw new Error("should not read unusable storage");
+      }),
+    });
+    const transport = fakeTransport();
+
+    const store = await createPersistedPausedSessionsStore(transport);
+    await store.save(pausedSession(threadId("thread-1")));
+
+    expect(store.list.value).toEqual([pausedSession(threadId("thread-1"))]);
+    expect(transport.upsert).toHaveBeenCalledWith(pausedSession(threadId("thread-1")));
   });
 
   it("lets transport sessions win over stale backup entries for the same thread", async () => {
@@ -293,6 +322,26 @@ describe("createPersistedPausedSessionsStore", () => {
     resolveRemove();
     await drop;
     expect(JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "{}")).toEqual({});
+  });
+
+  it("keeps a newer backup when dropping an older in-memory session", async () => {
+    const older = pausedSession(threadId("thread-1"), {
+      history: [{ role: "assistant", text: "older in-memory pause", at: 1 }],
+      pausedAt: 1,
+    });
+    const newerBackup = pausedSession(threadId("thread-1"), {
+      history: [{ role: "assistant", text: "newer backed-up pause", at: 2 }],
+      pausedAt: 2,
+    });
+    const transport = fakeTransport([older]);
+    const store = await createPersistedPausedSessionsStore(transport);
+    localStorage.setItem(BACKUP_KEY, JSON.stringify({ "thread-1": newerBackup }));
+
+    await store.drop(threadId("thread-1"));
+
+    expect(JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "{}")).toEqual({
+      "thread-1": newerBackup,
+    });
   });
 
   it("updates an older backup after a newer successful save", async () => {

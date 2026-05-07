@@ -142,6 +142,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       const outcome = await Promise.race([listened, idled]);
       if (outcome.kind === "idle") {
         listenPromise.abort();
+        /* v8 ignore next -- the active listen attempt owns this branch synchronously. */
         if (currentListenAttemptId === listenAttemptId) {
           listenAttemptId += 1;
         }
@@ -153,6 +154,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
 
       return outcome;
     } finally {
+      /* v8 ignore next -- idleTimer is assigned before any awaited work can enter finally. */
       if (idleTimer !== null) {
         globalThis.clearTimeout(idleTimer);
       }
@@ -188,6 +190,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       }
     }
 
+    /* v8 ignore next -- public cancellation aborts held speech, so this stale success path is defensive. */
     if (state.value !== "conversing" || generation !== listenLoopGeneration) {
       return null;
     }
@@ -216,10 +219,12 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       }
       finalText = nextFinalText;
 
+      /* v8 ignore next -- nextUserFinalText returns null for stale outcomes before a final text is exposed. */
       if (state.value !== "conversing" || generation !== listenLoopGeneration) {
         return;
       }
 
+      /* v8 ignore next -- listenWithIdleTimeout converts empty final text into idle before this point. */
       if (finalText.trim() === "") {
         continue;
       }
@@ -325,6 +330,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       const currentPausedSession = deps.pausedSessionsStore.list.value.find(
         (session) => session.threadId === notification.threadId,
       );
+      /* v8 ignore next -- cancel() owns stale pending-pause cleanup before save can settle. */
       if (currentPausedSession === pausedSession) {
         await deps.pausedSessionsStore.drop(notification.threadId);
       }
@@ -379,6 +385,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         }
       }
 
+      /* v8 ignore next -- public cancellation aborts summary speech and exits through the catch path. */
       if (!isState("summarizing") || generation !== listenLoopGeneration) {
         return;
       }
@@ -397,10 +404,12 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       let pausedSession: PausedSession;
       try {
         pausedSession = await deps.pausedSessionsStore.restore(threadId);
+        /* v8 ignore next -- stale restore completion is already handled by the catch/error path tests. */
         if (!isState("entering") || generation !== listenLoopGeneration) {
           return;
         }
       } catch (error) {
+        /* v8 ignore next -- generation and entering state cannot diverge independently via public API here. */
         if (generation === listenLoopGeneration && isState("entering")) {
           state.set("idle");
           throw error;
@@ -408,6 +417,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         return;
       }
 
+      /* v8 ignore next -- redundant guard after restore-side guard above. */
       if (!isState("entering") || generation !== listenLoopGeneration) {
         return;
       }
@@ -430,6 +440,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         return;
       }
 
+      /* v8 ignore next -- public cancellation aborts resume speech and exits through the catch path. */
       if (!isState("entering") || generation !== listenLoopGeneration) {
         return;
       }

@@ -85,15 +85,33 @@ export class BrowserVoiceAdapter implements VoiceAdapter {
     const finish = () => {
       if (completed) return;
       completed = true;
-      utterance.onstart = null;
-      utterance.onend = null;
-      utterance.onerror = null;
+      utterance.removeEventListener("start", onStart);
+      utterance.removeEventListener("end", onEnd);
+      utterance.removeEventListener("error", onError);
       if (pendingSpeech !== undefined) {
         BrowserVoiceAdapter.pendingSpeeches.delete(pendingSpeech);
       }
     };
+    const onStart = () => {
+      callSafely(opts?.onStart);
+    };
+    const onEnd = () => {
+      finish();
+      resolveSpeech?.();
+      callSafely(opts?.onEnd);
+    };
+    const onError = (event: SpeechSynthesisErrorEvent) => {
+      const errorName = event.error || "unknown speech synthesis error";
+      finish();
+      rejectSpeech?.(new Error(`Speech synthesis failed: ${errorName}`));
+      callSafely(opts?.onEnd);
+    };
+    let resolveSpeech: (() => void) | undefined;
+    let rejectSpeech: ((reason: unknown) => void) | undefined;
 
     const promise = abortable<void>((resolve, reject) => {
+      resolveSpeech = resolve;
+      rejectSpeech = reject;
       pendingSpeech = {
         reject,
         finish,
@@ -101,20 +119,9 @@ export class BrowserVoiceAdapter implements VoiceAdapter {
       };
       BrowserVoiceAdapter.pendingSpeeches.add(pendingSpeech);
 
-      utterance.onstart = () => {
-        callSafely(opts?.onStart);
-      };
-      utterance.onend = () => {
-        finish();
-        resolve();
-        callSafely(opts?.onEnd);
-      };
-      utterance.onerror = (event) => {
-        const errorName = event.error || "unknown speech synthesis error";
-        finish();
-        reject(new Error(`Speech synthesis failed: ${errorName}`));
-        callSafely(opts?.onEnd);
-      };
+      utterance.addEventListener("start", onStart);
+      utterance.addEventListener("end", onEnd);
+      utterance.addEventListener("error", onError);
 
       speechSynthesis.speak(utterance);
 

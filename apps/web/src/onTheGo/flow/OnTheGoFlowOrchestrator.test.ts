@@ -62,6 +62,7 @@ describe("OnTheGoFlowOrchestrator", () => {
   afterEach(() => {
     voice.interrupt();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("starts in idle state", () => {
@@ -1897,7 +1898,7 @@ describe("OnTheGoFlowOrchestrator", () => {
     vi.spyOn(Date, "now").mockReturnValueOnce(1_000).mockReturnValueOnce(2_000);
     let pageHidden = false;
     let abortListen!: () => void;
-    vi.spyOn(voice, "listen").mockImplementation((opts) => {
+    vi.spyOn(voice, "listen").mockImplementation(() => {
       const listen = abortable<{ finalText: string }>(() => {
         // stay pending until the browser voice adapter aborts on page visibility
       });
@@ -2679,5 +2680,365 @@ describe("OnTheGoFlowOrchestrator", () => {
     expect(sentPrompt).toContain("Please make the focused fix.");
     expect(sentPrompt).toContain("I'll patch the totals calculation.");
     await enterPromise;
+  });
+
+  it("resume speaks the empty-history context restore prompt", async () => {
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    const notification = sampleNotification();
+    await pausedSessionsStore.save({
+      threadId: notification.threadId,
+      notification,
+      history: [],
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    await orchestrator.resume(notification.threadId);
+
+    expect(voice.spokenTexts).toEqual([
+      "Welcome back. I've restored this on-the-go session. What should we do next?",
+    ]);
+    voice.interrupt();
+  });
+
+  it("resume context restore says I said when the last turn is from the assistant", async () => {
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    const notification = sampleNotification();
+    await pausedSessionsStore.save({
+      threadId: notification.threadId,
+      notification,
+      history: [{ role: "assistant", text: "I'll patch the totals calculation.", at: 2_000 }],
+      pendingDraft: "I'll patch the totals calculation.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    await orchestrator.resume(notification.threadId);
+
+    expect(voice.spokenTexts[0]).toContain("Last turn, I said: I'll patch the totals calculation.");
+    voice.interrupt();
+  });
+
+  it("default page hidden detector treats AbortError as visibility-hidden", async () => {
+    let abortListen!: () => void;
+    let pageHidden = false;
+    vi.spyOn(voice, "listen").mockImplementation(() => {
+      const listen = abortable<{ finalText: string }>(() => {
+        // stay pending until the test simulates the browser visibility abort
+      });
+      abortListen = listen.abort;
+      return listen;
+    });
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+    vi.stubGlobal("document", { hidden: pageHidden });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    pageHidden = true;
+    vi.stubGlobal("document", { hidden: pageHidden });
+    abortListen();
+    await enterPromise;
+
+    expect(pausedSessionsStore.list.value[0]?.pauseReason).toBe("visibility-hidden");
+  });
+
+  it("idle prompt speech failure auto-pauses with idle-timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      let speakCount = 0;
+      vi.spyOn(voice, "speak").mockImplementation((text, opts) => {
+        voice.spokenTexts.push(text);
+        opts?.onStart?.();
+        speakCount += 1;
+        return abortable<void>((resolve, reject) => {
+          opts?.onEnd?.();
+          if (speakCount === 2) {
+            reject(new Error("idle prompt tts failed"));
+            return;
+          }
+          resolve();
+        });
+      });
+      const pausedSessionsStore = createInMemoryPausedSessionsStore();
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore,
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+      });
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await enterPromise;
+
+      expect(pausedSessionsStore.list.value[0]?.pauseReason).toBe("idle-timeout");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("hidden abort during idle prompt speech auto-pauses with visibility-hidden", async () => {
+    vi.useFakeTimers();
+    try {
+      let pageHidden = false;
+      let speakCount = 0;
+      vi.spyOn(voice, "speak").mockImplementation((text, opts) => {
+        voice.spokenTexts.push(text);
+        opts?.onStart?.();
+        speakCount += 1;
+        return abortable<void>((resolve, reject) => {
+          opts?.onEnd?.();
+          if (speakCount === 2) {
+            pageHidden = true;
+            reject({ name: "AbortError" });
+            return;
+          }
+          resolve();
+        });
+      });
+      const pausedSessionsStore = createInMemoryPausedSessionsStore();
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore,
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        isPageHidden: () => pageHidden,
+      });
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await enterPromise;
+
+      expect(pausedSessionsStore.list.value[0]?.pauseReason).toBe("visibility-hidden");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("user answer after idle prompt resumes the conversation", async () => {
+    vi.useFakeTimers();
+    try {
+      summary = new FakeSummaryAdapter({
+        replies: ["I'll continue after the idle check."],
+      });
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore: createInMemoryPausedSessionsStore(),
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+      });
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => {
+        expect(voice.spokenTexts).toContain("Still there?");
+      });
+      voice.queueListen("Yes, continue.");
+      await vi.waitFor(() => {
+        expect(summary.replyCalls).toHaveLength(1);
+      });
+
+      expect(orchestrator.history.value.map((turn) => turn.text)).toContain("Yes, continue.");
+      expect(orchestrator.state.value).toBe("conversing");
+
+      voice.interrupt();
+      await enterPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shipIt uses the default three-second countdown delay", async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    summary = new FakeSummaryAdapter({
+      replies: ["I'll patch the totals calculation."],
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    const shipPromise = orchestrator.shipIt();
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("countdown");
+    });
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 3_000);
+    expect(commitPrompt).not.toHaveBeenCalled();
+
+    orchestrator.cancelShip();
+    await shipPromise;
+
+    voice.interrupt();
+    await enterPromise;
+  });
+
+  it("empty composed prompt uses the envelope fallback", async () => {
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation."],
+      composedPrompt: "   ",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    await orchestrator.shipIt();
+
+    const sentPrompt = commitPrompt.mock.calls[0]?.[1] as string;
+    expect(sentPrompt).toContain("On-the-go composer offline");
+    expect(sentPrompt).toContain("Please make the focused fix.");
+    await enterPromise;
+  });
+
+  it("cancel during a failed commit suppresses stale retry caption", async () => {
+    vi.useFakeTimers();
+    try {
+      let rejectCommit!: (error: Error) => void;
+      commitPrompt = vi.fn(
+        () =>
+          new Promise<void>((_, reject) => {
+            rejectCommit = reject;
+          }),
+      ) as CommitPromptMock;
+      summary = new FakeSummaryAdapter({
+        replies: ["I'll patch the totals calculation."],
+        composedPrompt: "Patch the totals calculation and keep tests focused.",
+      });
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore: createInMemoryPausedSessionsStore(),
+        skill: "skill text",
+        commitPrompt,
+        countdownMs: 1,
+      });
+      voice.queueListen("Please make the focused fix.");
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.history.value).toHaveLength(3);
+      });
+
+      const shipPromise = orchestrator.shipIt();
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("committing");
+      });
+      await orchestrator.cancel();
+      rejectCommit(new Error("commit failed after cancel"));
+      await shipPromise;
+
+      expect(orchestrator.caption.value).toBe("");
+      expect(orchestrator.state.value).toBe("idle");
+      await enterPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("failed commit returns to conversation with retry caption", async () => {
+    commitPrompt = vi.fn(async () => {
+      throw new Error("commit failed");
+    }) as CommitPromptMock;
+    summary = new FakeSummaryAdapter({
+      replies: ["I'll patch the totals calculation."],
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    await orchestrator.shipIt();
+
+    expect(orchestrator.caption.value).toBe(
+      "Couldn't deliver to main thread. Tap Ship it to retry.",
+    );
+    expect(orchestrator.state.value).toBe("conversing");
+
+    voice.interrupt();
+    await enterPromise;
+  });
+
+  it("cancelShip outside countdown is a no-op", () => {
+    orchestrator.cancelShip();
+
+    expect(voice.interruptCount).toBe(0);
+    expect(orchestrator.state.value).toBe("idle");
   });
 });

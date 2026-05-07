@@ -12,9 +12,11 @@ type AbortableExecutor<T> = (
   reject: (reason?: unknown) => void,
 ) => void | (() => void);
 
+const rejectBeforeInitialized = (_reason?: unknown): void => {};
+
 export function abortable<T>(executor: AbortableExecutor<T>): AbortablePromise<T> {
   let cleanup: (() => void) | undefined;
-  let rejectPromise: (reason?: unknown) => void = () => {};
+  let rejectPromise: (reason?: unknown) => void = rejectBeforeInitialized;
   let settled = false;
   let executorSettled = false;
 
