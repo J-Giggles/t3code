@@ -9,6 +9,8 @@ import { selectEnvironmentState, type AppState, type EnvironmentState } from "./
 import { type Project, type Thread } from "./types";
 import { getThreadFromEnvironmentState } from "./threadDerivation";
 
+const EMPTY_WORKTREES: readonly VcsWorktree[] = [];
+
 export function createProjectSelectorByRef(
   ref: ScopedProjectRef | null | undefined,
 ): (state: AppState) => Project | undefined {
@@ -77,5 +79,5 @@ export function selectWorktreesForProject(
   state: AppState,
   projectId: ProjectId,
 ): readonly VcsWorktree[] {
-  return state.worktreesByProjectId.get(projectId) ?? [];
+  return state.worktreesByProjectId.get(projectId) ?? EMPTY_WORKTREES;
 }
