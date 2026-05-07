@@ -5,9 +5,11 @@
 **Started:** 2026-05-07T14:50:00+02:00
 
 ## Goal
+
 Add a staged T3 Code integration for Symphony as a separate imported app first, with an embedded T3 Code dashboard and a blocking Harness Engineering audit for imported agentic apps.
 
 ## Plan
+
 - [ ] Add shared imported-app contracts for registration, launch state, runtime summary, audit reports, remediation prompts, and activation failures.
 - [ ] Add server-side imported-app registry persistence and authenticated HTTP/RPC endpoints for register/list/detail/audit/launch/stop/runtime/activate.
 - [ ] Implement a generic Harness Engineering audit service that blocks activation on required failures and generates subagent remediation prompts.
@@ -18,6 +20,7 @@ Add a staged T3 Code integration for Symphony as a separate imported app first, 
 - [ ] Run `bun fmt`, `bun lint`, `bun typecheck`, and relevant `bun run test` suites before feature-complete.
 
 ## Acceptance criteria
+
 - A local Symphony checkout can be registered in T3 Code without vendoring it into the monorepo.
 - One dev workflow can launch T3 Code and the registered Symphony service together.
 - T3 Code shows Symphony launch state, runtime summary, audit status, blocking failures, and remediation prompts in an embedded dashboard.
@@ -26,6 +29,7 @@ Add a staged T3 Code integration for Symphony as a separate imported app first, 
 - The imported-app framework is generic enough for future app kinds, with Symphony implemented as the first adapter.
 
 ## Notes
+
 - Phase 1 keeps Symphony separate and launched externally; phase 2 can merge Symphony runtime concepts natively after the external integration proves useful.
 - Audit policy defaults to block-on-required-failures.
 - The audit profile is based on OpenAI's Harness Engineering guidance and the Symphony service specification supplied in the initial request.
