@@ -20,6 +20,7 @@ import {
   onServerConfigUpdated,
   onWelcome,
   resetServerStateForTests,
+  selectDictationCapability,
   startServerStateSync,
 } from "./serverState";
 
@@ -92,6 +93,13 @@ const baseServerConfig: ServerConfig = {
     otlpMetricsEnabled: false,
   },
   settings: DEFAULT_SERVER_SETTINGS,
+  dictation: {
+    available: false,
+    reason: "not-yet-probed",
+    modelLabel: null,
+    modelPath: null,
+    binaryPath: null,
+  },
 };
 
 const serverApi = {
@@ -365,5 +373,15 @@ describe("serverState", () => {
     unsubscribeProviders();
     unsubscribeConfig();
     stop();
+  });
+});
+
+describe("selectDictationCapability", () => {
+  it("returns null when the server config is null", () => {
+    expect(selectDictationCapability(null)).toBeNull();
+  });
+
+  it("returns the dictation capability from the config when present", () => {
+    expect(selectDictationCapability(baseServerConfig)).toEqual(baseServerConfig.dictation);
   });
 });

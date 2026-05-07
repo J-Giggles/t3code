@@ -10,6 +10,7 @@ import {
   formatShortcutLabel,
   isChatNewShortcut,
   isChatNewLocalShortcut,
+  isDictationToggleShortcut,
   isDiffToggleShortcut,
   modelPickerJumpCommandForIndex,
   modelPickerJumpIndexFromCommand,
@@ -444,6 +445,62 @@ describe("chat/editor shortcuts", () => {
     assert.isTrue(
       isChatNewLocalShortcut(event({ key: "n", ctrlKey: true, shiftKey: true }), DEFAULT_BINDINGS, {
         platform: "Linux",
+      }),
+    );
+  });
+
+  it("matches dictation.toggle shortcut on Linux outside terminal focus", () => {
+    const keybindings = compile([
+      {
+        shortcut: {
+          key: "m",
+          metaKey: false,
+          ctrlKey: true,
+          shiftKey: true,
+          altKey: false,
+          modKey: false,
+        },
+        command: "dictation.toggle",
+        whenAst: whenNot(whenIdentifier("terminalFocus")),
+      },
+    ]);
+    assert.isTrue(
+      isDictationToggleShortcut(event({ key: "m", ctrlKey: true, shiftKey: true }), keybindings, {
+        platform: "Linux",
+        context: { terminalFocus: false },
+      }),
+    );
+    assert.isFalse(
+      isDictationToggleShortcut(event({ key: "m", ctrlKey: true, shiftKey: true }), keybindings, {
+        platform: "Linux",
+        context: { terminalFocus: true },
+      }),
+    );
+  });
+
+  it("matches dictation.toggle shortcut on macOS via explicit Ctrl", () => {
+    const keybindings = compile([
+      {
+        shortcut: {
+          key: "m",
+          metaKey: false,
+          ctrlKey: true,
+          shiftKey: true,
+          altKey: false,
+          modKey: false,
+        },
+        command: "dictation.toggle",
+      },
+    ]);
+    // On macOS the dictation binding still expects literal Ctrl, not Cmd.
+    assert.isTrue(
+      isDictationToggleShortcut(event({ key: "m", ctrlKey: true, shiftKey: true }), keybindings, {
+        platform: "MacIntel",
+      }),
+    );
+    assert.isFalse(
+      isDictationToggleShortcut(event({ key: "m", metaKey: true, shiftKey: true }), keybindings, {
+        platform: "MacIntel",
       }),
     );
   });

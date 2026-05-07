@@ -1,6 +1,7 @@
 import { useAtomSubscribe, useAtomValue } from "@effect/atom-react";
 import {
   DEFAULT_SERVER_SETTINGS,
+  type DictationCapability,
   type EditorId,
   type ServerConfig,
   type ServerConfigStreamEvent,
@@ -56,6 +57,9 @@ const selectProviders = (config: ServerConfig | null) =>
   config?.providers ?? EMPTY_SERVER_PROVIDERS;
 const selectSettings = (config: ServerConfig | null): ServerSettings =>
   config?.settings ?? DEFAULT_SERVER_SETTINGS;
+export const selectDictationCapability = (
+  config: ServerConfig | null,
+): DictationCapability | null => config?.dictation ?? null;
 
 export const welcomeAtom = makeStateAtom<ServerLifecycleWelcomePayload | null>(
   "server-welcome",
@@ -290,6 +294,10 @@ export function useServerKeybindingsConfigPath(): string | null {
 
 export function useServerObservability(): ServerConfig["observability"] | null {
   return useAtomValue(serverConfigAtom, selectObservability);
+}
+
+export function useServerDictationCapability(): DictationCapability | null {
+  return useAtomValue(serverConfigAtom, selectDictationCapability);
 }
 
 export function useServerWelcomeSubscription(

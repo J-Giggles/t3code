@@ -74,6 +74,7 @@ import {
   COMPOSER_INLINE_SKILL_CHIP_CLASS_NAME,
 } from "./composerInlineChip";
 import { ComposerPendingTerminalContextChip } from "./chat/ComposerPendingTerminalContexts";
+import { DictationPlugin } from "./composer/DictationPlugin";
 import { formatProviderSkillDisplayName } from "~/providerSkillPresentation";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
@@ -879,6 +880,10 @@ export interface ComposerPromptEditorHandle {
     expandedCursor: number;
     terminalContextIds: string[];
   };
+  dispatchLexicalCommand: <TPayload>(
+    command: import("lexical").LexicalCommand<TPayload>,
+    payload: TPayload,
+  ) => void;
 }
 
 interface ComposerPromptEditorProps {
@@ -1561,8 +1566,11 @@ function ComposerPromptEditorInner({
         );
       },
       readSnapshot,
+      dispatchLexicalCommand: (command, payload) => {
+        editor.dispatchCommand(command, payload);
+      },
     }),
-    [focusAt, readSnapshot],
+    [editor, focusAt, readSnapshot],
   );
 
   const handleEditorChange = useCallback((editorState: EditorState) => {
@@ -1645,6 +1653,7 @@ function ComposerPromptEditorInner({
         <ComposerInlineTokenArrowPlugin />
         <ComposerInlineTokenSelectionNormalizePlugin />
         <ComposerInlineTokenBackspacePlugin />
+        <DictationPlugin />
         <HistoryPlugin />
       </div>
     </ComposerTerminalContextActionsContext.Provider>

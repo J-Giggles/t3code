@@ -194,6 +194,13 @@ function createBaseServerConfig(): ServerConfig {
       ...DEFAULT_SERVER_SETTINGS,
       ...DEFAULT_CLIENT_SETTINGS,
     },
+    dictation: {
+      available: false,
+      reason: "not-yet-probed",
+      modelLabel: null,
+      modelPath: null,
+      binaryPath: null,
+    },
   };
 }
 
