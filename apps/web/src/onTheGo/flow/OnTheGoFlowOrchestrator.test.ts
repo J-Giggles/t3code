@@ -1893,6 +1893,267 @@ describe("OnTheGoFlowOrchestrator", () => {
     }
   });
 
+  it("hidden page listen abort auto-pauses with visibility-hidden and saves the assistant summary", async () => {
+    vi.spyOn(Date, "now").mockReturnValueOnce(1_000).mockReturnValueOnce(2_000);
+    let pageHidden = false;
+    let abortListen!: () => void;
+    vi.spyOn(voice, "listen").mockImplementation((opts) => {
+      const listen = abortable<{ finalText: string }>(() => {
+        // stay pending until the browser voice adapter aborts on page visibility
+      });
+      abortListen = listen.abort;
+      return listen;
+    });
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    summary = new FakeSummaryAdapter({ summary: "Checkout is blocked on a totals mismatch." });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      isPageHidden: () => pageHidden,
+    });
+    const notification = sampleNotification();
+    const enterPromise = orchestrator.enter(notification);
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    pageHidden = true;
+    abortListen();
+    await enterPromise;
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(pausedSessionsStore.list.value).toEqual([
+      {
+        threadId: "thread-123",
+        notification,
+        history: [
+          {
+            role: "assistant",
+            text: "Checkout is blocked on a totals mismatch.",
+            at: 1_000,
+          },
+        ],
+        pendingDraft: "Checkout is blocked on a totals mismatch.",
+        pausedAt: 2_000,
+        pauseReason: "visibility-hidden",
+      },
+    ]);
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("hidden page speech abort during initial summary auto-pauses with visibility-hidden", async () => {
+    vi.spyOn(Date, "now").mockReturnValueOnce(1_000).mockReturnValueOnce(2_000);
+    let pageHidden = false;
+    voice.holdSpeak = true;
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    summary = new FakeSummaryAdapter({ summary: "Checkout is blocked on a totals mismatch." });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      isPageHidden: () => pageHidden,
+    });
+    const notification = sampleNotification();
+    const enterPromise = orchestrator.enter(notification);
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("summarizing");
+      expect(orchestrator.history.value).toHaveLength(1);
+    });
+
+    pageHidden = true;
+    voice.interrupt();
+    await enterPromise;
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(pausedSessionsStore.list.value).toEqual([
+      {
+        threadId: "thread-123",
+        notification,
+        history: [
+          {
+            role: "assistant",
+            text: "Checkout is blocked on a totals mismatch.",
+            at: 1_000,
+          },
+        ],
+        pendingDraft: "Checkout is blocked on a totals mismatch.",
+        pausedAt: 2_000,
+        pauseReason: "visibility-hidden",
+      },
+    ]);
+  });
+
+  it("non-hidden listen abort keeps aborted behavior without saving a paused session", async () => {
+    let abortListen!: () => void;
+    vi.spyOn(voice, "listen").mockImplementation(() => {
+      const listen = abortable<{ finalText: string }>(() => {
+        // stay pending until the test aborts listening
+      });
+      abortListen = listen.abort;
+      return listen;
+    });
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      isPageHidden: () => false,
+    });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    abortListen();
+    await enterPromise;
+
+    expect(orchestrator.state.value).toBe("conversing");
+    expect(pausedSessionsStore.list.value).toEqual([]);
+
+    await orchestrator.cancel();
+  });
+
+  it("hidden page abort during second listen auto-pauses with visibility-hidden", async () => {
+    vi.useFakeTimers();
+    try {
+      let pageHidden = false;
+      const listenAborts: Array<() => void> = [];
+      vi.spyOn(voice, "listen").mockImplementation(() => {
+        const listen = abortable<{ finalText: string }>(() => {
+          // stay pending until idle timeout or page visibility aborts listening
+        });
+        listenAborts.push(listen.abort);
+        return listen;
+      });
+      const pausedSessionsStore = createInMemoryPausedSessionsStore();
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore,
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        idleSecondPromptMs: 500,
+        isPageHidden: () => pageHidden,
+      });
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => {
+        expect(voice.spokenTexts).toContain("Still there?");
+        expect(listenAborts).toHaveLength(2);
+      });
+
+      pageHidden = true;
+      listenAborts.at(-1)?.();
+      await enterPromise;
+
+      expect(orchestrator.state.value).toBe("idle");
+      expect(pausedSessionsStore.list.value).toHaveLength(1);
+      expect(pausedSessionsStore.list.value[0]?.pauseReason).toBe("visibility-hidden");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("hidden page speech abort during assistant reply auto-pauses with visibility-hidden", async () => {
+    vi.spyOn(Date, "now")
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(2_000)
+      .mockReturnValueOnce(3_000)
+      .mockReturnValueOnce(4_000);
+    let pageHidden = false;
+    let speakCount = 0;
+    let abortReplySpeech!: () => void;
+    vi.spyOn(voice, "speak").mockImplementation((text, opts) => {
+      voice.spokenTexts.push(text);
+      opts?.onStart?.();
+      speakCount += 1;
+      if (speakCount === 1) {
+        opts?.onEnd?.();
+        return abortable<void>((resolve) => {
+          resolve();
+        });
+      }
+
+      const speech = abortable<void>(() => {
+        return () => {
+          opts?.onEnd?.();
+        };
+      });
+      abortReplySpeech = speech.abort;
+      return speech;
+    });
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll update the focused test and patch the totals calculation."],
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      isPageHidden: () => pageHidden,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const notification = sampleNotification();
+    const enterPromise = orchestrator.enter(notification);
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts).toContain(
+        "I'll update the focused test and patch the totals calculation.",
+      );
+    });
+
+    pageHidden = true;
+    abortReplySpeech();
+    await enterPromise;
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(pausedSessionsStore.list.value).toHaveLength(1);
+    expect(pausedSessionsStore.list.value[0]).toMatchObject({
+      threadId: "thread-123",
+      notification,
+      pauseReason: "visibility-hidden",
+      pausedAt: 4_000,
+      pendingDraft: "I'll update the focused test and patch the totals calculation.",
+    });
+    expect(pausedSessionsStore.list.value[0]?.history).toEqual([
+      {
+        role: "assistant",
+        text: "Checkout is blocked on a totals mismatch.",
+        at: 1_000,
+      },
+      {
+        role: "user",
+        text: "Please make the focused fix.",
+        at: 2_000,
+      },
+      {
+        role: "assistant",
+        text: "I'll update the focused test and patch the totals calculation.",
+        at: 3_000,
+      },
+    ]);
+  });
+
   it("stale listen partials do not mutate caption after cancel", async () => {
     let stalePartial: ((text: string) => void) | undefined;
     let listenAbort: (() => void) | undefined;

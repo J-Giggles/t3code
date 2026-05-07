@@ -52,6 +52,22 @@ export class BrowserVoiceAdapter implements VoiceAdapter {
   private static readonly pendingSpeeches = new Set<PendingSpeech>();
   private static activeRecognition: ActiveRecognition | undefined;
 
+  private destroyed = false;
+  private visibilityHandler: (() => void) | undefined;
+
+  constructor() {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        this.interrupt();
+      }
+    };
+    document.addEventListener("visibilitychange", this.visibilityHandler);
+  }
+
   speak(text: string, opts?: SpeakOptions): AbortablePromise<void> {
     const speechSynthesis = getSpeechSynthesis();
     const Utterance = getSpeechSynthesisUtterance();
@@ -216,7 +232,19 @@ export class BrowserVoiceAdapter implements VoiceAdapter {
   }
 
   destroy(): void {
+    if (this.destroyed) {
+      return;
+    }
+    this.destroyed = true;
+
     this.interrupt();
+    const visibilityHandler = this.visibilityHandler;
+    if (visibilityHandler === undefined || typeof document === "undefined") {
+      return;
+    }
+
+    document.removeEventListener("visibilitychange", visibilityHandler);
+    this.visibilityHandler = undefined;
   }
 
   private cancelPendingSpeeches(speechSynthesis = getSpeechSynthesis()): void {

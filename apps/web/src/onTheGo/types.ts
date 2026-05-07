@@ -19,7 +19,7 @@ export type Turn = {
   at: number;
 };
 
-export type PauseReason = "manual" | "idle-timeout";
+export type PauseReason = "manual" | "idle-timeout" | "visibility-hidden";
 
 export type PausedSession = {
   threadId: ThreadId;

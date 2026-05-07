@@ -1,3 +1,4 @@
+import { AbortError } from "../abortable";
 import type { SummaryAdapter } from "../adapters/SummaryAdapter";
 import type { NotificationsStore } from "../state/notificationsStore";
 import type { PausedSessionsStore } from "../state/pausedSessionsStore";
@@ -29,6 +30,7 @@ export type OrchestratorDeps = {
   idleTimeoutMs?: number;
   idleSecondPromptMs?: number;
   countdownMs?: number;
+  isPageHidden?: () => boolean;
 };
 
 function buildVerbatimEnvelope(turns: Turn[]): string {
@@ -70,10 +72,22 @@ function isSameNotification(left: Notification, right: Notification): boolean {
   );
 }
 
+function defaultIsPageHidden(): boolean {
+  return typeof document !== "undefined" ? document.hidden : false;
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    error instanceof AbortError ||
+    (typeof error === "object" && error !== null && "name" in error && error.name === "AbortError")
+  );
+}
+
 export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestrator {
   const state = createSignal<FlowState>("idle");
   const caption = createSignal("");
   const history = createSignal<Turn[]>([]);
+  const isPageHidden = deps.isPageHidden ?? defaultIsPageHidden;
   let currentNotification: Notification | null = null;
   let pendingPauseSession: PausedSession | null = null;
   let countdownCancel: (() => void) | null = null;
@@ -85,7 +99,12 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
     | { kind: "final"; finalText: string }
     | { kind: "idle" }
     | { kind: "aborted" }
+    | { kind: "visibility-hidden" }
     | { kind: "stale" };
+
+  function isHiddenAbort(error: unknown): boolean {
+    return isAbortError(error) && isPageHidden();
+  }
 
   async function listenWithIdleTimeout(
     idleTimeoutMs: number,
@@ -110,7 +129,8 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         result.finalText.trim() === ""
           ? { kind: "idle" }
           : { kind: "final", finalText: result.finalText },
-      (): ListenOutcome => ({ kind: "aborted" }),
+      (error): ListenOutcome =>
+        isHiddenAbort(error) ? { kind: "visibility-hidden" } : { kind: "aborted" },
     );
     const idled = new Promise<ListenOutcome>((resolve) => {
       idleTimer = globalThis.setTimeout(() => {
@@ -144,6 +164,10 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
     if (firstListen.kind === "final") {
       return firstListen.finalText;
     }
+    if (firstListen.kind === "visibility-hidden") {
+      await pauseFlow("visibility-hidden");
+      return null;
+    }
     if (firstListen.kind !== "idle") {
       return null;
     }
@@ -153,9 +177,9 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
     try {
       botSpeechInProgress = true;
       await deps.voiceAdapter.speak(idlePrompt);
-    } catch {
+    } catch (error) {
       if (state.value === "conversing" && generation === listenLoopGeneration) {
-        await pauseFlow("idle-timeout");
+        await pauseFlow(isHiddenAbort(error) ? "visibility-hidden" : "idle-timeout");
       }
       return null;
     } finally {
@@ -174,6 +198,8 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
     }
     if (secondListen.kind === "idle") {
       await pauseFlow("idle-timeout");
+    } else if (secondListen.kind === "visibility-hidden") {
+      await pauseFlow("visibility-hidden");
     }
 
     return null;
@@ -222,7 +248,14 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       try {
         botSpeechInProgress = true;
         await deps.voiceAdapter.speak(reply);
-      } catch {
+      } catch (error) {
+        if (
+          state.value === "conversing" &&
+          generation === listenLoopGeneration &&
+          isHiddenAbort(error)
+        ) {
+          await pauseFlow("visibility-hidden");
+        }
         return;
       } finally {
         if (generation === listenLoopGeneration) {
@@ -335,7 +368,10 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       try {
         botSpeechInProgress = true;
         await deps.voiceAdapter.speak(summary);
-      } catch {
+      } catch (error) {
+        if (isState("summarizing") && generation === listenLoopGeneration && isHiddenAbort(error)) {
+          await pauseFlow("visibility-hidden");
+        }
         return;
       } finally {
         if (generation === listenLoopGeneration) {
