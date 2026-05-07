@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-05-06-on-the-go-mode-design.md`
 
 **Phase 3 acceptance:**
+
 - All tasks below complete and committed.
 - First-time visit to `/on-the-go` shows the onboarding flow; subsequent visits skip it.
 - Settings panel exposes all configurable knobs (adapter selection, interrupt toggle, commit phrase, idle timeout, voice indicator preference).
@@ -24,6 +25,7 @@
 ## Task 1: Adapter configuration storage + hook
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/settings/adapterConfig.ts`
 - Create: `apps/web/src/onTheGo/settings/adapterConfig.test.ts`
 - Create: `apps/web/src/onTheGo/hooks/useAdapterConfig.ts`
@@ -35,11 +37,7 @@
 ```ts
 // apps/web/src/onTheGo/settings/adapterConfig.test.ts
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  loadAdapterConfig,
-  saveAdapterConfig,
-  type AdapterConfig,
-} from "./adapterConfig";
+import { loadAdapterConfig, saveAdapterConfig, type AdapterConfig } from "./adapterConfig";
 
 describe("adapterConfig", () => {
   beforeEach(() => localStorage.clear());
@@ -109,7 +107,11 @@ export function clearAdapterConfig(): void {
 ```ts
 // apps/web/src/onTheGo/hooks/useAdapterConfig.ts
 import { useEffect, useState } from "react";
-import { loadAdapterConfig, saveAdapterConfig, type AdapterConfig } from "../settings/adapterConfig";
+import {
+  loadAdapterConfig,
+  saveAdapterConfig,
+  type AdapterConfig,
+} from "../settings/adapterConfig";
 
 export function useAdapterConfig(): {
   config: AdapterConfig | null;
@@ -144,6 +146,7 @@ git commit -m "feat(on-the-go): adapter configuration storage and hook"
 ## Task 2: User preferences storage (commit phrase, idle timeout, interrupt toggle)
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/settings/preferences.ts`
 - Create: `apps/web/src/onTheGo/settings/preferences.test.ts`
 - Create: `apps/web/src/onTheGo/hooks/usePreferences.ts`
@@ -153,11 +156,7 @@ git commit -m "feat(on-the-go): adapter configuration storage and hook"
 ```ts
 // apps/web/src/onTheGo/settings/preferences.test.ts
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  DEFAULT_PREFERENCES,
-  loadPreferences,
-  savePreferences,
-} from "./preferences";
+import { DEFAULT_PREFERENCES, loadPreferences, savePreferences } from "./preferences";
 
 describe("preferences", () => {
   beforeEach(() => localStorage.clear());
@@ -272,6 +271,7 @@ git commit -m "feat(on-the-go): preferences storage with sensible defaults"
 ## Task 3: `<OnboardingFlow>` component
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/OnboardingFlow.tsx`
 - Create: `apps/web/src/onTheGo/components/OnboardingFlow.test.tsx`
 
@@ -285,8 +285,13 @@ import { OnboardingFlow } from "./OnboardingFlow";
 
 describe("OnboardingFlow", () => {
   beforeEach(() => {
-    (navigator.mediaDevices as any) = { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] }) };
-    (Notification as any) = { permission: "default", requestPermission: vi.fn().mockResolvedValue("granted") };
+    (navigator.mediaDevices as any) = {
+      getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] }),
+    };
+    (Notification as any) = {
+      permission: "default",
+      requestPermission: vi.fn().mockResolvedValue("granted"),
+    };
   });
 
   it("starts on the welcome step", () => {
@@ -384,8 +389,8 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-4 max-w-md mx-auto">
           <h1 className="text-3xl font-bold">Welcome to on-the-go mode</h1>
           <p className="text-lg text-muted-foreground">
-            Drive your coding agent hands-free from your phone. We&apos;ll set up
-            voice and AI access in the next few steps.
+            Drive your coding agent hands-free from your phone. We&apos;ll set up voice and AI
+            access in the next few steps.
           </p>
           <button
             type="button"
@@ -400,8 +405,8 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-4 max-w-md mx-auto">
           <h1 className="text-3xl font-bold">Microphone access</h1>
           <p className="text-lg text-muted-foreground">
-            We need microphone access to hear you. You can revoke it at any time
-            from your browser settings.
+            We need microphone access to hear you. You can revoke it at any time from your browser
+            settings.
           </p>
           <button
             type="button"
@@ -416,8 +421,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-4 max-w-md mx-auto">
           <h1 className="text-3xl font-bold">Notifications</h1>
           <p className="text-lg text-muted-foreground">
-            Optional. Lets you see when an agent finishes while T3 Code is in
-            another tab.
+            Optional. Lets you see when an agent finishes while T3 Code is in another tab.
           </p>
           <button
             type="button"
@@ -439,8 +443,8 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-4 max-w-md mx-auto">
           <h1 className="text-3xl font-bold">Summary AI</h1>
           <p className="text-lg text-muted-foreground">
-            On-the-go uses a small AI model to summarize threads and help draft
-            replies. Pick a provider:
+            On-the-go uses a small AI model to summarize threads and help draft replies. Pick a
+            provider:
           </p>
           {(["openai", "anthropic", "cli"] as const).map((k) => (
             <label key={k} className="flex items-center gap-3 rounded-lg border border-border p-4">
@@ -449,11 +453,17 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                 name="adapter"
                 checked={adapterKind === k}
                 onChange={() => setAdapterKind(k)}
-                aria-label={k === "openai" ? "OpenAI" : k === "anthropic" ? "Anthropic" : "Use main agent CLI"}
+                aria-label={
+                  k === "openai" ? "OpenAI" : k === "anthropic" ? "Anthropic" : "Use main agent CLI"
+                }
               />
               <div className="flex flex-col">
                 <span className="font-medium">
-                  {k === "openai" ? "OpenAI (gpt-4o-mini)" : k === "anthropic" ? "Anthropic (claude-haiku)" : "Use my main agent CLI (experimental, slower)"}
+                  {k === "openai"
+                    ? "OpenAI (gpt-4o-mini)"
+                    : k === "anthropic"
+                      ? "Anthropic (claude-haiku)"
+                      : "Use my main agent CLI (experimental, slower)"}
                 </span>
                 {k !== "cli" && (
                   <span className="text-sm text-muted-foreground">Requires an API key.</span>
@@ -498,8 +508,8 @@ Modify `OnTheGoApp.tsx` to check whether onboarding has completed (a flag in `lo
 ```tsx
 // In OnTheGoApp.tsx, add:
 const ONBOARDING_KEY = "on-the-go:onboarded";
-const [onboarded, setOnboarded] = useState(() =>
-  typeof localStorage !== "undefined" && localStorage.getItem(ONBOARDING_KEY) === "true",
+const [onboarded, setOnboarded] = useState(
+  () => typeof localStorage !== "undefined" && localStorage.getItem(ONBOARDING_KEY) === "true",
 );
 
 if (!onboarded) {
@@ -528,6 +538,7 @@ git commit -m "feat(on-the-go): first-run onboarding flow with mic + notificatio
 ## Task 4: `<OnTheGoSettings>` panel
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/settings/OnTheGoSettings.tsx`
 - Create: `apps/web/src/onTheGo/settings/OnTheGoSettings.test.tsx`
 - Modify: `apps/web/src/routes/settings.tsx` — add an "On-the-go" section that links to/embeds the new panel.
@@ -581,8 +592,12 @@ export function OnTheGoSettings() {
   const [commitPhrase, setCommitPhrase] = useState(preferences.commitPhrase);
   const [interruptEnabled, setInterruptEnabled] = useState(preferences.interruptEnabled);
   const [idleSec, setIdleSec] = useState(Math.floor(preferences.idleTimeoutMs / 1000));
-  const [adapterKind, setAdapterKind] = useState<AdapterConfig["kind"]>(adapterConfig?.kind ?? "openai");
-  const [apiKey, setApiKey] = useState(adapterConfig && "apiKey" in adapterConfig ? adapterConfig.apiKey : "");
+  const [adapterKind, setAdapterKind] = useState<AdapterConfig["kind"]>(
+    adapterConfig?.kind ?? "openai",
+  );
+  const [apiKey, setApiKey] = useState(
+    adapterConfig && "apiKey" in adapterConfig ? adapterConfig.apiKey : "",
+  );
 
   const save = () => {
     setPreferences({
@@ -642,7 +657,13 @@ export function OnTheGoSettings() {
               checked={adapterKind === k}
               onChange={() => setAdapterKind(k)}
             />
-            <span>{k === "openai" ? "OpenAI" : k === "anthropic" ? "Anthropic" : "Main agent CLI (experimental)"}</span>
+            <span>
+              {k === "openai"
+                ? "OpenAI"
+                : k === "anthropic"
+                  ? "Anthropic"
+                  : "Main agent CLI (experimental)"}
+            </span>
           </label>
         ))}
       </fieldset>
@@ -691,6 +712,7 @@ git commit -m "feat(on-the-go): settings panel for adapter + preferences"
 ## Task 5: `localStorage` recovery for unsaved sessions
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Create: `apps/web/src/onTheGo/flow/sessionRecovery.ts`
 - Create: `apps/web/src/onTheGo/flow/sessionRecovery.test.ts`
@@ -702,11 +724,7 @@ git commit -m "feat(on-the-go): settings panel for adapter + preferences"
 ```ts
 // apps/web/src/onTheGo/flow/sessionRecovery.test.ts
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  clearSessionSnapshot,
-  loadSessionSnapshot,
-  saveSessionSnapshot,
-} from "./sessionRecovery";
+import { clearSessionSnapshot, loadSessionSnapshot, saveSessionSnapshot } from "./sessionRecovery";
 
 describe("sessionRecovery", () => {
   beforeEach(() => localStorage.clear());
@@ -807,6 +825,7 @@ state.subscribe((s) => {
 ```
 
 Add to the returned object:
+
 ```ts
 getRecoverable: () => loadSessionSnapshot(),
 ```
@@ -828,6 +847,7 @@ git commit -m "feat(on-the-go): localStorage snapshot + recovery banner"
 ## Task 6: `BroadcastChannel` multi-tab leadership
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/flow/tabLeadership.ts`
 - Create: `apps/web/src/onTheGo/flow/tabLeadership.test.ts`
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts` — gate `enter()` on leadership.
@@ -902,7 +922,11 @@ export function createTabLeadership(opts: { channelName?: string } = {}): TabLea
       }
     } else if (msg.kind === "ping") {
       if (owned.has(msg.threadId)) {
-        channel.postMessage({ kind: "pong", threadId: msg.threadId, tabId: TAB_ID } satisfies Message);
+        channel.postMessage({
+          kind: "pong",
+          threadId: msg.threadId,
+          tabId: TAB_ID,
+        } satisfies Message);
       }
     }
   });
@@ -924,7 +948,12 @@ export function createTabLeadership(opts: { channelName?: string } = {}): TabLea
       if (conflict || knownLeaders.has(id)) return false;
       owned.add(id);
       knownLeaders.set(id, TAB_ID);
-      channel.postMessage({ kind: "claim", threadId: id, tabId: TAB_ID, timestamp: Date.now() } satisfies Message);
+      channel.postMessage({
+        kind: "claim",
+        threadId: id,
+        tabId: TAB_ID,
+        timestamp: Date.now(),
+      } satisfies Message);
       return true;
     },
     release(threadId) {
@@ -965,6 +994,7 @@ git commit -m "feat(on-the-go): BroadcastChannel multi-tab leadership"
 ## Task 7: Real `PausedSessionsTransport` — server-backed
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/state/serverPausedSessionsTransport.ts`
 - Create: `apps/web/src/onTheGo/state/serverPausedSessionsTransport.test.ts`
 - Modify: `apps/web/src/onTheGo/wireOnTheGo.tsx` — use the real transport.
@@ -974,6 +1004,7 @@ git commit -m "feat(on-the-go): BroadcastChannel multi-tab leadership"
 - [ ] **Step 1: Add RPC contract methods**
 
 In `packages/contracts/src/`, add a new RPC group `OnTheGoRpc` with methods:
+
 - `listPausedSessions(): Effect.Effect<PausedSessionData[], ...>`
 - `upsertPausedSession(session: PausedSessionData): Effect.Effect<void, ...>`
 - `removePausedSession(threadId: ThreadId): Effect.Effect<void, ...>`
@@ -1033,6 +1064,7 @@ git commit -m "feat(on-the-go): server-backed paused sessions transport"
 ## Task 8: Real `commitPrompt` + `ThreadStateStream` wiring
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/wireOnTheGo.tsx`
 
 > **Engineer task:** locate the existing main-thread message-send RPC. Search `packages/contracts/src/` for the method that submits a user turn to a thread (likely under an `Orchestration` or `Threads` RPC group). Adapt it to the `commitPrompt(threadId, prompt) => Promise<void>` interface. Locate the existing thread-state subscription source in `apps/web/src/rpc/serverState.ts` (or similar), adapt to the `ThreadStateStream` interface from Phase 1.
@@ -1040,9 +1072,11 @@ git commit -m "feat(on-the-go): server-backed paused sessions transport"
 - [ ] **Step 1: Search the contracts**
 
 Run:
+
 ```bash
 grep -r "submitTurn\|sendUserMessage\|userTurn" packages/contracts/src/
 ```
+
 Identify the right method. Document the chosen method name in a comment.
 
 - [ ] **Step 2: Adapt and inject**
@@ -1086,6 +1120,7 @@ git commit -m "feat(on-the-go): wire real commitPrompt and ThreadStateStream"
 ## Task 9: End-to-end Playwright smoke test
 
 **Files:**
+
 - Create: `apps/web/e2e/onTheGo.smoke.spec.ts` (or wherever the existing e2e tests live — search for `playwright.config`)
 - Modify: `apps/web/src/onTheGo/wireOnTheGo.tsx` — honor `VITE_ON_THE_GO_FAKE_ADAPTERS=1` env var.
 
@@ -1187,6 +1222,7 @@ if (import.meta.env.VITE_ON_THE_GO_FAKE_ADAPTERS === "1") {
 ```bash
 cd apps/web && VITE_ON_THE_GO_FAKE_ADAPTERS=1 bunx playwright test e2e/onTheGo.smoke.spec.ts
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1201,6 +1237,7 @@ git commit -m "test(on-the-go): end-to-end happy path smoke test with fake adapt
 ## Task 10: Manual device verification documentation
 
 **Files:**
+
 - Create: `docs/superpowers/specs/on-the-go-device-verification.md`
 
 - [ ] **Step 1: Write the device verification checklist**
@@ -1279,8 +1316,8 @@ must pass on at least one real iOS device (Safari) and one real Android device
 
 ## Sign-off
 
-- [ ] iOS Safari (real device): _______________________ (date, signature)
-- [ ] Android Chrome (real device): _______________________ (date, signature)
+- [ ] iOS Safari (real device): \***\*\*\*\*\***\_\_\_\***\*\*\*\*\*** (date, signature)
+- [ ] Android Chrome (real device): \***\*\*\*\*\***\_\_\_\***\*\*\*\*\*** (date, signature)
 - [ ] Defects opened for any failed checks: tracked in [link to issue tracker]
 ```
 
@@ -1303,6 +1340,7 @@ bun run --cwd apps/web test:browser
 bun run typecheck
 bun run lint apps/web/src/onTheGo
 ```
+
 Expected: PASS on all.
 
 - [ ] **Step 2: Verify branch coverage on Phase 1 + 2 + 3 added code**

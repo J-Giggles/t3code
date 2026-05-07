@@ -32,27 +32,27 @@ This feature lives in `apps/web` as a new top-level route, reusing the existing 
 
 ## Top-level decisions
 
-| Concern | Decision |
-|---------|----------|
-| Where it lives | Dedicated route `/on-the-go/$tab` in `apps/web` **plus** a toggle icon in the existing header. Available on any device, intentionally entered. |
-| Voice stack | **Browser-native default** (`SpeechSynthesis` + `webkitSpeechRecognition`) behind a `VoiceAdapter` interface. Cloud upgrades (OpenAI Realtime, ElevenLabs+Whisper) plug in later via the same interface, no orchestrator changes. |
-| Notification trigger | Threads in state `awaiting` (agent finished, awaiting user) **or** `errored` (crash / permission denial / unrecoverable). Deduped per `threadId` — same thread cycling produces one entry, updated in place. |
-| Summary bot AI | **Pluggable `SummaryAdapter` interface.** v1 ships with `OpenAIAdapter` (default `gpt-4o-mini`), `AnthropicAdapter` (default `claude-haiku`), and `MainAgentCliAdapter` (escape hatch for users who refuse a second key — uses the existing agent CLI; slower; marked experimental). |
-| Voice interaction model | **Auto-listen turn-taking** (silence-detection ends turns, no per-turn wake-phrase). Explicit commit gate to send to main thread: configurable phrase (default `"ship it"`) **or** tap a big button. Visible `Pause / Mic / Ship it` button bar always present as fallback. |
-| Bot interruption | Toggleable in settings. Default ON: user speaking interrupts bot mid-TTS. |
-| Idle timeout | After 30s silence: TTS prompt "Still there?" If no answer in 15s, auto-pause (moves to Paused tab). |
-| Optimized prompt generation | Single LLM call at commit time, using a versioned skill file (`apps/web/src/onTheGo/skills/optimize-prompt.md`) loaded as system prompt. Provider-agnostic — works whether `SummaryAdapter` is OpenAI, Anthropic, or escape-hatch. Anthropic adapter applies prompt caching automatically. |
-| Commit confirmation | When commit phrase fires: (1) compose call → (2) audible preview spoken aloud → (3) full prompt text shown on screen → (4) 3-second cancel countdown with big visible Cancel button → (5) prompt sent + notification cleared. |
-| Optimizer fallback | If `composePrompt` fails (network, rate limit, malformed response), automatically send the **full side-conversation transcript verbatim** wrapped in an envelope that signals to the main agent: "this is a fallback transcript — please synthesize and proceed." |
-| Pause UX | Two tabs: `Inbox` (unread) and `Paused` (interrupted sessions). Pausing snapshots full session state — history, last bot reply, original notification. Resume restores conversation with TTS context-restore prompt. |
-| Off-app awareness | Browser `Notification` API for system-style banners while the tab is loaded (foreground or background). No service worker, no PWA install required. Web Push deferred. |
-| Notifications panel layout | Card-based (~180-200px tall), 3-4 visible per screen. Each card: status badge + thread title + 3-line agent message preview + change chip (e.g. "4 files edited") + branch + tap-to-summarize affordance. Errored entries float to top. Swipe-left = dismiss, swipe-right = pause. |
-| Voice screen layout | Phone-call style: thin status header, large central voice indicator (3-dot pulse / animated ring / spinner / mic), live caption ribbon (latest 1-2 lines, fades after 5s of silence), three huge buttons at the bottom (`Pause / Mic / Ship it`). Swipe-up reveals full transcript drawer. |
-| Theming | Extend existing T3 Code shadcn / zinc / `base-mira` palette. Same colors and primitives, but type and tap targets aggressively scaled up (body 18-20px, buttons ≥64pt tall). No new design system. |
-| Privacy / persistence | Audio never persisted by us. (Browser STT vendors — Apple, Google — may transcribe in their own cloud services; their privacy posture, out of our scope.) Transcripts: in-memory during session, persisted on pause via existing data layer, archived as collapsed metadata under the resulting main-thread message on commit, discarded on dismiss. No telemetry of voice content leaves the user's infra. |
-| Onboarding | One-screen first-run flow: welcome → mic permission → notification permission → SummaryAdapter setup (pick provider + paste key, or escape-hatch) → done. Settings panel exposes the same toggles afterwards. |
-| Toggle placement | Small icon (Lucide `phone` or `headphones`) in the existing header alongside settings/account. Tap → `/on-the-go`. On `/on-the-go`, icon swaps to `x-circle` and returns to regular UI. |
-| Post-commit | Stay in on-the-go view. Toast "Prompt sent — agent is working." Notification animates out. Return to Inbox. |
+| Concern                     | Decision                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Where it lives              | Dedicated route `/on-the-go/$tab` in `apps/web` **plus** a toggle icon in the existing header. Available on any device, intentionally entered.                                                                                                                                                                                                                                                              |
+| Voice stack                 | **Browser-native default** (`SpeechSynthesis` + `webkitSpeechRecognition`) behind a `VoiceAdapter` interface. Cloud upgrades (OpenAI Realtime, ElevenLabs+Whisper) plug in later via the same interface, no orchestrator changes.                                                                                                                                                                           |
+| Notification trigger        | Threads in state `awaiting` (agent finished, awaiting user) **or** `errored` (crash / permission denial / unrecoverable). Deduped per `threadId` — same thread cycling produces one entry, updated in place.                                                                                                                                                                                                |
+| Summary bot AI              | **Pluggable `SummaryAdapter` interface.** v1 ships with `OpenAIAdapter` (default `gpt-4o-mini`), `AnthropicAdapter` (default `claude-haiku`), and `MainAgentCliAdapter` (escape hatch for users who refuse a second key — uses the existing agent CLI; slower; marked experimental).                                                                                                                        |
+| Voice interaction model     | **Auto-listen turn-taking** (silence-detection ends turns, no per-turn wake-phrase). Explicit commit gate to send to main thread: configurable phrase (default `"ship it"`) **or** tap a big button. Visible `Pause / Mic / Ship it` button bar always present as fallback.                                                                                                                                 |
+| Bot interruption            | Toggleable in settings. Default ON: user speaking interrupts bot mid-TTS.                                                                                                                                                                                                                                                                                                                                   |
+| Idle timeout                | After 30s silence: TTS prompt "Still there?" If no answer in 15s, auto-pause (moves to Paused tab).                                                                                                                                                                                                                                                                                                         |
+| Optimized prompt generation | Single LLM call at commit time, using a versioned skill file (`apps/web/src/onTheGo/skills/optimize-prompt.md`) loaded as system prompt. Provider-agnostic — works whether `SummaryAdapter` is OpenAI, Anthropic, or escape-hatch. Anthropic adapter applies prompt caching automatically.                                                                                                                  |
+| Commit confirmation         | When commit phrase fires: (1) compose call → (2) audible preview spoken aloud → (3) full prompt text shown on screen → (4) 3-second cancel countdown with big visible Cancel button → (5) prompt sent + notification cleared.                                                                                                                                                                               |
+| Optimizer fallback          | If `composePrompt` fails (network, rate limit, malformed response), automatically send the **full side-conversation transcript verbatim** wrapped in an envelope that signals to the main agent: "this is a fallback transcript — please synthesize and proceed."                                                                                                                                           |
+| Pause UX                    | Two tabs: `Inbox` (unread) and `Paused` (interrupted sessions). Pausing snapshots full session state — history, last bot reply, original notification. Resume restores conversation with TTS context-restore prompt.                                                                                                                                                                                        |
+| Off-app awareness           | Browser `Notification` API for system-style banners while the tab is loaded (foreground or background). No service worker, no PWA install required. Web Push deferred.                                                                                                                                                                                                                                      |
+| Notifications panel layout  | Card-based (~180-200px tall), 3-4 visible per screen. Each card: status badge + thread title + 3-line agent message preview + change chip (e.g. "4 files edited") + branch + tap-to-summarize affordance. Errored entries float to top. Swipe-left = dismiss, swipe-right = pause.                                                                                                                          |
+| Voice screen layout         | Phone-call style: thin status header, large central voice indicator (3-dot pulse / animated ring / spinner / mic), live caption ribbon (latest 1-2 lines, fades after 5s of silence), three huge buttons at the bottom (`Pause / Mic / Ship it`). Swipe-up reveals full transcript drawer.                                                                                                                  |
+| Theming                     | Extend existing T3 Code shadcn / zinc / `base-mira` palette. Same colors and primitives, but type and tap targets aggressively scaled up (body 18-20px, buttons ≥64pt tall). No new design system.                                                                                                                                                                                                          |
+| Privacy / persistence       | Audio never persisted by us. (Browser STT vendors — Apple, Google — may transcribe in their own cloud services; their privacy posture, out of our scope.) Transcripts: in-memory during session, persisted on pause via existing data layer, archived as collapsed metadata under the resulting main-thread message on commit, discarded on dismiss. No telemetry of voice content leaves the user's infra. |
+| Onboarding                  | One-screen first-run flow: welcome → mic permission → notification permission → SummaryAdapter setup (pick provider + paste key, or escape-hatch) → done. Settings panel exposes the same toggles afterwards.                                                                                                                                                                                               |
+| Toggle placement            | Small icon (Lucide `phone` or `headphones`) in the existing header alongside settings/account. Tap → `/on-the-go`. On `/on-the-go`, icon swaps to `x-circle` and returns to regular UI.                                                                                                                                                                                                                     |
+| Post-commit                 | Stay in on-the-go view. Toast "Prompt sent — agent is working." Notification animates out. Return to Inbox.                                                                                                                                                                                                                                                                                                 |
 
 ## Architecture
 
@@ -119,13 +119,17 @@ apps/web/src/onTheGo/
 ```ts
 interface VoiceAdapter {
   speak(text: string, opts?: { onStart?: () => void; onEnd?: () => void }): AbortablePromise<void>;
-  listen(opts: { onPartial?: (text: string) => void; silenceTimeoutMs: number }): AbortablePromise<{ finalText: string }>;
+  listen(opts: {
+    onPartial?: (text: string) => void;
+    silenceTimeoutMs: number;
+  }): AbortablePromise<{ finalText: string }>;
   interrupt(): void;
   destroy(): void;
 }
 ```
 
 **`BrowserVoiceAdapter` (default impl):**
+
 - TTS via `SpeechSynthesisUtterance` + `speechSynthesis`.
   - iOS Safari requires the first utterance to be triggered inside a user-gesture stack — primed during onboarding when the user taps "Enable microphone."
 - STT via `webkitSpeechRecognition` (Chrome/Safari), continuous mode + interim results.
@@ -211,8 +215,13 @@ The state machine. Hand-rolled FSM (no XState — minimal deps).
 
 ```ts
 type FlowState =
-  | "idle" | "entering" | "summarizing" | "conversing"
-  | "composing" | "countdown" | "committing";
+  | "idle"
+  | "entering"
+  | "summarizing"
+  | "conversing"
+  | "composing"
+  | "countdown"
+  | "committing";
 
 interface OnTheGoFlowOrchestrator {
   state: Signal<FlowState>;
@@ -291,47 +300,47 @@ Provider-agnostic. Versioned and reviewable like any other source file.
 
 ### Full state transition table
 
-| From | Trigger | To | Side effects |
-|------|---------|-----|--------------|
-| idle | `enter(notif)` | entering | snapshot notif, mark in-flight |
-| idle | `resume(threadId)` | entering | restore session from `PausedSessionsStore` |
-| entering | (auto) | summarizing | `summaryAdapter.summarize()` |
-| summarizing | summary returned | conversing | `voiceAdapter.speak(summary)`, then listen |
-| conversing | user turn → bot reply | conversing | update history, `voiceAdapter.speak(reply)` |
-| conversing | "ship it" or button | composing | `voiceAdapter.interrupt()` |
-| conversing | "pause" or button | idle | `pausedSessionsStore.save(...)` |
-| conversing | first idle timeout | conversing | TTS "still there?", restart listen |
-| conversing | second idle timeout | idle | auto-pause, save |
-| composing | prompt returned | countdown | `voiceAdapter.speak(prompt)` + show + 3s timer |
-| composing | adapter throws | countdown | use envelope-wrapped verbatim transcript fallback |
-| countdown | timer expires | committing | send to main thread |
-| countdown | cancel | conversing | restore listen |
-| committing | RPC ok | idle | `dismiss()`, toast |
-| committing | RPC fails | conversing | toast error, transcript preserved, retry button |
-| any | `cancel()` | idle | `voiceAdapter.interrupt()`, reset |
+| From        | Trigger               | To          | Side effects                                      |
+| ----------- | --------------------- | ----------- | ------------------------------------------------- |
+| idle        | `enter(notif)`        | entering    | snapshot notif, mark in-flight                    |
+| idle        | `resume(threadId)`    | entering    | restore session from `PausedSessionsStore`        |
+| entering    | (auto)                | summarizing | `summaryAdapter.summarize()`                      |
+| summarizing | summary returned      | conversing  | `voiceAdapter.speak(summary)`, then listen        |
+| conversing  | user turn → bot reply | conversing  | update history, `voiceAdapter.speak(reply)`       |
+| conversing  | "ship it" or button   | composing   | `voiceAdapter.interrupt()`                        |
+| conversing  | "pause" or button     | idle        | `pausedSessionsStore.save(...)`                   |
+| conversing  | first idle timeout    | conversing  | TTS "still there?", restart listen                |
+| conversing  | second idle timeout   | idle        | auto-pause, save                                  |
+| composing   | prompt returned       | countdown   | `voiceAdapter.speak(prompt)` + show + 3s timer    |
+| composing   | adapter throws        | countdown   | use envelope-wrapped verbatim transcript fallback |
+| countdown   | timer expires         | committing  | send to main thread                               |
+| countdown   | cancel                | conversing  | restore listen                                    |
+| committing  | RPC ok                | idle        | `dismiss()`, toast                                |
+| committing  | RPC fails             | conversing  | toast error, transcript preserved, retry button   |
+| any         | `cancel()`            | idle        | `voiceAdapter.interrupt()`, reset                 |
 
 ## Error handling
 
 ### Voice failures
 
-| Failure | Response |
-|---------|----------|
-| Mic permission denied | Fall back to text-input mode (transcript drawer always open + text input replaces listen step). Commit phrase requires button tap. |
-| STT API unsupported (Firefox, embedded webviews) | Same text-input fallback. Banner: "Voice input not supported in this browser." |
-| TTS API unsupported | Captions become primary; bot replies render as text only. Indicator stays visible. |
-| Silence detection fails (mic stays "active" >30s without final) | Indicator turns yellow; caption: "Couldn't detect end-of-turn. Tap mic to send." |
-| iOS Safari background-tab eviction | Auto-pause via Page Visibility API. Resume offered on return. |
-| Recognition `onerror` (network, audio-capture, not-allowed) | Toast with cause + retry. `not-allowed` mid-session = full re-onboard. |
+| Failure                                                         | Response                                                                                                                           |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Mic permission denied                                           | Fall back to text-input mode (transcript drawer always open + text input replaces listen step). Commit phrase requires button tap. |
+| STT API unsupported (Firefox, embedded webviews)                | Same text-input fallback. Banner: "Voice input not supported in this browser."                                                     |
+| TTS API unsupported                                             | Captions become primary; bot replies render as text only. Indicator stays visible.                                                 |
+| Silence detection fails (mic stays "active" >30s without final) | Indicator turns yellow; caption: "Couldn't detect end-of-turn. Tap mic to send."                                                   |
+| iOS Safari background-tab eviction                              | Auto-pause via Page Visibility API. Resume offered on return.                                                                      |
+| Recognition `onerror` (network, audio-capture, not-allowed)     | Toast with cause + retry. `not-allowed` mid-session = full re-onboard.                                                             |
 
 ### `SummaryAdapter` failures
 
-| Failure | Response |
-|---------|----------|
-| Network / timeout | Single auto-retry with exponential backoff (200ms, 1s). Then per-state recovery. |
-| 429 rate limited | TTS + caption "Rate limited — try again in N seconds." Conversation pauses; resume on next user prompt. |
-| 401/403 invalid key | Hard stop. TTS "On-the-go AI is misconfigured. Tap to fix." Routes to Settings. Session auto-paused. |
-| Malformed / empty response | Treat as offline → trigger envelope-wrapped verbatim fallback. |
-| `>15s` timeout for `summarize`/`reply` | Cancel request, treat as network error. |
+| Failure                                | Response                                                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Network / timeout                      | Single auto-retry with exponential backoff (200ms, 1s). Then per-state recovery.                        |
+| 429 rate limited                       | TTS + caption "Rate limited — try again in N seconds." Conversation pauses; resume on next user prompt. |
+| 401/403 invalid key                    | Hard stop. TTS "On-the-go AI is misconfigured. Tap to fix." Routes to Settings. Session auto-paused.    |
+| Malformed / empty response             | Treat as offline → trigger envelope-wrapped verbatim fallback.                                          |
+| `>15s` timeout for `summarize`/`reply` | Cancel request, treat as network error.                                                                 |
 
 **Per-state recovery for adapter failures:**
 
@@ -357,22 +366,22 @@ The main agent has full thread context already, so it's well-positioned to synth
 
 ### State machine edge cases
 
-| Edge case | Handling |
-|-----------|----------|
-| Browser back during voice flow | Treated as `cancel()`. Confirmation dialog if state is `composing` / `countdown` / `committing`. |
-| Page reloaded mid-session | `localStorage` flag set on `enter()`, cleared on terminal states. On reload: banner "You had an unsaved on-the-go session for thread X. Resume?" Best-effort restore from `localStorage`-snapshotted history. |
-| Multiple on-the-go tabs | `BroadcastChannel`-based tab leadership. First tab to `enter()` thread X claims it; other tabs show "This thread is being handled in another tab." Notifications panel still updates everywhere. |
-| "Ship it" said before any conversation | Prompt becomes literal `"continue"`. Countdown still runs. Caption shows the literal string. |
-| Commit phrase accidentally said mid-thought | The 3-second cancel countdown is the safety net. Cancel returns to `conversing` with conversation intact. |
+| Edge case                                   | Handling                                                                                                                                                                                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Browser back during voice flow              | Treated as `cancel()`. Confirmation dialog if state is `composing` / `countdown` / `committing`.                                                                                                              |
+| Page reloaded mid-session                   | `localStorage` flag set on `enter()`, cleared on terminal states. On reload: banner "You had an unsaved on-the-go session for thread X. Resume?" Best-effort restore from `localStorage`-snapshotted history. |
+| Multiple on-the-go tabs                     | `BroadcastChannel`-based tab leadership. First tab to `enter()` thread X claims it; other tabs show "This thread is being handled in another tab." Notifications panel still updates everywhere.              |
+| "Ship it" said before any conversation      | Prompt becomes literal `"continue"`. Countdown still runs. Caption shows the literal string.                                                                                                                  |
+| Commit phrase accidentally said mid-thought | The 3-second cancel countdown is the safety net. Cancel returns to `conversing` with conversation intact.                                                                                                     |
 
 ### RPC / persistence failures
 
-| Failure | Handling |
-|---------|----------|
-| RPC subscription disconnects | Existing reconnection UX; notifications panel grays out. New entries blocked until reconnect. |
-| `pausedSessionsStore.save` fails | Toast "Couldn't save — keeping in memory only." Backed up to `localStorage`, retries every 30s. |
-| `pausedSessionsStore.restore` fails | Toast; manual delete option. No transition into voice flow. |
-| Main thread send fails on commit | Return to `conversing`. Banner "Couldn't deliver. Tap to retry or pause." Notification stays in-flight. |
+| Failure                             | Handling                                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| RPC subscription disconnects        | Existing reconnection UX; notifications panel grays out. New entries blocked until reconnect.           |
+| `pausedSessionsStore.save` fails    | Toast "Couldn't save — keeping in memory only." Backed up to `localStorage`, retries every 30s.         |
+| `pausedSessionsStore.restore` fails | Toast; manual delete option. No transition into voice flow.                                             |
+| Main thread send fails on commit    | Return to `conversing`. Banner "Couldn't deliver. Tap to retry or pause." Notification stays in-flight. |
 
 ### Out of scope (deliberately)
 
@@ -387,11 +396,16 @@ The main agent has full thread context already, so it's well-positioned to synth
 Plain Vitest unit tests with **fake adapters** on both sides — no browser, no network.
 
 ```ts
-class FakeVoiceAdapter implements VoiceAdapter { /* records calls, replays canned responses */ }
-class FakeSummaryAdapter implements SummaryAdapter { /* configurable replies + failures */ }
+class FakeVoiceAdapter implements VoiceAdapter {
+  /* records calls, replays canned responses */
+}
+class FakeSummaryAdapter implements SummaryAdapter {
+  /* configurable replies + failures */
+}
 ```
 
 Test cases (one per row):
+
 - Happy path through all states
 - `cancel()` from each non-idle state — voice interrupted, no orphan async
 - `pause()` from `conversing` — paused store snapshot
@@ -461,6 +475,7 @@ Not codified; documented as a release gate.
 ## Dependencies
 
 **Existing:**
+
 - T3 Code RPC subscription layer (thread state)
 - T3 Code data persistence layer (paused sessions)
 - T3 Code pairing flow (phone auth)
@@ -469,6 +484,7 @@ Not codified; documented as a release gate.
 - `effect-acp`, `effect-codex-app-server` (for `MainAgentCliAdapter`)
 
 **New:**
+
 - No new packages. All work is within `apps/web`.
 - No new server endpoints for v1.
 - Only new external optional dependency: user-supplied OpenAI or Anthropic API key (configured via Onboarding / Settings).

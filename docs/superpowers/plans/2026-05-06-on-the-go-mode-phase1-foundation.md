@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-05-06-on-the-go-mode-design.md`
 
 **Phase 1 acceptance:**
+
 - All tasks below complete and committed.
 - `apps/web/src/onTheGo/__tests__/` orchestrator FSM tests at 100% branch coverage.
 - `NotificationsStore` and `PausedSessionsStore` tests at 100% branch coverage.
@@ -25,6 +26,7 @@
 ## Task 1: Project scaffolding — directory + index files
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/index.ts`
 - Create: `apps/web/src/onTheGo/types.ts`
 - Create: `apps/web/src/onTheGo/__tests__/.gitkeep`
@@ -107,6 +109,7 @@ git commit -m "feat(on-the-go): scaffold feature directory and shared types"
 ## Task 2: `AbortablePromise` utility
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/abortable.ts`
 - Create: `apps/web/src/onTheGo/abortable.test.ts`
 
@@ -216,6 +219,7 @@ git commit -m "feat(on-the-go): add AbortablePromise utility"
 ## Task 3: `VoiceAdapter` interface
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/voice/VoiceAdapter.ts`
 
 - [ ] **Step 1: Write the interface (no test — interface-only file, tested via implementations)**
@@ -261,6 +265,7 @@ git commit -m "feat(on-the-go): add VoiceAdapter interface"
 ## Task 4: `SummaryAdapter` interface
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/adapters/SummaryAdapter.ts`
 
 - [ ] **Step 1: Write the interface**
@@ -322,6 +327,7 @@ git commit -m "feat(on-the-go): add SummaryAdapter interface and error types"
 ## Task 5: `FakeVoiceAdapter` — for orchestrator tests
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/voice/FakeVoiceAdapter.ts`
 - Create: `apps/web/src/onTheGo/voice/FakeVoiceAdapter.test.ts`
 
@@ -465,6 +471,7 @@ git commit -m "feat(on-the-go): add FakeVoiceAdapter for orchestrator tests"
 ## Task 6: `FakeSummaryAdapter` — for orchestrator tests
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/adapters/FakeSummaryAdapter.ts`
 - Create: `apps/web/src/onTheGo/adapters/FakeSummaryAdapter.test.ts`
 
@@ -536,7 +543,8 @@ export class FakeSummaryAdapter implements SummaryAdapter {
 
   async summarize(input: SummarizeInput): Promise<string> {
     this.summarizeCalls.push(input);
-    if (this.config.failOn === "summarize") throw this.config.failError ?? new Error("summarize failed");
+    if (this.config.failOn === "summarize")
+      throw this.config.failError ?? new Error("summarize failed");
     return this.config.summary ?? "fake summary";
   }
 
@@ -548,7 +556,8 @@ export class FakeSummaryAdapter implements SummaryAdapter {
 
   async composePrompt(input: ComposePromptInput): Promise<string> {
     this.composeCalls.push(input);
-    if (this.config.failOn === "composePrompt") throw this.config.failError ?? new Error("compose failed");
+    if (this.config.failOn === "composePrompt")
+      throw this.config.failError ?? new Error("compose failed");
     return this.config.composedPrompt ?? "fake composed prompt";
   }
 }
@@ -571,6 +580,7 @@ git commit -m "feat(on-the-go): add FakeSummaryAdapter for orchestrator tests"
 ## Task 7: `optimize-prompt.md` skill file
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/skills/optimize-prompt.md`
 - Create: `apps/web/src/onTheGo/skills/loadSkill.ts`
 - Create: `apps/web/src/onTheGo/skills/loadSkill.test.ts`
@@ -579,6 +589,7 @@ git commit -m "feat(on-the-go): add FakeSummaryAdapter for orchestrator tests"
 
 ```markdown
 <!-- apps/web/src/onTheGo/skills/optimize-prompt.md -->
+
 You are a prompt-rewriter for a coding agent. The user has just had a conversation
 with you (a voice assistant) to figure out their next instruction for the agent.
 Your job is to convert that conversation into a single concise prompt the agent
@@ -600,6 +611,7 @@ will read and act on.
 ## Example 1
 
 Input conversation:
+
 > User: it added the oauth callback handler. tests pass. should we wire up the redirect?
 > Assistant: do you want a specific path for the redirect?
 > User: yes after success go to /dashboard. and on error /auth/error
@@ -607,16 +619,19 @@ Input conversation:
 > User: yes please
 
 Output:
+
 > Wire up the post-OAuth redirect: success → /dashboard, error → /auth/error. Add tests for both paths including the error redirect.
 
 ## Example 2
 
 Input conversation:
+
 > User: it stopped because of a permission error on /etc/hosts
 > Assistant: do you want to skip that step or grant the permission?
 > User: skip it. and add a comment in the code saying we deliberately skipped it because we don't have permission to edit hosts in CI
 
 Output:
+
 > Skip the /etc/hosts modification step. Add a comment at that site noting the step is deliberately skipped because the CI environment lacks permission to edit /etc/hosts.
 
 # Output format
@@ -678,6 +693,7 @@ git commit -m "feat(on-the-go): add optimize-prompt.md skill file and loader"
 ## Task 8: `Signal` utility (lightweight reactive primitive for stores)
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/state/signal.ts`
 - Create: `apps/web/src/onTheGo/state/signal.test.ts`
 
@@ -784,6 +800,7 @@ git commit -m "feat(on-the-go): add Signal reactive primitive"
 ## Task 9: `NotificationsStore` — basic CRUD + dedupe + sort
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/state/notificationsStore.ts`
 - Create: `apps/web/src/onTheGo/state/notificationsStore.test.ts`
 
@@ -923,6 +940,7 @@ git commit -m "feat(on-the-go): NotificationsStore with dedupe and sort"
 ## Task 10: `NotificationsStore` — Notification API integration
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/state/notificationsStore.ts`
 - Modify: `apps/web/src/onTheGo/state/notificationsStore.test.ts`
 
@@ -1034,10 +1052,12 @@ git commit -m "feat(on-the-go): fire system Notification when tab hidden and per
 ## Task 11: `NotificationsStore` — RPC subscription wiring
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/state/threadSubscription.ts`
 - Create: `apps/web/src/onTheGo/state/threadSubscription.test.ts`
 
 > **What this task does:** wraps the existing T3 Code RPC thread-state subscription and translates each event into `NotificationsStore.add` / `dismiss` calls. The mapping:
+>
 > - Thread enters state `idle` (per `RuntimeThreadState`) or session state `waiting` → `add` with status `awaiting`.
 > - Thread enters state `error` → `add` with status `errored`.
 > - Thread enters state `active` (running) → `dismiss` (it's running again, no longer awaiting).
@@ -1211,6 +1231,7 @@ git commit -m "feat(on-the-go): bind NotificationsStore to existing thread state
 ## Task 12: `PausedSessionsStore` — in-memory + interface
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/state/pausedSessionsStore.ts`
 - Create: `apps/web/src/onTheGo/state/pausedSessionsStore.test.ts`
 
@@ -1220,10 +1241,7 @@ git commit -m "feat(on-the-go): bind NotificationsStore to existing thread state
 // apps/web/src/onTheGo/state/pausedSessionsStore.test.ts
 import { describe, expect, it } from "vitest";
 import type { PausedSession } from "../types";
-import {
-  createInMemoryPausedSessionsStore,
-  type PausedSessionsStore,
-} from "./pausedSessionsStore";
+import { createInMemoryPausedSessionsStore, type PausedSessionsStore } from "./pausedSessionsStore";
 
 const session = (threadId: string, history: PausedSession["history"] = []): PausedSession => ({
   threadId: threadId as any,
@@ -1342,6 +1360,7 @@ git commit -m "feat(on-the-go): in-memory PausedSessionsStore"
 ## Task 13: `PausedSessionsStore` — server-side persistence wiring
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/state/persistedPausedSessionsStore.ts`
 - Create: `apps/web/src/onTheGo/state/persistedPausedSessionsStore.test.ts`
 
@@ -1507,6 +1526,7 @@ git commit -m "feat(on-the-go): persisted PausedSessionsStore with localStorage 
 ## Task 14: Orchestrator FSM — skeleton + state signal
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Create: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.test.ts`
 
@@ -1587,10 +1607,10 @@ export type OrchestratorDeps = {
   notificationsStore: NotificationsStore;
   pausedSessionsStore: PausedSessionsStore;
   skill: string;
-  silenceTimeoutMs?: number;       // default 1500
-  idleTimeoutMs?: number;          // default 30000
-  idleSecondPromptMs?: number;     // default 15000
-  countdownMs?: number;            // default 3000
+  silenceTimeoutMs?: number; // default 1500
+  idleTimeoutMs?: number; // default 30000
+  idleSecondPromptMs?: number; // default 15000
+  countdownMs?: number; // default 3000
 };
 
 export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestrator {
@@ -1645,6 +1665,7 @@ git commit -m "feat(on-the-go): orchestrator skeleton + signals"
 ## Task 15: Orchestrator — `enter()` → summarizing → conversing entry
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.test.ts`
 
@@ -1785,6 +1806,7 @@ git commit -m "feat(on-the-go): orchestrator enter → summarizing → conversin
 ## Task 16: Orchestrator — conversing turn-taking loop
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.test.ts`
 
@@ -1895,6 +1917,7 @@ git commit -m "feat(on-the-go): orchestrator conversing turn-taking loop"
 ## Task 17: Orchestrator — `shipIt` → composing → countdown → committing
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.test.ts`
 
@@ -2136,6 +2159,7 @@ git commit -m "feat(on-the-go): orchestrator shipIt, countdown, commit, and enve
 ## Task 18: Orchestrator — pause/resume
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.test.ts`
 
@@ -2267,6 +2291,7 @@ git commit -m "feat(on-the-go): orchestrator pause/resume with context-restore p
 ## Task 19: Orchestrator — universal `cancel()`
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.test.ts`
 
@@ -2357,6 +2382,7 @@ git commit -m "feat(on-the-go): orchestrator universal cancel"
 ## Task 20: Orchestrator — bot interruption + idle timeout
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.ts`
 - Modify: `apps/web/src/onTheGo/flow/OnTheGoFlowOrchestrator.test.ts`
 
@@ -2529,6 +2555,7 @@ git commit -m "feat(on-the-go): orchestrator interruptBot and idle timeout with 
 ## Task 21: `BrowserVoiceAdapter` — TTS
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/voice/BrowserVoiceAdapter.ts`
 - Create: `apps/web/src/onTheGo/voice/BrowserVoiceAdapter.browser.test.ts`
 
@@ -2557,10 +2584,14 @@ describe("BrowserVoiceAdapter — TTS", () => {
     (window as any).SpeechSynthesisUtterance = vi.fn().mockImplementation((text: string) => {
       const obj: any = { text };
       Object.defineProperty(obj, "onstart", {
-        set(fn) { utteranceListeners.set("start", fn); },
+        set(fn) {
+          utteranceListeners.set("start", fn);
+        },
       });
       Object.defineProperty(obj, "onend", {
-        set(fn) { utteranceListeners.set("end", fn); },
+        set(fn) {
+          utteranceListeners.set("end", fn);
+        },
       });
       return obj;
     });
@@ -2604,12 +2635,7 @@ Expected: FAIL — module not found.
 ```ts
 // apps/web/src/onTheGo/voice/BrowserVoiceAdapter.ts
 import { abortable, type AbortablePromise } from "../abortable";
-import type {
-  ListenOptions,
-  ListenResult,
-  SpeakOptions,
-  VoiceAdapter,
-} from "./VoiceAdapter";
+import type { ListenOptions, ListenResult, SpeakOptions, VoiceAdapter } from "./VoiceAdapter";
 
 export class BrowserVoiceAdapter implements VoiceAdapter {
   speak(text: string, opts?: SpeakOptions): AbortablePromise<void> {
@@ -2668,6 +2694,7 @@ git commit -m "feat(on-the-go): BrowserVoiceAdapter TTS implementation"
 ## Task 22: `BrowserVoiceAdapter` — STT + silence detection
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/voice/BrowserVoiceAdapter.ts`
 - Modify: `apps/web/src/onTheGo/voice/BrowserVoiceAdapter.browser.test.ts`
 
@@ -2813,6 +2840,7 @@ git commit -m "feat(on-the-go): BrowserVoiceAdapter STT with silence detection"
 ## Task 23: `BrowserVoiceAdapter` — Page Visibility integration
 
 **Files:**
+
 - Modify: `apps/web/src/onTheGo/voice/BrowserVoiceAdapter.ts`
 - Modify: `apps/web/src/onTheGo/voice/BrowserVoiceAdapter.browser.test.ts`
 
@@ -2885,6 +2913,7 @@ git commit -m "feat(on-the-go): BrowserVoiceAdapter aborts on visibility hidden"
 ## Task 24: `OpenAIAdapter`
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/adapters/OpenAIAdapter.ts`
 - Create: `apps/web/src/onTheGo/adapters/OpenAIAdapter.test.ts`
 
@@ -2995,8 +3024,10 @@ const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_ENDPOINT = "https://api.openai.com/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 15_000;
 
-const SUMMARIZE_SYSTEM = "You are a concise voice assistant summarizing the output of a coding agent for a user who is on the go. Speak in 1-2 short sentences. No preamble.";
-const REPLY_SYSTEM = "You are a friendly voice assistant helping the user formulate their next instruction for the coding agent. Keep replies short (1-2 sentences). Ask one question at a time.";
+const SUMMARIZE_SYSTEM =
+  "You are a concise voice assistant summarizing the output of a coding agent for a user who is on the go. Speak in 1-2 short sentences. No preamble.";
+const REPLY_SYSTEM =
+  "You are a friendly voice assistant helping the user formulate their next instruction for the coding agent. Keep replies short (1-2 sentences). Ask one question at a time.";
 
 export class OpenAIAdapter implements SummaryAdapter {
   constructor(private config: OpenAIAdapterConfig) {}
@@ -3106,6 +3137,7 @@ git commit -m "feat(on-the-go): OpenAIAdapter with retry and error mapping"
 ## Task 25: `AnthropicAdapter` (with prompt caching)
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/adapters/AnthropicAdapter.ts`
 - Create: `apps/web/src/onTheGo/adapters/AnthropicAdapter.test.ts`
 
@@ -3203,8 +3235,10 @@ const DEFAULT_ENDPOINT = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const REQUEST_TIMEOUT_MS = 15_000;
 
-const SUMMARIZE_SYSTEM = "You are a concise voice assistant summarizing the output of a coding agent for a user who is on the go. Speak in 1-2 short sentences. No preamble.";
-const REPLY_SYSTEM = "You are a friendly voice assistant helping the user formulate their next instruction for the coding agent. Keep replies short (1-2 sentences). Ask one question at a time.";
+const SUMMARIZE_SYSTEM =
+  "You are a concise voice assistant summarizing the output of a coding agent for a user who is on the go. Speak in 1-2 short sentences. No preamble.";
+const REPLY_SYSTEM =
+  "You are a friendly voice assistant helping the user formulate their next instruction for the coding agent. Keep replies short (1-2 sentences). Ask one question at a time.";
 
 export class AnthropicAdapter implements SummaryAdapter {
   constructor(private config: AnthropicAdapterConfig) {}
@@ -3319,6 +3353,7 @@ git commit -m "feat(on-the-go): AnthropicAdapter with prompt caching on system b
 ## Task 26: `MainAgentCliAdapter` (escape hatch)
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/adapters/MainAgentCliAdapter.ts`
 - Create: `apps/web/src/onTheGo/adapters/MainAgentCliAdapter.test.ts`
 
@@ -3393,8 +3428,10 @@ export interface MainAgentCliTransport {
   runEphemeral(prompt: string): Promise<string>;
 }
 
-const SUMMARIZE_INSTRUCTION = "You are now a concise voice assistant. In 1-2 short sentences, summarize what the coding agent did and end with one short clarifying question. Do not write code or use tools — just speak.";
-const REPLY_INSTRUCTION = "You are now a friendly voice assistant helping the user draft their next instruction. Reply in 1-2 sentences, ask one question at a time. Do not write code or use tools — just speak.";
+const SUMMARIZE_INSTRUCTION =
+  "You are now a concise voice assistant. In 1-2 short sentences, summarize what the coding agent did and end with one short clarifying question. Do not write code or use tools — just speak.";
+const REPLY_INSTRUCTION =
+  "You are now a friendly voice assistant helping the user draft their next instruction. Reply in 1-2 sentences, ask one question at a time. Do not write code or use tools — just speak.";
 
 export class MainAgentCliAdapter implements SummaryAdapter {
   constructor(private transport: MainAgentCliTransport) {}
@@ -3457,6 +3494,7 @@ git commit -m "feat(on-the-go): MainAgentCliAdapter escape hatch via existing CL
 ## Task 27: Phase 1 verification + branch coverage check
 
 **Files:**
+
 - (none new — verification only)
 
 - [ ] **Step 1: Run the full test suite**

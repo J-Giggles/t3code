@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-05-06-on-the-go-mode-design.md`
 
 **Phase 2 acceptance:**
+
 - All tasks below complete and committed.
 - `/on-the-go/inbox` and `/on-the-go/paused` routes work in dev (`bun run dev:web`) on a real mobile viewport.
 - Tapping a notification card initiates the full voice flow: TTS summary → conversation → "ship it" → countdown → commit (real RPC call into the main thread).
@@ -19,6 +20,7 @@
 - All component-level tests pass; the existing Phase 1 unit tests still pass.
 
 **Notes from Phase 1:**
+
 - The orchestrator is pluggable via `OrchestratorDeps`. `commitPrompt` is supplied at app wire-up time (Task 11 below) by adapting the existing main-thread message-send RPC.
 - The `ThreadStateStream` interface defined in `state/threadSubscription.ts` is adapted from the existing T3 Code thread-state subscription source in Task 1 below.
 
@@ -27,6 +29,7 @@
 ## Task 1: Route + tab parameter wiring
 
 **Files:**
+
 - Create: `apps/web/src/routes/on-the-go.$tab.tsx`
 - Create: `apps/web/src/onTheGo/routes/OnTheGoApp.tsx`
 - Create: `apps/web/src/onTheGo/routes/OnTheGoApp.test.tsx`
@@ -155,6 +158,7 @@ git commit -m "feat(on-the-go): route and tab navigation skeleton"
 ## Task 2: Toggle icon in existing header
 
 **Files:**
+
 - Modify: the existing T3 Code header component (search for it via `apps/web/src/components/`; likely `AppSidebarLayout.tsx` or a top-bar component imported by it). Add the toggle icon alongside settings/account.
 - Create: `apps/web/src/onTheGo/components/OnTheGoToggleButton.tsx`
 - Create: `apps/web/src/onTheGo/components/OnTheGoToggleButton.test.tsx`
@@ -211,13 +215,22 @@ export function OnTheGoToggleButton({
   const onOnTheGo = currentRoute.startsWith("/on-the-go");
   if (onOnTheGo) {
     return (
-      <Link to="/" aria-label="Exit on-the-go mode" className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-muted">
+      <Link
+        to="/"
+        aria-label="Exit on-the-go mode"
+        className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-muted"
+      >
         <XCircle className="h-5 w-5" />
       </Link>
     );
   }
   return (
-    <Link to="/on-the-go/$tab" params={{ tab: "inbox" }} aria-label="On-the-go mode" className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-muted">
+    <Link
+      to="/on-the-go/$tab"
+      params={{ tab: "inbox" }}
+      aria-label="On-the-go mode"
+      className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-muted"
+    >
       <Headphones className="h-5 w-5" />
       {notificationCount > 0 && (
         <span className="absolute -top-1 -right-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
@@ -245,7 +258,7 @@ import { OnTheGoToggleButton } from "~/onTheGo/components/OnTheGoToggleButton";
 
 const pathname = useRouterState({ select: (s) => s.location.pathname });
 // ...
-<OnTheGoToggleButton currentRoute={pathname} notificationCount={0} />
+<OnTheGoToggleButton currentRoute={pathname} notificationCount={0} />;
 ```
 
 - [ ] **Step 6: Commit**
@@ -260,6 +273,7 @@ git commit -m "feat(on-the-go): toggle button in header"
 ## Task 3: `useNotifications` hook + `<NotificationsContext>`
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/hooks/notificationsContext.tsx`
 - Create: `apps/web/src/onTheGo/hooks/useNotifications.ts`
 - Create: `apps/web/src/onTheGo/hooks/useNotifications.test.tsx`
@@ -379,6 +393,7 @@ git commit -m "feat(on-the-go): NotificationsProvider context and useNotificatio
 ## Task 4: `<NotificationCard>` component
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/NotificationCard.tsx`
 - Create: `apps/web/src/onTheGo/components/NotificationCard.test.tsx`
 
@@ -395,7 +410,8 @@ const baseNotif: Notification = {
   threadId: "t1" as any,
   threadTitle: "Add OAuth flow",
   status: "awaiting",
-  agentLastMessage: "I've added the Google OAuth callback handler. Tests pass. Want me to wire up the redirect logic?",
+  agentLastMessage:
+    "I've added the Google OAuth callback handler. Tests pass. Want me to wire up the redirect logic?",
   userLastMessage: "add oauth",
   changeSummary: "4 files edited",
   branch: "main",
@@ -404,7 +420,14 @@ const baseNotif: Notification = {
 
 describe("NotificationCard", () => {
   it("renders thread title, preview, change chip, and branch", () => {
-    render(<NotificationCard notification={baseNotif} onTap={() => {}} onDismiss={() => {}} onPause={() => {}} />);
+    render(
+      <NotificationCard
+        notification={baseNotif}
+        onTap={() => {}}
+        onDismiss={() => {}}
+        onPause={() => {}}
+      />,
+    );
     expect(screen.getByText(/Add OAuth flow/i)).toBeInTheDocument();
     expect(screen.getByText(/I've added the Google OAuth/i)).toBeInTheDocument();
     expect(screen.getByText(/4 files edited/i)).toBeInTheDocument();
@@ -412,12 +435,26 @@ describe("NotificationCard", () => {
   });
 
   it("shows 'Awaiting' badge for awaiting status", () => {
-    render(<NotificationCard notification={baseNotif} onTap={() => {}} onDismiss={() => {}} onPause={() => {}} />);
+    render(
+      <NotificationCard
+        notification={baseNotif}
+        onTap={() => {}}
+        onDismiss={() => {}}
+        onPause={() => {}}
+      />,
+    );
     expect(screen.getByText(/awaiting/i)).toBeInTheDocument();
   });
 
   it("shows 'Errored' badge with role=alert for errored status", () => {
-    render(<NotificationCard notification={{ ...baseNotif, status: "errored" }} onTap={() => {}} onDismiss={() => {}} onPause={() => {}} />);
+    render(
+      <NotificationCard
+        notification={{ ...baseNotif, status: "errored" }}
+        onTap={() => {}}
+        onDismiss={() => {}}
+        onPause={() => {}}
+      />,
+    );
     const badge = screen.getByText(/errored/i);
     expect(badge).toBeInTheDocument();
     expect(badge.closest("[role='alert']")).not.toBeNull();
@@ -425,13 +462,27 @@ describe("NotificationCard", () => {
 
   it("calls onTap when clicked", () => {
     const onTap = vi.fn();
-    render(<NotificationCard notification={baseNotif} onTap={onTap} onDismiss={() => {}} onPause={() => {}} />);
+    render(
+      <NotificationCard
+        notification={baseNotif}
+        onTap={onTap}
+        onDismiss={() => {}}
+        onPause={() => {}}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: /tap to summarize/i }));
     expect(onTap).toHaveBeenCalledWith(baseNotif);
   });
 
   it("renders relative age", () => {
-    render(<NotificationCard notification={baseNotif} onTap={() => {}} onDismiss={() => {}} onPause={() => {}} />);
+    render(
+      <NotificationCard
+        notification={baseNotif}
+        onTap={() => {}}
+        onDismiss={() => {}}
+        onPause={() => {}}
+      />,
+    );
     expect(screen.getByText(/2m/i)).toBeInTheDocument();
   });
 });
@@ -492,7 +543,9 @@ export function NotificationCard({
         <span className="text-muted-foreground">{formatRelative(notification.updatedAt)}</span>
       </div>
       <h3 className="text-xl font-semibold leading-tight">{notification.threadTitle}</h3>
-      <p className="text-base text-muted-foreground line-clamp-3">{notification.agentLastMessage}</p>
+      <p className="text-base text-muted-foreground line-clamp-3">
+        {notification.agentLastMessage}
+      </p>
       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-auto">
         {notification.changeSummary && (
           <span className="inline-flex items-center gap-1">
@@ -528,6 +581,7 @@ git commit -m "feat(on-the-go): NotificationCard component"
 ## Task 5: Inbox tab — render notifications, handle taps
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/InboxTab.tsx`
 - Create: `apps/web/src/onTheGo/components/InboxTab.test.tsx`
 - Modify: `apps/web/src/onTheGo/routes/OnTheGoApp.tsx`
@@ -668,6 +722,7 @@ git commit -m "feat(on-the-go): InboxTab renders cards from store"
 ## Task 6: Paused tab — render paused sessions
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/hooks/pausedSessionsContext.tsx`
 - Create: `apps/web/src/onTheGo/hooks/usePausedSessions.ts`
 - Create: `apps/web/src/onTheGo/components/PausedTab.tsx`
@@ -817,6 +872,7 @@ git commit -m "feat(on-the-go): PausedTab renders paused sessions"
 ## Task 7: `<VoiceIndicator>` component
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/VoiceIndicator.tsx`
 - Create: `apps/web/src/onTheGo/components/VoiceIndicator.test.tsx`
 
@@ -882,10 +938,7 @@ export function VoiceIndicator({ state }: { state: VoiceIndicatorState }) {
   if (state === "listening") {
     return (
       <div className="flex items-center justify-center py-4" aria-label="Listening">
-        <span
-          data-ring
-          className="h-16 w-16 rounded-full border-4 border-primary animate-ping"
-        />
+        <span data-ring className="h-16 w-16 rounded-full border-4 border-primary animate-ping" />
       </div>
     );
   }
@@ -924,6 +977,7 @@ git commit -m "feat(on-the-go): VoiceIndicator with four states"
 ## Task 8: `<LiveCaptionRibbon>` component
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/LiveCaptionRibbon.tsx`
 - Create: `apps/web/src/onTheGo/components/LiveCaptionRibbon.test.tsx`
 
@@ -1006,6 +1060,7 @@ git commit -m "feat(on-the-go): LiveCaptionRibbon with 5s fade"
 ## Task 9: `<ThreeButtonBar>` component
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/ThreeButtonBar.tsx`
 - Create: `apps/web/src/onTheGo/components/ThreeButtonBar.test.tsx`
 
@@ -1122,6 +1177,7 @@ git commit -m "feat(on-the-go): ThreeButtonBar with safe-area-aware layout"
 ## Task 10: `<TranscriptDrawer>` component
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/TranscriptDrawer.tsx`
 - Create: `apps/web/src/onTheGo/components/TranscriptDrawer.test.tsx`
 
@@ -1233,6 +1289,7 @@ git commit -m "feat(on-the-go): TranscriptDrawer overlay"
 ## Task 11: `<CommitCountdown>` component
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/CommitCountdown.tsx`
 - Create: `apps/web/src/onTheGo/components/CommitCountdown.test.tsx`
 
@@ -1335,6 +1392,7 @@ git commit -m "feat(on-the-go): CommitCountdown morphing button"
 ## Task 12: Voice flow screen + orchestrator integration
 
 **Files:**
+
 - Create: `apps/web/src/onTheGo/components/VoiceScreen.tsx`
 - Create: `apps/web/src/onTheGo/components/VoiceScreen.test.tsx`
 - Create: `apps/web/src/onTheGo/hooks/useOrchestrator.ts`
@@ -1359,7 +1417,9 @@ export function OrchestratorProvider({
   children: ReactNode;
   orchestrator: OnTheGoFlowOrchestrator;
 }) {
-  return <OrchestratorContext.Provider value={orchestrator}>{children}</OrchestratorContext.Provider>;
+  return (
+    <OrchestratorContext.Provider value={orchestrator}>{children}</OrchestratorContext.Provider>
+  );
 }
 
 export function useOrchestrator(): OnTheGoFlowOrchestrator {
@@ -1404,7 +1464,12 @@ export { useOrchestratorRef as useOrchestrator };
 ```tsx
 // apps/web/src/onTheGo/components/VoiceScreen.tsx
 import { useState } from "react";
-import { useFlowCaption, useFlowHistory, useFlowState, useOrchestrator } from "../hooks/useOrchestrator";
+import {
+  useFlowCaption,
+  useFlowHistory,
+  useFlowState,
+  useOrchestrator,
+} from "../hooks/useOrchestrator";
 import { CommitCountdown } from "./CommitCountdown";
 import { LiveCaptionRibbon } from "./LiveCaptionRibbon";
 import { ThreeButtonBar } from "./ThreeButtonBar";
@@ -1430,7 +1495,8 @@ export function VoiceScreen({ threadTitle }: { threadTitle: string }) {
 
   if (state === "countdown") {
     // Find the latest assistant text — it's the prompt being sent.
-    const lastAssistant = [...history].reverse().find((t) => t.role === "assistant")?.text ?? caption;
+    const lastAssistant =
+      [...history].reverse().find((t) => t.role === "assistant")?.text ?? caption;
     return (
       <CommitCountdown
         prompt={lastAssistant}
@@ -1500,15 +1566,31 @@ export function OnTheGoApp({ tab }: { tab: OnTheGoTab }) {
   return (
     <div className="flex flex-col h-screen w-screen bg-background">
       <nav className="flex border-b border-border" role="tablist" aria-label="On-the-go tabs">
-        <Link to="/on-the-go/$tab" params={{ tab: "inbox" }} role="tab" aria-selected={tab === "inbox"} className={`flex-1 py-4 text-center text-lg font-medium ${tab === "inbox" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground"}`}>
+        <Link
+          to="/on-the-go/$tab"
+          params={{ tab: "inbox" }}
+          role="tab"
+          aria-selected={tab === "inbox"}
+          className={`flex-1 py-4 text-center text-lg font-medium ${tab === "inbox" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground"}`}
+        >
           Inbox
         </Link>
-        <Link to="/on-the-go/$tab" params={{ tab: "paused" }} role="tab" aria-selected={tab === "paused"} className={`flex-1 py-4 text-center text-lg font-medium ${tab === "paused" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground"}`}>
+        <Link
+          to="/on-the-go/$tab"
+          params={{ tab: "paused" }}
+          role="tab"
+          aria-selected={tab === "paused"}
+          className={`flex-1 py-4 text-center text-lg font-medium ${tab === "paused" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground"}`}
+        >
           Paused
         </Link>
       </nav>
       <main className="flex-1 overflow-y-auto" role="tabpanel">
-        {tab === "inbox" ? <InboxTab onSelect={handleSelect} /> : <PausedTab onResume={handleResume} />}
+        {tab === "inbox" ? (
+          <InboxTab onSelect={handleSelect} />
+        ) : (
+          <PausedTab onResume={handleResume} />
+        )}
       </main>
       {state !== "idle" && <VoiceScreen threadTitle={activeTitle} />}
     </div>
@@ -1545,7 +1627,10 @@ function buildSummaryAdapter(): SummaryAdapter {
   const cfg = JSON.parse(localStorage.getItem("on-the-go:adapter") ?? "{}");
   if (cfg.kind === "openai" && cfg.apiKey) return new OpenAIAdapter({ apiKey: cfg.apiKey });
   if (cfg.kind === "anthropic" && cfg.apiKey) return new AnthropicAdapter({ apiKey: cfg.apiKey });
-  if (cfg.kind === "cli") return new MainAgentCliAdapter(/* TODO: wire transport in Phase 3 */ { runEphemeral: async () => "" });
+  if (cfg.kind === "cli")
+    return new MainAgentCliAdapter(
+      /* TODO: wire transport in Phase 3 */ { runEphemeral: async () => "" },
+    );
   // Fallback: a no-op adapter that just returns placeholder text. Phase 3 onboarding ensures
   // this code path is unreachable in production.
   return new MainAgentCliAdapter({
@@ -1553,7 +1638,10 @@ function buildSummaryAdapter(): SummaryAdapter {
   });
 }
 
-export async function buildOnTheGoProviders(rpcStream: any /* concrete ThreadStateStream from RPC */, commitPrompt: any /* (threadId, prompt) => Promise<void> */): Promise<{
+export async function buildOnTheGoProviders(
+  rpcStream: any /* concrete ThreadStateStream from RPC */,
+  commitPrompt: any /* (threadId, prompt) => Promise<void> */,
+): Promise<{
   Provider: (props: { children: ReactNode }) => JSX.Element;
 }> {
   const notificationsStore = createNotificationsStore();
@@ -1589,6 +1677,7 @@ export async function buildOnTheGoProviders(rpcStream: any /* concrete ThreadSta
 ```
 
 In `main.tsx` (or the app boot equivalent), import `buildOnTheGoProviders` and wrap the router. Pass:
+
 - The existing thread-state subscription source adapted to `ThreadStateStream` (search `apps/web/src/rpc/serverState.ts` or similar for the existing per-thread subscription).
 - The existing main-thread message-send RPC adapted to `(threadId, prompt) => Promise<void>` (search the contracts for the message-send method, e.g. `sendUserMessage` or `submitTurn`).
 
@@ -1597,6 +1686,7 @@ In `main.tsx` (or the app boot equivalent), import `buildOnTheGoProviders` and w
 - [ ] **Step 5: Smoke test in dev**
 
 Run: `bun run dev:web`
+
 - Configure an OpenAI key in localStorage manually: `localStorage.setItem("on-the-go:adapter", JSON.stringify({ kind: "openai", apiKey: "sk-..." }))`.
 - Reload, navigate to `/on-the-go/inbox`.
 - Trigger a thread to enter "awaiting" via the regular UI (or backend test fixture).
@@ -1625,6 +1715,7 @@ bun run --cwd apps/web test
 bun run --cwd apps/web typecheck
 bun run lint apps/web/src/onTheGo
 ```
+
 Expected: PASS on all.
 
 - [ ] **Step 2: Manual smoke check**
