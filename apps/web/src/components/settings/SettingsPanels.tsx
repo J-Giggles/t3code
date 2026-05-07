@@ -41,6 +41,7 @@ import {
   deriveProviderInstanceEntries,
   sortProviderInstanceEntries,
 } from "../../providerInstances";
+import { getPrimaryEnvironmentConnection } from "../../environments/runtime";
 import { ensureLocalApi, readLocalApi } from "../../localApi";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -78,7 +79,12 @@ import {
   useRelativeTimeTick,
 } from "./settingsLayout";
 import { ProjectFavicon } from "../ProjectFavicon";
-import { useServerObservability, useServerProviders } from "../../rpc/serverState";
+import {
+  useServerDictationCapability,
+  useServerObservability,
+  useServerProviders,
+} from "../../rpc/serverState";
+import { DictationStatusBlock } from "./DictationStatusBlock";
 
 const THEME_OPTIONS = [
   {
@@ -443,6 +449,11 @@ export function GeneralSettingsPanel() {
   const { updateSettings } = useUpdateSettings();
   const observability = useServerObservability();
   const serverProviders = useServerProviders();
+  const dictationCapability = useServerDictationCapability();
+  const rescanDictation = useCallback(
+    () => getPrimaryEnvironmentConnection().client.dictation.rescan(),
+    [],
+  );
   const diagnosticsDescription = formatDiagnosticsDescription({
     localTracingEnabled: observability?.localTracingEnabled ?? false,
     otlpTracesEnabled: observability?.otlpTracesEnabled ?? false,
@@ -850,6 +861,8 @@ export function GeneralSettingsPanel() {
           }
         />
       </SettingsSection>
+
+      <DictationStatusBlock capability={dictationCapability} onRescan={rescanDictation} />
 
       <SettingsSection title="About">
         {isElectron ? (

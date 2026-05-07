@@ -9,6 +9,7 @@ import {
   ThreadId,
   TrimmedNonEmptyString,
 } from "./baseSchemas.ts";
+import { DictationCapability } from "./dictation.ts";
 import {
   KeybindingCommand,
   KeybindingValue,
@@ -352,6 +353,7 @@ export const ServerConfig = Schema.Struct({
   availableEditors: Schema.Array(EditorId),
   observability: ServerObservability,
   settings: ServerSettings,
+  dictation: DictationCapability,
 });
 export type ServerConfig = typeof ServerConfig.Type;
 

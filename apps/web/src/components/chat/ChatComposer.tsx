@@ -29,6 +29,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useDebouncedValue } from "@tanstack/react-pacer";
@@ -112,6 +113,20 @@ import { deriveLatestContextWindowSnapshot } from "../../lib/contextWindow";
 import { formatProviderSkillDisplayName } from "../../providerSkillPresentation";
 import { searchProviderSkills } from "../../providerSkillSearch";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { resolveDictationCapability } from "../../dictation/dictationCapability";
+import { getDictationStore } from "../../dictation/dictationStoreSingleton";
+import { startAudioCapture, type AudioCaptureHandle } from "../../dictation/audioCapture";
+import { arrayBufferToBase64 } from "../../dictation/base64";
+import {
+  COMMIT_DICTATION_COMMAND,
+  DISCARD_DICTATION_ANCHOR_COMMAND,
+  INSERT_DICTATION_PARTIAL_COMMAND,
+  START_DICTATION_ANCHOR_COMMAND,
+} from "../composer/DictationPlugin";
+import { ComposerDictateButton } from "./ComposerDictateButton";
+import { useServerDictationCapability } from "../../rpc/serverState";
+import { readEnvironmentConnection } from "../../environments/runtime";
+import dictationWorkletUrl from "../../dictation/pcmResamplerWorklet.ts?url";
 
 const IMAGE_SIZE_LIMIT_LABEL = `${Math.round(PROVIDER_SEND_TURN_MAX_IMAGE_BYTES / (1024 * 1024))}MB`;
 
@@ -344,6 +359,7 @@ export interface ChatComposerHandle {
   openModelPicker: () => void;
   toggleModelPicker: () => void;
   isModelPickerOpen: () => boolean;
+  toggleDictation: () => void;
   readSnapshot: () => {
     value: string;
     cursor: number;
@@ -1216,6 +1232,241 @@ export const ChatComposer = memo(
     }, [draftId, activeThreadId, promptRef]);
 
     // ------------------------------------------------------------------
+    // Dictation: store + capability + event subscription + button click
+    // ------------------------------------------------------------------
+    const dictationStore = getDictationStore();
+    const dictationState = useSyncExternalStore(
+      dictationStore.subscribe,
+      dictationStore.read,
+      dictationStore.read,
+    );
+    const serverDictationCapability = useServerDictationCapability();
+    const dictationCapability = useMemo(() => {
+      const isSecureContext =
+        typeof window !== "undefined" ? Boolean(window.isSecureContext) : false;
+      const hasMediaDevices =
+        typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
+      return resolveDictationCapability({
+        server: serverDictationCapability ?? {
+          available: false,
+          reason: "Dictation capability not yet reported by server.",
+          modelLabel: null,
+          modelPath: null,
+          binaryPath: null,
+        },
+        isSecureContext,
+        hasMediaDevices,
+      });
+    }, [serverDictationCapability]);
+
+    const dictateButtonState = useMemo(() => {
+      if (!dictationCapability.available) return "unavailable-secure-context" as const;
+      switch (dictationState.state) {
+        case "idle":
+          return "idle" as const;
+        case "requesting-permission":
+          return "requesting-permission" as const;
+        case "recording":
+          return "recording" as const;
+        case "stopping":
+          return "stopping" as const;
+        case "error":
+          return "error" as const;
+      }
+    }, [dictationCapability.available, dictationState.state]);
+
+    // Refs for the dictation pipeline, kept off-state to avoid re-render loops.
+    const dictationAudioCaptureHandleRef = useRef<AudioCaptureHandle | null>(null);
+    const dictationFrameSeqRef = useRef<number>(0);
+    const dictationActiveSessionIdRef = useRef<string | null>(null);
+
+    const stopDictationPipeline = useCallback(
+      async (
+        sessionId: string | null,
+        reason: "user" | "thread-switch" | "tab-hidden" | "mic-disconnect",
+      ) => {
+        const handle = dictationAudioCaptureHandleRef.current;
+        dictationAudioCaptureHandleRef.current = null;
+        if (handle) {
+          try {
+            await handle.stop();
+          } catch {
+            // ignore — we are tearing down anyway
+          }
+        }
+        if (!sessionId) return;
+        const connection = readEnvironmentConnection(environmentId);
+        if (!connection) return;
+        try {
+          await connection.client.dictation.stop({ sessionId, reason });
+        } catch {
+          // server-side errors are surfaced through the event stream as
+          // dictation.error; swallow here so we don't double-report.
+        }
+      },
+      [environmentId],
+    );
+
+    // Subscribe to the server's dictation event stream while connected. Each
+    // event drives a Lexical command on the composer editor and a state
+    // transition in the dictation store. The subscription is keyed on the
+    // environment so it follows reconnects.
+    useEffect(() => {
+      const connection = readEnvironmentConnection(environmentId);
+      if (!connection) return;
+      const editor = composerEditorRef;
+      const store = dictationStore;
+      const unsubscribe = connection.client.dictation.subscribe((event) => {
+        switch (event.type) {
+          case "started":
+            dictationActiveSessionIdRef.current = event.sessionId;
+            dictationFrameSeqRef.current = 0;
+            store.dispatch({
+              type: "session-started",
+              sessionId: event.sessionId,
+              modelLabel: event.modelLabel,
+            });
+            editor.current?.dispatchLexicalCommand(START_DICTATION_ANCHOR_COMMAND, undefined);
+            return;
+          case "partial":
+            editor.current?.dispatchLexicalCommand(INSERT_DICTATION_PARTIAL_COMMAND, event.text);
+            return;
+          case "commit":
+            editor.current?.dispatchLexicalCommand(COMMIT_DICTATION_COMMAND, event.text);
+            return;
+          case "stopped":
+            editor.current?.dispatchLexicalCommand(DISCARD_DICTATION_ANCHOR_COMMAND, undefined);
+            store.dispatch({ type: "session-stopped" });
+            dictationActiveSessionIdRef.current = null;
+            return;
+          case "error":
+            editor.current?.dispatchLexicalCommand(DISCARD_DICTATION_ANCHOR_COMMAND, undefined);
+            store.dispatch({
+              type: "backend-error",
+              code: event.code,
+              message: event.message,
+            });
+            dictationActiveSessionIdRef.current = null;
+            return;
+        }
+      });
+      return () => {
+        unsubscribe();
+      };
+    }, [dictationStore, environmentId]);
+
+    const handleDictateToggle = useCallback(async () => {
+      if (!dictationCapability.available) return;
+      const currentState = dictationStore.read().state;
+
+      if (currentState === "idle" || currentState === "error") {
+        // Need an active thread to attribute the session to. If we are still
+        // in a draft, we send a generic ID; the server's contract requires
+        // ThreadId, so for drafts we synthesize a transient anchor.
+        const targetThreadId = activeThreadId;
+        if (!targetThreadId) return;
+
+        dictationStore.dispatch({ type: "request-start" });
+        const connection = readEnvironmentConnection(environmentId);
+        if (!connection) {
+          dictationStore.dispatch({
+            type: "backend-error",
+            code: "internal",
+            message: "Dictation requires a connected environment.",
+          });
+          return;
+        }
+
+        try {
+          const startResult = await connection.client.dictation.start({
+            threadId: targetThreadId,
+            language: null,
+          });
+          dictationActiveSessionIdRef.current = startResult.sessionId;
+          dictationFrameSeqRef.current = 0;
+
+          const handle = await startAudioCapture({
+            workletUrl: dictationWorkletUrl,
+            onFrame: (frame) => {
+              const sessionId = dictationActiveSessionIdRef.current;
+              if (!sessionId) return;
+              const seq = dictationFrameSeqRef.current;
+              dictationFrameSeqRef.current = seq + 1;
+              const pcm = arrayBufferToBase64(frame);
+              connection.client.dictation.audioFrame({ sessionId, seq, pcm }).catch(() => {
+                // Per-frame failures are fire-and-forget. The server will
+                // emit a dictation.error event if it gives up.
+              });
+            },
+            onTrackEnded: () => {
+              const sessionId = dictationActiveSessionIdRef.current;
+              if (dictationStore.read().state !== "recording") return;
+              dictationStore.dispatch({ type: "request-stop", reason: "mic-disconnect" });
+              void stopDictationPipeline(sessionId, "mic-disconnect");
+            },
+          });
+          dictationAudioCaptureHandleRef.current = handle;
+        } catch (error) {
+          const isPermissionError =
+            error instanceof DOMException &&
+            (error.name === "NotAllowedError" || error.name === "SecurityError");
+          if (isPermissionError) {
+            dictationStore.dispatch({ type: "permission-denied" });
+          } else {
+            dictationStore.dispatch({
+              type: "backend-error",
+              code: "internal",
+              message:
+                error instanceof Error ? error.message : "Failed to start dictation session.",
+            });
+          }
+          // Make sure the server-side session (if any) is torn down.
+          await stopDictationPipeline(dictationActiveSessionIdRef.current, "user");
+          dictationActiveSessionIdRef.current = null;
+        }
+        return;
+      }
+
+      if (currentState === "recording") {
+        const sessionId = dictationActiveSessionIdRef.current;
+        dictationStore.dispatch({ type: "request-stop", reason: "user" });
+        await stopDictationPipeline(sessionId, "user");
+      }
+    }, [
+      activeThreadId,
+      dictationCapability.available,
+      dictationStore,
+      environmentId,
+      stopDictationPipeline,
+    ]);
+
+    // Auto-stop on thread switch (cleanup runs when activeThreadId changes).
+    useEffect(() => {
+      return () => {
+        if (dictationStore.read().state !== "recording") return;
+        const sessionId = dictationActiveSessionIdRef.current;
+        dictationStore.dispatch({ type: "request-stop", reason: "thread-switch" });
+        void stopDictationPipeline(sessionId, "thread-switch");
+      };
+    }, [activeThreadId, dictationStore, stopDictationPipeline]);
+
+    // Auto-stop on visibilitychange → hidden, while recording.
+    useEffect(() => {
+      if (dictationState.state !== "recording") return;
+      if (typeof document === "undefined") return;
+      const onVisibilityChange = () => {
+        if (document.visibilityState !== "hidden") return;
+        const sessionId = dictationActiveSessionIdRef.current;
+        dictationStore.dispatch({ type: "request-stop", reason: "tab-hidden" });
+        void stopDictationPipeline(sessionId, "tab-hidden");
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      return () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      };
+    }, [dictationState.state, dictationStore, stopDictationPipeline]);
+
+    // ------------------------------------------------------------------
     // Footer compact layout observation
     // ------------------------------------------------------------------
     useLayoutEffect(() => {
@@ -1853,6 +2104,9 @@ export const ChatComposer = memo(
           setIsComposerModelPickerOpen((open) => !open);
         },
         isModelPickerOpen: () => isComposerModelPickerOpen,
+        toggleDictation: () => {
+          void handleDictateToggle();
+        },
         readSnapshot: () => {
           return readComposerSnapshot();
         },
@@ -1926,6 +2180,7 @@ export const ChatComposer = memo(
         composerDraftTarget,
         composerCursor,
         composerTerminalContexts,
+        handleDictateToggle,
         insertComposerDraftTerminalContext,
         promptRef,
         composerImagesRef,
@@ -2385,7 +2640,7 @@ export const ChatComposer = memo(
                   )}
                 </div>
 
-                {/* Right side: send / stop button */}
+                {/* Right side: dictate / send / stop button */}
                 <div
                   data-chat-composer-actions="right"
                   data-chat-composer-primary-actions-compact={
@@ -2393,6 +2648,15 @@ export const ChatComposer = memo(
                   }
                   className="flex shrink-0 flex-nowrap items-center justify-end gap-2"
                 >
+                  {dictationCapability.available && (
+                    <ComposerDictateButton
+                      state={dictateButtonState}
+                      preserveComposerFocusOnPointerDown
+                      onClick={() => {
+                        void handleDictateToggle();
+                      }}
+                    />
+                  )}
                   <ComposerFooterPrimaryActions
                     compact={isComposerPrimaryActionsCompact}
                     activeContextWindow={activeContextWindow}

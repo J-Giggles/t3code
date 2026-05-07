@@ -1,3 +1,6 @@
+import { spawn } from "node:child_process";
+import * as fsp from "node:fs/promises";
+import * as os from "node:os";
 import { Cause, Duration, Effect, Layer, Option, Queue, Ref, Schema, Stream } from "effect";
 import {
   type AuthAccessStreamEvent,
@@ -29,6 +32,9 @@ import { RpcSerialization, RpcServer } from "effect/unstable/rpc";
 
 import { CheckpointDiffQuery } from "./checkpointing/Services/CheckpointDiffQuery.ts";
 import { ServerConfig } from "./config.ts";
+import { probeDictationCapability } from "./dictation/capability.ts";
+import { makeDictationService } from "./dictation/dictationService.ts";
+import { startWhisperRunner } from "./dictation/whisperRunner.ts";
 import { Keybindings } from "./keybindings.ts";
 import { Open, resolveAvailableEditors } from "./open.ts";
 import { normalizeDispatchCommand } from "./orchestration/Normalizer.ts";
@@ -102,6 +108,66 @@ function isThreadDetailEvent(event: OrchestrationEvent): event is Extract<
 
 const PROVIDER_STATUS_DEBOUNCE_MS = 200;
 
+const DICTATION_HELP_TIMEOUT_MS = 2000;
+
+const dictationProbeIo = {
+  which: (binary: string): Promise<string | null> =>
+    new Promise((resolve) => {
+      const child = spawn("which", [binary], { stdio: ["ignore", "pipe", "ignore"] });
+      let out = "";
+      child.stdout.on("data", (chunk) => {
+        out += String(chunk);
+      });
+      child.on("close", (code) => {
+        resolve(code === 0 ? out.trim() || null : null);
+      });
+      child.on("error", () => resolve(null));
+    }),
+
+  spawnHelp: (binPath: string): Promise<string> =>
+    new Promise((resolve) => {
+      const child = spawn(binPath, ["--help"], { stdio: ["ignore", "pipe", "pipe"] });
+      let out = "";
+      let settled = false;
+      const settle = (value: string) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try {
+          child.kill("SIGTERM");
+        } catch {
+          // child already exited; ignore.
+        }
+        resolve(value);
+      };
+      const timer = setTimeout(() => settle(""), DICTATION_HELP_TIMEOUT_MS);
+      child.stdout.on("data", (chunk) => {
+        out += String(chunk);
+      });
+      child.stderr.on("data", (chunk) => {
+        out += String(chunk);
+      });
+      child.on("close", () => settle(out));
+      child.on("error", () => settle(""));
+    }),
+
+  fileExists: async (p: string): Promise<boolean> => {
+    try {
+      await fsp.access(p);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  readEnv: (): string | null => process.env.WHISPER_MODEL ?? null,
+
+  // Config-file integration lands with the dictation TOML loader (see plan).
+  readConfigModel: async (): Promise<string | null> => null,
+
+  homeDir: (): string => os.homedir(),
+};
+
 function toAuthAccessStreamEvent(
   change: BootstrapCredentialChange | SessionCredentialChange,
   revision: number,
@@ -173,6 +239,46 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
       const processDiagnostics = yield* ProcessDiagnostics.ProcessDiagnostics;
       const serverCommandId = (tag: string) =>
         CommandId.make(`server:${tag}:${crypto.randomUUID()}`);
+
+      // Probe whisper.cpp capability once per WS connection. The probe
+      // shells out to `which`/`--help`, so we do it lazily at WS-layer
+      // build time and reuse the result for both `loadServerConfig`
+      // (handshake handler) and the `DictationService` (per-WS state).
+      // The Ref makes the value mutable so a `dictation.rescan` RPC can
+      // re-probe (e.g. after the user installs whisper.cpp) without
+      // restarting the WS connection.
+      const dictationCapabilityRef = yield* Ref.make(
+        yield* Effect.promise(() => probeDictationCapability(dictationProbeIo)),
+      );
+
+      const dictation = makeDictationService({
+        capability: () => Effect.runSync(Ref.get(dictationCapabilityRef)),
+        startRunner: ({ onEvent, language }) => {
+          // Read the latest capability snapshot at runner-spawn time so a
+          // rescan that happened between sessions picks up the new binary
+          // and model paths.
+          const cap = Effect.runSync(Ref.get(dictationCapabilityRef));
+          return startWhisperRunner({
+            spawn: (binary, args) => spawn(binary, args, { stdio: ["pipe", "pipe", "pipe"] }),
+            // `startSession` already guards on capability.available + modelLabel
+            // before invoking startRunner, so binary/modelPath are guaranteed
+            // non-empty here. The empty-string fallbacks satisfy the Whisper
+            // runner's required-string types without leaking the optionality.
+            binary: cap.binaryPath ?? "",
+            modelPath: cap.modelPath ?? "",
+            onEvent,
+            backpressureTimeoutMs: 500,
+            now: () => Date.now(),
+            language,
+          });
+        },
+        newSessionId: () => `dict_${crypto.randomUUID()}`,
+        warmPoolIdleMs: 30_000,
+      });
+
+      // WS scope teardown: kill any active or warm whisper.cpp child so the
+      // OS doesn't leak background processes when the client disconnects.
+      yield* Effect.addFinalizer(() => dictation.shutdown());
 
       const loadAuthAccessSnapshot = () =>
         Effect.all({
@@ -558,6 +664,7 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             otlpMetricsEnabled: config.otlpMetricsUrl !== undefined,
           },
           settings,
+          dictation: yield* Ref.get(dictationCapabilityRef),
         };
       });
 
@@ -1169,6 +1276,32 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             }),
             { "rpc.aggregate": "auth" },
           ),
+        [WS_METHODS.dictationStart]: (input) =>
+          observeRpcEffect(WS_METHODS.dictationStart, dictation.startSession(input), {
+            "rpc.aggregate": "dictation",
+          }),
+        [WS_METHODS.dictationAudioFrame]: (input) =>
+          observeRpcEffect(WS_METHODS.dictationAudioFrame, dictation.writeFrame(input), {
+            "rpc.aggregate": "dictation",
+          }),
+        [WS_METHODS.dictationStop]: (input) =>
+          observeRpcEffect(WS_METHODS.dictationStop, dictation.stopSession(input), {
+            "rpc.aggregate": "dictation",
+          }),
+        [WS_METHODS.dictationRescan]: () =>
+          observeRpcEffect(
+            WS_METHODS.dictationRescan,
+            Effect.gen(function* () {
+              const fresh = yield* Effect.promise(() => probeDictationCapability(dictationProbeIo));
+              yield* Ref.set(dictationCapabilityRef, fresh);
+              return fresh;
+            }),
+            { "rpc.aggregate": "dictation" },
+          ),
+        [WS_METHODS.subscribeDictation]: (_input) =>
+          observeRpcStreamEffect(WS_METHODS.subscribeDictation, Effect.succeed(dictation.events), {
+            "rpc.aggregate": "dictation",
+          }),
       });
     }),
   );

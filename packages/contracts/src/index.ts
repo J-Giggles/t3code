@@ -18,4 +18,5 @@ export * from "./orchestration.ts";
 export * from "./editor.ts";
 export * from "./project.ts";
 export * from "./filesystem.ts";
+export * from "./dictation.ts";
 export * from "./rpc.ts";
