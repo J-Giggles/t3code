@@ -28,8 +28,8 @@ So the chosen approach **does not depend on hyprwhspr at runtime**. We build our
 - [x] Wire server WS handlers in `wsServer.ts` for `dictation.start | dictation.audioFrame | dictation.stop`
 - [x] Implement `pcmResamplerWorklet.ts` — AudioWorkletProcessor, linear resample to 16 kHz Int16 mono, 50 ms frames (logic factored out for unit-testability without an AudioContext)
 - [x] Implement `audioCapture.ts` — getUserMedia (EC/NS/AGC default-on), AudioContext + worklet, secure-context guard, suspend/resume hygiene (`visibilitychange`, `track.onended`)
-- [ ] Implement `dictationStore.ts` — Effect Atom store, state machine `idle | requesting-permission | recording | stopping | error`
-- [ ] Implement `dictationCapability.ts` — combine server capability flag with browser checks (`isSecureContext`, `navigator.mediaDevices`)
+- [x] Implement `dictationStore.ts` — Effect Atom store, state machine `idle | requesting-permission | recording | stopping | error`
+- [x] Implement `dictationCapability.ts` — combine server capability flag with browser checks (`isSecureContext`, `navigator.mediaDevices`)
 - [ ] Implement `DictationPlugin.tsx` — Lexical plugin, register `INSERT_DICTATION_PARTIAL_COMMAND` and `COMMIT_DICTATION_COMMAND`, anchor lifecycle (zero-width text node, partial replaces, commit promotes + fresh anchor), `HISTORY_MERGE_TAG` so partials collapse to one undo entry per commit
 - [ ] Implement `ComposerDictateButton.tsx` — visual states (idle / requesting-permission / recording / stopping / error / unavailable-secure-context), pulsing red recording state, `preserveComposerFocusOnPointerDown`
 - [ ] Mount `DictationPlugin` in `ComposerPromptEditor.tsx`
