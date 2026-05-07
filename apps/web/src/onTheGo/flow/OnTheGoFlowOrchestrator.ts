@@ -30,18 +30,42 @@ export type OrchestratorDeps = {
   countdownMs?: number;
 };
 
-export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestrator {
-  void deps;
+async function enterListenLoop(notification: Notification): Promise<void> {
+  void notification;
+}
 
+export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestrator {
   const state = createSignal<FlowState>("idle");
   const caption = createSignal("");
   const history = createSignal<Turn[]>([]);
+  let currentNotification: Notification | undefined;
 
   return {
     state,
     caption,
     history,
-    async enter(_notification) {},
+    async enter(notification) {
+      if (state.value !== "idle") {
+        throw new Error(`Cannot enter on-the-go flow: not in idle state (${state.value})`);
+      }
+
+      currentNotification = notification;
+      state.set("entering");
+      state.set("summarizing");
+
+      const summary = await deps.summaryAdapter.summarize({
+        agentMessage: notification.agentLastMessage,
+        userMessage: notification.userLastMessage,
+      });
+
+      caption.set(summary);
+      history.set([{ role: "assistant", text: summary, at: Date.now() }]);
+
+      await deps.voiceAdapter.speak(summary);
+
+      state.set("conversing");
+      await enterListenLoop(currentNotification);
+    },
     async resume(_threadId) {},
     async pause(_reason) {},
     async cancel() {},
