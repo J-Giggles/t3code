@@ -1,6 +1,7 @@
 export interface AudioCaptureOptions {
   workletUrl: string;
   onFrame: (frame: ArrayBuffer) => void;
+  onTrackEnded?: () => void;
 }
 
 export interface AudioCaptureHandle {
@@ -33,9 +34,28 @@ export async function startAudioCapture(options: AudioCaptureOptions): Promise<A
   };
   sourceNode.connect(workletNode);
 
+  const trackEndedListeners: Array<{ track: MediaStreamTrack; listener: () => void }> = [];
+  if (options.onTrackEnded) {
+    const fire = options.onTrackEnded;
+    let fired = false;
+    const onceListener = () => {
+      if (fired) return;
+      fired = true;
+      fire();
+    };
+    for (const track of stream.getTracks()) {
+      track.addEventListener("ended", onceListener);
+      trackEndedListeners.push({ track, listener: onceListener });
+    }
+  }
+
   const handle: AudioCaptureHandle & { __workletNode?: AudioWorkletNode } = {
     async stop() {
       workletNode.port.onmessage = null;
+      for (const { track, listener } of trackEndedListeners) {
+        track.removeEventListener("ended", listener);
+      }
+      trackEndedListeners.length = 0;
       try {
         workletNode.disconnect();
       } catch {}

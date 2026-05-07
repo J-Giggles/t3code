@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { startAudioCapture, type AudioCaptureHandle } from "./audioCapture.ts";
+import { startAudioCapture } from "./audioCapture.ts";
 
 class FakeAudioContext {
   sampleRate = 48_000;
@@ -16,10 +16,32 @@ class FakeAudioWorkletNode {
   disconnect = vi.fn();
 }
 
-const fakeStream = (() => {
-  const track = { stop: vi.fn(), addEventListener: vi.fn() };
-  return { getAudioTracks: () => [track], getTracks: () => [track] } as never;
-})();
+interface FakeTrack {
+  stop: ReturnType<typeof vi.fn>;
+  addEventListener: ReturnType<typeof vi.fn>;
+  removeEventListener: ReturnType<typeof vi.fn>;
+  __endedListeners: Array<() => void>;
+}
+
+function createFakeTrack(): FakeTrack {
+  const endedListeners: Array<() => void> = [];
+  return {
+    stop: vi.fn(),
+    addEventListener: vi.fn((type: string, listener: () => void) => {
+      if (type === "ended") endedListeners.push(listener);
+    }),
+    removeEventListener: vi.fn((type: string, listener: () => void) => {
+      if (type === "ended") {
+        const index = endedListeners.indexOf(listener);
+        if (index !== -1) endedListeners.splice(index, 1);
+      }
+    }),
+    __endedListeners: endedListeners,
+  };
+}
+
+let fakeStream: { getAudioTracks: () => FakeTrack[]; getTracks: () => FakeTrack[] };
+let fakeTrack: FakeTrack;
 
 beforeEach(() => {
   // @ts-expect-error - shimming JSDOM
@@ -29,6 +51,8 @@ beforeEach(() => {
   globalThis.AudioContext = FakeAudioContext;
   // @ts-expect-error - shimming JSDOM
   globalThis.AudioWorkletNode = FakeAudioWorkletNode;
+  fakeTrack = createFakeTrack();
+  fakeStream = { getAudioTracks: () => [fakeTrack], getTracks: () => [fakeTrack] };
   // @ts-expect-error - shimming JSDOM
   globalThis.navigator.mediaDevices = {
     getUserMedia: vi.fn(async () => fakeStream),
@@ -74,9 +98,42 @@ describe("startAudioCapture", () => {
   it("stop() releases the MediaStream tracks and closes the AudioContext", async () => {
     const handle = await startAudioCapture({ workletUrl: "/x.js", onFrame: () => {} });
     await handle.stop();
-    const track = (
-      fakeStream as never as { getAudioTracks(): { stop: ReturnType<typeof vi.fn> }[] }
-    ).getAudioTracks()[0]!;
-    expect(track.stop).toHaveBeenCalled();
+    expect(fakeTrack.stop).toHaveBeenCalled();
+  });
+
+  it("invokes onTrackEnded when the track fires the ended event", async () => {
+    const onTrackEnded = vi.fn();
+    await startAudioCapture({
+      workletUrl: "/x.js",
+      onFrame: () => {},
+      onTrackEnded,
+    });
+    expect(fakeTrack.addEventListener).toHaveBeenCalledWith("ended", expect.any(Function));
+    for (const listener of fakeTrack.__endedListeners) listener();
+    expect(onTrackEnded).toHaveBeenCalledTimes(1);
+  });
+
+  it("debounces multiple ended events so onTrackEnded fires only once", async () => {
+    const onTrackEnded = vi.fn();
+    await startAudioCapture({
+      workletUrl: "/x.js",
+      onFrame: () => {},
+      onTrackEnded,
+    });
+    for (const listener of fakeTrack.__endedListeners) {
+      listener();
+      listener();
+    }
+    expect(onTrackEnded).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes ended listeners on stop()", async () => {
+    const handle = await startAudioCapture({
+      workletUrl: "/x.js",
+      onFrame: () => {},
+      onTrackEnded: () => {},
+    });
+    await handle.stop();
+    expect(fakeTrack.removeEventListener).toHaveBeenCalledWith("ended", expect.any(Function));
   });
 });

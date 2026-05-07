@@ -70,6 +70,12 @@ it.effect("parses keybinding rules", () =>
       command: "thread.previous",
     });
     assert.strictEqual(parsedThreadPrevious.command, "thread.previous");
+
+    const parsedDictationToggle = yield* decode(KeybindingRule, {
+      key: "ctrl+shift+m",
+      command: "dictation.toggle",
+    });
+    assert.strictEqual(parsedDictationToggle.command, "dictation.toggle");
   }),
 );
 

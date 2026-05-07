@@ -880,6 +880,10 @@ export interface ComposerPromptEditorHandle {
     expandedCursor: number;
     terminalContextIds: string[];
   };
+  dispatchLexicalCommand: <TPayload>(
+    command: import("lexical").LexicalCommand<TPayload>,
+    payload: TPayload,
+  ) => void;
 }
 
 interface ComposerPromptEditorProps {
@@ -1562,8 +1566,11 @@ function ComposerPromptEditorInner({
         );
       },
       readSnapshot,
+      dispatchLexicalCommand: (command, payload) => {
+        editor.dispatchCommand(command, payload);
+      },
     }),
-    [focusAt, readSnapshot],
+    [editor, focusAt, readSnapshot],
   );
 
   const handleEditorChange = useCallback((editorState: EditorState) => {

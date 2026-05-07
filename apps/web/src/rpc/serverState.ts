@@ -296,6 +296,10 @@ export function useServerObservability(): ServerConfig["observability"] | null {
   return useAtomValue(serverConfigAtom, selectObservability);
 }
 
+export function useServerDictationCapability(): DictationCapability | null {
+  return useAtomValue(serverConfigAtom, selectDictationCapability);
+}
+
 export function useServerWelcomeSubscription(
   listener: (payload: ServerLifecycleWelcomePayload) => void,
 ): void {

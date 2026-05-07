@@ -31,15 +31,15 @@ So the chosen approach **does not depend on hyprwhspr at runtime**. We build our
 - [x] Implement `dictationStore.ts` — Effect Atom store, state machine `idle | requesting-permission | recording | stopping | error`
 - [x] Implement `dictationCapability.ts` — combine server capability flag with browser checks (`isSecureContext`, `navigator.mediaDevices`)
 - [x] Implement `DictationPlugin.tsx` — Lexical plugin, register `INSERT_DICTATION_PARTIAL_COMMAND` and `COMMIT_DICTATION_COMMAND`, anchor lifecycle (zero-width text node, partial replaces, commit promotes + fresh anchor), `HISTORY_MERGE_TAG` so partials collapse to one undo entry per commit
-- [ ] Implement `ComposerDictateButton.tsx` — visual states (idle / requesting-permission / recording / stopping / error / unavailable-secure-context), pulsing red recording state, `preserveComposerFocusOnPointerDown`
+- [x] Implement `ComposerDictateButton.tsx` — visual states (idle / requesting-permission / recording / stopping / error / unavailable-secure-context), pulsing red recording state, `preserveComposerFocusOnPointerDown`
 - [x] Mount `DictationPlugin` in `ComposerPromptEditor.tsx`
-- [ ] Slot `ComposerDictateButton` into `ComposerPrimaryActions.tsx` before the Send button, always rendered when capability true (not gated on `promptHasText`, not collapsed by `CompactComposerControlsMenu`)
-- [ ] Add `Ctrl+Shift+M` keybinding via `apps/web/src/keybindings.ts`
+- [x] Slot `ComposerDictateButton` into `ComposerPrimaryActions.tsx` before the Send button, always rendered when capability true (not gated on `promptHasText`, not collapsed by `CompactComposerControlsMenu`)
+- [x] Add `Ctrl+Shift+M` keybinding via `apps/web/src/keybindings.ts`
 - [ ] Add a read-only `Dictation` status block to settings (capability, model label, binary path) — install instructions link to whisper.cpp docs; no in-app model download in v1
-- [ ] Subscribe `ChatComposer` to `dictationStore` events, dispatch Lexical commands accordingly
-- [ ] Auto-stop on thread switch (effect inside the existing thread route component)
-- [ ] Vite config touch: register the AudioWorklet file as a fingerprinted asset
-- [ ] Unit tests (see Testing strategy below)
+- [x] Subscribe `ChatComposer` to `dictationStore` events, dispatch Lexical commands accordingly
+- [x] Auto-stop on thread switch (effect inside the existing thread route component)
+- [x] Vite config touch: register the AudioWorklet file as a fingerprinted asset
+- [x] Unit tests (see Testing strategy below)
 - [ ] Integration tests (see Testing strategy below)
 - [ ] `bun fmt`, `bun lint`, `bun typecheck`, `bun run test` all green
 
