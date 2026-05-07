@@ -27,7 +27,7 @@ So the chosen approach **does not depend on hyprwhspr at runtime**. We build our
 - [x] Implement `dictationService.ts` — per-WS session state, warm-pool-of-one (30s idle keepalive), thread-switch cancel, stop-reason routing
 - [x] Wire server WS handlers in `wsServer.ts` for `dictation.start | dictation.audioFrame | dictation.stop`
 - [x] Implement `pcmResamplerWorklet.ts` — AudioWorkletProcessor, linear resample to 16 kHz Int16 mono, 50 ms frames (logic factored out for unit-testability without an AudioContext)
-- [ ] Implement `audioCapture.ts` — getUserMedia (EC/NS/AGC default-on), AudioContext + worklet, secure-context guard, suspend/resume hygiene (`visibilitychange`, `track.onended`)
+- [x] Implement `audioCapture.ts` — getUserMedia (EC/NS/AGC default-on), AudioContext + worklet, secure-context guard, suspend/resume hygiene (`visibilitychange`, `track.onended`)
 - [ ] Implement `dictationStore.ts` — Effect Atom store, state machine `idle | requesting-permission | recording | stopping | error`
 - [ ] Implement `dictationCapability.ts` — combine server capability flag with browser checks (`isSecureContext`, `navigator.mediaDevices`)
 - [ ] Implement `DictationPlugin.tsx` — Lexical plugin, register `INSERT_DICTATION_PARTIAL_COMMAND` and `COMMIT_DICTATION_COMMAND`, anchor lifecycle (zero-width text node, partial replaces, commit promotes + fresh anchor), `HISTORY_MERGE_TAG` so partials collapse to one undo entry per commit
