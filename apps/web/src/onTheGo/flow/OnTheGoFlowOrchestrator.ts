@@ -57,13 +57,28 @@ function buildContextRestorePrompt(history: Turn[]): string {
   return `Welcome back. I've restored this on-the-go session. Last turn, ${speaker}: ${lastTurn.text}`;
 }
 
+function isSameNotification(left: Notification, right: Notification): boolean {
+  return (
+    left.threadId === right.threadId &&
+    left.threadTitle === right.threadTitle &&
+    left.status === right.status &&
+    left.agentLastMessage === right.agentLastMessage &&
+    left.userLastMessage === right.userLastMessage &&
+    left.changeSummary === right.changeSummary &&
+    left.branch === right.branch &&
+    left.updatedAt === right.updatedAt
+  );
+}
+
 export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestrator {
   const state = createSignal<FlowState>("idle");
   const caption = createSignal("");
   const history = createSignal<Turn[]>([]);
   let currentNotification: Notification | null = null;
+  let pendingPauseSession: PausedSession | null = null;
   let countdownCancel: (() => void) | null = null;
   let listenLoopGeneration = 0;
+  const threadFlowEpochs = new Map<string, number>();
 
   async function enterListenLoop(): Promise<void> {
     const generation = listenLoopGeneration;
@@ -142,6 +157,15 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
     return state.value === expected;
   }
 
+  function getThreadFlowEpoch(threadId: Notification["threadId"]): number {
+    return threadFlowEpochs.get(String(threadId)) ?? 0;
+  }
+
+  function bumpThreadFlowEpoch(threadId: Notification["threadId"]): void {
+    const key = String(threadId);
+    threadFlowEpochs.set(key, (threadFlowEpochs.get(key) ?? 0) + 1);
+  }
+
   return {
     state,
     caption,
@@ -152,6 +176,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       }
 
       currentNotification = notification;
+      bumpThreadFlowEpoch(notification.threadId);
       const generation = listenLoopGeneration;
       state.set("entering");
       state.set("summarizing");
@@ -192,12 +217,15 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       let pausedSession: PausedSession;
       try {
         pausedSession = await deps.pausedSessionsStore.restore(threadId);
-        await deps.pausedSessionsStore.drop(threadId);
+        if (!isState("entering") || generation !== listenLoopGeneration) {
+          return;
+        }
       } catch (error) {
         if (generation === listenLoopGeneration && isState("entering")) {
           state.set("idle");
+          throw error;
         }
-        throw error;
+        return;
       }
 
       if (!isState("entering") || generation !== listenLoopGeneration) {
@@ -205,27 +233,81 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       }
 
       currentNotification = pausedSession.notification;
+      bumpThreadFlowEpoch(pausedSession.threadId);
       history.set([...pausedSession.history]);
 
       const restorePrompt = buildContextRestorePrompt(pausedSession.history);
       caption.set(restorePrompt);
-      state.set("conversing");
 
       try {
         await deps.voiceAdapter.speak(restorePrompt);
       } catch {
+        if (generation === listenLoopGeneration && isState("entering")) {
+          currentNotification = null;
+          history.set([]);
+          caption.set("");
+          state.set("idle");
+        }
         return;
       }
 
-      if (!isState("conversing")) {
+      if (!isState("entering") || generation !== listenLoopGeneration) {
         return;
       }
 
+      state.set("conversing");
       void enterListenLoop();
+      void deps.pausedSessionsStore.drop(threadId);
     },
     async pause(reason) {
       const notification = currentNotification;
-      if (notification === null || state.value === "idle" || state.value === "committing") {
+      if (
+        notification === null ||
+        state.value === "idle" ||
+        state.value === "pausing" ||
+        state.value === "committing"
+      ) {
+        return;
+      }
+
+      deps.voiceAdapter.interrupt();
+      countdownCancel?.();
+      listenLoopGeneration += 1;
+      const generation = listenLoopGeneration;
+      state.set("pausing");
+
+      const currentHistory = [...history.value];
+      const lastTurn = currentHistory.at(-1);
+      const pausedSession: PausedSession = {
+        threadId: notification.threadId,
+        notification,
+        history: currentHistory,
+        ...(lastTurn ? { pendingDraft: lastTurn.text } : {}),
+        pausedAt: Date.now(),
+        pauseReason: reason,
+      };
+      pendingPauseSession = pausedSession;
+      await deps.pausedSessionsStore.save(pausedSession);
+
+      if (generation !== listenLoopGeneration) {
+        const currentPausedSession = deps.pausedSessionsStore.list.value.find(
+          (session) => session.threadId === notification.threadId,
+        );
+        if (currentPausedSession === pausedSession) {
+          await deps.pausedSessionsStore.drop(notification.threadId);
+        }
+        pendingPauseSession = null;
+        return;
+      }
+
+      pendingPauseSession = null;
+      currentNotification = null;
+      history.set([]);
+      caption.set("");
+      state.set("idle");
+    },
+    async cancel() {
+      if (state.value === "idle") {
         return;
       }
 
@@ -233,23 +315,21 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       countdownCancel?.();
       listenLoopGeneration += 1;
 
-      const currentHistory = [...history.value];
-      const lastTurn = currentHistory.at(-1);
-      await deps.pausedSessionsStore.save({
-        threadId: notification.threadId,
-        notification,
-        history: currentHistory,
-        ...(lastTurn ? { pendingDraft: lastTurn.text } : {}),
-        pausedAt: Date.now(),
-        pauseReason: reason,
-      });
-
+      const pauseSessionToDrop = pendingPauseSession;
+      pendingPauseSession = null;
       currentNotification = null;
       history.set([]);
       caption.set("");
       state.set("idle");
+      if (pauseSessionToDrop !== null) {
+        const currentPausedSession = deps.pausedSessionsStore.list.value.find(
+          (session) => session.threadId === pauseSessionToDrop.threadId,
+        );
+        if (currentPausedSession === pauseSessionToDrop) {
+          await deps.pausedSessionsStore.drop(pauseSessionToDrop.threadId);
+        }
+      }
     },
-    async cancel() {},
     async shipIt() {
       const notification = currentNotification;
       if (state.value !== "conversing" || notification === null) {
@@ -298,12 +378,27 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       try {
         await deps.commitPrompt(notification.threadId, prompt);
       } catch {
+        if (generation !== listenLoopGeneration) {
+          return;
+        }
         caption.set("Couldn't deliver to main thread. Tap Ship it to retry.");
         resumeConversing();
         return;
       }
 
-      deps.notificationsStore.dismiss(notification.threadId);
+      const currentStoredNotification = deps.notificationsStore.notifications.value.find(
+        (item) => item.threadId === notification.threadId,
+      );
+      if (
+        currentStoredNotification !== undefined &&
+        isSameNotification(currentStoredNotification, notification)
+      ) {
+        deps.notificationsStore.dismiss(notification.threadId);
+      }
+      if (!isState("committing") || generation !== listenLoopGeneration) {
+        return;
+      }
+
       history.set([]);
       currentNotification = null;
       caption.set("");

@@ -35,6 +35,7 @@ export type FlowState =
   | "entering"
   | "summarizing"
   | "conversing"
+  | "pausing"
   | "composing"
   | "countdown"
   | "committing";

@@ -414,6 +414,997 @@ describe("OnTheGoFlowOrchestrator", () => {
     await enterPromise;
   });
 
+  it("cancel during conversing returns idle, clears history and caption, and does not save paused session", async () => {
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation."],
+    });
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    await orchestrator.cancel();
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+    expect(pausedSessionsStore.list.value).toEqual([]);
+
+    await enterPromise;
+  });
+
+  it("cancel during in-flight pause save does not drop a newer paused session", async () => {
+    let resolveSave!: () => void;
+    const savedSessions: PausedSession[] = [];
+    const newerSession: PausedSession = {
+      threadId: "thread-123" as Notification["threadId"],
+      notification: sampleNotification({ threadTitle: "Newer paused flow" }),
+      history: [{ role: "user", text: "newer paused instruction", at: 3_000 }],
+      pendingDraft: "newer paused instruction",
+      pausedAt: 4_000,
+      pauseReason: "manual",
+    };
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSave = resolve;
+          }),
+      ),
+      restore: vi.fn(async () => {
+        throw new Error("not used");
+      }),
+      drop: vi.fn(async (threadId) => {
+        const index = savedSessions.findIndex((session) => session.threadId === threadId);
+        if (index >= 0) {
+          savedSessions.splice(index, 1);
+          pausedSessionsStore.list.set([...savedSessions]);
+        }
+      }),
+    };
+    summary = new FakeSummaryAdapter({ summary: "Checkout is blocked on a totals mismatch." });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    const pausePromise = orchestrator.pause("manual");
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.save).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    savedSessions.push(newerSession);
+    pausedSessionsStore.list.set([...savedSessions]);
+    resolveSave();
+    await pausePromise;
+
+    expect(pausedSessionsStore.drop).not.toHaveBeenCalled();
+    expect(pausedSessionsStore.list.value).toEqual([newerSession]);
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+
+    await enterPromise;
+  });
+
+  it("cancel during in-flight pause save removes its own stale paused snapshot", async () => {
+    let resolveSave!: () => void;
+    const savedSessions: PausedSession[] = [];
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(
+        (session) =>
+          new Promise<void>((resolve) => {
+            savedSessions.push(session);
+            pausedSessionsStore.list.set([...savedSessions]);
+            resolveSave = resolve;
+          }),
+      ),
+      restore: vi.fn(async () => {
+        throw new Error("not used");
+      }),
+      drop: vi.fn(async (threadId) => {
+        const index = savedSessions.findIndex((session) => session.threadId === threadId);
+        if (index >= 0) {
+          savedSessions.splice(index, 1);
+          pausedSessionsStore.list.set([...savedSessions]);
+        }
+      }),
+    };
+    summary = new FakeSummaryAdapter({ summary: "Checkout is blocked on a totals mismatch." });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    const pausePromise = orchestrator.pause("manual");
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.save).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    expect(pausedSessionsStore.drop).toHaveBeenCalledWith("thread-123");
+    expect(pausedSessionsStore.list.value).toEqual([]);
+    resolveSave();
+    await pausePromise;
+
+    expect(pausedSessionsStore.drop).toHaveBeenCalledWith("thread-123");
+    expect(pausedSessionsStore.list.value).toEqual([]);
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+
+    await enterPromise;
+  });
+
+  it("shipIt is blocked while pause save is pending", async () => {
+    let resolveSave!: () => void;
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>([]),
+      save: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSave = resolve;
+          }),
+      ),
+      restore: vi.fn(async () => {
+        throw new Error("not used");
+      }),
+      drop: vi.fn(async () => undefined),
+    };
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    const pausePromise = orchestrator.pause("manual");
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.save).toHaveBeenCalledOnce();
+    });
+    await orchestrator.shipIt();
+
+    expect(summary.composeCalls).toEqual([]);
+    expect(commitPrompt).not.toHaveBeenCalled();
+
+    resolveSave();
+    await pausePromise;
+    await enterPromise;
+  });
+
+  it("pause is a no-op while a pause save is already pending", async () => {
+    let resolveSave!: () => void;
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>([]),
+      save: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSave = resolve;
+          }),
+      ),
+      restore: vi.fn(async () => {
+        throw new Error("not used");
+      }),
+      drop: vi.fn(async () => undefined),
+    };
+    summary = new FakeSummaryAdapter({ summary: "Checkout is blocked on a totals mismatch." });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    const firstPause = orchestrator.pause("manual");
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.save).toHaveBeenCalledOnce();
+    });
+    const secondPause = orchestrator.pause("manual");
+    await flushPromises();
+
+    expect(pausedSessionsStore.save).toHaveBeenCalledOnce();
+
+    resolveSave();
+    await firstPause;
+    await secondPause;
+    await enterPromise;
+  });
+
+  it("cancel interrupts the voice adapter", async () => {
+    voice.holdSpeak = true;
+    const enterPromise = orchestrator.enter(sampleNotification()).catch(() => undefined);
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts).toHaveLength(1);
+    });
+
+    await orchestrator.cancel();
+    await enterPromise;
+
+    expect(voice.interruptCount).toBeGreaterThanOrEqual(1);
+    expect(orchestrator.state.value).toBe("idle");
+  });
+
+  it("cancel from idle is a no-op", async () => {
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    await orchestrator.cancel();
+
+    expect(voice.interruptCount).toBe(0);
+    expect(pausedSessionsStore.list.value).toEqual([]);
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("cancel during countdown prevents commit and does not save paused session", async () => {
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation."],
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 50,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    const shipPromise = orchestrator.shipIt();
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("countdown");
+    });
+    await orchestrator.cancel();
+    await shipPromise;
+
+    expect(commitPrompt).not.toHaveBeenCalled();
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+    expect(pausedSessionsStore.list.value).toEqual([]);
+
+    await enterPromise;
+  });
+
+  it("cancel during committing is not undone by commit completion", async () => {
+    let resolveCommit!: () => void;
+    commitPrompt = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCommit = resolve;
+        }),
+    ) as CommitPromptMock;
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation."],
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    const notificationsStore = createNotificationsStore();
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    notificationsStore.add(sampleNotification());
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore,
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    const shipPromise = orchestrator.shipIt();
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("committing");
+    });
+    await orchestrator.cancel();
+
+    resolveCommit();
+    await shipPromise;
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+    expect(notificationsStore.notifications.value).toEqual([]);
+
+    await enterPromise;
+  });
+
+  it("cancel during committing does not dismiss a newer same-thread notification", async () => {
+    let resolveCommit!: () => void;
+    commitPrompt = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCommit = resolve;
+        }),
+    ) as CommitPromptMock;
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation."],
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    const notificationsStore = createNotificationsStore();
+    const originalNotification = sampleNotification();
+    const newerNotification = sampleNotification({
+      threadTitle: "Newer agent result",
+      agentLastMessage: "A newer agent update needs review.",
+      updatedAt: originalNotification.updatedAt + 1,
+    });
+    notificationsStore.add(originalNotification);
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore,
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(originalNotification);
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    const shipPromise = orchestrator.shipIt();
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("committing");
+    });
+    await orchestrator.cancel();
+    notificationsStore.add(newerNotification);
+
+    resolveCommit();
+    await shipPromise;
+
+    expect(notificationsStore.notifications.value).toEqual([newerNotification]);
+
+    await enterPromise;
+  });
+
+  it("cancel during held resume speech does not start a stale listen loop", async () => {
+    voice.holdSpeak = true;
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    const notification = sampleNotification();
+    await pausedSessionsStore.save({
+      threadId: notification.threadId,
+      notification,
+      history: [
+        {
+          role: "user",
+          text: "Please make the focused fix.",
+          at: 2_000,
+        },
+      ],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts[0]).toMatch(/welcome back/i);
+    });
+    await orchestrator.cancel();
+    voice.interrupt();
+    await resumePromise;
+
+    voice.queueListen("new flow request");
+    await flushPromises();
+
+    expect(summary.replyCalls).toHaveLength(0);
+    expect(orchestrator.state.value).toBe("idle");
+  });
+
+  it("cancel during held resume speech keeps the paused session resumable", async () => {
+    voice.holdSpeak = true;
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [
+        {
+          role: "user",
+          text: "Please make the focused fix.",
+          at: 2_000,
+        },
+      ],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    await pausedSessionsStore.save(session);
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts[0]).toMatch(/welcome back/i);
+    });
+    await orchestrator.cancel();
+    voice.interrupt();
+    await resumePromise;
+
+    expect(pausedSessionsStore.list.value).toEqual([session]);
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("shipIt is blocked during held resume speech", async () => {
+    voice.holdSpeak = true;
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    const notification = sampleNotification();
+    await pausedSessionsStore.save({
+      threadId: notification.threadId,
+      notification,
+      history: [
+        {
+          role: "user",
+          text: "Please make the focused fix.",
+          at: 2_000,
+        },
+      ],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts[0]).toMatch(/welcome back/i);
+    });
+    await orchestrator.shipIt();
+
+    expect(summary.composeCalls).toEqual([]);
+    expect(commitPrompt).not.toHaveBeenCalled();
+
+    await orchestrator.cancel();
+    voice.interrupt();
+    await resumePromise;
+  });
+
+  it("cancel during pending resume restore does not drop the paused session", async () => {
+    let resolveRestore!: (session: PausedSession) => void;
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [
+        {
+          role: "user",
+          text: "Please make the focused fix.",
+          at: 2_000,
+        },
+      ],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>([session]),
+      save: vi.fn(async () => undefined),
+      restore: vi.fn(
+        () =>
+          new Promise<PausedSession>((resolve) => {
+            resolveRestore = resolve;
+          }),
+      ),
+      drop: vi.fn(async () => undefined),
+    };
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.restore).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    resolveRestore(session);
+    await resumePromise;
+
+    expect(pausedSessionsStore.drop).not.toHaveBeenCalled();
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("cancel during pending resume restore suppresses stale restore errors", async () => {
+    let rejectRestore!: (error: Error) => void;
+    const notification = sampleNotification();
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>([]),
+      save: vi.fn(async () => undefined),
+      restore: vi.fn(
+        () =>
+          new Promise<PausedSession>((_, reject) => {
+            rejectRestore = reject;
+          }),
+      ),
+      drop: vi.fn(async () => undefined),
+    };
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.restore).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    rejectRestore(new Error("restore failed after cancel"));
+
+    await expect(resumePromise).resolves.toBeUndefined();
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("cancel during pending resume drop does not overwrite a newer paused session", async () => {
+    let resolveDrop!: () => void;
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [
+        {
+          role: "user",
+          text: "Please make the focused fix.",
+          at: 2_000,
+        },
+      ],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    const newerSession: PausedSession = {
+      threadId: notification.threadId,
+      notification: sampleNotification({ threadTitle: "Newer paused flow" }),
+      history: [{ role: "user", text: "newer paused instruction", at: 4_000 }],
+      pendingDraft: "newer paused instruction",
+      pausedAt: 5_000,
+      pauseReason: "manual",
+    };
+    const savedSessions: PausedSession[] = [session];
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(async (savedSession) => {
+        savedSessions.push(savedSession);
+        pausedSessionsStore.list.set([...savedSessions]);
+      }),
+      restore: vi.fn(async () => session),
+      drop: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            savedSessions.splice(0, savedSessions.length);
+            pausedSessionsStore.list.set([]);
+            resolveDrop = resolve;
+          }),
+      ),
+    };
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.drop).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    savedSessions.push(newerSession);
+    pausedSessionsStore.list.set([...savedSessions]);
+    resolveDrop();
+    await resumePromise;
+
+    expect(pausedSessionsStore.save).not.toHaveBeenCalled();
+    expect(pausedSessionsStore.list.value).toEqual([newerSession]);
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("cancel during pending resume drop does not restore the committed resumed session", async () => {
+    let resolveDrop!: () => void;
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [
+        {
+          role: "user",
+          text: "Please make the focused fix.",
+          at: 2_000,
+        },
+      ],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    const savedSessions: PausedSession[] = [session];
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(async (savedSession) => {
+        savedSessions.push(savedSession);
+        pausedSessionsStore.list.set([...savedSessions]);
+      }),
+      restore: vi.fn(async () => session),
+      drop: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            savedSessions.splice(0, savedSessions.length);
+            pausedSessionsStore.list.set([]);
+            resolveDrop = resolve;
+          }),
+      ),
+    };
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.drop).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    resolveDrop();
+    await resumePromise;
+
+    expect(pausedSessionsStore.save).not.toHaveBeenCalled();
+    expect(pausedSessionsStore.list.value).toEqual([]);
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("cancel during pending resume drop does not restore over a new active same-thread flow", async () => {
+    let resolveDrop!: () => void;
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [
+        {
+          role: "user",
+          text: "Please make the focused fix.",
+          at: 2_000,
+        },
+      ],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    const savedSessions: PausedSession[] = [session];
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(async (savedSession) => {
+        savedSessions.push(savedSession);
+        pausedSessionsStore.list.set([...savedSessions]);
+      }),
+      restore: vi.fn(async () => session),
+      drop: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            savedSessions.splice(0, savedSessions.length);
+            pausedSessionsStore.list.set([]);
+            resolveDrop = resolve;
+          }),
+      ),
+    };
+    summary = new FakeSummaryAdapter({ summary: "New active same-thread flow." });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.drop).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    const enterPromise = orchestrator.enter(notification);
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    resolveDrop();
+    await resumePromise;
+
+    expect(pausedSessionsStore.save).not.toHaveBeenCalled();
+    expect(pausedSessionsStore.list.value).toEqual([]);
+    expect(orchestrator.state.value).toBe("conversing");
+
+    voice.interrupt();
+    await enterPromise;
+  });
+
+  it("cancel during pending resume drop does not restore after a newer same-thread ship", async () => {
+    let resolveDrop!: () => void;
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [{ role: "user", text: "Please make the focused fix.", at: 2_000 }],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    const savedSessions: PausedSession[] = [session];
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(async (savedSession) => {
+        savedSessions.push(savedSession);
+        pausedSessionsStore.list.set([...savedSessions]);
+      }),
+      restore: vi.fn(async () => session),
+      drop: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            savedSessions.splice(0, savedSessions.length);
+            pausedSessionsStore.list.set([]);
+            resolveDrop = resolve;
+          }),
+      ),
+    };
+    summary = new FakeSummaryAdapter({
+      summary: "New active same-thread flow.",
+      composedPrompt: "Ship newer same-thread work.",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.drop).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    const enterPromise = orchestrator.enter(notification);
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+    await orchestrator.shipIt();
+
+    resolveDrop();
+    await resumePromise;
+
+    expect(commitPrompt).toHaveBeenCalledWith("thread-123", "Ship newer same-thread work.");
+    expect(pausedSessionsStore.save).not.toHaveBeenCalled();
+    expect(pausedSessionsStore.list.value).toEqual([]);
+    expect(orchestrator.state.value).toBe("idle");
+
+    await enterPromise;
+  });
+
+  it("cancel during pending resume drop does not restore after a newer same-thread resume ships", async () => {
+    let resolveOldDrop!: () => void;
+    const notification = sampleNotification();
+    const oldSession: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [{ role: "user", text: "old paused work", at: 1_000 }],
+      pendingDraft: "old paused work",
+      pausedAt: 2_000,
+      pauseReason: "manual",
+    };
+    const newerSession: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [{ role: "user", text: "newer paused work", at: 3_000 }],
+      pendingDraft: "newer paused work",
+      pausedAt: 4_000,
+      pauseReason: "manual",
+    };
+    const savedSessions: PausedSession[] = [oldSession];
+    let restoringNewerSession = false;
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(async (savedSession) => {
+        savedSessions.push(savedSession);
+        pausedSessionsStore.list.set([...savedSessions]);
+      }),
+      restore: vi.fn(async () => (restoringNewerSession ? newerSession : oldSession)),
+      drop: vi.fn(async () => {
+        if (!restoringNewerSession) {
+          await new Promise<void>((resolve) => {
+            savedSessions.splice(0, savedSessions.length);
+            pausedSessionsStore.list.set([]);
+            resolveOldDrop = resolve;
+          });
+          return;
+        }
+        savedSessions.splice(0, savedSessions.length);
+        pausedSessionsStore.list.set([]);
+      }),
+    };
+    summary = new FakeSummaryAdapter({
+      composedPrompt: "Ship newer resumed work.",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+
+    const oldResume = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.drop).toHaveBeenCalledOnce();
+    });
+    await orchestrator.cancel();
+    restoringNewerSession = true;
+    savedSessions.push(newerSession);
+    pausedSessionsStore.list.set([newerSession]);
+    const newerResume = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+    await orchestrator.shipIt();
+
+    resolveOldDrop();
+    await oldResume;
+    await newerResume;
+
+    expect(commitPrompt).toHaveBeenCalledWith("thread-123", "Ship newer resumed work.");
+    expect(pausedSessionsStore.save).not.toHaveBeenCalled();
+    expect(pausedSessionsStore.list.value).toEqual([]);
+  });
+
+  it("cancel during pending summary is not undone by stale enter continuation", async () => {
+    let resolveSummary!: (summary: string) => void;
+    summary = new FakeSummaryAdapter();
+    vi.spyOn(summary, "summarize").mockImplementation(async (input) => {
+      summary.summarizeCalls.push(input);
+      return new Promise<string>((resolve) => {
+        resolveSummary = resolve;
+      });
+    });
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(summary.summarizeCalls).toHaveLength(1);
+    });
+
+    await orchestrator.cancel();
+    resolveSummary("late summary should not resume");
+    await enterPromise;
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+    expect(voice.spokenTexts).not.toContain("late summary should not resume");
+    expect(pausedSessionsStore.list.value).toEqual([]);
+  });
+
   it("pause during committing does not save a duplicate paused session", async () => {
     let resolveCommit!: () => void;
     commitPrompt = vi.fn(
@@ -496,6 +1487,59 @@ describe("OnTheGoFlowOrchestrator", () => {
     voice.interrupt();
   });
 
+  it("resume starts listening before a slow paused-session drop settles", async () => {
+    let resolveDrop!: () => void;
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [{ role: "user", text: "Please make the focused fix.", at: 2_000 }],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    const savedSessions: PausedSession[] = [session];
+    const pausedSessionsStore: PausedSessionsStore = {
+      list: createSignal<PausedSession[]>(savedSessions),
+      save: vi.fn(async (savedSession) => {
+        savedSessions.push(savedSession);
+        pausedSessionsStore.list.set([...savedSessions]);
+      }),
+      restore: vi.fn(async () => session),
+      drop: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            savedSessions.splice(0, savedSessions.length);
+            pausedSessionsStore.list.set([]);
+            resolveDrop = resolve;
+          }),
+      ),
+    };
+    summary = new FakeSummaryAdapter({ replies: ["I'll continue from the resumed session."] });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    const resumePromise = orchestrator.resume(notification.threadId);
+    await vi.waitFor(() => {
+      expect(pausedSessionsStore.drop).toHaveBeenCalledOnce();
+    });
+    voice.queueListen("Continue after resume.");
+    await vi.waitFor(() => {
+      expect(summary.replyCalls).toHaveLength(1);
+    });
+
+    expect(orchestrator.state.value).toBe("conversing");
+    resolveDrop();
+    await resumePromise;
+    voice.interrupt();
+  });
+
   it("resume speaks a welcome back context restore prompt with the last turn", async () => {
     const pausedSessionsStore = createInMemoryPausedSessionsStore();
     const notification = sampleNotification();
@@ -534,6 +1578,42 @@ describe("OnTheGoFlowOrchestrator", () => {
     expect(voice.spokenTexts[0]).toContain("Please make the focused fix.");
     expect(orchestrator.caption.value).toBe(voice.spokenTexts[0]);
 
+    voice.interrupt();
+  });
+
+  it("resume speech failure returns idle and keeps paused session resumable", async () => {
+    const pausedSessionsStore = createInMemoryPausedSessionsStore();
+    const notification = sampleNotification();
+    const session: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: [{ role: "user", text: "Please make the focused fix.", at: 2_000 }],
+      pendingDraft: "Please make the focused fix.",
+      pausedAt: 3_000,
+      pauseReason: "manual",
+    };
+    await pausedSessionsStore.save(session);
+    vi.spyOn(voice, "speak").mockImplementation(() => {
+      const promise = Promise.reject(new Error("tts failed")) as ReturnType<typeof voice.speak>;
+      promise.abort = () => undefined;
+      return promise;
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore,
+      skill: "skill text",
+      commitPrompt,
+    });
+
+    await orchestrator.resume(notification.threadId);
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(orchestrator.history.value).toEqual([]);
+    expect(orchestrator.caption.value).toBe("");
+    expect(pausedSessionsStore.list.value).toEqual([session]);
+    await expect(orchestrator.enter(sampleNotification())).resolves.toBeUndefined();
     voice.interrupt();
   });
 
