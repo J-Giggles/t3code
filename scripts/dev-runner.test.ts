@@ -2,6 +2,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeOS from "node:os";
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Path } from "effect";
+import turboConfig from "../turbo.json" with { type: "json" };
 
 import {
   checkPortAvailabilityOnHosts,
@@ -12,6 +13,14 @@ import {
 } from "./dev-runner.ts";
 
 it.layer(NodeServices.layer)("dev-runner", (it) => {
+  describe("turbo environment", () => {
+    it.effect("passes WHISPER_MODEL through to dev server tasks", () =>
+      Effect.sync(() => {
+        assert.ok(turboConfig.globalEnv.includes("WHISPER_MODEL"));
+      }),
+    );
+  });
+
   describe("resolveOffset", () => {
     it.effect("uses explicit T3CODE_PORT_OFFSET when provided", () =>
       Effect.sync(() => {
