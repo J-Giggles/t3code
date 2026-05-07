@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { abortable } from "../abortable";
 import { FakeSummaryAdapter } from "../adapters/FakeSummaryAdapter";
 import { createNotificationsStore } from "../state/notificationsStore";
 import {
@@ -1719,6 +1720,462 @@ describe("OnTheGoFlowOrchestrator", () => {
 
     voice.interrupt();
     await enterPromise;
+  });
+
+  it("interruptBot during assistant TTS interrupts speech and starts a fresh listen", async () => {
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation.", "I'll include the second instruction too."],
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+    });
+    const listenSpy = vi.spyOn(voice, "listen");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    voice.holdSpeak = true;
+    voice.queueListen("Please make the focused fix.");
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts).toContain("I'll patch the totals calculation.");
+    });
+    const interruptCount = voice.interruptCount;
+
+    orchestrator.interruptBot();
+    voice.holdSpeak = false;
+
+    expect(voice.interruptCount).toBeGreaterThan(interruptCount);
+    await vi.waitFor(() => {
+      expect(listenSpy).toHaveBeenCalledTimes(2);
+    });
+
+    voice.queueListen("Also update the regression note.");
+    await vi.waitFor(() => {
+      expect(summary.replyCalls).toHaveLength(2);
+    });
+    expect(orchestrator.history.value.map((turn) => turn.text)).toEqual([
+      "Checkout is blocked on a totals mismatch.",
+      "Please make the focused fix.",
+      "I'll patch the totals calculation.",
+      "Also update the regression note.",
+      "I'll include the second instruction too.",
+    ]);
+
+    voice.interrupt();
+    await enterPromise;
+  });
+
+  it("interruptBot during initial summary TTS interrupts speech and starts listening", async () => {
+    voice.holdSpeak = true;
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation."],
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+    });
+    const listenSpy = vi.spyOn(voice, "listen");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts).toContain("Checkout is blocked on a totals mismatch.");
+    });
+    const interruptCount = voice.interruptCount;
+
+    try {
+      orchestrator.interruptBot();
+
+      await vi.waitFor(() => {
+        expect(voice.interruptCount).toBeGreaterThan(interruptCount);
+        expect(orchestrator.state.value).toBe("conversing");
+        expect(listenSpy).toHaveBeenCalledOnce();
+      });
+
+      voice.queueListen("Please make the focused fix.");
+      await vi.waitFor(() => {
+        expect(summary.replyCalls).toHaveLength(1);
+      });
+      expect(orchestrator.history.value.map((turn) => turn.text)).toEqual([
+        "Checkout is blocked on a totals mismatch.",
+        "Please make the focused fix.",
+        "I'll patch the totals calculation.",
+      ]);
+    } finally {
+      voice.interrupt();
+      await enterPromise;
+    }
+  });
+
+  it("interruptBot is a no-op when no bot TTS is active", () => {
+    orchestrator.interruptBot();
+
+    expect(voice.interruptCount).toBe(0);
+  });
+
+  it("idle timeout prompts once and then auto-pauses when the user stays silent", async () => {
+    vi.useFakeTimers();
+    try {
+      const pausedSessionsStore = createInMemoryPausedSessionsStore();
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore,
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        idleSecondPromptMs: 500,
+      });
+      const listenSpy = vi.spyOn(voice, "listen");
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(voice.spokenTexts).toContain("Still there?");
+      await vi.waitFor(() => {
+        expect(listenSpy).toHaveBeenCalledTimes(2);
+      });
+
+      await vi.advanceTimersByTimeAsync(500);
+      await enterPromise;
+
+      expect(orchestrator.state.value).toBe("idle");
+      expect(pausedSessionsStore.list.value).toHaveLength(1);
+      expect(pausedSessionsStore.list.value[0]?.pauseReason).toBe("idle-timeout");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("empty listen results count as silence for idle auto-pause", async () => {
+    vi.useFakeTimers();
+    try {
+      const pausedSessionsStore = createInMemoryPausedSessionsStore();
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore,
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        idleSecondPromptMs: 500,
+      });
+      voice.queueListen("");
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.advanceTimersByTimeAsync(500);
+      await enterPromise;
+
+      expect(orchestrator.state.value).toBe("idle");
+      expect(pausedSessionsStore.list.value).toHaveLength(1);
+      expect(pausedSessionsStore.list.value[0]?.pauseReason).toBe("idle-timeout");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stale listen partials do not mutate caption after cancel", async () => {
+    let stalePartial: ((text: string) => void) | undefined;
+    let listenAbort: (() => void) | undefined;
+    vi.spyOn(voice, "listen").mockImplementation((opts) => {
+      stalePartial = opts.onPartial;
+      const listen = abortable<{ finalText: string }>(() => {
+        // stay pending until cancel aborts the listen
+      });
+      listenAbort = listen.abort;
+      return listen;
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+    });
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+
+    await orchestrator.cancel();
+    stalePartial?.("stale partial after cancel");
+    listenAbort?.();
+    await enterPromise;
+
+    expect(orchestrator.caption.value).toBe("");
+  });
+
+  it("stale partial from aborted idle listen does not overwrite newer caption", async () => {
+    vi.useFakeTimers();
+    try {
+      const partials: Array<((text: string) => void) | undefined> = [];
+      const listenAborts: Array<() => void> = [];
+      vi.spyOn(voice, "listen").mockImplementation((opts) => {
+        partials.push(opts.onPartial);
+        const listen = abortable<{ finalText: string }>(() => {
+          // stay pending until idle timeout aborts this listen
+        });
+        listenAborts.push(listen.abort);
+        return listen;
+      });
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore: createInMemoryPausedSessionsStore(),
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        idleSecondPromptMs: 500,
+      });
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => {
+        expect(orchestrator.caption.value).toBe("Still there?");
+        expect(partials).toHaveLength(2);
+      });
+      partials[0]?.("stale partial from first listen");
+
+      expect(orchestrator.caption.value).toBe("Still there?");
+
+      await orchestrator.cancel();
+      listenAborts.at(-1)?.();
+      await enterPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stale partial from aborted idle listen does not overwrite idle prompt speech", async () => {
+    vi.useFakeTimers();
+    try {
+      const partials: Array<((text: string) => void) | undefined> = [];
+      const listenAborts: Array<() => void> = [];
+      vi.spyOn(voice, "listen").mockImplementation((opts) => {
+        partials.push(opts.onPartial);
+        const listen = abortable<{ finalText: string }>(() => {
+          // stay pending until idle timeout aborts this listen
+        });
+        listenAborts.push(listen.abort);
+        return listen;
+      });
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore: createInMemoryPausedSessionsStore(),
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        idleSecondPromptMs: 500,
+      });
+      const enterPromise = orchestrator.enter(sampleNotification()).catch(() => undefined);
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+      voice.holdSpeak = true;
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => {
+        expect(orchestrator.caption.value).toBe("Still there?");
+        expect(voice.spokenTexts).toContain("Still there?");
+      });
+      partials[0]?.("stale partial during idle prompt speech");
+
+      expect(orchestrator.caption.value).toBe("Still there?");
+
+      await orchestrator.cancel();
+      listenAborts.at(-1)?.();
+      voice.interrupt();
+      await enterPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("idle timeout timers do not mutate the flow after cancel", async () => {
+    vi.useFakeTimers();
+    try {
+      const pausedSessionsStore = createInMemoryPausedSessionsStore();
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore,
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        idleSecondPromptMs: 500,
+      });
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+
+      await orchestrator.cancel();
+      await vi.advanceTimersByTimeAsync(2_000);
+      await enterPromise;
+
+      expect(orchestrator.state.value).toBe("idle");
+      expect(voice.spokenTexts).not.toContain("Still there?");
+      expect(pausedSessionsStore.list.value).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shipIt clears bot speech state when interrupting held assistant TTS", async () => {
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation.", "I'll handle the follow-up."],
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 50,
+    });
+    const listenSpy = vi.spyOn(voice, "listen");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("conversing");
+    });
+    voice.holdSpeak = true;
+    voice.queueListen("Please make the focused fix.");
+    await vi.waitFor(() => {
+      expect(voice.spokenTexts).toContain("I'll patch the totals calculation.");
+    });
+
+    const shipPromise = orchestrator.shipIt();
+    await vi.waitFor(() => {
+      expect(orchestrator.state.value).toBe("countdown");
+    });
+    orchestrator.cancelShip();
+    await shipPromise;
+    const interruptCount = voice.interruptCount;
+    const listenCallsBeforeInterruptBot = listenSpy.mock.calls.length;
+
+    orchestrator.interruptBot();
+    expect(listenSpy.mock.calls.length).toBe(listenCallsBeforeInterruptBot);
+
+    voice.queueListen("Continue normally.");
+    await vi.waitFor(() => {
+      expect(summary.replyCalls).toHaveLength(2);
+    });
+
+    expect(voice.interruptCount).toBe(interruptCount);
+
+    voice.interrupt();
+    await enterPromise;
+  });
+
+  it("successful ship interrupts the countdown preview speech before returning idle", async () => {
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll patch the totals calculation."],
+      composedPrompt: "Patch the totals calculation and keep tests focused.",
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      commitPrompt,
+      countdownMs: 1,
+    });
+    voice.queueListen("Please make the focused fix.");
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+    voice.holdSpeak = true;
+    const interruptCount = voice.interruptCount;
+
+    await orchestrator.shipIt();
+
+    expect(orchestrator.state.value).toBe("idle");
+    expect(voice.spokenTexts.at(-1)).toContain("Sending:");
+    expect(voice.interruptCount).toBeGreaterThan(interruptCount);
+
+    await enterPromise;
+  });
+
+  it("interruptBot during idle prompt TTS interrupts and starts a fresh listen", async () => {
+    vi.useFakeTimers();
+    try {
+      summary = new FakeSummaryAdapter({
+        summary: "Checkout is blocked on a totals mismatch.",
+        replies: ["I'll continue after the idle prompt."],
+      });
+      orchestrator = createOrchestrator({
+        voiceAdapter: voice,
+        summaryAdapter: summary,
+        notificationsStore: createNotificationsStore(),
+        pausedSessionsStore: createInMemoryPausedSessionsStore(),
+        skill: "skill text",
+        commitPrompt,
+        idleTimeoutMs: 1_000,
+        idleSecondPromptMs: 500,
+      });
+      const listenSpy = vi.spyOn(voice, "listen");
+      const enterPromise = orchestrator.enter(sampleNotification());
+      await vi.waitFor(() => {
+        expect(orchestrator.state.value).toBe("conversing");
+      });
+      voice.holdSpeak = true;
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => {
+        expect(voice.spokenTexts).toContain("Still there?");
+      });
+      const interruptCount = voice.interruptCount;
+
+      orchestrator.interruptBot();
+      voice.holdSpeak = false;
+
+      expect(voice.interruptCount).toBeGreaterThan(interruptCount);
+      await vi.waitFor(() => {
+        expect(listenSpy).toHaveBeenCalledTimes(2);
+      });
+      voice.queueListen("Continue after idle prompt.");
+      await vi.waitFor(() => {
+        expect(summary.replyCalls).toHaveLength(1);
+      });
+
+      voice.interrupt();
+      await enterPromise;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("transitions conversing to composing to countdown to committing to idle", async () => {

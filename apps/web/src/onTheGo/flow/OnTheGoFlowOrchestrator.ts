@@ -78,22 +78,117 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
   let pendingPauseSession: PausedSession | null = null;
   let countdownCancel: (() => void) | null = null;
   let listenLoopGeneration = 0;
-  const threadFlowEpochs = new Map<string, number>();
+  let listenAttemptId = 0;
+  let botSpeechInProgress = false;
+
+  type ListenOutcome =
+    | { kind: "final"; finalText: string }
+    | { kind: "idle" }
+    | { kind: "aborted" }
+    | { kind: "stale" };
+
+  async function listenWithIdleTimeout(
+    idleTimeoutMs: number,
+    generation: number,
+  ): Promise<ListenOutcome> {
+    let idleTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+    const currentListenAttemptId = (listenAttemptId += 1);
+    const listenPromise = deps.voiceAdapter.listen({
+      silenceTimeoutMs: deps.silenceTimeoutMs ?? 1_500,
+      onPartial: (text) => {
+        if (
+          state.value === "conversing" &&
+          generation === listenLoopGeneration &&
+          currentListenAttemptId === listenAttemptId
+        ) {
+          caption.set(text);
+        }
+      },
+    });
+    const listened = listenPromise.then(
+      (result): ListenOutcome =>
+        result.finalText.trim() === ""
+          ? { kind: "idle" }
+          : { kind: "final", finalText: result.finalText },
+      (): ListenOutcome => ({ kind: "aborted" }),
+    );
+    const idled = new Promise<ListenOutcome>((resolve) => {
+      idleTimer = globalThis.setTimeout(() => {
+        resolve({ kind: "idle" });
+      }, idleTimeoutMs);
+    });
+
+    try {
+      const outcome = await Promise.race([listened, idled]);
+      if (outcome.kind === "idle") {
+        listenPromise.abort();
+        if (currentListenAttemptId === listenAttemptId) {
+          listenAttemptId += 1;
+        }
+      }
+
+      if (state.value !== "conversing" || generation !== listenLoopGeneration) {
+        return { kind: "stale" };
+      }
+
+      return outcome;
+    } finally {
+      if (idleTimer !== null) {
+        globalThis.clearTimeout(idleTimer);
+      }
+    }
+  }
+
+  async function nextUserFinalText(generation: number): Promise<string | null> {
+    const firstListen = await listenWithIdleTimeout(deps.idleTimeoutMs ?? 30_000, generation);
+    if (firstListen.kind === "final") {
+      return firstListen.finalText;
+    }
+    if (firstListen.kind !== "idle") {
+      return null;
+    }
+
+    const idlePrompt = "Still there?";
+    caption.set(idlePrompt);
+    try {
+      botSpeechInProgress = true;
+      await deps.voiceAdapter.speak(idlePrompt);
+    } catch {
+      if (state.value === "conversing" && generation === listenLoopGeneration) {
+        await pauseFlow("idle-timeout");
+      }
+      return null;
+    } finally {
+      if (generation === listenLoopGeneration) {
+        botSpeechInProgress = false;
+      }
+    }
+
+    if (state.value !== "conversing" || generation !== listenLoopGeneration) {
+      return null;
+    }
+
+    const secondListen = await listenWithIdleTimeout(deps.idleSecondPromptMs ?? 15_000, generation);
+    if (secondListen.kind === "final") {
+      return secondListen.finalText;
+    }
+    if (secondListen.kind === "idle") {
+      await pauseFlow("idle-timeout");
+    }
+
+    return null;
+  }
 
   async function enterListenLoop(): Promise<void> {
     const generation = listenLoopGeneration;
     while (state.value === "conversing") {
       let finalText: string;
 
-      try {
-        const result = await deps.voiceAdapter.listen({
-          silenceTimeoutMs: deps.silenceTimeoutMs ?? 1_500,
-          onPartial: caption.set,
-        });
-        finalText = result.finalText;
-      } catch {
+      const nextFinalText = await nextUserFinalText(generation);
+      if (nextFinalText === null) {
         return;
       }
+      finalText = nextFinalText;
 
       if (state.value !== "conversing" || generation !== listenLoopGeneration) {
         return;
@@ -125,9 +220,14 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       caption.set(reply);
 
       try {
+        botSpeechInProgress = true;
         await deps.voiceAdapter.speak(reply);
       } catch {
         return;
+      } finally {
+        if (generation === listenLoopGeneration) {
+          botSpeechInProgress = false;
+        }
       }
     }
   }
@@ -157,13 +257,53 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
     return state.value === expected;
   }
 
-  function getThreadFlowEpoch(threadId: Notification["threadId"]): number {
-    return threadFlowEpochs.get(String(threadId)) ?? 0;
-  }
+  async function pauseFlow(reason: PauseReason): Promise<void> {
+    const notification = currentNotification;
+    if (
+      notification === null ||
+      state.value === "idle" ||
+      state.value === "pausing" ||
+      state.value === "committing"
+    ) {
+      return;
+    }
 
-  function bumpThreadFlowEpoch(threadId: Notification["threadId"]): void {
-    const key = String(threadId);
-    threadFlowEpochs.set(key, (threadFlowEpochs.get(key) ?? 0) + 1);
+    deps.voiceAdapter.interrupt();
+    countdownCancel?.();
+    listenLoopGeneration += 1;
+    botSpeechInProgress = false;
+    const generation = listenLoopGeneration;
+    state.set("pausing");
+
+    const currentHistory = [...history.value];
+    const lastTurn = currentHistory.at(-1);
+    const pausedSession: PausedSession = {
+      threadId: notification.threadId,
+      notification,
+      history: currentHistory,
+      ...(lastTurn ? { pendingDraft: lastTurn.text } : {}),
+      pausedAt: Date.now(),
+      pauseReason: reason,
+    };
+    pendingPauseSession = pausedSession;
+    await deps.pausedSessionsStore.save(pausedSession);
+
+    if (generation !== listenLoopGeneration) {
+      const currentPausedSession = deps.pausedSessionsStore.list.value.find(
+        (session) => session.threadId === notification.threadId,
+      );
+      if (currentPausedSession === pausedSession) {
+        await deps.pausedSessionsStore.drop(notification.threadId);
+      }
+      pendingPauseSession = null;
+      return;
+    }
+
+    pendingPauseSession = null;
+    currentNotification = null;
+    history.set([]);
+    caption.set("");
+    state.set("idle");
   }
 
   return {
@@ -176,7 +316,6 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       }
 
       currentNotification = notification;
-      bumpThreadFlowEpoch(notification.threadId);
       const generation = listenLoopGeneration;
       state.set("entering");
       state.set("summarizing");
@@ -194,9 +333,14 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       history.set([{ role: "assistant", text: summary, at: Date.now() }]);
 
       try {
+        botSpeechInProgress = true;
         await deps.voiceAdapter.speak(summary);
       } catch {
         return;
+      } finally {
+        if (generation === listenLoopGeneration) {
+          botSpeechInProgress = false;
+        }
       }
 
       if (!isState("summarizing") || generation !== listenLoopGeneration) {
@@ -233,7 +377,6 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       }
 
       currentNotification = pausedSession.notification;
-      bumpThreadFlowEpoch(pausedSession.threadId);
       history.set([...pausedSession.history]);
 
       const restorePrompt = buildContextRestorePrompt(pausedSession.history);
@@ -260,51 +403,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       void deps.pausedSessionsStore.drop(threadId);
     },
     async pause(reason) {
-      const notification = currentNotification;
-      if (
-        notification === null ||
-        state.value === "idle" ||
-        state.value === "pausing" ||
-        state.value === "committing"
-      ) {
-        return;
-      }
-
-      deps.voiceAdapter.interrupt();
-      countdownCancel?.();
-      listenLoopGeneration += 1;
-      const generation = listenLoopGeneration;
-      state.set("pausing");
-
-      const currentHistory = [...history.value];
-      const lastTurn = currentHistory.at(-1);
-      const pausedSession: PausedSession = {
-        threadId: notification.threadId,
-        notification,
-        history: currentHistory,
-        ...(lastTurn ? { pendingDraft: lastTurn.text } : {}),
-        pausedAt: Date.now(),
-        pauseReason: reason,
-      };
-      pendingPauseSession = pausedSession;
-      await deps.pausedSessionsStore.save(pausedSession);
-
-      if (generation !== listenLoopGeneration) {
-        const currentPausedSession = deps.pausedSessionsStore.list.value.find(
-          (session) => session.threadId === notification.threadId,
-        );
-        if (currentPausedSession === pausedSession) {
-          await deps.pausedSessionsStore.drop(notification.threadId);
-        }
-        pendingPauseSession = null;
-        return;
-      }
-
-      pendingPauseSession = null;
-      currentNotification = null;
-      history.set([]);
-      caption.set("");
-      state.set("idle");
+      await pauseFlow(reason);
     },
     async cancel() {
       if (state.value === "idle") {
@@ -314,6 +413,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       deps.voiceAdapter.interrupt();
       countdownCancel?.();
       listenLoopGeneration += 1;
+      botSpeechInProgress = false;
 
       const pauseSessionToDrop = pendingPauseSession;
       pendingPauseSession = null;
@@ -338,6 +438,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
 
       deps.voiceAdapter.interrupt();
       listenLoopGeneration += 1;
+      botSpeechInProgress = false;
       const generation = listenLoopGeneration;
       state.set("composing");
 
@@ -399,6 +500,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         return;
       }
 
+      deps.voiceAdapter.interrupt();
       history.set([]);
       currentNotification = null;
       caption.set("");
@@ -413,6 +515,14 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       deps.voiceAdapter.interrupt();
       resumeConversing();
     },
-    interruptBot() {},
+    interruptBot() {
+      if (!botSpeechInProgress || (state.value !== "conversing" && state.value !== "summarizing")) {
+        return;
+      }
+
+      deps.voiceAdapter.interrupt();
+      botSpeechInProgress = false;
+      resumeConversing();
+    },
   };
 }
