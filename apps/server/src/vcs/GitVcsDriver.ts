@@ -17,6 +17,7 @@ import {
   type VcsRemoveWorktreeInput,
   type VcsStatusInput,
   type VcsStatusResult,
+  type VcsWorktree,
 } from "@t3tools/contracts";
 import * as GitVcsDriverCore from "./GitVcsDriverCore.ts";
 import * as VcsDriver from "./VcsDriver.ts";
@@ -206,6 +207,7 @@ export interface GitVcsDriverShape {
   ) => Effect.Effect<VcsSwitchRefResult, GitCommandError>;
   readonly initRepo: (input: VcsInitInput) => Effect.Effect<void, GitCommandError>;
   readonly listLocalBranchNames: (cwd: string) => Effect.Effect<string[], GitCommandError>;
+  readonly listWorktrees: (cwd: string) => Effect.Effect<readonly VcsWorktree[], GitCommandError>;
 }
 
 export class GitVcsDriver extends Context.Service<GitVcsDriver, GitVcsDriverShape>()(

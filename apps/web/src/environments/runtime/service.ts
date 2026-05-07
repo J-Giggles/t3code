@@ -6,6 +6,7 @@ import {
   type OrchestrationEvent,
   type OrchestrationShellSnapshot,
   type OrchestrationShellStreamEvent,
+  type ProjectId,
   type ServerConfig,
   type TerminalEvent,
   ThreadId,
@@ -57,6 +58,7 @@ import { createEnvironmentConnection, type EnvironmentConnection } from "./conne
 import {
   useStore,
   selectProjectsAcrossEnvironments,
+  selectProjectsForEnvironment,
   selectSidebarThreadSummaryByRef,
   selectThreadByRef,
   selectThreadsAcrossEnvironments,
@@ -116,6 +118,88 @@ const pendingSavedEnvironmentConnections = new Map<
 >();
 const environmentConnectionListeners = new Set<() => void>();
 const threadDetailSubscriptions = new Map<string, ThreadDetailSubscriptionEntry>();
+
+// Per-(environmentId, projectId) worktree subscription. Environment-scoped:
+// one subscription per project, no refcounting needed. Only live subscriptions
+// are stored here — entries are absent when no connection is available.
+const projectWorktreeSubscriptions = new Map<string, { readonly unsubscribe: () => void }>();
+
+function getProjectWorktreeSubscriptionKey(
+  environmentId: EnvironmentId,
+  projectId: ProjectId,
+): string {
+  return `${environmentId}:${projectId}`;
+}
+
+function attachProjectWorktreeSubscription(
+  environmentId: EnvironmentId,
+  projectId: ProjectId,
+  cwd: string,
+): void {
+  const key = getProjectWorktreeSubscriptionKey(environmentId, projectId);
+  if (projectWorktreeSubscriptions.has(key)) {
+    return;
+  }
+
+  const connection = readEnvironmentConnection(environmentId);
+  if (!connection) {
+    // No connection yet — reconcileProjectWorktreeSubscriptionsForEnvironment
+    // will be called again from registerConnection when the connection comes up.
+    return;
+  }
+
+  const unsubscribe = connection.client.orchestration.subscribeProjectWorktrees(
+    { projectId, cwd },
+    (event) => {
+      useStore.getState().syncServerProjectWorktrees(event.projectId, event.worktrees);
+    },
+  );
+  projectWorktreeSubscriptions.set(key, { unsubscribe });
+}
+
+function disposeProjectWorktreeSubscription(
+  environmentId: EnvironmentId,
+  projectId: ProjectId,
+): void {
+  const key = getProjectWorktreeSubscriptionKey(environmentId, projectId);
+  const entry = projectWorktreeSubscriptions.get(key);
+  if (!entry) {
+    return;
+  }
+  entry.unsubscribe();
+  projectWorktreeSubscriptions.delete(key);
+}
+
+function reconcileProjectWorktreeSubscriptionsForEnvironment(environmentId: EnvironmentId): void {
+  const projects = selectProjectsForEnvironment(useStore.getState(), environmentId);
+  const activeProjectIds = new Set(projects.map((p) => p.id));
+
+  // Remove subscriptions for projects that are no longer present.
+  for (const [key] of [...projectWorktreeSubscriptions]) {
+    if (!key.startsWith(`${environmentId}:`)) {
+      continue;
+    }
+    const projectId = key.slice(environmentId.length + 1) as ProjectId;
+    if (!activeProjectIds.has(projectId)) {
+      disposeProjectWorktreeSubscription(environmentId, projectId);
+    }
+  }
+
+  // Attach subscriptions for all current projects.
+  for (const project of projects) {
+    attachProjectWorktreeSubscription(environmentId, project.id, project.cwd);
+  }
+}
+
+function disposeProjectWorktreeSubscriptionsForEnvironment(environmentId: EnvironmentId): void {
+  for (const [key] of [...projectWorktreeSubscriptions]) {
+    if (key.startsWith(`${environmentId}:`)) {
+      const projectId = key.slice(environmentId.length + 1) as ProjectId;
+      disposeProjectWorktreeSubscription(environmentId, projectId);
+    }
+  }
+}
+
 const lastAppliedProjectionVersionByEnvironment = new Map<
   EnvironmentId,
   {
@@ -1057,6 +1141,7 @@ function applyShellEvent(event: OrchestrationShellStreamEvent, environmentId: En
     case "project-upserted":
     case "project-removed":
       syncProjectUiFromStore();
+      reconcileProjectWorktreeSubscriptionsForEnvironment(environmentId);
       return;
     case "thread-upserted":
       syncThreadUiFromStore();
@@ -1101,6 +1186,7 @@ function createEnvironmentConnectionHandlers() {
         snapshot.threads.map((thread) => thread.id),
       );
       reconcileThreadDetailSubscriptionEvictionForEnvironment(environmentId);
+      reconcileProjectWorktreeSubscriptionsForEnvironment(environmentId);
       reconcileSnapshotDerivedState();
     },
     applyTerminalEvent: (event: TerminalEvent, environmentId: EnvironmentId) => {
@@ -1250,6 +1336,7 @@ function registerConnection(connection: EnvironmentConnection): EnvironmentConne
   }
   environmentConnections.set(connection.environmentId, connection);
   attachThreadDetailSubscriptionsForEnvironment(connection.environmentId);
+  reconcileProjectWorktreeSubscriptionsForEnvironment(connection.environmentId);
   emitEnvironmentConnectionRegistryChange();
   return connection;
 }
@@ -1264,6 +1351,7 @@ async function removeConnection(environmentId: EnvironmentId): Promise<boolean> 
   environmentConnections.delete(environmentId);
   emitEnvironmentConnectionRegistryChange();
   detachThreadDetailSubscriptionsForEnvironment(environmentId);
+  disposeProjectWorktreeSubscriptionsForEnvironment(environmentId);
   await connection.dispose();
   return true;
 }

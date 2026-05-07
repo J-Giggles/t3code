@@ -10,6 +10,7 @@ import {
   ThreadId,
   TurnId,
   type OrchestrationEvent,
+  type VcsWorktree,
 } from "@t3tools/contracts";
 import { describe, expect, it } from "vitest";
 
@@ -23,6 +24,7 @@ import {
   selectThreadExistsByRef,
   setThreadBranch,
   selectThreadsAcrossEnvironments,
+  useStore,
   type AppState,
   type EnvironmentState,
 } from "./store";
@@ -56,6 +58,7 @@ function withActiveEnvironmentState(
   return {
     activeEnvironmentId,
     environmentStateById,
+    worktreesByProjectId: new Map(),
   };
 }
 
@@ -262,6 +265,7 @@ describe("environment state removal", () => {
         [remoteEnvironmentId]: removedState,
         [localEnvironmentId]: keptState,
       },
+      worktreesByProjectId: new Map(),
     };
 
     const next = removeEnvironmentState(state, remoteEnvironmentId);
@@ -277,6 +281,38 @@ describe("environment state removal", () => {
     const next = removeEnvironmentState(state, remoteEnvironmentId);
 
     expect(next).toBe(state);
+  });
+
+  it("clears worktreesByProjectId for projects in the removed environment", () => {
+    const removedProjectId = ProjectId.make("p-removed");
+    const keptProjectId = ProjectId.make("p-kept");
+    const baseEnvState: EnvironmentState =
+      makeEmptyState().environmentStateById[localEnvironmentId]!;
+    const removedEnvState: EnvironmentState = { ...baseEnvState, projectIds: [removedProjectId] };
+    const keptEnvState: EnvironmentState = { ...baseEnvState, projectIds: [keptProjectId] };
+    const worktreesByProjectId = new Map<ProjectId, readonly VcsWorktree[]>([
+      [
+        removedProjectId,
+        [{ path: "/r", branch: "main", headRef: null, isMain: true, isLocked: false }],
+      ],
+      [
+        keptProjectId,
+        [{ path: "/k", branch: "main", headRef: null, isMain: true, isLocked: false }],
+      ],
+    ]);
+    const state: AppState = {
+      activeEnvironmentId: localEnvironmentId,
+      environmentStateById: {
+        [remoteEnvironmentId]: removedEnvState,
+        [localEnvironmentId]: keptEnvState,
+      },
+      worktreesByProjectId,
+    };
+
+    const next = removeEnvironmentState(state, remoteEnvironmentId);
+
+    expect(next.worktreesByProjectId.has(removedProjectId)).toBe(false);
+    expect(next.worktreesByProjectId.has(keptProjectId)).toBe(true);
   });
 });
 
@@ -421,6 +457,7 @@ describe("setThreadBranch", () => {
         [localEnvironmentId]: environmentStateOf(makeState(localThread), localEnvironmentId),
         [remoteEnvironmentId]: environmentStateOf(makeState(remoteThread), remoteEnvironmentId),
       },
+      worktreesByProjectId: new Map(),
     };
 
     const next = setThreadBranch(
@@ -1048,5 +1085,33 @@ describe("incremental orchestration updates", () => {
       state: "running",
     });
     expect(threadsOf(next)[0]?.latestTurn?.sourceProposedPlan).toBeUndefined();
+  });
+});
+
+describe("worktreesByProjectId", () => {
+  it("syncServerProjectWorktrees populates worktreesByProjectId", () => {
+    const projectId = ProjectId.make("p-worktree-test");
+    useStore
+      .getState()
+      .syncServerProjectWorktrees(projectId, [
+        { path: "/repo", branch: "main", headRef: null, isMain: true, isLocked: false },
+      ]);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)).toHaveLength(1);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)?.[0]?.path).toBe("/repo");
+  });
+
+  it("syncServerProjectWorktrees replaces existing worktrees for a project", () => {
+    const projectId = ProjectId.make("p-worktree-replace");
+    useStore.getState().syncServerProjectWorktrees(projectId, [
+      { path: "/repo/a", branch: "feat/a", headRef: null, isMain: false, isLocked: false },
+      { path: "/repo/b", branch: "feat/b", headRef: null, isMain: true, isLocked: false },
+    ]);
+    useStore
+      .getState()
+      .syncServerProjectWorktrees(projectId, [
+        { path: "/repo/c", branch: "main", headRef: null, isMain: true, isLocked: false },
+      ]);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)).toHaveLength(1);
+    expect(useStore.getState().worktreesByProjectId.get(projectId)?.[0]?.path).toBe("/repo/c");
   });
 });

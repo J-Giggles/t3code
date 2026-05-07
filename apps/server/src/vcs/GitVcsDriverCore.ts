@@ -18,7 +18,7 @@ import {
 } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { GitCommandError, type VcsRef } from "@t3tools/contracts";
+import { GitCommandError, type VcsRef, type VcsWorktree } from "@t3tools/contracts";
 import { dedupeRemoteBranchesWithLocalMatches } from "@t3tools/shared/git";
 import { compactTraceAttributes } from "../observability/Attributes.ts";
 import { gitCommandDuration, gitCommandsTotal, withMetrics } from "../observability/Metrics.ts";
@@ -602,14 +602,91 @@ const collectOutput = Effect.fnUntraced(function* <E>(
   };
 });
 
-export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* () {
+/**
+ * Parse the porcelain output of `git worktree list --porcelain` into an array
+ * of VcsWorktreeInfo records.  This is a pure function with no side-effects so
+ * it can be unit-tested independently and shared between listWorktrees and
+ * listRefs.
+ *
+ * Porcelain format (one block per worktree, blocks separated by blank lines):
+ *   worktree /abs/path
+ *   HEAD <sha>
+ *   branch refs/heads/<name>   (or "detached" for a detached HEAD)
+ *   locked [reason]            (optional – present only when locked)
+ *   bare                       (optional – for bare clones)
+ */
+/**
+ * Normalize a worktree path so trailing slashes / double slashes don't
+ * cause spurious "changed" diffs in WorktreeDiscovery.worktreeSetEqual.
+ * Pure string transform — no filesystem access (intentionally).
+ */
+function normalizeWorktreePath(raw: string): string {
+  // Collapse runs of forward slashes, strip trailing slash (except root "/").
+  const collapsed = raw.replace(/\/+/g, "/");
+  if (collapsed.length > 1 && collapsed.endsWith("/")) {
+    return collapsed.slice(0, -1);
+  }
+  return collapsed;
+}
+
+export function parseWorktreePorcelain(stdout: string): readonly VcsWorktree[] {
+  const worktrees: VcsWorktree[] = [];
+  let path: string | null = null;
+  let headRef: string | null = null;
+  let branch: string | null = null;
+  let isLocked = false;
+  let isMain = true; // first block is always the main worktree
+
+  const flush = () => {
+    if (path !== null) {
+      worktrees.push({ path, headRef, branch, isMain, isLocked });
+    }
+  };
+
+  for (const rawLine of stdout.split("\n")) {
+    const line = rawLine.trimEnd();
+    if (line === "") {
+      flush();
+      path = null;
+      headRef = null;
+      branch = null;
+      isLocked = false;
+      isMain = false; // every block after the first is a linked worktree
+      continue;
+    }
+
+    if (line.startsWith("worktree ")) {
+      path = normalizeWorktreePath(line.slice("worktree ".length));
+    } else if (line.startsWith("HEAD ")) {
+      headRef = line.slice("HEAD ".length);
+    } else if (line.startsWith("branch refs/heads/")) {
+      branch = line.slice("branch refs/heads/".length);
+    } else if (line === "detached") {
+      branch = null;
+    } else if (line.startsWith("locked")) {
+      isLocked = true;
+    }
+  }
+  // Flush the last block (file may not end with a blank line)
+  flush();
+
+  return worktrees;
+}
+
+export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* (options?: {
+  executeOverride?: GitVcsDriver.GitVcsDriverShape["execute"];
+}) {
   const fileSystem = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const commandSpawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const { worktreesDir } = yield* ServerConfig;
 
-  const executeRaw: GitVcsDriver.GitVcsDriverShape["execute"] = Effect.fnUntraced(
-    function* (input) {
+  let executeRaw: GitVcsDriver.GitVcsDriverShape["execute"];
+
+  if (options?.executeOverride) {
+    executeRaw = options.executeOverride;
+  } else {
+    const commandSpawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    executeRaw = Effect.fnUntraced(function* (input) {
       const commandInput = {
         ...input,
         args: [...input.args],
@@ -706,8 +783,8 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
           }),
         ),
       );
-    },
-  );
+    });
+  }
 
   const execute: GitVcsDriver.GitVcsDriverShape["execute"] = (input) =>
     executeRaw(input).pipe(
@@ -1723,7 +1800,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         ),
       );
 
-      const [defaultRef, worktreeList, remoteBranchResult, remoteNamesResult, branchLastCommit] =
+      const [defaultRef, worktrees, remoteBranchResult, remoteNamesResult, branchLastCommit] =
         yield* Effect.all(
           [
             executeGit(
@@ -1735,14 +1812,8 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
                 allowNonZeroExit: true,
               },
             ),
-            executeGit(
-              "GitVcsDriver.listRefs.worktreeList",
-              input.cwd,
-              ["worktree", "list", "--porcelain"],
-              {
-                timeoutMs: 5_000,
-                allowNonZeroExit: true,
-              },
+            listWorktrees(input.cwd).pipe(
+              Effect.catch(() => Effect.succeed([] as readonly VcsWorktree[])),
             ),
             remoteBranchResultEffect,
             remoteNamesResultEffect,
@@ -1769,22 +1840,11 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
           ? defaultRef.stdout.trim().replace(/^refs\/remotes\/origin\//, "")
           : null;
 
+      // Build a branch→worktree-path map from the structured worktree list
       const worktreeMap = new Map<string, string>();
-      if (worktreeList.exitCode === 0) {
-        let currentPath: string | null = null;
-        for (const line of worktreeList.stdout.split("\n")) {
-          if (line.startsWith("worktree ")) {
-            const candidatePath = line.slice("worktree ".length);
-            const exists = yield* fileSystem.stat(candidatePath).pipe(
-              Effect.map(() => true),
-              Effect.catch(() => Effect.succeed(false)),
-            );
-            currentPath = exists ? candidatePath : null;
-          } else if (line.startsWith("branch refs/heads/") && currentPath) {
-            worktreeMap.set(line.slice("branch refs/heads/".length), currentPath);
-          } else if (line === "") {
-            currentPath = null;
-          }
+      for (const w of worktrees) {
+        if (w.branch !== null) {
+          worktreeMap.set(w.branch, w.path);
         }
       }
 
@@ -2109,6 +2169,33 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       ),
     );
 
+  const listWorktrees: GitVcsDriver.GitVcsDriverShape["listWorktrees"] = Effect.fn("listWorktrees")(
+    function* (cwd) {
+      const result = yield* executeGit(
+        "GitVcsDriver.listWorktrees",
+        cwd,
+        ["worktree", "list", "--porcelain"],
+        {
+          timeoutMs: 5_000,
+          fallbackErrorMessage: "git worktree list failed",
+        },
+      );
+      const parsed = parseWorktreePorcelain(result.stdout);
+      // Filter out worktrees whose paths no longer exist on disk (mirrors the
+      // behaviour of the original inline parser in listRefs).
+      const checked = yield* Effect.all(
+        parsed.map((w) =>
+          fileSystem.stat(w.path).pipe(
+            Effect.map(() => w as VcsWorktree | null),
+            Effect.catch(() => Effect.succeed(null)),
+          ),
+        ),
+        { concurrency: "unbounded" },
+      );
+      return checked.filter((w): w is VcsWorktree => w !== null);
+    },
+  );
+
   return GitVcsDriver.GitVcsDriver.of({
     execute,
     status,
@@ -2134,5 +2221,6 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     switchRef,
     initRepo,
     listLocalBranchNames,
+    listWorktrees,
   });
 });

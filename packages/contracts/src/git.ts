@@ -83,7 +83,7 @@ export const VcsRef = Schema.Struct({
 });
 export type VcsRef = typeof VcsRef.Type;
 
-const VcsWorktree = Schema.Struct({
+const GitCreatedWorktreeRef = Schema.Struct({
   path: TrimmedNonEmptyStringSchema,
   refName: TrimmedNonEmptyStringSchema,
 });
@@ -259,7 +259,7 @@ export const VcsListRefsResult = Schema.Struct({
 export type VcsListRefsResult = typeof VcsListRefsResult.Type;
 
 export const VcsCreateWorktreeResult = Schema.Struct({
-  worktree: VcsWorktree,
+  worktree: GitCreatedWorktreeRef,
 });
 export type VcsCreateWorktreeResult = typeof VcsCreateWorktreeResult.Type;
 
