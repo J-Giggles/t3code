@@ -144,6 +144,9 @@ export interface WsRpcClient {
     readonly getFullThreadDiff: RpcUnaryMethod<typeof ORCHESTRATION_WS_METHODS.getFullThreadDiff>;
     readonly subscribeShell: RpcStreamMethod<typeof ORCHESTRATION_WS_METHODS.subscribeShell>;
     readonly subscribeThread: RpcInputStreamMethod<typeof ORCHESTRATION_WS_METHODS.subscribeThread>;
+    readonly subscribeProjectWorktrees: RpcInputStreamMethod<
+      typeof ORCHESTRATION_WS_METHODS.subscribeProjectWorktrees
+    >;
   };
   readonly dictation: {
     readonly start: RpcUnaryMethod<typeof WS_METHODS.dictationStart>;
@@ -305,6 +308,12 @@ export function createWsRpcClient(transport: WsTransport): WsRpcClient {
           (client) => client[ORCHESTRATION_WS_METHODS.subscribeThread](input),
           listener,
           { ...options, tag: ORCHESTRATION_WS_METHODS.subscribeThread },
+        ),
+      subscribeProjectWorktrees: (input, listener, options) =>
+        transport.subscribe(
+          (client) => client[ORCHESTRATION_WS_METHODS.subscribeProjectWorktrees](input),
+          listener,
+          { ...options, tag: ORCHESTRATION_WS_METHODS.subscribeProjectWorktrees },
         ),
     },
     dictation: {

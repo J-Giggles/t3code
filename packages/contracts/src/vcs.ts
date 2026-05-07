@@ -130,6 +130,15 @@ export class VcsRepositoryDetectionError extends Schema.TaggedErrorClass<VcsRepo
   }
 }
 
+export const VcsWorktree = Schema.Struct({
+  path: Schema.String,
+  branch: Schema.NullOr(Schema.String),
+  headRef: Schema.NullOr(Schema.String),
+  isMain: Schema.Boolean,
+  isLocked: Schema.Boolean,
+});
+export type VcsWorktree = typeof VcsWorktree.Type;
+
 export class VcsUnsupportedOperationError extends Schema.TaggedErrorClass<VcsUnsupportedOperationError>()(
   "VcsUnsupportedOperationError",
   {

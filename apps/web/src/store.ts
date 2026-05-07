@@ -17,6 +17,7 @@ import type {
   ProjectId,
   ScopedProjectRef,
   ScopedThreadRef,
+  VcsWorktree,
 } from "@t3tools/contracts";
 import { isProviderDriverKind, ProviderDriverKind } from "@t3tools/contracts";
 import type { ThreadId, TurnId } from "@t3tools/contracts";
@@ -92,6 +93,7 @@ export interface EnvironmentState {
 export interface AppState {
   activeEnvironmentId: EnvironmentId | null;
   environmentStateById: Record<string, EnvironmentState>;
+  worktreesByProjectId: Map<ProjectId, readonly VcsWorktree[]>;
 }
 
 const initialEnvironmentState: EnvironmentState = {
@@ -117,6 +119,7 @@ const initialEnvironmentState: EnvironmentState = {
 const initialState: AppState = {
   activeEnvironmentId: null,
   environmentStateById: {},
+  worktreesByProjectId: new Map(),
 };
 
 const MAX_THREAD_MESSAGES = 2_000;
@@ -1910,12 +1913,31 @@ export function removeEnvironmentState(state: AppState, environmentId: Environme
     return state;
   }
 
+  const removedEnvState = state.environmentStateById[environmentId];
   const { [environmentId]: _removed, ...environmentStateById } = state.environmentStateById;
+
+  // Drop worktree state for the removed environment's projects so the Map
+  // does not retain stale snapshots after the environment is gone.
+  let worktreesByProjectId = state.worktreesByProjectId;
+  if (removedEnvState && removedEnvState.projectIds.length > 0) {
+    let mutated = false;
+    const next = new Map(state.worktreesByProjectId);
+    for (const projectId of removedEnvState.projectIds) {
+      if (next.delete(projectId)) {
+        mutated = true;
+      }
+    }
+    if (mutated) {
+      worktreesByProjectId = next;
+    }
+  }
+
   return {
     ...state,
     activeEnvironmentId:
       state.activeEnvironmentId === environmentId ? null : state.activeEnvironmentId,
     environmentStateById,
+    worktreesByProjectId,
   };
 }
 
@@ -1962,6 +1984,7 @@ interface AppStore extends AppState {
     branch: string | null,
     worktreePath: string | null,
   ) => void;
+  syncServerProjectWorktrees: (projectId: ProjectId, worktrees: readonly VcsWorktree[]) => void;
 }
 
 export const useStore = create<AppStore>((set) => ({
@@ -1983,4 +2006,10 @@ export const useStore = create<AppStore>((set) => ({
   setError: (threadId, error) => set((state) => setError(state, threadId, error)),
   setThreadBranch: (threadRef, branch, worktreePath) =>
     set((state) => setThreadBranch(state, threadRef, branch, worktreePath)),
+  syncServerProjectWorktrees: (projectId, worktrees) =>
+    set((state) => {
+      const next = new Map(state.worktreesByProjectId);
+      next.set(projectId, worktrees);
+      return { ...state, worktreesByProjectId: next };
+    }),
 }));

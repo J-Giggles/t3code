@@ -432,6 +432,16 @@ export const WsOrchestrationSubscribeShellRpc = Rpc.make(ORCHESTRATION_WS_METHOD
   stream: true,
 });
 
+export const WsOrchestrationSubscribeProjectWorktreesRpc = Rpc.make(
+  ORCHESTRATION_WS_METHODS.subscribeProjectWorktrees,
+  {
+    payload: OrchestrationRpcSchemas.subscribeProjectWorktrees.input,
+    success: OrchestrationRpcSchemas.subscribeProjectWorktrees.output,
+    error: OrchestrationGetSnapshotError,
+    stream: true,
+  },
+);
+
 export const WsOrchestrationSubscribeThreadRpc = Rpc.make(
   ORCHESTRATION_WS_METHODS.subscribeThread,
   {
@@ -519,4 +529,5 @@ export const WsRpcGroup = RpcGroup.make(
   WsDictationStopRpc,
   WsDictationRescanRpc,
   WsSubscribeDictationRpc,
+  WsOrchestrationSubscribeProjectWorktreesRpc,
 );

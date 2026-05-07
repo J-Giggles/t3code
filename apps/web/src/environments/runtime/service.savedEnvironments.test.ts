@@ -121,11 +121,13 @@ vi.mock("~/store", () => ({
     getState: () => ({
       syncServerShellSnapshot: vi.fn(),
       syncServerThreadDetail: vi.fn(),
+      syncServerProjectWorktrees: vi.fn(),
       removeServerThreadDetail: vi.fn(),
       applyServerShellEvent: vi.fn(),
     }),
   },
   selectProjectsAcrossEnvironments: vi.fn(() => []),
+  selectProjectsForEnvironment: vi.fn(() => []),
   selectSidebarThreadSummaryByRef: vi.fn(() => null),
   selectThreadByRef: vi.fn(() => null),
   selectThreadsAcrossEnvironments: vi.fn(() => []),

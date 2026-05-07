@@ -1,4 +1,10 @@
-import { type ScopedProjectRef, type ScopedThreadRef, type ThreadId } from "@t3tools/contracts";
+import {
+  type ProjectId,
+  type ScopedProjectRef,
+  type ScopedThreadRef,
+  type ThreadId,
+  type VcsWorktree,
+} from "@t3tools/contracts";
 import { selectEnvironmentState, type AppState, type EnvironmentState } from "./store";
 import { type Project, type Thread } from "./types";
 import { getThreadFromEnvironmentState } from "./threadDerivation";
@@ -65,4 +71,11 @@ export function createThreadSelectorAcrossEnvironments(
     }
     return undefined;
   });
+}
+
+export function selectWorktreesForProject(
+  state: AppState,
+  projectId: ProjectId,
+): readonly VcsWorktree[] {
+  return state.worktreesByProjectId.get(projectId) ?? [];
 }

@@ -16,6 +16,7 @@ import {
   TurnId,
 } from "./baseSchemas.ts";
 import { ProviderInstanceId } from "./providerInstance.ts";
+import { VcsWorktree } from "./vcs.ts";
 
 export const ORCHESTRATION_WS_METHODS = {
   dispatchCommand: "orchestration.dispatchCommand",
@@ -24,6 +25,7 @@ export const ORCHESTRATION_WS_METHODS = {
   replayEvents: "orchestration.replayEvents",
   subscribeShell: "orchestration.subscribeShell",
   subscribeThread: "orchestration.subscribeThread",
+  subscribeProjectWorktrees: "orchestration.subscribeProjectWorktrees",
 } as const;
 
 export const ProviderApprovalPolicy = Schema.Literals([
@@ -438,6 +440,19 @@ export const OrchestrationSubscribeThreadInput = Schema.Struct({
   threadId: ThreadId,
 });
 export type OrchestrationSubscribeThreadInput = typeof OrchestrationSubscribeThreadInput.Type;
+
+export const OrchestrationSubscribeProjectWorktreesInput = Schema.Struct({
+  projectId: ProjectId,
+  cwd: TrimmedNonEmptyString,
+});
+export type OrchestrationSubscribeProjectWorktreesInput =
+  typeof OrchestrationSubscribeProjectWorktreesInput.Type;
+
+export const WorktreeStateSnapshotEvent = Schema.Struct({
+  projectId: ProjectId,
+  worktrees: Schema.Array(VcsWorktree),
+});
+export type WorktreeStateSnapshotEvent = typeof WorktreeStateSnapshotEvent.Type;
 
 export const OrchestrationThreadDetailSnapshot = Schema.Struct({
   snapshotSequence: NonNegativeInt,
@@ -1224,6 +1239,10 @@ export const OrchestrationRpcSchemas = {
   subscribeShell: {
     input: Schema.Struct({}),
     output: OrchestrationShellStreamItem,
+  },
+  subscribeProjectWorktrees: {
+    input: OrchestrationSubscribeProjectWorktreesInput,
+    output: WorktreeStateSnapshotEvent,
   },
 } as const;
 
