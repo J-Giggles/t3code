@@ -30,15 +30,47 @@ export type OrchestratorDeps = {
   countdownMs?: number;
 };
 
-async function enterListenLoop(notification: Notification): Promise<void> {
-  void notification;
-}
-
 export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestrator {
   const state = createSignal<FlowState>("idle");
   const caption = createSignal("");
   const history = createSignal<Turn[]>([]);
-  let currentNotification: Notification | undefined;
+
+  async function enterListenLoop(): Promise<void> {
+    while (state.value === "conversing") {
+      let finalText: string;
+
+      try {
+        const result = await deps.voiceAdapter.listen({
+          silenceTimeoutMs: deps.silenceTimeoutMs ?? 1_500,
+          onPartial: caption.set,
+        });
+        finalText = result.finalText;
+      } catch {
+        return;
+      }
+
+      if (finalText.trim() === "") {
+        continue;
+      }
+
+      const userTurn: Turn = { role: "user", text: finalText, at: Date.now() };
+      history.set([...history.value, userTurn]);
+
+      const reply = await deps.summaryAdapter.reply({
+        history: history.value,
+        userTurn: finalText,
+      });
+      const assistantTurn: Turn = { role: "assistant", text: reply, at: Date.now() };
+      history.set([...history.value, assistantTurn]);
+      caption.set(reply);
+
+      try {
+        await deps.voiceAdapter.speak(reply);
+      } catch {
+        return;
+      }
+    }
+  }
 
   return {
     state,
@@ -49,7 +81,6 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         throw new Error(`Cannot enter on-the-go flow: not in idle state (${state.value})`);
       }
 
-      currentNotification = notification;
       state.set("entering");
       state.set("summarizing");
 
@@ -64,7 +95,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       await deps.voiceAdapter.speak(summary);
 
       state.set("conversing");
-      await enterListenLoop(currentNotification);
+      await enterListenLoop();
     },
     async resume(_threadId) {},
     async pause(_reason) {},

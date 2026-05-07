@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FakeSummaryAdapter } from "../adapters/FakeSummaryAdapter";
 import { createNotificationsStore } from "../state/notificationsStore";
@@ -21,12 +21,19 @@ function sampleNotification(overrides: Partial<Notification> = {}): Notification
   };
 }
 
+async function flushPromises(iterations = 5): Promise<void> {
+  for (let index = 0; index < iterations; index += 1) {
+    await Promise.resolve();
+  }
+}
+
 describe("OnTheGoFlowOrchestrator", () => {
   let voice: FakeVoiceAdapter;
   let summary: FakeSummaryAdapter;
   let orchestrator: OnTheGoFlowOrchestrator;
 
   beforeEach(() => {
+    vi.restoreAllMocks();
     voice = new FakeVoiceAdapter();
     summary = new FakeSummaryAdapter();
     orchestrator = createOrchestrator({
@@ -36,6 +43,11 @@ describe("OnTheGoFlowOrchestrator", () => {
       pausedSessionsStore: createInMemoryPausedSessionsStore(),
       skill: "skill text",
     });
+  });
+
+  afterEach(() => {
+    voice.interrupt();
+    vi.restoreAllMocks();
   });
 
   it("starts in idle state", () => {
@@ -64,7 +76,8 @@ describe("OnTheGoFlowOrchestrator", () => {
       seenStates.push(state);
     });
 
-    await orchestrator.enter(sampleNotification());
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await flushPromises();
 
     unsubscribe();
     expect(seenStates).toEqual(["entering", "summarizing", "conversing"]);
@@ -84,6 +97,87 @@ describe("OnTheGoFlowOrchestrator", () => {
     ]);
     expect(voice.spokenTexts).toEqual(["Checkout is blocked on a totals mismatch."]);
     expect(orchestrator.state.value).toBe("conversing");
+
+    voice.interrupt();
+    await enterPromise;
+  });
+
+  it("keeps listening while conversing and records the user turn plus assistant reply", async () => {
+    vi.spyOn(Date, "now")
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(2_000)
+      .mockReturnValueOnce(3_000);
+    summary = new FakeSummaryAdapter({
+      summary: "Checkout is blocked on a totals mismatch.",
+      replies: ["I'll update the focused test and patch the totals calculation."],
+    });
+    orchestrator = createOrchestrator({
+      voiceAdapter: voice,
+      summaryAdapter: summary,
+      notificationsStore: createNotificationsStore(),
+      pausedSessionsStore: createInMemoryPausedSessionsStore(),
+      skill: "skill text",
+      silenceTimeoutMs: 750,
+    });
+    const seenCaptions: string[] = [];
+    const unsubscribeCaption = orchestrator.caption.subscribe((caption) => {
+      seenCaptions.push(caption);
+    });
+    voice.queueListen("Please make the focused fix.");
+
+    const enterPromise = orchestrator.enter(sampleNotification());
+    await vi.waitFor(() => {
+      expect(orchestrator.history.value).toHaveLength(3);
+    });
+
+    unsubscribeCaption();
+    expect(orchestrator.history.value).toEqual([
+      {
+        role: "assistant",
+        text: "Checkout is blocked on a totals mismatch.",
+        at: 1_000,
+      },
+      {
+        role: "user",
+        text: "Please make the focused fix.",
+        at: 2_000,
+      },
+      {
+        role: "assistant",
+        text: "I'll update the focused test and patch the totals calculation.",
+        at: 3_000,
+      },
+    ]);
+    expect(summary.replyCalls).toEqual([
+      {
+        history: [
+          {
+            role: "assistant",
+            text: "Checkout is blocked on a totals mismatch.",
+            at: 1_000,
+          },
+          {
+            role: "user",
+            text: "Please make the focused fix.",
+            at: 2_000,
+          },
+        ],
+        userTurn: "Please make the focused fix.",
+      },
+    ]);
+    expect(seenCaptions).toEqual([
+      "Checkout is blocked on a totals mismatch.",
+      "Please make the focused fix.",
+      "I'll update the focused test and patch the totals calculation.",
+    ]);
+    expect(voice.spokenTexts).toEqual([
+      "Checkout is blocked on a totals mismatch.",
+      "I'll update the focused test and patch the totals calculation.",
+    ]);
+    expect(orchestrator.state.value).toBe("conversing");
+
+    voice.interrupt();
+    await enterPromise;
   });
 
   it("rejects enter when the orchestrator is not idle", async () => {
