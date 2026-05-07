@@ -21,16 +21,24 @@ function modelLabel(absPath: string): string {
 
 async function resolveBinary(
   io: CapabilityProbeIo,
-): Promise<{ path: string; help: string } | null> {
+): Promise<
+  | { kind: "available"; path: string; help: string }
+  | { kind: "unsupported"; path: string }
+  | { kind: "missing" }
+> {
+  let unsupportedPath: string | null = null;
+
   for (const binary of CANDIDATE_BINARIES) {
     const found = await io.which(binary);
     if (!found) continue;
     const help = await io.spawnHelp(found);
     if (STREAM_MODE_MARKERS.some((re) => re.test(help))) {
-      return { path: found, help };
+      return { kind: "available", path: found, help };
     }
+    unsupportedPath ??= found;
   }
-  return null;
+
+  return unsupportedPath ? { kind: "unsupported", path: unsupportedPath } : { kind: "missing" };
 }
 
 async function resolveModelPath(io: CapabilityProbeIo): Promise<string | null> {
@@ -56,13 +64,23 @@ export async function probeDictationCapability(
   io: CapabilityProbeIo,
 ): Promise<DictationCapability> {
   const binary = await resolveBinary(io);
-  if (!binary) {
+  if (binary.kind === "missing") {
     return {
       available: false,
       reason: "whisper.cpp binary not found (looked for whisper-cli, whisper-stream, main)",
       modelLabel: null,
       modelPath: null,
       binaryPath: null,
+    };
+  }
+
+  if (binary.kind === "unsupported") {
+    return {
+      available: false,
+      reason: `whisper.cpp binary found but does not advertise stream/stdin support: ${binary.path}`,
+      modelLabel: null,
+      modelPath: null,
+      binaryPath: binary.path,
     };
   }
 

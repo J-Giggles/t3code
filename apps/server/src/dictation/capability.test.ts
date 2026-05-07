@@ -83,7 +83,10 @@ describe("probeDictationCapability", () => {
     });
     const result = await probeDictationCapability(io);
     expect(result.available).toBe(false);
-    expect(result.reason).toMatch(/stream/i);
+    expect(result.reason).toBe(
+      "whisper.cpp binary found but does not advertise stream/stdin support: /usr/bin/whisper-cli",
+    );
+    expect(result.binaryPath).toBe("/usr/bin/whisper-cli");
   });
 
   it("reports unavailable when no model file is resolvable", async () => {
