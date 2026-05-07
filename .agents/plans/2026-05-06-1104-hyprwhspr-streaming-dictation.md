@@ -35,7 +35,7 @@ So the chosen approach **does not depend on hyprwhspr at runtime**. We build our
 - [x] Mount `DictationPlugin` in `ComposerPromptEditor.tsx`
 - [x] Slot `ComposerDictateButton` into `ComposerPrimaryActions.tsx` before the Send button, always rendered when capability true (not gated on `promptHasText`, not collapsed by `CompactComposerControlsMenu`)
 - [x] Add `Ctrl+Shift+M` keybinding via `apps/web/src/keybindings.ts`
-- [ ] Add a read-only `Dictation` status block to settings (capability, model label, binary path) — install instructions link to whisper.cpp docs; no in-app model download in v1
+- [x] Add a read-only `Dictation` status block to settings (capability, model label, binary path) — install instructions link to whisper.cpp docs; no in-app model download in v1
 - [x] Subscribe `ChatComposer` to `dictationStore` events, dispatch Lexical commands accordingly
 - [x] Auto-stop on thread switch (effect inside the existing thread route component)
 - [x] Vite config touch: register the AudioWorklet file as a fingerprinted asset

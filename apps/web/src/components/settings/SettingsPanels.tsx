@@ -69,10 +69,12 @@ import {
 import { ProjectFavicon } from "../ProjectFavicon";
 import {
   useServerAvailableEditors,
+  useServerDictationCapability,
   useServerKeybindingsConfigPath,
   useServerObservability,
   useServerProviders,
 } from "../../rpc/serverState";
+import { DictationStatusBlock } from "./DictationStatusBlock";
 
 const THEME_OPTIONS = [
   {
@@ -488,6 +490,7 @@ export function GeneralSettingsPanel() {
   const availableEditors = useServerAvailableEditors();
   const observability = useServerObservability();
   const serverProviders = useServerProviders();
+  const dictationCapability = useServerDictationCapability();
   const visibleProviderSettings = PROVIDER_SETTINGS.filter(
     (providerSettings) =>
       providerSettings.provider !== "cursor" ||
@@ -1296,6 +1299,8 @@ export function GeneralSettingsPanel() {
         open={isAddInstanceDialogOpen}
         onOpenChange={setIsAddInstanceDialogOpen}
       />
+
+      <DictationStatusBlock capability={dictationCapability} />
 
       <SettingsSection title="Advanced">
         <SettingsRow
