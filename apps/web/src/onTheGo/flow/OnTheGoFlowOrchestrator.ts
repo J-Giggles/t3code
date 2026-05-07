@@ -2,7 +2,7 @@ import type { SummaryAdapter } from "../adapters/SummaryAdapter";
 import type { NotificationsStore } from "../state/notificationsStore";
 import type { PausedSessionsStore } from "../state/pausedSessionsStore";
 import { createSignal, type Signal } from "../state/signal";
-import type { FlowState, Notification, PauseReason, Turn } from "../types";
+import type { FlowState, Notification, PausedSession, PauseReason, Turn } from "../types";
 import type { VoiceAdapter } from "../voice/VoiceAdapter";
 
 export interface OnTheGoFlowOrchestrator {
@@ -44,6 +44,17 @@ function buildVerbatimEnvelope(turns: Turn[]): string {
     "",
     ...transcript,
   ].join("\n");
+}
+
+function buildContextRestorePrompt(history: Turn[]): string {
+  const lastTurn = history.at(-1);
+
+  if (lastTurn === undefined) {
+    return "Welcome back. I've restored this on-the-go session. What should we do next?";
+  }
+
+  const speaker = lastTurn.role === "user" ? "you said" : "I said";
+  return `Welcome back. I've restored this on-the-go session. Last turn, ${speaker}: ${lastTurn.text}`;
 }
 
 export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestrator {
@@ -141,6 +152,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
       }
 
       currentNotification = notification;
+      const generation = listenLoopGeneration;
       state.set("entering");
       state.set("summarizing");
 
@@ -149,16 +161,94 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         userMessage: notification.userLastMessage,
       });
 
+      if (!isState("summarizing") || generation !== listenLoopGeneration) {
+        return;
+      }
+
       caption.set(summary);
       history.set([{ role: "assistant", text: summary, at: Date.now() }]);
 
-      await deps.voiceAdapter.speak(summary);
+      try {
+        await deps.voiceAdapter.speak(summary);
+      } catch {
+        return;
+      }
+
+      if (!isState("summarizing") || generation !== listenLoopGeneration) {
+        return;
+      }
 
       state.set("conversing");
       await enterListenLoop();
     },
-    async resume(_threadId) {},
-    async pause(_reason) {},
+    async resume(threadId) {
+      if (state.value !== "idle") {
+        throw new Error(`Cannot resume on-the-go flow: not in idle state (${state.value})`);
+      }
+
+      const generation = listenLoopGeneration;
+      state.set("entering");
+
+      let pausedSession: PausedSession;
+      try {
+        pausedSession = await deps.pausedSessionsStore.restore(threadId);
+        await deps.pausedSessionsStore.drop(threadId);
+      } catch (error) {
+        if (generation === listenLoopGeneration && isState("entering")) {
+          state.set("idle");
+        }
+        throw error;
+      }
+
+      if (!isState("entering") || generation !== listenLoopGeneration) {
+        return;
+      }
+
+      currentNotification = pausedSession.notification;
+      history.set([...pausedSession.history]);
+
+      const restorePrompt = buildContextRestorePrompt(pausedSession.history);
+      caption.set(restorePrompt);
+      state.set("conversing");
+
+      try {
+        await deps.voiceAdapter.speak(restorePrompt);
+      } catch {
+        return;
+      }
+
+      if (!isState("conversing")) {
+        return;
+      }
+
+      void enterListenLoop();
+    },
+    async pause(reason) {
+      const notification = currentNotification;
+      if (notification === null || state.value === "idle" || state.value === "committing") {
+        return;
+      }
+
+      deps.voiceAdapter.interrupt();
+      countdownCancel?.();
+      listenLoopGeneration += 1;
+
+      const currentHistory = [...history.value];
+      const lastTurn = currentHistory.at(-1);
+      await deps.pausedSessionsStore.save({
+        threadId: notification.threadId,
+        notification,
+        history: currentHistory,
+        ...(lastTurn ? { pendingDraft: lastTurn.text } : {}),
+        pausedAt: Date.now(),
+        pauseReason: reason,
+      });
+
+      currentNotification = null;
+      history.set([]);
+      caption.set("");
+      state.set("idle");
+    },
     async cancel() {},
     async shipIt() {
       const notification = currentNotification;
@@ -168,6 +258,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
 
       deps.voiceAdapter.interrupt();
       listenLoopGeneration += 1;
+      const generation = listenLoopGeneration;
       state.set("composing");
 
       let prompt: string;
@@ -184,7 +275,7 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         prompt = buildVerbatimEnvelope(history.value);
       }
 
-      if (!isState("composing")) {
+      if (!isState("composing") || generation !== listenLoopGeneration) {
         return;
       }
 
@@ -195,7 +286,11 @@ export function createOrchestrator(deps: OrchestratorDeps): OnTheGoFlowOrchestra
         .catch(() => undefined);
 
       const countdownResult = await waitForCountdown();
-      if (countdownResult === "cancelled" || !isState("countdown")) {
+      if (
+        countdownResult === "cancelled" ||
+        !isState("countdown") ||
+        generation !== listenLoopGeneration
+      ) {
         return;
       }
 
