@@ -28,7 +28,10 @@ export interface WhisperStdoutParser {
 }
 
 function clean(text: string): string {
-  return stripAnsi(text).trim();
+  return stripAnsi(text)
+    .replaceAll(/\[BLANK_AUDIO\]/gi, "")
+    .replaceAll(/[ \t]{2,}/g, " ")
+    .trim();
 }
 
 export function makeWhisperStdoutParser(): WhisperStdoutParser {

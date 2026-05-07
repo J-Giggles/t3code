@@ -29,10 +29,15 @@ export async function startAudioCapture(options: AudioCaptureOptions): Promise<A
   await ctx.audioWorklet.addModule(options.workletUrl);
   const sourceNode = ctx.createMediaStreamSource(stream);
   const workletNode = new AudioWorkletNode(ctx, "pcm-resampler");
+  const sinkNode = ctx.createGain();
+  sinkNode.gain.value = 0;
   workletNode.port.onmessage = (event) => {
     if (event.data instanceof ArrayBuffer) options.onFrame(event.data);
   };
   sourceNode.connect(workletNode);
+  workletNode.connect(sinkNode);
+  sinkNode.connect(ctx.destination);
+  if (ctx.state === "suspended") await ctx.resume();
 
   const trackEndedListeners: Array<{ track: MediaStreamTrack; listener: () => void }> = [];
   if (options.onTrackEnded) {
@@ -58,6 +63,9 @@ export async function startAudioCapture(options: AudioCaptureOptions): Promise<A
       trackEndedListeners.length = 0;
       try {
         workletNode.disconnect();
+      } catch {}
+      try {
+        sinkNode.disconnect();
       } catch {}
       try {
         sourceNode.disconnect();

@@ -2,10 +2,19 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { startAudioCapture } from "./audioCapture.ts";
 
 class FakeAudioContext {
+  static lastInstance: FakeAudioContext;
+  static nextState: AudioContextState = "running";
   sampleRate = 48_000;
+  state: AudioContextState = FakeAudioContext.nextState;
+  destination = {};
   audioWorklet = { addModule: vi.fn(async () => {}) };
   createMediaStreamSource = vi.fn(() => ({ connect: vi.fn() }));
+  createGain = vi.fn(() => ({ gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() }));
+  resume = vi.fn(async () => {});
   close = vi.fn(async () => {});
+  constructor() {
+    FakeAudioContext.lastInstance = this;
+  }
 }
 class FakeAudioWorkletNode {
   port = {
@@ -44,6 +53,7 @@ let fakeStream: { getAudioTracks: () => FakeTrack[]; getTracks: () => FakeTrack[
 let fakeTrack: FakeTrack;
 
 beforeEach(() => {
+  FakeAudioContext.nextState = "running";
   // @ts-expect-error - shimming JSDOM
   if (!globalThis.window) globalThis.window = {} as Window;
   if (!globalThis.navigator) globalThis.navigator = {} as Navigator;
@@ -93,6 +103,25 @@ describe("startAudioCapture", () => {
     );
     expect(frames.length).toBe(1);
     expect(frames[0]?.byteLength).toBe(1600);
+  });
+
+  it("connects the worklet through a muted sink so the browser pulls audio", async () => {
+    const handle = await startAudioCapture({ workletUrl: "/x.js", onFrame: () => {} });
+    const ctx = FakeAudioContext.lastInstance;
+    const workletNode = (handle as unknown as { __workletNode: FakeAudioWorkletNode })
+      .__workletNode;
+    const gainNode = ctx.createGain.mock.results[0]?.value;
+
+    expect(ctx.createGain).toHaveBeenCalled();
+    expect(gainNode.gain.value).toBe(0);
+    expect(workletNode.connect).toHaveBeenCalledWith(gainNode);
+    expect(gainNode.connect).toHaveBeenCalledWith(ctx.destination);
+  });
+
+  it("resumes a suspended AudioContext after the graph is connected", async () => {
+    FakeAudioContext.nextState = "suspended";
+    await startAudioCapture({ workletUrl: "/x.js", onFrame: () => {} });
+    expect(FakeAudioContext.lastInstance.resume).toHaveBeenCalled();
   });
 
   it("stop() releases the MediaStream tracks and closes the AudioContext", async () => {

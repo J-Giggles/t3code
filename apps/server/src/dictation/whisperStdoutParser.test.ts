@@ -47,6 +47,15 @@ describe("makeWhisperStdoutParser", () => {
     expect(parser.feed("\n")).toEqual([]);
   });
 
+  it("filters whisper blank-audio tokens from partials and commits", () => {
+    const parser = makeWhisperStdoutParser();
+    expect(parser.feed("[BLANK_AUDIO][BLANK_AUDIO]\r")).toEqual([{ kind: "partial", text: "" }]);
+    expect(parser.feed("[BLANK_AUDIO][BLANK_AUDIO]\n")).toEqual([]);
+    expect(parser.feed("hello [BLANK_AUDIO] world\n")).toEqual([
+      { kind: "commit", text: "hello world" },
+    ]);
+  });
+
   it("trims whitespace from emitted text", () => {
     const parser = makeWhisperStdoutParser();
     expect(parser.feed("   hello   \r")).toEqual([{ kind: "partial", text: "hello" }]);
