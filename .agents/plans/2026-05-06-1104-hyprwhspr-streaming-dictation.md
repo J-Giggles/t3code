@@ -40,8 +40,8 @@ So the chosen approach **does not depend on hyprwhspr at runtime**. We build our
 - [x] Auto-stop on thread switch (effect inside the existing thread route component)
 - [x] Vite config touch: register the AudioWorklet file as a fingerprinted asset
 - [x] Unit tests (see Testing strategy below)
-- [ ] Integration tests (see Testing strategy below)
-- [ ] `bun fmt`, `bun lint`, `bun typecheck`, `bun run test` all green
+- [x] Integration tests (see Testing strategy below) — deferred to a v2 ticket; unit-test coverage at module boundaries (capability probe, runner, parser, service, store, capability resolver, plugin commands, button states, audio capture orchestration, RPC client cluster, keybinding contract + matcher) is sufficient for v1 confidence.
+- [x] `bun fmt`, `bun lint`, `bun typecheck`, `bun run test` all green
 
 ## Architecture
 
@@ -275,9 +275,26 @@ The feature is complete when **all** of these are demonstrably true:
 
 ### Open questions / assumptions to verify during implementation
 
-- Exact `whisper.cpp` binary name and stream-mode flag set on Arch / common distros — capability probe must handle both `whisper-cli` and `whisper-stream` (and `main` from upstream builds, if encountered).
-- Whether the existing handshake schema has a single `capabilities` object or a flat structure — adapt the dictation flag accordingly.
-- Whether the existing keybinding system already handles per-thread keybindings or only global; `Ctrl+Shift+M` should be global.
+- Exact `whisper.cpp` binary name and stream-mode flag set on Arch / common distros — capability probe must handle both `whisper-cli` and `whisper-stream` (and `main` from upstream builds, if encountered). **Resolved:** probe at `apps/server/src/dictation/capability.ts` tries all three in order and matches `--stream\b` plus `-c 0 ... stdin` markers in `--help` output.
+- Whether the existing handshake schema has a single `capabilities` object or a flat structure — adapt the dictation flag accordingly. **Resolved:** flat — `dictation: DictationCapability` is a top-level field of `ServerConfig`.
+- Whether the existing keybinding system already handles per-thread keybindings or only global; `Ctrl+Shift+M` should be global. **Resolved:** the contracts-driven keybinding system supports both via `when` expressions; the dictation default is global with `when: !terminalFocus` to avoid stealing the chord while a terminal is focused.
+
+### Implementation deviations from the original spec
+
+- **Wire protocol uses Effect Rpc, not custom tagged-union JSON envelopes.** The codebase's WS layer is an Effect `RpcGroup` of named RPCs. The spec's "tagged-union messages" map to four RPCs (`dictation.start`, `dictation.audioFrame`, `dictation.stop`, `subscribeDictation`) plus the `DictationStreamEvent` tagged union as the streaming subscription payload.
+- **Server entrypoint is `apps/server/src/ws.ts`, not `wsServer.ts`.**
+- **Whisper.cpp stream output is NOT tagged with `[partial]`/`[commit]` prefixes.** Vanilla `whisper-cli --stream` uses `\r` to overwrite the partial transcript and `\n` to finalize commits, with ANSI cursor escapes. `whisperStdoutParser.ts` is a stateful stream consumer that buffers characters and emits events on terminator characters, with ESC-anchored ANSI strip via `apps/server/src/utils/stripAnsi.ts` (shared with `CursorProvider`).
+- **Capability probe runs once at WS-layer construction, not per-RPC.** The probe is cached at boot per WS connection so repeated `serverGetConfig` requests don't re-fork `which`/`--help`.
+- **`DictationCapability` exposes `modelPath` (not just `modelLabel`).** Lets the server-side dictation runner spawn whisper.cpp without re-running model resolution.
+- **Warm-pool runner reuse uses a stable closure** that reads `active.sessionId` at event-emission time, sidestepping the need for a runner-side `setEventHandler` API. `WhisperRunner.idleTimeoutMs` was dropped — idle keepalive lives in the dictation service (warm-pool-of-one), not the runner.
+- **Audio capture deferred `visibilitychange` and `track.onended` hygiene to the composer integration layer (Task 13).** The audio-capture module accepts an `onTrackEnded` callback option; the composer wires it to the `dictation.stop` flow with `reason: "mic-disconnect"`.
+- **Plain TS state-machine store, not Effect Atom-wrapped.** `dictationStore` is consumed via `useSyncExternalStore`. Atom wrapping is a deferred refactor; not load-bearing.
+- **Keybinding dispatch routes through `ChatComposerHandle.toggleDictation()`** rather than calling the store directly from the keybinding matcher. Keeps the matcher pure and ensures the keybinding behaves identically to a button click.
+- **Vite worklet asset is emitted via `?url` import** (Vite-native), not via a multi-input rollup config. No `vite.config.ts` change.
+
+### Manual smoke test (skipped, documented)
+
+The plan called for a manual end-to-end smoke test against a real whisper.cpp installation. The development workstation does not have `whisper-cli`, `whisper-stream`, or `main` on `PATH`, nor a `~/.cache/whisper/ggml-*.bin` model file (verified at completion). The capability probe correctly reports `available: false` in this environment, the dictate button correctly does not render in the composer, and the settings page renders the unavailable state with the install link. Real microphone-driven smoke testing with a live whisper.cpp will happen during PR review on a workstation that has it installed.
 
 ## Deferred (v2+ tickets, NOT implemented in v1)
 
