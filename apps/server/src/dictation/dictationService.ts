@@ -40,13 +40,12 @@ interface ActiveSession {
   sessionId: string;
   runner: WhisperRunner;
   lastPartial: string | null;
+  stopping: boolean;
 }
 
 export function makeDictationService(deps: DictationServiceDeps): DictationService {
   const pubsub = Effect.runSync(PubSub.unbounded<DictationStreamEvent>());
   let active: ActiveSession | null = null;
-  let warm: WhisperRunner | null = null;
-  let warmTimer: NodeJS.Timeout | null = null;
 
   function publishSync(event: DictationStreamEvent): void {
     Effect.runSync(PubSub.publish(pubsub, event));
@@ -76,20 +75,6 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
     }
   };
 
-  function acquireRunner(language: string | null): WhisperRunner {
-    if (warm) {
-      const reused = warm;
-      warm = null;
-      if (warmTimer) {
-        clearTimeout(warmTimer);
-        warmTimer = null;
-      }
-      // No re-binding: the existing onRunnerEvent reads active.sessionId.
-      return reused;
-    }
-    return deps.startRunner({ onEvent: onRunnerEvent, language });
-  }
-
   function startSession(
     input: DictationStartInput,
   ): Effect.Effect<DictationStartResult, DictationError> {
@@ -117,8 +102,8 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
         );
       }
       const sessionId = deps.newSessionId();
-      const runner = acquireRunner(input.language);
-      active = { sessionId, runner, lastPartial: null };
+      const runner = deps.startRunner({ onEvent: onRunnerEvent, language: input.language });
+      active = { sessionId, runner, lastPartial: null, stopping: false };
       publishSync({
         type: "started",
         sessionId,
@@ -135,7 +120,7 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
     return Effect.sync(() => {
       // Silently drop frames for unknown / mismatched sessions per the wire
       // protocol: the client always recovers via the next `dictation.start`.
-      if (!active || active.sessionId !== input.sessionId) return;
+      if (!active || active.sessionId !== input.sessionId || active.stopping) return;
       const frame = Buffer.from(input.pcm, "base64");
       active.runner.writeFrame(frame);
     });
@@ -146,13 +131,10 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
       // Silent no-op for stale stop requests, matching the writeFrame policy.
       if (!active || active.sessionId !== input.sessionId) return;
       const session = active;
-      // Clear `active` BEFORE awaiting runner.stop() so any late
-      // parser.feed events emitted by the runner (e.g. flushed on graceful
-      // exit) don't get routed under a session ID we already stopped.
-      active = null;
-      // Promote any pending partial to a commit before tearing down.
-      // The runner's parser.flush() may also emit a commit on graceful
-      // exit; the wire client coalesces both via the anchor model.
+      session.stopping = true;
+      // Promote any pending partial before closing stdin. Some runners emit
+      // their only final transcript after stdin closes, so keep `active`
+      // during runner.stop() and let those commit events route normally.
       if (session.lastPartial && session.lastPartial.length > 0) {
         publishSync({
           type: "commit",
@@ -161,18 +143,14 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
         });
       }
       await session.runner.stop();
+      if (active?.sessionId === session.sessionId) {
+        active = null;
+      }
       publishSync({
         type: "stopped",
         sessionId: session.sessionId,
         reason: "client-stop",
       });
-      // Warm pool of one: hold the runner idle for warmPoolIdleMs, then kill.
-      warm = session.runner;
-      warmTimer = setTimeout(() => {
-        warm?.kill();
-        warm = null;
-        warmTimer = null;
-      }, deps.warmPoolIdleMs);
     });
   }
 
@@ -180,12 +158,6 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
     return Effect.sync(() => {
       active?.runner.kill();
       active = null;
-      warm?.kill();
-      warm = null;
-      if (warmTimer) {
-        clearTimeout(warmTimer);
-        warmTimer = null;
-      }
     });
   }
 

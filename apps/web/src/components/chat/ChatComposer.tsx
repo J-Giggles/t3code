@@ -130,6 +130,51 @@ import dictationWorkletUrl from "../../dictation/pcmResamplerWorklet.ts?url";
 
 const IMAGE_SIZE_LIMIT_LABEL = `${Math.round(PROVIDER_SEND_TURN_MAX_IMAGE_BYTES / (1024 * 1024))}MB`;
 
+type BrowserSpeechRecognitionAlternative = {
+  readonly transcript?: string;
+};
+
+type BrowserSpeechRecognitionResult = {
+  readonly isFinal?: boolean;
+  readonly 0?: BrowserSpeechRecognitionAlternative;
+};
+
+type BrowserSpeechRecognitionResultEvent = {
+  readonly resultIndex: number;
+  readonly results: {
+    readonly length: number;
+    readonly [index: number]: BrowserSpeechRecognitionResult | undefined;
+  };
+};
+
+type BrowserSpeechRecognitionErrorEvent = {
+  readonly error?: string;
+};
+
+type BrowserSpeechRecognition = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: BrowserSpeechRecognitionResultEvent) => void) | null;
+  onerror: ((event: BrowserSpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+};
+
+type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+
+function getBrowserSpeechRecognition(): BrowserSpeechRecognitionConstructor | null {
+  if (typeof window === "undefined") return null;
+  const candidate = (
+    window as typeof window & {
+      webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
+    }
+  ).webkitSpeechRecognition;
+  return typeof candidate === "function" ? candidate : null;
+}
+
 const runtimeModeConfig: Record<
   RuntimeMode,
   { label: string; description: string; icon: LucideIcon }
@@ -1246,6 +1291,14 @@ export const ChatComposer = memo(
         typeof window !== "undefined" ? Boolean(window.isSecureContext) : false;
       const hasMediaDevices =
         typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
+      const hasBrowserSpeechRecognition = getBrowserSpeechRecognition() !== null;
+      if (isSecureContext && hasBrowserSpeechRecognition) {
+        return {
+          available: true,
+          reason: null,
+          modelLabel: "Browser speech recognition",
+        };
+      }
       return resolveDictationCapability({
         server: serverDictationCapability ?? {
           available: false,
@@ -1277,14 +1330,42 @@ export const ChatComposer = memo(
 
     // Refs for the dictation pipeline, kept off-state to avoid re-render loops.
     const dictationAudioCaptureHandleRef = useRef<AudioCaptureHandle | null>(null);
+    const dictationBrowserRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
     const dictationFrameSeqRef = useRef<number>(0);
     const dictationActiveSessionIdRef = useRef<string | null>(null);
+    const dictationBrowserInterimRef = useRef("");
 
     const stopDictationPipeline = useCallback(
       async (
         sessionId: string | null,
         reason: "user" | "thread-switch" | "tab-hidden" | "mic-disconnect",
       ) => {
+        const recognition = dictationBrowserRecognitionRef.current;
+        dictationBrowserRecognitionRef.current = null;
+        if (recognition) {
+          const interim = dictationBrowserInterimRef.current.trim();
+          dictationBrowserInterimRef.current = "";
+          if (interim.length > 0) {
+            composerEditorRef.current?.dispatchLexicalCommand(COMMIT_DICTATION_COMMAND, interim);
+          }
+          try {
+            recognition.stop();
+          } catch {
+            try {
+              recognition.abort();
+            } catch {
+              // ignore — we are tearing down anyway
+            }
+          }
+          composerEditorRef.current?.dispatchLexicalCommand(
+            DISCARD_DICTATION_ANCHOR_COMMAND,
+            undefined,
+          );
+          dictationStore.dispatch({ type: "session-stopped" });
+          dictationActiveSessionIdRef.current = null;
+          return;
+        }
+
         const handle = dictationAudioCaptureHandleRef.current;
         dictationAudioCaptureHandleRef.current = null;
         if (handle) {
@@ -1304,7 +1385,7 @@ export const ChatComposer = memo(
           // dictation.error; swallow here so we don't double-report.
         }
       },
-      [environmentId],
+      [dictationStore, environmentId],
     );
 
     // Subscribe to the server's dictation event stream while connected. Each
@@ -1367,6 +1448,108 @@ export const ChatComposer = memo(
         if (!targetThreadId) return;
 
         dictationStore.dispatch({ type: "request-start" });
+
+        const Recognition = getBrowserSpeechRecognition();
+        if (Recognition) {
+          const sessionId = `browser_${randomUUID()}`;
+          try {
+            const recognition = new Recognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = "en-US";
+            recognition.onresult = (event) => {
+              let finalText = "";
+              let interimText = "";
+              for (let index = event.resultIndex; index < event.results.length; index += 1) {
+                const result = event.results[index];
+                const transcript = result?.[0]?.transcript ?? "";
+                if (result?.isFinal) {
+                  finalText += transcript;
+                } else {
+                  interimText += transcript;
+                }
+              }
+              if (finalText.trim().length > 0) {
+                dictationBrowserInterimRef.current = "";
+                composerEditorRef.current?.dispatchLexicalCommand(
+                  COMMIT_DICTATION_COMMAND,
+                  finalText,
+                );
+              }
+              dictationBrowserInterimRef.current = interimText;
+              composerEditorRef.current?.dispatchLexicalCommand(
+                INSERT_DICTATION_PARTIAL_COMMAND,
+                interimText,
+              );
+            };
+            recognition.onerror = (event) => {
+              composerEditorRef.current?.dispatchLexicalCommand(
+                DISCARD_DICTATION_ANCHOR_COMMAND,
+                undefined,
+              );
+              dictationBrowserRecognitionRef.current = null;
+              dictationActiveSessionIdRef.current = null;
+              if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+                dictationStore.dispatch({ type: "permission-denied" });
+              } else {
+                dictationStore.dispatch({
+                  type: "backend-error",
+                  code: "internal",
+                  message: `Speech recognition failed: ${event.error || "unknown"}`,
+                });
+              }
+            };
+            recognition.onend = () => {
+              if (dictationBrowserRecognitionRef.current !== recognition) return;
+              dictationBrowserRecognitionRef.current = null;
+              const interim = dictationBrowserInterimRef.current.trim();
+              dictationBrowserInterimRef.current = "";
+              if (interim.length > 0) {
+                composerEditorRef.current?.dispatchLexicalCommand(
+                  COMMIT_DICTATION_COMMAND,
+                  interim,
+                );
+              }
+              composerEditorRef.current?.dispatchLexicalCommand(
+                DISCARD_DICTATION_ANCHOR_COMMAND,
+                undefined,
+              );
+              dictationActiveSessionIdRef.current = null;
+              if (dictationStore.read().state === "recording") {
+                dictationStore.dispatch({ type: "request-stop", reason: "browser-end" });
+              }
+              dictationStore.dispatch({ type: "session-stopped" });
+            };
+
+            dictationActiveSessionIdRef.current = sessionId;
+            dictationBrowserRecognitionRef.current = recognition;
+            dictationStore.dispatch({
+              type: "session-started",
+              sessionId,
+              modelLabel: "Browser speech recognition",
+            });
+            composerEditorRef.current?.dispatchLexicalCommand(
+              START_DICTATION_ANCHOR_COMMAND,
+              undefined,
+            );
+            recognition.start();
+          } catch (error) {
+            dictationBrowserRecognitionRef.current = null;
+            dictationActiveSessionIdRef.current = null;
+            composerEditorRef.current?.dispatchLexicalCommand(
+              DISCARD_DICTATION_ANCHOR_COMMAND,
+              undefined,
+            );
+            dictationStore.dispatch({
+              type: "backend-error",
+              code: "internal",
+              message:
+                error instanceof Error ? error.message : "Failed to start speech recognition.",
+            });
+          }
+          return;
+        }
+
         const connection = readEnvironmentConnection(environmentId);
         if (!connection) {
           dictationStore.dispatch({

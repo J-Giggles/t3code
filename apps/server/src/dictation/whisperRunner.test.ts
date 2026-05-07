@@ -149,4 +149,27 @@ describe("startWhisperRunner", () => {
     await stopped;
     expect(events.some((e) => e.kind === "error" && e.code === "child-crashed")).toBe(false);
   });
+
+  it("force-kills when graceful stop never exits", async () => {
+    vi.useFakeTimers();
+    try {
+      const child = makeFakeChild();
+      const runner = startWhisperRunner({
+        spawn: () => child as never,
+        binary: "/x",
+        modelPath: "/m",
+        onEvent: () => {},
+        backpressureTimeoutMs: 500,
+        stopTimeoutMs: 1000,
+        now: () => Date.now(),
+      });
+
+      void runner.stop();
+      vi.advanceTimersByTime(1001);
+
+      expect(child.kill).toHaveBeenCalledWith("SIGTERM");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

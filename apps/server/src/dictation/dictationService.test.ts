@@ -3,13 +3,21 @@ import { describe, expect, it, vi } from "vitest";
 import { makeDictationService, type DictationServiceDeps } from "./dictationService.ts";
 import type { WhisperRunner, WhisperRunnerEvent } from "./whisperRunner.ts";
 
-function fakeRunner(): WhisperRunner & { __emit: (e: WhisperRunnerEvent) => void } {
+function fakeRunner(
+  stopImpl?: (emit: (e: WhisperRunnerEvent) => void) => Promise<void>,
+): WhisperRunner & {
+  __emit: (e: WhisperRunnerEvent) => void;
+  __setEvent: (fn: (e: WhisperRunnerEvent) => void) => void;
+} {
   let onEvent: ((e: WhisperRunnerEvent) => void) | null = null;
+  const emit = (e: WhisperRunnerEvent) => onEvent?.(e);
   const runner = {
     writeFrame: vi.fn(),
-    stop: vi.fn(async () => {}),
+    stop: vi.fn(async () => {
+      await stopImpl?.(emit);
+    }),
     kill: vi.fn(),
-    __emit: (e: WhisperRunnerEvent) => onEvent?.(e),
+    __emit: emit,
     __setEvent: (fn: (e: WhisperRunnerEvent) => void) => (onEvent = fn),
   };
   return runner as never;
@@ -78,9 +86,10 @@ describe("dictationService", () => {
     expect(arg.length).toBe(1600);
   });
 
-  it("stop emits stopped and keeps runner warm for next session", async () => {
-    const runner = fakeRunner();
-    const startRunner = vi.fn(() => runner as never);
+  it("stop emits stopped and starts a fresh runner for next session", async () => {
+    const firstRunner = fakeRunner();
+    const secondRunner = fakeRunner();
+    const startRunner = vi.fn().mockReturnValueOnce(firstRunner).mockReturnValueOnce(secondRunner);
     const service = makeDictationService(deps({ startRunner }));
     await Effect.runPromise(
       Effect.gen(function* () {
@@ -89,26 +98,49 @@ describe("dictationService", () => {
         yield* service.startSession({ threadId: "t" as never, language: null });
       }),
     );
-    expect(startRunner).toHaveBeenCalledOnce();
-    expect(runner.stop).toHaveBeenCalledOnce();
-    expect(runner.kill).not.toHaveBeenCalled();
+    expect(startRunner).toHaveBeenCalledTimes(2);
+    expect(firstRunner.stop).toHaveBeenCalledOnce();
+    expect(firstRunner.kill).not.toHaveBeenCalled();
+    expect(secondRunner.kill).not.toHaveBeenCalled();
   });
 
-  it("kills warm runner after warmPoolIdleMs", async () => {
-    vi.useFakeTimers();
-    try {
-      const runner = fakeRunner();
-      const service = makeDictationService(
-        deps({ startRunner: () => runner as never, warmPoolIdleMs: 100 }),
-      );
-      await Effect.runPromise(service.startSession({ threadId: "t" as never, language: null }));
-      await Effect.runPromise(
-        service.stopSession({ sessionId: "sess_1" as never, reason: "user" }),
-      );
-      vi.advanceTimersByTime(150);
-      expect(runner.kill).toHaveBeenCalledOnce();
-    } finally {
-      vi.useRealTimers();
-    }
+  it("routes final transcript events emitted while stopping", async () => {
+    const runner = fakeRunner(async (emit) => {
+      emit({ kind: "commit", text: "final transcript" });
+    });
+    const service = makeDictationService(
+      deps({
+        startRunner: (opts) => {
+          runner.__setEvent(opts.onEvent);
+          return runner as never;
+        },
+      }),
+    );
+    const events: unknown[] = [];
+
+    await Effect.runPromise(
+      Effect.scoped(
+        Effect.gen(function* () {
+          yield* Stream.runForEach(service.events, (e) => Effect.sync(() => events.push(e))).pipe(
+            Effect.forkScoped,
+          );
+          yield* Effect.yieldNow;
+          yield* service.startSession({ threadId: "t" as never, language: null });
+          yield* service.stopSession({ sessionId: "sess_1" as never, reason: "user" });
+          yield* Effect.yieldNow;
+        }),
+      ),
+    );
+
+    expect(events).toContainEqual({
+      type: "commit",
+      sessionId: "sess_1",
+      text: "final transcript",
+    });
+    expect(events).toContainEqual({
+      type: "stopped",
+      sessionId: "sess_1",
+      reason: "client-stop",
+    });
   });
 });

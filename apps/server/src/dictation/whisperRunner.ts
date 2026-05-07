@@ -23,6 +23,7 @@ export interface WhisperRunnerOptions {
   modelPath: string;
   onEvent: (event: WhisperRunnerEvent) => void;
   backpressureTimeoutMs: number;
+  stopTimeoutMs?: number;
   now: () => number;
   language?: string | null;
 }
@@ -50,8 +51,18 @@ export function startWhisperRunner(options: WhisperRunnerOptions): WhisperRunner
   });
 
   let exitResolver: ((value: void) => void) | null = null;
+  let stopStdinTimer: NodeJS.Timeout | null = null;
+  let stopForceTimer: NodeJS.Timeout | null = null;
   child.on("exit", (code) => {
     if (backpressureTimer) clearTimeout(backpressureTimer);
+    if (stopStdinTimer) {
+      clearTimeout(stopStdinTimer);
+      stopStdinTimer = null;
+    }
+    if (stopForceTimer) {
+      clearTimeout(stopForceTimer);
+      stopForceTimer = null;
+    }
     // On graceful exit, drain any buffered partial as a final commit so the
     // last utterance isn't lost when whisper.cpp closes without a trailing \n.
     if (!killed && exitResolver !== null) {
@@ -99,6 +110,12 @@ export function startWhisperRunner(options: WhisperRunnerOptions): WhisperRunner
     return new Promise<void>((resolve) => {
       exitResolver = resolve;
       child.stdin?.end();
+      stopStdinTimer = setTimeout(() => {
+        child.stdin?.destroy();
+      }, 250);
+      stopForceTimer = setTimeout(() => {
+        child.kill("SIGTERM");
+      }, options.stopTimeoutMs ?? 30_000);
       // The exit handler above will call parser.flush() before resolving so any
       // final buffered partial is emitted as a commit.
     });
@@ -110,6 +127,8 @@ export function startWhisperRunner(options: WhisperRunnerOptions): WhisperRunner
     // half-formed partial after the user explicitly cancels.
     parser.reset();
     if (backpressureTimer) clearTimeout(backpressureTimer);
+    if (stopStdinTimer) clearTimeout(stopStdinTimer);
+    if (stopForceTimer) clearTimeout(stopForceTimer);
     child.kill("SIGTERM");
   }
 
