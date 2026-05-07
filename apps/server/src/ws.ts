@@ -22,8 +22,6 @@ import {
   OrchestrationReplayEventsError,
   FilesystemBrowseError,
   ThreadId,
-  DictationError,
-  type DictationStreamEvent,
   type TerminalEvent,
   WS_METHODS,
   WsRpcGroup,
@@ -35,6 +33,8 @@ import { RpcSerialization, RpcServer } from "effect/unstable/rpc";
 import { CheckpointDiffQuery } from "./checkpointing/Services/CheckpointDiffQuery.ts";
 import { ServerConfig } from "./config.ts";
 import { probeDictationCapability } from "./dictation/capability.ts";
+import { makeDictationService } from "./dictation/dictationService.ts";
+import { startWhisperRunner } from "./dictation/whisperRunner.ts";
 import { Keybindings } from "./keybindings.ts";
 import { Open, resolveAvailableEditors } from "./open.ts";
 import { normalizeDispatchCommand } from "./orchestration/Normalizer.ts";
@@ -234,6 +234,38 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
       const sessions = yield* SessionCredentialService;
       const serverCommandId = (tag: string) =>
         CommandId.make(`server:${tag}:${crypto.randomUUID()}`);
+
+      // Probe whisper.cpp capability once per WS connection. The probe
+      // shells out to `which`/`--help`, so we do it lazily at WS-layer
+      // build time and reuse the result for both `loadServerConfig`
+      // (handshake handler) and the `DictationService` (per-WS state).
+      const dictationCapability = yield* Effect.promise(() =>
+        probeDictationCapability(dictationProbeIo),
+      );
+
+      const dictation = makeDictationService({
+        capability: dictationCapability,
+        startRunner: ({ onEvent, language }) =>
+          startWhisperRunner({
+            spawn: (binary, args) => spawn(binary, args, { stdio: ["pipe", "pipe", "pipe"] }),
+            // `startSession` already guards on capability.available + modelLabel
+            // before invoking startRunner, so binary/modelPath are guaranteed
+            // non-empty here. The empty-string fallbacks satisfy the Whisper
+            // runner's required-string types without leaking the optionality.
+            binary: dictationCapability.binaryPath ?? "",
+            modelPath: dictationCapability.modelPath ?? "",
+            onEvent,
+            backpressureTimeoutMs: 500,
+            now: () => Date.now(),
+            language,
+          }),
+        newSessionId: () => `dict_${crypto.randomUUID()}`,
+        warmPoolIdleMs: 30_000,
+      });
+
+      // WS scope teardown: kill any active or warm whisper.cpp child so the
+      // OS doesn't leak background processes when the client disconnects.
+      yield* Effect.addFinalizer(() => dictation.shutdown());
 
       const loadAuthAccessSnapshot = () =>
         Effect.all({
@@ -598,7 +630,6 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
         const settings = redactServerSettingsForClient(yield* serverSettings.getSettings);
         const environment = yield* serverEnvironment.getDescriptor;
         const auth = yield* serverAuth.getDescriptor();
-        const dictation = yield* Effect.promise(() => probeDictationCapability(dictationProbeIo));
 
         return {
           environment,
@@ -620,7 +651,7 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             otlpMetricsEnabled: config.otlpMetricsUrl !== undefined,
           },
           settings,
-          dictation,
+          dictation: dictationCapability,
         };
       });
 
@@ -1196,34 +1227,22 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             }),
             { "rpc.aggregate": "auth" },
           ),
-        // Dictation handlers are stubs in this commit (Task 1: wire protocol
-        // contracts only). Real implementation lands with the dictation
-        // service in subsequent tasks.
-        [WS_METHODS.dictationStart]: () =>
-          Effect.fail(
-            new DictationError({
-              code: "internal",
-              message: "dictation not yet implemented",
-              sessionId: null,
-            }),
-          ),
-        [WS_METHODS.dictationAudioFrame]: () =>
-          Effect.fail(
-            new DictationError({
-              code: "internal",
-              message: "dictation not yet implemented",
-              sessionId: null,
-            }),
-          ),
-        [WS_METHODS.dictationStop]: () =>
-          Effect.fail(
-            new DictationError({
-              code: "internal",
-              message: "dictation not yet implemented",
-              sessionId: null,
-            }),
-          ),
-        [WS_METHODS.subscribeDictation]: () => Stream.empty as Stream.Stream<DictationStreamEvent>,
+        [WS_METHODS.dictationStart]: (input) =>
+          observeRpcEffect(WS_METHODS.dictationStart, dictation.startSession(input), {
+            "rpc.aggregate": "dictation",
+          }),
+        [WS_METHODS.dictationAudioFrame]: (input) =>
+          observeRpcEffect(WS_METHODS.dictationAudioFrame, dictation.writeFrame(input), {
+            "rpc.aggregate": "dictation",
+          }),
+        [WS_METHODS.dictationStop]: (input) =>
+          observeRpcEffect(WS_METHODS.dictationStop, dictation.stopSession(input), {
+            "rpc.aggregate": "dictation",
+          }),
+        [WS_METHODS.subscribeDictation]: (_input) =>
+          observeRpcStreamEffect(WS_METHODS.subscribeDictation, Effect.succeed(dictation.events), {
+            "rpc.aggregate": "dictation",
+          }),
       });
     }),
   );

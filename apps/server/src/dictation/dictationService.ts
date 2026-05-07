@@ -1,10 +1,11 @@
-import type {
-  DictationAudioFrameInput,
-  DictationCapability,
-  DictationStartInput,
-  DictationStartResult,
-  DictationStopInput,
-  DictationStreamEvent,
+import {
+  type DictationAudioFrameInput,
+  type DictationCapability,
+  DictationError,
+  type DictationStartInput,
+  type DictationStartResult,
+  type DictationStopInput,
+  type DictationStreamEvent,
 } from "@t3tools/contracts";
 import { Effect, PubSub, Stream } from "effect";
 import type { WhisperRunner, WhisperRunnerEvent } from "./whisperRunner.ts";
@@ -20,9 +21,9 @@ export interface DictationServiceDeps {
 }
 
 export interface DictationService {
-  startSession(input: DictationStartInput): Effect.Effect<DictationStartResult>;
-  writeFrame(input: DictationAudioFrameInput): Effect.Effect<void>;
-  stopSession(input: DictationStopInput): Effect.Effect<void>;
+  startSession(input: DictationStartInput): Effect.Effect<DictationStartResult, DictationError>;
+  writeFrame(input: DictationAudioFrameInput): Effect.Effect<void, DictationError>;
+  stopSession(input: DictationStopInput): Effect.Effect<void, DictationError>;
   events: Stream.Stream<DictationStreamEvent>;
   shutdown(): Effect.Effect<void>;
 }
@@ -81,11 +82,27 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
     return deps.startRunner({ onEvent: onRunnerEvent, language });
   }
 
-  function startSession(input: DictationStartInput): Effect.Effect<DictationStartResult> {
-    return Effect.sync(() => {
-      if (active) throw new Error("session already active for this WS");
+  function startSession(
+    input: DictationStartInput,
+  ): Effect.Effect<DictationStartResult, DictationError> {
+    return Effect.suspend(() => {
+      if (active) {
+        return Effect.fail(
+          new DictationError({
+            code: "internal",
+            message: "session already active for this WS",
+            sessionId: null,
+          }),
+        );
+      }
       if (!deps.capability.available || !deps.capability.modelLabel) {
-        throw new Error("dictation unavailable");
+        return Effect.fail(
+          new DictationError({
+            code: "internal",
+            message: deps.capability.reason ?? "dictation unavailable",
+            sessionId: null,
+          }),
+        );
       }
       const sessionId = deps.newSessionId();
       const runner = acquireRunner(input.language);
@@ -95,20 +112,26 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
         sessionId,
         modelLabel: deps.capability.modelLabel,
       });
-      return { sessionId, modelLabel: deps.capability.modelLabel };
+      return Effect.succeed({
+        sessionId,
+        modelLabel: deps.capability.modelLabel,
+      });
     });
   }
 
-  function writeFrame(input: DictationAudioFrameInput): Effect.Effect<void> {
+  function writeFrame(input: DictationAudioFrameInput): Effect.Effect<void, DictationError> {
     return Effect.sync(() => {
+      // Silently drop frames for unknown / mismatched sessions per the wire
+      // protocol: the client always recovers via the next `dictation.start`.
       if (!active || active.sessionId !== input.sessionId) return;
       const frame = Buffer.from(input.pcm, "base64");
       active.runner.writeFrame(frame);
     });
   }
 
-  function stopSession(input: DictationStopInput): Effect.Effect<void> {
+  function stopSession(input: DictationStopInput): Effect.Effect<void, DictationError> {
     return Effect.promise(async () => {
+      // Silent no-op for stale stop requests, matching the writeFrame policy.
       if (!active || active.sessionId !== input.sessionId) return;
       const session = active;
       // Clear `active` BEFORE awaiting runner.stop() so any late

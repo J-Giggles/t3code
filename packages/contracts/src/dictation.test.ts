@@ -61,9 +61,11 @@ describe("dictation schemas", () => {
       available: true,
       reason: null,
       modelLabel: "ggml-base.en",
+      modelPath: "/home/user/.cache/whisper/ggml-base.en.bin",
       binaryPath: "/usr/bin/whisper-cli",
     });
     expect(decoded.available).toBe(true);
+    expect(decoded.modelPath).toBe("/home/user/.cache/whisper/ggml-base.en.bin");
   });
 
   it("DictationStopInput accepts reason union", () => {

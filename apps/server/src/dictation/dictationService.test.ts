@@ -20,6 +20,7 @@ const deps = (overrides?: Partial<DictationServiceDeps>): DictationServiceDeps =
     available: true,
     reason: null,
     modelLabel: "ggml-base.en",
+    modelPath: "/home/user/.cache/whisper/ggml-base.en.bin",
     binaryPath: "/usr/bin/whisper-cli",
   },
   startRunner: vi.fn(),

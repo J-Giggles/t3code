@@ -61,6 +61,7 @@ export async function probeDictationCapability(
       available: false,
       reason: "whisper.cpp binary not found (looked for whisper-cli, whisper-stream, main)",
       modelLabel: null,
+      modelPath: null,
       binaryPath: null,
     };
   }
@@ -71,6 +72,7 @@ export async function probeDictationCapability(
       available: false,
       reason: "whisper model file not found (set WHISPER_MODEL env or ~/.cache/whisper/ggml-*.bin)",
       modelLabel: null,
+      modelPath: null,
       binaryPath: binary.path,
     };
   }
@@ -79,6 +81,7 @@ export async function probeDictationCapability(
     available: true,
     reason: null,
     modelLabel: modelLabel(model),
+    modelPath: model,
     binaryPath: binary.path,
   };
 }

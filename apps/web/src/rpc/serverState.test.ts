@@ -96,6 +96,7 @@ const baseServerConfig: ServerConfig = {
     available: false,
     reason: "not-yet-probed",
     modelLabel: null,
+    modelPath: null,
     binaryPath: null,
   },
 };

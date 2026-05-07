@@ -15,6 +15,7 @@ export const DictationCapability = Schema.Struct({
   available: Schema.Boolean,
   reason: Schema.NullOr(TrimmedNonEmptyString),
   modelLabel: Schema.NullOr(TrimmedNonEmptyString),
+  modelPath: Schema.NullOr(TrimmedNonEmptyString),
   binaryPath: Schema.NullOr(TrimmedNonEmptyString),
 });
 export type DictationCapability = typeof DictationCapability.Type;

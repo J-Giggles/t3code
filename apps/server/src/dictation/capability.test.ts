@@ -41,6 +41,7 @@ describe("probeDictationCapability", () => {
     expect(result.available).toBe(true);
     expect(result.binaryPath).toBe("/usr/bin/whisper-cli");
     expect(result.modelLabel).toBe("ggml-base.en");
+    expect(result.modelPath).toBe("/path/to/ggml-base.en.bin");
   });
 
   it("falls back to whisper-stream when whisper-cli is not found", async () => {
@@ -55,6 +56,7 @@ describe("probeDictationCapability", () => {
     const result = await probeDictationCapability(io);
     expect(result.available).toBe(true);
     expect(result.binaryPath).toBe("/usr/local/bin/whisper-stream");
+    expect(result.modelPath).toBe("/home/user/.cache/whisper/ggml-base.en.bin");
   });
 
   it("reports unavailable when no binary is found", async () => {
@@ -70,6 +72,7 @@ describe("probeDictationCapability", () => {
     const result = await probeDictationCapability(io);
     expect(result.available).toBe(false);
     expect(result.reason).toMatch(/binary/i);
+    expect(result.modelPath).toBeNull();
   });
 
   it("reports unavailable when binary lacks stream-mode support", async () => {
