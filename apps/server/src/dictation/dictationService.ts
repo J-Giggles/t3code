@@ -11,7 +11,15 @@ import { Effect, PubSub, Stream } from "effect";
 import type { WhisperRunner, WhisperRunnerEvent } from "./whisperRunner.ts";
 
 export interface DictationServiceDeps {
-  capability: DictationCapability;
+  /**
+   * Capability is a getter (not a static value) so the WS layer can mutate
+   * the underlying `DictationCapability` (e.g. via the `dictation.rescan`
+   * RPC) without rebuilding the service. Each call site captures the value
+   * at the start of an operation to avoid mid-operation churn — a rescan
+   * landing between gate-check and event-publish would otherwise produce
+   * a `started` event with a different `modelLabel` than the gate saw.
+   */
+  capability: () => DictationCapability;
   startRunner: (opts: {
     onEvent: (e: WhisperRunnerEvent) => void;
     language: string | null;
@@ -95,11 +103,15 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
           }),
         );
       }
-      if (!deps.capability.available || !deps.capability.modelLabel) {
+      // Snapshot the capability once per startSession invocation so a rescan
+      // landing between the gate check and the `started` publish can't make
+      // the gate disagree with the modelLabel we report to the client.
+      const cap = deps.capability();
+      if (!cap.available || !cap.modelLabel) {
         return Effect.fail(
           new DictationError({
             code: "internal",
-            message: deps.capability.reason ?? "dictation unavailable",
+            message: cap.reason ?? "dictation unavailable",
             sessionId: null,
           }),
         );
@@ -110,11 +122,11 @@ export function makeDictationService(deps: DictationServiceDeps): DictationServi
       publishSync({
         type: "started",
         sessionId,
-        modelLabel: deps.capability.modelLabel,
+        modelLabel: cap.modelLabel,
       });
       return Effect.succeed({
         sessionId,
-        modelLabel: deps.capability.modelLabel,
+        modelLabel: cap.modelLabel,
       });
     });
   }

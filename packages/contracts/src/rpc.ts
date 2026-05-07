@@ -5,6 +5,7 @@ import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 import {
   DICTATION_WS_METHODS,
   WsDictationAudioFrameRpc,
+  WsDictationRescanRpc,
   WsDictationStartRpc,
   WsDictationStopRpc,
   WsSubscribeDictationRpc,
@@ -150,6 +151,7 @@ export const WS_METHODS = {
   dictationStart: DICTATION_WS_METHODS.start,
   dictationAudioFrame: DICTATION_WS_METHODS.audioFrame,
   dictationStop: DICTATION_WS_METHODS.stop,
+  dictationRescan: DICTATION_WS_METHODS.rescan,
   subscribeDictation: DICTATION_WS_METHODS.subscribe,
 
   // Streaming subscriptions
@@ -470,5 +472,6 @@ export const WsRpcGroup = RpcGroup.make(
   WsDictationStartRpc,
   WsDictationAudioFrameRpc,
   WsDictationStopRpc,
+  WsDictationRescanRpc,
   WsSubscribeDictationRpc,
 );

@@ -142,6 +142,7 @@ export interface WsRpcClient {
     readonly start: RpcUnaryMethod<typeof WS_METHODS.dictationStart>;
     readonly audioFrame: RpcUnaryMethod<typeof WS_METHODS.dictationAudioFrame>;
     readonly stop: RpcUnaryMethod<typeof WS_METHODS.dictationStop>;
+    readonly rescan: RpcUnaryNoArgMethod<typeof WS_METHODS.dictationRescan>;
     readonly subscribe: RpcStreamMethod<typeof WS_METHODS.subscribeDictation>;
   };
 }
@@ -288,6 +289,7 @@ export function createWsRpcClient(transport: WsTransport): WsRpcClient {
       audioFrame: (input) =>
         transport.request((client) => client[WS_METHODS.dictationAudioFrame](input)),
       stop: (input) => transport.request((client) => client[WS_METHODS.dictationStop](input)),
+      rescan: () => transport.request((client) => client[WS_METHODS.dictationRescan]({})),
       subscribe: (listener, options) =>
         transport.subscribe((client) => client[WS_METHODS.subscribeDictation]({}), listener, {
           ...options,

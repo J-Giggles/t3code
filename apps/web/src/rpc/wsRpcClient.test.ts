@@ -130,6 +130,7 @@ describe("wsRpcClient", () => {
     expect(typeof client.dictation.start).toBe("function");
     expect(typeof client.dictation.audioFrame).toBe("function");
     expect(typeof client.dictation.stop).toBe("function");
+    expect(typeof client.dictation.rescan).toBe("function");
     expect(typeof client.dictation.subscribe).toBe("function");
 
     void client.dictation.start({
@@ -145,12 +146,13 @@ describe("wsRpcClient", () => {
       sessionId: "session-1",
       reason: "user",
     });
+    void client.dictation.rescan();
     const events: DictationStreamEvent[] = [];
     const dispose = client.dictation.subscribe((event) => {
       events.push(event);
     });
 
-    expect(request).toHaveBeenCalledTimes(3);
+    expect(request).toHaveBeenCalledTimes(4);
     expect(subscribe).toHaveBeenCalledTimes(1);
     expect(subscribe.mock.calls[0]?.[2]).toMatchObject({
       tag: WS_METHODS.subscribeDictation,

@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 import {
+  DICTATION_WS_METHODS,
   DictationAudioFrameInput,
   DictationCapability,
   DictationError,
@@ -8,6 +9,7 @@ import {
   DictationStartResult,
   DictationStopInput,
   DictationStreamEvent,
+  WsDictationRescanRpc,
 } from "./dictation.ts";
 
 function decodes<S extends Schema.Top>(schema: S, input: unknown): boolean {
@@ -168,5 +170,27 @@ describe("dictation event variants", () => {
       message: "boom",
     });
     expect(decoded.type).toBe("error");
+  });
+});
+
+describe("dictation rescan RPC", () => {
+  it("uses the dictation.rescan tag", () => {
+    expect(DICTATION_WS_METHODS.rescan).toBe("dictation.rescan");
+    expect(WsDictationRescanRpc._tag).toBe(DICTATION_WS_METHODS.rescan);
+  });
+
+  it("decodes an empty payload and a DictationCapability success", () => {
+    const payload = Schema.decodeUnknownSync(WsDictationRescanRpc.payloadSchema)({});
+    expect(payload).toEqual({});
+
+    const success = Schema.decodeUnknownSync(WsDictationRescanRpc.successSchema)({
+      available: true,
+      reason: null,
+      modelLabel: "ggml-base.en",
+      modelPath: "/home/user/.cache/whisper/ggml-base.en.bin",
+      binaryPath: "/usr/bin/whisper-cli",
+    });
+    expect(success.available).toBe(true);
+    expect(success.modelLabel).toBe("ggml-base.en");
   });
 });

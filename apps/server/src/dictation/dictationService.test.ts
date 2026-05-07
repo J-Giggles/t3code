@@ -16,13 +16,13 @@ function fakeRunner(): WhisperRunner & { __emit: (e: WhisperRunnerEvent) => void
 }
 
 const deps = (overrides?: Partial<DictationServiceDeps>): DictationServiceDeps => ({
-  capability: {
+  capability: () => ({
     available: true,
     reason: null,
     modelLabel: "ggml-base.en",
     modelPath: "/home/user/.cache/whisper/ggml-base.en.bin",
     binaryPath: "/usr/bin/whisper-cli",
-  },
+  }),
   startRunner: vi.fn(),
   newSessionId: () => "sess_1",
   warmPoolIdleMs: 30_000,

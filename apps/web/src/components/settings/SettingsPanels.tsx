@@ -40,6 +40,7 @@ import {
   deriveProviderInstanceEntries,
   sortProviderInstanceEntries,
 } from "../../providerInstances";
+import { getPrimaryEnvironmentConnection } from "../../environments/runtime";
 import { ensureLocalApi, readLocalApi } from "../../localApi";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -491,6 +492,10 @@ export function GeneralSettingsPanel() {
   const observability = useServerObservability();
   const serverProviders = useServerProviders();
   const dictationCapability = useServerDictationCapability();
+  const rescanDictation = useCallback(
+    () => getPrimaryEnvironmentConnection().client.dictation.rescan(),
+    [],
+  );
   const visibleProviderSettings = PROVIDER_SETTINGS.filter(
     (providerSettings) =>
       providerSettings.provider !== "cursor" ||
@@ -1300,7 +1305,7 @@ export function GeneralSettingsPanel() {
         onOpenChange={setIsAddInstanceDialogOpen}
       />
 
-      <DictationStatusBlock capability={dictationCapability} />
+      <DictationStatusBlock capability={dictationCapability} onRescan={rescanDictation} />
 
       <SettingsSection title="Advanced">
         <SettingsRow

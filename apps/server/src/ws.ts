@@ -239,26 +239,34 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
       // shells out to `which`/`--help`, so we do it lazily at WS-layer
       // build time and reuse the result for both `loadServerConfig`
       // (handshake handler) and the `DictationService` (per-WS state).
-      const dictationCapability = yield* Effect.promise(() =>
-        probeDictationCapability(dictationProbeIo),
+      // The Ref makes the value mutable so a `dictation.rescan` RPC can
+      // re-probe (e.g. after the user installs whisper.cpp) without
+      // restarting the WS connection.
+      const dictationCapabilityRef = yield* Ref.make(
+        yield* Effect.promise(() => probeDictationCapability(dictationProbeIo)),
       );
 
       const dictation = makeDictationService({
-        capability: dictationCapability,
-        startRunner: ({ onEvent, language }) =>
-          startWhisperRunner({
+        capability: () => Effect.runSync(Ref.get(dictationCapabilityRef)),
+        startRunner: ({ onEvent, language }) => {
+          // Read the latest capability snapshot at runner-spawn time so a
+          // rescan that happened between sessions picks up the new binary
+          // and model paths.
+          const cap = Effect.runSync(Ref.get(dictationCapabilityRef));
+          return startWhisperRunner({
             spawn: (binary, args) => spawn(binary, args, { stdio: ["pipe", "pipe", "pipe"] }),
             // `startSession` already guards on capability.available + modelLabel
             // before invoking startRunner, so binary/modelPath are guaranteed
             // non-empty here. The empty-string fallbacks satisfy the Whisper
             // runner's required-string types without leaking the optionality.
-            binary: dictationCapability.binaryPath ?? "",
-            modelPath: dictationCapability.modelPath ?? "",
+            binary: cap.binaryPath ?? "",
+            modelPath: cap.modelPath ?? "",
             onEvent,
             backpressureTimeoutMs: 500,
             now: () => Date.now(),
             language,
-          }),
+          });
+        },
         newSessionId: () => `dict_${crypto.randomUUID()}`,
         warmPoolIdleMs: 30_000,
       });
@@ -651,7 +659,7 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
             otlpMetricsEnabled: config.otlpMetricsUrl !== undefined,
           },
           settings,
-          dictation: dictationCapability,
+          dictation: yield* Ref.get(dictationCapabilityRef),
         };
       });
 
@@ -1239,6 +1247,16 @@ const makeWsRpcLayer = (currentSessionId: AuthSessionId) =>
           observeRpcEffect(WS_METHODS.dictationStop, dictation.stopSession(input), {
             "rpc.aggregate": "dictation",
           }),
+        [WS_METHODS.dictationRescan]: () =>
+          observeRpcEffect(
+            WS_METHODS.dictationRescan,
+            Effect.gen(function* () {
+              const fresh = yield* Effect.promise(() => probeDictationCapability(dictationProbeIo));
+              yield* Ref.set(dictationCapabilityRef, fresh);
+              return fresh;
+            }),
+            { "rpc.aggregate": "dictation" },
+          ),
         [WS_METHODS.subscribeDictation]: (_input) =>
           observeRpcStreamEffect(WS_METHODS.subscribeDictation, Effect.succeed(dictation.events), {
             "rpc.aggregate": "dictation",

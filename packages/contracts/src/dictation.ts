@@ -110,6 +110,7 @@ export const DICTATION_WS_METHODS = {
   start: "dictation.start",
   audioFrame: "dictation.audioFrame",
   stop: "dictation.stop",
+  rescan: "dictation.rescan",
   subscribe: "subscribeDictation",
 } as const;
 
@@ -126,6 +127,12 @@ export const WsDictationAudioFrameRpc = Rpc.make(DICTATION_WS_METHODS.audioFrame
 
 export const WsDictationStopRpc = Rpc.make(DICTATION_WS_METHODS.stop, {
   payload: DictationStopInput,
+  error: DictationError,
+});
+
+export const WsDictationRescanRpc = Rpc.make(DICTATION_WS_METHODS.rescan, {
+  payload: Schema.Struct({}),
+  success: DictationCapability,
   error: DictationError,
 });
 
