@@ -144,6 +144,27 @@ describe("WorktreeDiscovery", () => {
       Effect.runPromise,
     ));
 
+  it("emits a new snapshot when a worktree branch changes", () => {
+    const state: StubState = {
+      worktrees: [makeWorktree("/repo", "main", true)],
+      failNext: false,
+    };
+    return Effect.gen(function* () {
+      const discovery = yield* WorktreeDiscovery;
+      const queue = yield* Queue.unbounded<WorktreeStateSnapshot>();
+      yield* Effect.forkScoped(
+        Stream.runForEach(discovery.subscribe(testProjectId, "/repo"), (item) =>
+          Queue.offer(queue, item),
+        ),
+      );
+      yield* Queue.take(queue);
+      state.worktrees = [makeWorktree("/repo", "staging", true)];
+      yield* discovery.invalidate(testProjectId);
+      const second = yield* Queue.take(queue);
+      expect(second.worktrees[0]?.branch).toBe("staging");
+    }).pipe(Effect.provide(makeLayerWithState(state)), Effect.scoped, Effect.runPromise);
+  });
+
   it("recovers from transient listWorktrees failures", () => {
     const state: StubState = {
       worktrees: [makeWorktree("/repo", "main", true)],

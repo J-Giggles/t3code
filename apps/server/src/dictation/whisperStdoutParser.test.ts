@@ -37,9 +37,9 @@ describe("makeWhisperStdoutParser", () => {
     ]);
   });
 
-  it("emits empty partial when \\r appears with no buffered text (clear-partial signal)", () => {
+  it("skips empty partials (silence carries no transcribed content)", () => {
     const parser = makeWhisperStdoutParser();
-    expect(parser.feed("\r")).toEqual([{ kind: "partial", text: "" }]);
+    expect(parser.feed("\r")).toEqual([]);
   });
 
   it("skips empty commits (empty \\n carries no transcribed content)", () => {
@@ -49,7 +49,7 @@ describe("makeWhisperStdoutParser", () => {
 
   it("filters whisper blank-audio tokens from partials and commits", () => {
     const parser = makeWhisperStdoutParser();
-    expect(parser.feed("[BLANK_AUDIO][BLANK_AUDIO]\r")).toEqual([{ kind: "partial", text: "" }]);
+    expect(parser.feed("[BLANK_AUDIO][BLANK_AUDIO]\r")).toEqual([]);
     expect(parser.feed("[BLANK_AUDIO][BLANK_AUDIO]\n")).toEqual([]);
     expect(parser.feed("hello [BLANK_AUDIO] world\n")).toEqual([
       { kind: "commit", text: "hello world" },
@@ -61,9 +61,9 @@ describe("makeWhisperStdoutParser", () => {
     expect(parser.feed("   hello   \r")).toEqual([{ kind: "partial", text: "hello" }]);
   });
 
-  it("handles ANSI-only payload by emitting empty partial", () => {
+  it("handles ANSI-only payload by skipping the empty partial", () => {
     const parser = makeWhisperStdoutParser();
-    expect(parser.feed("\x1b[2K\x1b[1G\r")).toEqual([{ kind: "partial", text: "" }]);
+    expect(parser.feed("\x1b[2K\x1b[1G\r")).toEqual([]);
   });
 
   it("flush() emits a final commit for buffered text when stream ends without \\n", () => {

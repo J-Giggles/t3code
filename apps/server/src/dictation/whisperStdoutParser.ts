@@ -42,10 +42,11 @@ export function makeWhisperStdoutParser(): WhisperStdoutParser {
       const events: WhisperStdoutEvent[] = [];
       for (const char of chunk) {
         if (char === "\r") {
-          // Always emit on \r — even an empty partial is a meaningful
-          // "clear the visible partial" signal.
-          events.push({ kind: "partial", text: clean(buffer) });
+          // Empty partials commonly come from silence/no-speech markers. Do
+          // not surface them, or a pause can erase the visible dictation text.
+          const text = clean(buffer);
           buffer = "";
+          if (text.length > 0) events.push({ kind: "partial", text });
         } else if (char === "\n") {
           // Skip empty commits — no transcribed content to surface.
           const text = clean(buffer);

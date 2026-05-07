@@ -39,19 +39,20 @@ interface ProjectState {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Compare two worktree sets by sorted paths (set semantics — order ignored).
- *
- * NOTE: Equality is intentionally path-set only. Branch or HEAD changes
- * inside an existing worktree do not trigger a new snapshot. The set's
- * shape is what determines the sidebar tree topology; consumers that need
- * branch updates should subscribe to other VCS events.
- */
+const serializeWorktreeForComparison = (worktree: VcsWorktree): string =>
+  [
+    worktree.path,
+    worktree.branch ?? "",
+    worktree.headRef ?? "",
+    worktree.isMain ? "main" : "linked",
+    worktree.isLocked ? "locked" : "unlocked",
+  ].join("\0");
+
 const worktreeSetEqual = (a: readonly VcsWorktree[], b: readonly VcsWorktree[]): boolean => {
   if (a.length !== b.length) return false;
-  const aPaths = [...a].map((w) => w.path).sort();
-  const bPaths = [...b].map((w) => w.path).sort();
-  return aPaths.every((p, i) => p === bPaths[i]);
+  const left = a.map(serializeWorktreeForComparison).toSorted();
+  const right = b.map(serializeWorktreeForComparison).toSorted();
+  return left.every((p, i) => p === right[i]);
 };
 
 // ---------------------------------------------------------------------------

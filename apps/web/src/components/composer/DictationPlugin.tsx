@@ -28,6 +28,7 @@ export const DISCARD_DICTATION_ANCHOR_COMMAND: LexicalCommand<undefined> = creat
 export function DictationPlugin() {
   const [editor] = useLexicalComposerContext();
   const anchorKeyRef = useRef<string | null>(null);
+  const committedTranscriptRef = useRef("");
 
   useEffect(() => {
     const offStart = editor.registerCommand(
@@ -35,23 +36,16 @@ export function DictationPlugin() {
       () => {
         editor.update(
           () => {
+            committedTranscriptRef.current = "";
             const selection = $getSelection();
             // Mark the anchor as unmergeable so Lexical's normalizer doesn't
             // garbage-collect it while it's empty (the partial-text bridge).
             const anchor = $createTextNode("");
             anchor.toggleUnmergeable();
-            if ($isRangeSelection(selection)) {
+            if (isEditorFocused(editor) && $isRangeSelection(selection)) {
               selection.insertNodes([anchor]);
             } else {
-              const root = $getRoot();
-              const lastChild = root.getLastChild();
-              if (lastChild && $isElementNode(lastChild)) {
-                lastChild.append(anchor);
-              } else {
-                const paragraph = $createParagraphNode();
-                paragraph.append(anchor);
-                root.append(paragraph);
-              }
+              appendTextNodeToEnd(anchor);
             }
             anchorKeyRef.current = anchor.getKey();
           },
@@ -67,11 +61,12 @@ export function DictationPlugin() {
       (text: string) => {
         const key = anchorKeyRef.current;
         if (!key) return false;
+        const displayText = stripCommittedTranscriptPrefix(text, committedTranscriptRef.current);
         editor.update(
           () => {
             const node = $getNodeByKey(key);
             if (node && $isTextNode(node)) {
-              node.setTextContent(text);
+              node.setTextContent(displayText);
             }
           },
           { tag: HISTORY_MERGE_TAG },
@@ -84,12 +79,14 @@ export function DictationPlugin() {
     const offCommit = editor.registerCommand(
       COMMIT_DICTATION_COMMAND,
       (text: string) => {
+        const previousTranscript = committedTranscriptRef.current;
+        const displayText = stripCommittedTranscriptPrefix(text, previousTranscript);
         editor.update(
           () => {
             const key = anchorKeyRef.current;
             const node = key ? $getNodeByKey(key) : null;
             if (node && $isTextNode(node)) {
-              node.setTextContent(text);
+              node.setTextContent(displayText);
               // Promote: the previous anchor is now a normal text node, so
               // clear the unmergeable flag (it can merge with neighbours).
               if (node.isUnmergeable()) {
@@ -106,6 +103,10 @@ export function DictationPlugin() {
               $getRoot().append(paragraph);
             }
             anchorKeyRef.current = fresh.getKey();
+            committedTranscriptRef.current =
+              previousTranscript.length > 0 && text.startsWith(previousTranscript)
+                ? text
+                : previousTranscript + displayText;
           },
           { tag: HISTORY_MERGE_TAG },
         );
@@ -126,6 +127,7 @@ export function DictationPlugin() {
               node.remove();
             }
             anchorKeyRef.current = null;
+            committedTranscriptRef.current = "";
           },
           { tag: HISTORY_MERGE_TAG },
         );
@@ -143,4 +145,26 @@ export function DictationPlugin() {
   }, [editor]);
 
   return null;
+}
+
+function isEditorFocused(editor: ReturnType<typeof useLexicalComposerContext>[0]): boolean {
+  const rootElement = editor.getRootElement();
+  return rootElement !== null && rootElement.contains(document.activeElement);
+}
+
+function appendTextNodeToEnd(anchor: ReturnType<typeof $createTextNode>): void {
+  const root = $getRoot();
+  const lastChild = root.getLastChild();
+  if (lastChild && $isElementNode(lastChild)) {
+    lastChild.append(anchor);
+    return;
+  }
+  const paragraph = $createParagraphNode();
+  paragraph.append(anchor);
+  root.append(paragraph);
+}
+
+function stripCommittedTranscriptPrefix(text: string, committed: string): string {
+  if (committed.length === 0) return text;
+  return text.startsWith(committed) ? text.slice(committed.length) : text;
 }

@@ -6,6 +6,7 @@ import {
   FolderPlusIcon,
   SearchIcon,
   SettingsIcon,
+  SmartphoneIcon,
   SquarePenIcon,
   TerminalIcon,
   TriangleAlertIcon,
@@ -187,7 +188,7 @@ import {
   type SidebarProjectSnapshot,
 } from "../sidebarProjectGrouping";
 import { SidebarProviderUpdatePill } from "./sidebar/SidebarProviderUpdatePill";
-import { buildProjectWorktreeTree } from "../sidebarWorktreeGrouping";
+import { buildProjectWorktreeTree, type SidebarWorktreeNode } from "../sidebarWorktreeGrouping";
 import { selectWorktreesForProject } from "../storeSelectors";
 import { SidebarWorktreeGroup } from "./sidebar/SidebarWorktreeGroup";
 const THREAD_PREVIEW_LIMIT = 6;
@@ -759,6 +760,7 @@ interface SidebarProjectThreadListProps {
   openPrLink: (event: React.MouseEvent<HTMLElement>, prUrl: string) => void;
   expandThreadListForProject: (projectKey: string) => void;
   collapseThreadListForProject: (projectKey: string) => void;
+  createThreadForWorktree: (node: SidebarWorktreeNode) => void;
 }
 
 const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
@@ -800,6 +802,7 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
     openPrLink,
     expandThreadListForProject,
     collapseThreadListForProject,
+    createThreadForWorktree,
   } = props;
   const showMoreButtonRender = useMemo(() => <button type="button" />, []);
   const showLessButtonRender = useMemo(() => <button type="button" />, []);
@@ -878,7 +881,7 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
       ref={attachThreadListAutoAnimateRef}
       className="mx-1 my-0 w-full translate-x-0 gap-0.5 overflow-hidden px-1.5 py-0"
     >
-      {shouldShowThreadPanel && showEmptyThreadState ? (
+      {shouldShowThreadPanel && showEmptyThreadState && worktreeTree.nodes.length === 0 ? (
         <SidebarMenuSubItem className="w-full" data-thread-selection-safe>
           <div
             data-thread-selection-safe
@@ -889,9 +892,13 @@ const SidebarProjectThreadList = memo(function SidebarProjectThreadList(
         </SidebarMenuSubItem>
       ) : null}
       {shouldShowThreadPanel &&
-        !showEmptyThreadState &&
         worktreeTree.nodes.map((node) => (
-          <SidebarWorktreeGroup key={node.id} node={node} renderThreadRow={renderThreadRow} />
+          <SidebarWorktreeGroup
+            key={node.id}
+            node={node}
+            renderThreadRow={renderThreadRow}
+            onCreateThread={createThreadForWorktree}
+          />
         ))}
 
       {projectExpanded && hasOverflowingThreads && !isThreadListExpanded && (
@@ -1749,6 +1756,22 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
     [defaultThreadEnvMode, handleNewThread, isMobile, router, setOpenMobile],
   );
 
+  const createThreadForWorktree = useCallback(
+    (node: SidebarWorktreeNode) => {
+      const member = project.memberProjects[0];
+      if (!member) return;
+      if (isMobile) {
+        setOpenMobile(false);
+      }
+      void handleNewThread(scopeProjectRef(member.environmentId, member.id), {
+        branch: node.branch,
+        worktreePath: node.worktreePath,
+        envMode: node.worktreePath ? "worktree" : "local",
+      });
+    },
+    [handleNewThread, isMobile, project.memberProjects, setOpenMobile],
+  );
+
   const handleCreateThreadClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault();
@@ -2155,6 +2178,7 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
         openPrLink={openPrLink}
         expandThreadListForProject={expandThreadListForProject}
         collapseThreadListForProject={collapseThreadListForProject}
+        createThreadForWorktree={createThreadForWorktree}
       />
 
       <Dialog
@@ -2629,6 +2653,17 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
                 </Kbd>
               ) : null}
             </CommandDialogTrigger>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<Link to="/on-the-go" />}
+              size="sm"
+              className="gap-2 px-2 py-1.5 text-muted-foreground/70 hover:bg-accent hover:text-foreground focus-visible:ring-0"
+              data-testid="on-the-go-trigger"
+            >
+              <SmartphoneIcon className="size-3.5" />
+              <span className="flex-1 truncate text-left text-xs">On-the-Go</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>

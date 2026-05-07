@@ -2,7 +2,7 @@
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { act, render } from "@testing-library/react";
-import { $getRoot, type LexicalEditor } from "lexical";
+import { $createParagraphNode, $createTextNode, $getRoot, type LexicalEditor } from "lexical";
 import { describe, expect, it } from "vitest";
 import {
   COMMIT_DICTATION_COMMAND,
@@ -67,5 +67,33 @@ describe("DictationPlugin", () => {
       editor.dispatchCommand(INSERT_DICTATION_PARTIAL_COMMAND, " how");
     });
     expect(getEditorText(editor)).toBe("hello world. how");
+  });
+
+  it("appends at the end when the editor is not focused", async () => {
+    const editor = renderPlugin();
+    await act(async () => {
+      editor.update(() => {
+        const text = $createTextNode("existing text");
+        const paragraph = $createParagraphNode();
+        paragraph.append(text);
+        $getRoot().clear();
+        $getRoot().append(paragraph);
+        text.select(0, text.getTextContentSize());
+      });
+      editor.dispatchCommand(START_DICTATION_ANCHOR_COMMAND, undefined);
+      editor.dispatchCommand(INSERT_DICTATION_PARTIAL_COMMAND, " dictated");
+    });
+    expect(getEditorText(editor)).toBe("existing text dictated");
+  });
+
+  it("does not duplicate committed words when whisper emits a rolling transcript", async () => {
+    const editor = renderPlugin();
+    await act(async () => {
+      editor.dispatchCommand(START_DICTATION_ANCHOR_COMMAND, undefined);
+      editor.dispatchCommand(COMMIT_DICTATION_COMMAND, "hello");
+      editor.dispatchCommand(INSERT_DICTATION_PARTIAL_COMMAND, "hello world");
+      editor.dispatchCommand(COMMIT_DICTATION_COMMAND, "hello world");
+    });
+    expect(getEditorText(editor)).toBe("hello world");
   });
 });

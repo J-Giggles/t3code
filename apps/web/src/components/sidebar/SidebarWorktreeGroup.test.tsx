@@ -76,6 +76,17 @@ describe("SidebarWorktreeGroup", () => {
     expect(html).toContain("Beta");
   });
 
+  it("renders a worktree-scoped new thread button when provided", () => {
+    const html = renderToStaticMarkup(
+      <SidebarWorktreeGroup
+        node={baseNode}
+        renderThreadRow={() => null}
+        onCreateThread={() => undefined}
+      />,
+    );
+    expect(html).toContain('aria-label="Create new thread on main"');
+  });
+
   it("does not render thread rows when closed", () => {
     const node = {
       ...baseNode,
