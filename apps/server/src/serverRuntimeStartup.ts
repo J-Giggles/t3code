@@ -256,6 +256,15 @@ const resolveStartupBrowserTarget = Effect.gen(function* () {
   );
 });
 
+export function formatBrowserStartupOutput(target: string): string {
+  return [
+    "",
+    "T3 Code local dev is ready.",
+    `Open this URL to pair and run locally: ${target}`,
+    "",
+  ].join("\n");
+}
+
 const maybeOpenBrowser = (target: string) =>
   Effect.gen(function* () {
     const serverConfig = yield* ServerConfig;
@@ -445,6 +454,7 @@ export const makeServerRuntimeStartup = Effect.gen(function* () {
           yield* Effect.logInfo(
             "Authentication required. Open T3 Code using the pairing URL.",
           ).pipe(Effect.annotateLogs({ pairingUrl: startupBrowserTarget }));
+          yield* Console.log(formatBrowserStartupOutput(startupBrowserTarget));
         }
         yield* runStartupPhase("browser.open", maybeOpenBrowser(startupBrowserTarget));
       }

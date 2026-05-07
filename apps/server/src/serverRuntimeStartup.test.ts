@@ -12,6 +12,7 @@ import { ProjectionSnapshotQuery } from "./orchestration/Services/ProjectionSnap
 import { AnalyticsService } from "./telemetry/Services/AnalyticsService.ts";
 import {
   getAutoBootstrapDefaultModelSelection,
+  formatBrowserStartupOutput,
   launchStartupHeartbeat,
   makeCommandGate,
   resolveAutoBootstrapWelcomeTargets,
@@ -24,6 +25,18 @@ it("uses the canonical Codex default for auto-bootstrapped model selection", () 
     instanceId: ProviderInstanceId.make("codex"),
     model: DEFAULT_MODEL,
   });
+});
+
+it("formats a copyable local pairing URL for browser startup", () => {
+  assert.equal(
+    formatBrowserStartupOutput("http://localhost:5733/pair#token=PAIRCODE"),
+    [
+      "",
+      "T3 Code local dev is ready.",
+      "Open this URL to pair and run locally: http://localhost:5733/pair#token=PAIRCODE",
+      "",
+    ].join("\n"),
+  );
 });
 
 it.effect("enqueueCommand waits for readiness and then drains queued work", () =>
