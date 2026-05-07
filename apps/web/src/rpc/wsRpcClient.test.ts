@@ -1,7 +1,10 @@
-import type {
-  VcsStatusLocalResult,
-  VcsStatusRemoteResult,
-  VcsStatusStreamEvent,
+import {
+  ThreadId,
+  WS_METHODS,
+  type DictationStreamEvent,
+  type VcsStatusLocalResult,
+  type VcsStatusRemoteResult,
+  type VcsStatusStreamEvent,
 } from "@t3tools/contracts";
 import { describe, expect, it, vi } from "vitest";
 
@@ -101,5 +104,57 @@ describe("wsRpcClient", () => {
         },
       ],
     ]);
+  });
+
+  it("exposes dictation methods that proxy through the transport", () => {
+    const request = vi.fn();
+    const subscribe = vi.fn(
+      (
+        _connect: unknown,
+        _listener: (event: unknown) => void,
+        _options?: { readonly tag?: string },
+      ) =>
+        () =>
+          undefined,
+    );
+    const transport = {
+      dispose: vi.fn(async () => undefined),
+      reconnect: vi.fn(async () => undefined),
+      request,
+      requestStream: vi.fn(),
+      subscribe,
+    };
+
+    const client = createWsRpcClient(transport as unknown as WsTransport);
+
+    expect(typeof client.dictation.start).toBe("function");
+    expect(typeof client.dictation.audioFrame).toBe("function");
+    expect(typeof client.dictation.stop).toBe("function");
+    expect(typeof client.dictation.subscribe).toBe("function");
+
+    void client.dictation.start({
+      threadId: ThreadId.make("thread-1"),
+      language: null,
+    });
+    void client.dictation.audioFrame({
+      sessionId: "session-1",
+      seq: 0,
+      pcm: "AAAA",
+    });
+    void client.dictation.stop({
+      sessionId: "session-1",
+      reason: "user",
+    });
+    const events: DictationStreamEvent[] = [];
+    const dispose = client.dictation.subscribe((event) => {
+      events.push(event);
+    });
+
+    expect(request).toHaveBeenCalledTimes(3);
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(subscribe.mock.calls[0]?.[2]).toMatchObject({
+      tag: WS_METHODS.subscribeDictation,
+    });
+    expect(typeof dispose).toBe("function");
   });
 });
