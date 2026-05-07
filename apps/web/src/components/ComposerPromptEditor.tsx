@@ -74,6 +74,7 @@ import {
   COMPOSER_INLINE_SKILL_CHIP_CLASS_NAME,
 } from "./composerInlineChip";
 import { ComposerPendingTerminalContextChip } from "./chat/ComposerPendingTerminalContexts";
+import { DictationPlugin } from "./composer/DictationPlugin";
 import { formatProviderSkillDisplayName } from "~/providerSkillPresentation";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
@@ -1645,6 +1646,7 @@ function ComposerPromptEditorInner({
         <ComposerInlineTokenArrowPlugin />
         <ComposerInlineTokenSelectionNormalizePlugin />
         <ComposerInlineTokenBackspacePlugin />
+        <DictationPlugin />
         <HistoryPlugin />
       </div>
     </ComposerTerminalContextActionsContext.Provider>
