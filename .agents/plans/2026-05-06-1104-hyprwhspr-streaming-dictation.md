@@ -13,7 +13,7 @@ Add an always-visible microphone button to every thread composer that streams lo
 The user originally asked for integration with `hyprwhspr` (the Linux-native Whisper dictation daemon, installed locally as `hyprwhspr 1.25.0` running as `hyprwhspr.service`). After investigation, three findings shaped the design:
 
 1. **hyprwhspr's text injection is single-shot, not streaming.** Reading `/usr/lib/hyprwhspr/lib/main.py` and `text_injector.py`, even when configured with a realtime backend (Parakeet ONNX, ElevenLabs, OpenAI Realtime), partial transcripts are accumulated internally (`self._partial_transcript`) and `_inject_text(full_text)` is called only once on stop. There is no path that emits partials into the focused window incrementally.
-2. **hyprwhspr's "Parakeet" backend is a FastAPI sidecar that runs `nvidia/parakeet-tdt-0.6b-v3` via NeMo's batch `transcribe([file])` API — also not streaming, requires a heavy NeMo+Torch+optional-CUDA stack, and the model isn't on disk as raw ONNX (NeMo loads it from the HuggingFace cache).
+2. \*\*hyprwhspr's "Parakeet" backend is a FastAPI sidecar that runs `nvidia/parakeet-tdt-0.6b-v3` via NeMo's batch `transcribe([file])` API — also not streaming, requires a heavy NeMo+Torch+optional-CUDA stack, and the model isn't on disk as raw ONNX (NeMo loads it from the HuggingFace cache).
 3. **The composer is built on Lexical**, which gives us first-class commands and node mutations — clean streaming insertion is feasible.
 
 So the chosen approach **does not depend on hyprwhspr at runtime**. We build our own browser-→server-→ASR pipeline, with whisper.cpp as the ASR engine. The user can keep hyprwhspr installed for system-wide dictation; the t3code feature is independent.
@@ -97,12 +97,14 @@ So the chosen approach **does not depend on hyprwhspr at runtime**. We build our
 **Backpressure.** If the child's stdin write buffer stays full > 500 ms, runner emits `dictation.error { code: "backpressure" }` and stops.
 
 **Capability probe (server boot).**
+
 1. `which whisper-cli` (and `whisper-stream`, fallback names).
 2. Run `--help`; verify stream mode supported.
 3. Resolve a model file: (a) path in `~/.config/t3code/dictation.toml`, (b) `WHISPER_MODEL` env var, (c) common defaults like `~/.cache/whisper/ggml-base.en.bin`.
 4. On any failure: capability `{ available: false, reason: "<short string>" }`.
 
 **Files:**
+
 - `apps/server/src/dictation/whisperRunner.ts`
 - `apps/server/src/dictation/dictationService.ts`
 - `apps/server/src/dictation/capability.ts`
@@ -135,6 +137,7 @@ DictationStore.send(frame) → WebSocket dictation.audioFrame
 **HTTPS guard.** Before `getUserMedia`, check `window.isSecureContext`. If false: button shows HTTPS-required state with a tooltip mentioning `tailscale serve`. Fail fast, no opaque permission errors.
 
 **Suspend/resume hygiene.**
+
 - `visibilitychange → hidden` mid-recording → auto-stop.
 - WS close mid-recording → server cancels session, kills child stdin write.
 - Mic device unplugged → `track.onended` → auto-stop with toast.
@@ -142,6 +145,7 @@ DictationStore.send(frame) → WebSocket dictation.audioFrame
 **Default DSP.** EC/NS/AGC default-on, no settings toggle in v1 (matches every voice app default). Add a toggle only if a user reports distortion.
 
 **Files:**
+
 - `apps/web/src/dictation/audioCapture.ts`
 - `apps/web/src/dictation/pcmResamplerWorklet.ts` (with the resample logic factored into an importable module for tests)
 - `apps/web/src/dictation/dictationStore.ts`
@@ -150,6 +154,7 @@ DictationStore.send(frame) → WebSocket dictation.audioFrame
 ### Browser: Lexical composer integration
 
 **Anchor model.** On record start:
+
 1. Capture current Lexical selection; collapse range → focus point; if no selection, anchor at end-of-document.
 2. Insert a zero-width "dictation cursor" `TextNode` with a unique key — the **dictation anchor**.
 3. Each `dictation.partial` event replaces the anchor node's text content with the partial.
@@ -163,17 +168,20 @@ DictationStore.send(frame) → WebSocket dictation.audioFrame
 Mutations use `HISTORY_MERGE_TAG` so partials collapse into one undo entry per commit (not one per partial).
 
 **Typing-while-dictating rule.**
+
 - Outside the active anchor → typing is independent; dictation tokens flow into the anchor regardless.
 - Inside the anchor → typing implicitly **commits** the current partial (treats it as final), the keystroke applies after, and a fresh anchor is created at the new cursor for subsequent partials.
 
 This is how desktop dictation systems (Mac dictation, Dragon, Wispr Flow) behave — principle of least surprise.
 
 **Implementation.**
+
 - `DictationPlugin` registers `INSERT_DICTATION_PARTIAL_COMMAND` and `COMMIT_DICTATION_COMMAND` on the Lexical editor.
 - A `useEffect` in `ChatComposer.tsx` subscribes to `dictationStore` and dispatches commands as events arrive.
 - `ComposerPromptEditor`'s existing imperative handle is the dispatch target.
 
 **Button placement and behavior.**
+
 - `ComposerDictateButton.tsx` lives inside `ComposerPrimaryActions.tsx`, rendered before the Send button.
 - Always rendered when capability true. Not gated on `promptHasText`. Not collapsed by `CompactComposerControlsMenu`.
 - Uses `preserveComposerFocusOnPointerDown` so clicking it doesn't steal focus.
@@ -182,6 +190,7 @@ This is how desktop dictation systems (Mac dictation, Dragon, Wispr Flow) behave
 - Keyboard shortcut: `Ctrl+Shift+M`, configurable via `apps/web/src/keybindings.ts`.
 
 **Files:**
+
 - `apps/web/src/components/composer/DictationPlugin.tsx`
 - `apps/web/src/components/chat/ComposerDictateButton.tsx`
 - Edits in `ComposerPromptEditor.tsx`, `ComposerPrimaryActions.tsx`, `keybindings.ts`, `CompactComposerControlsMenu.tsx`, `ChatComposer.tsx`
@@ -191,11 +200,13 @@ This is how desktop dictation systems (Mac dictation, Dragon, Wispr Flow) behave
 All schemas via `effect/Schema`, tagged-union `kind` matching the existing WS protocol style.
 
 **Client → Server**
+
 - `DictationStartRequest { kind: "dictation.start", threadId: ThreadId, language: string | null }`
 - `DictationAudioFrame { kind: "dictation.audioFrame", pcm: string /* base64 of Int16 LE */, seq: number }`
 - `DictationStopRequest { kind: "dictation.stop", reason: "user" | "thread-switch" | "tab-hidden" | "mic-disconnect" }`
 
 **Server → Client**
+
 - `DictationStarted { kind: "dictation.started", sessionId: string, modelLabel: string }`
 - `DictationPartial { kind: "dictation.partial", sessionId: string, text: string }` — replaces, doesn't append
 - `DictationCommit { kind: "dictation.commit", sessionId: string, text: string }` — appends new committed segment
@@ -203,6 +214,7 @@ All schemas via `effect/Schema`, tagged-union `kind` matching the existing WS pr
 - `DictationError { kind: "dictation.error", sessionId: string | null, code: "spawn-failed" | "model-missing" | "backpressure" | "audio-decode" | "child-crashed" | "permission-denied" | "internal", message: string }`
 
 **Capability flag (in existing handshake)**
+
 - `DictationCapability { available: boolean, reason: string | null, modelLabel: string | null, binaryPath: string | null }`
 
 **Sequencing.** `seq` monotonic from 0 per session. Server tracks last seen; gap → telemetry counter. > 5 % drops in a 1 s window → `dictation.error { code: "audio-decode" }` and stop.
@@ -212,6 +224,7 @@ All schemas via `effect/Schema`, tagged-union `kind` matching the existing WS pr
 ## Testing strategy
 
 **Unit (vitest, deterministic)**
+
 - `pcmResamplerWorklet` logic — 1 kHz sine at 48 kHz in, assert 16 kHz Int16 out, sample count + amplitude within tolerance. Resample logic factored out so tests run in node without an `AudioContext`.
 - `whisperRunner` stdout parser — corpus of `[partial]/[commit]` lines, edge cases (whitespace, ANSI, empty lines, errors).
 - `whisperRunner` lifecycle — mock `child_process.spawn`, drive start → frames → exit → idle timer; verify warm-pool-of-one reuses across two consecutive sessions; no leaks.
@@ -220,15 +233,18 @@ All schemas via `effect/Schema`, tagged-union `kind` matching the existing WS pr
 - `DictationPlugin` Lexical commands — headless Lexical editor, dispatch commands, assert resulting node tree (anchor placement, partial replace, commit promote).
 
 **Integration**
+
 - WS round-trip with a mocked whisper child: client sends `start` + frames + `stop`; mock child emits scripted partials/commits; assert ordering and clean lifecycle.
 - Capability false → handshake reports `available: false` → client renders no button.
 
 **Browser smoke (existing pattern)**
+
 - Capability mocked true → dictate button in DOM, correct `aria-label`.
 - Capability false → no dictate button.
 - Click without a real mic (mock `getUserMedia` reject) → error state with right tooltip.
 
 **Explicitly NOT tested**
+
 - ASR accuracy (whisper.cpp's job).
 - Real microphones in CI.
 - The Python NeMo stack (no v1 dependency).

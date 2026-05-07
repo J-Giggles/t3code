@@ -23,7 +23,7 @@ The spec was written before reading the actual codebase. Two structural translat
    - `WsDictationStartRpc` (request → response: sessionId + modelLabel)
    - `WsDictationAudioFrameRpc` (request → no body, error on backpressure; one RPC call per 50 ms frame)
    - `WsDictationStopRpc` (request → response)
-   - `WsSubscribeDictationRpc` (streaming subscription; emits `started` | `partial` | `commit` | `stopped` | `error` events as a tagged union — the tagged union *does* survive, but as the streaming payload, not as the top-level message envelope)
+   - `WsSubscribeDictationRpc` (streaming subscription; emits `started` | `partial` | `commit` | `stopped` | `error` events as a tagged union — the tagged union _does_ survive, but as the streaming payload, not as the top-level message envelope)
    - Capability flag added as a top-level field on `ServerConfig` (existing handshake — answers spec open-question about flat vs nested capabilities).
 
 2. **Server entrypoint is `apps/server/src/ws.ts`, not `wsServer.ts`.** All spec references to `wsServer.ts` apply to `ws.ts`.
@@ -39,6 +39,7 @@ If the user accepts these deviations, the rest of the plan proceeds as written.
 ## File map (what gets created vs modified)
 
 **Created (server):**
+
 - `apps/server/src/dictation/capability.ts` — boot-time probe (binary path, model path, stream-mode support)
 - `apps/server/src/dictation/capability.test.ts`
 - `apps/server/src/dictation/whisperRunner.ts` — child process lifecycle, stdin frames, stdout parsing
@@ -49,9 +50,11 @@ If the user accepts these deviations, the rest of the plan proceeds as written.
 - `apps/server/src/dictation/dictationService.test.ts`
 
 **Created (contracts):**
+
 - `packages/contracts/src/dictation.ts` — schemas, RPC definitions, capability struct
 
 **Created (web):**
+
 - `apps/web/src/dictation/pcmResampler.ts` — pure resample function (testable without AudioContext)
 - `apps/web/src/dictation/pcmResampler.test.ts`
 - `apps/web/src/dictation/pcmResamplerWorklet.ts` — AudioWorkletProcessor wrapping the pure function
@@ -66,6 +69,7 @@ If the user accepts these deviations, the rest of the plan proceeds as written.
 - `apps/web/src/components/chat/ComposerDictateButton.test.tsx`
 
 **Modified:**
+
 - `packages/contracts/src/server.ts` — add `dictation: DictationCapability` to `ServerConfig`
 - `packages/contracts/src/rpc.ts` — add the 4 dictation RPCs to `WS_METHODS` and `WsRpcGroup`
 - `packages/contracts/src/keybindings.ts` — add `dictation.toggle` to `STATIC_KEYBINDING_COMMANDS`
@@ -77,8 +81,8 @@ If the user accepts these deviations, the rest of the plan proceeds as written.
 - `apps/web/src/rpc/serverState.ts` — expose dictation capability selector
 - `apps/web/src/components/ComposerPromptEditor.tsx` — mount `DictationPlugin`
 - `apps/web/src/components/chat/ChatComposer.tsx` — slot dictate button, subscribe to store, dispatch Lexical commands, auto-stop on thread switch
-- `apps/web/src/components/chat/ComposerPrimaryActions.tsx` — accept a `dictateButton?: ReactNode` slot prop *or* let ChatComposer render dictate button as sibling (decide in Task 9)
-- `apps/web/src/components/chat/CompactComposerControlsMenu.tsx` — verify dictate button is *not* collapsed
+- `apps/web/src/components/chat/ComposerPrimaryActions.tsx` — accept a `dictateButton?: ReactNode` slot prop _or_ let ChatComposer render dictate button as sibling (decide in Task 9)
+- `apps/web/src/components/chat/CompactComposerControlsMenu.tsx` — verify dictate button is _not_ collapsed
 - `apps/web/src/keybindings.ts` — extend matcher to handle `dictation.toggle`
 - `apps/web/vite.config.ts` — register `pcmResamplerWorklet.ts` as a fingerprinted worklet asset
 - `apps/web/src/components/settings/<settings page>` — read-only Dictation status block (exact file located by Task 14.1's `grep` command)
@@ -102,6 +106,7 @@ If the user accepts these deviations, the rest of the plan proceeds as written.
 Defines the schemas and RPCs. Foundation for everything else.
 
 **Files:**
+
 - Create: `packages/contracts/src/dictation.ts`
 - Create: `packages/contracts/src/dictation.test.ts`
 - Modify: `packages/contracts/src/index.ts`
@@ -426,6 +431,7 @@ In the same commit, tick the spec's `## Plan` checkbox: `[x] Define wire protoco
 Locates the whisper.cpp binary, checks it supports stream mode + stdin PCM, resolves a model file path. Returns a `DictationCapability` value.
 
 **Files:**
+
 - Create: `apps/server/src/dictation/capability.ts`
 - Create: `apps/server/src/dictation/capability.test.ts`
 
@@ -453,8 +459,9 @@ function makeIo(opts: {
   configModel?: string | null;
 }) {
   return {
-    which: vi.fn(async (binary: string) =>
-      opts.whichResolves.find((entry) => entry.binary === binary)?.path ?? null,
+    which: vi.fn(
+      async (binary: string) =>
+        opts.whichResolves.find((entry) => entry.binary === binary)?.path ?? null,
     ),
     spawnHelp: vi.fn(async (path: string) => opts.helpOutput[path] ?? ""),
     fileExists: vi.fn(async (path: string) => Boolean(opts.modelExists[path])),
@@ -676,7 +683,12 @@ const dictation = await probeDictationCapability({
   which,
   spawnHelp,
   fileExists: async (p) => {
-    try { await fsp.access(p); return true; } catch { return false; }
+    try {
+      await fsp.access(p);
+      return true;
+    } catch {
+      return false;
+    }
   },
   readEnv: () => process.env.WHISPER_MODEL ?? null,
   readConfigModel: async () => null, // T-config integration in Task 13
@@ -715,6 +727,7 @@ into a shared util at `apps/server/src/utils/stripAnsi.ts` so the parser and
 `CursorProvider` share one definition.
 
 **Files:**
+
 - Create: `apps/server/src/utils/stripAnsi.ts`
 - Create: `apps/server/src/dictation/whisperStdoutParser.ts`
 - Create: `apps/server/src/dictation/whisperStdoutParser.test.ts`
@@ -932,6 +945,7 @@ git commit -m "feat(server): add whisper.cpp stdout parser"
 Spawns the child process, writes Int16 PCM frames to stdin, parses stdout (using Task 3's parser), enforces backpressure timeout, surfaces events via callbacks. Lifecycle: `start` → `writeFrame*` → `stop` (graceful) or `kill` (cancel).
 
 **Files:**
+
 - Create: `apps/server/src/dictation/whisperRunner.ts`
 - Create: `apps/server/src/dictation/whisperRunner.test.ts`
 
@@ -1103,9 +1117,12 @@ export interface WhisperRunnerOptions {
 export function startWhisperRunner(options: WhisperRunnerOptions): WhisperRunner {
   const args = [
     "--stream",
-    "-m", options.modelPath,
-    "-c", "0",
-    "-f", "-",
+    "-m",
+    options.modelPath,
+    "-c",
+    "0",
+    "-f",
+    "-",
     ...(options.language ? ["-l", options.language] : []),
   ];
   let killed = false;
@@ -1212,6 +1229,7 @@ Owns per-WS session state, the warm pool of one (single idle child held for 30 s
 - `events: Stream<DictationStreamEvent>` — multiplexed stream every subscriber sees.
 
 **Files:**
+
 - Create: `apps/server/src/dictation/dictationService.ts`
 - Create: `apps/server/src/dictation/dictationService.test.ts`
 
@@ -1315,7 +1333,9 @@ describe("dictationService", () => {
         deps({ startRunner: () => runner as never, warmPoolIdleMs: 100 }),
       );
       await Effect.runPromise(service.startSession({ threadId: "t" as never, language: null }));
-      await Effect.runPromise(service.stopSession({ sessionId: "sess_1" as never, reason: "user" }));
+      await Effect.runPromise(
+        service.stopSession({ sessionId: "sess_1" as never, reason: "user" }),
+      );
       vi.advanceTimersByTime(150);
       expect(runner.kill).toHaveBeenCalledOnce();
     } finally {
@@ -1502,6 +1522,7 @@ git commit -m "feat(server): add dictation session service"
 Wire the four RPCs into the existing `WsRpcGroup` handler map in `apps/server/src/ws.ts`.
 
 **Files:**
+
 - Modify: `apps/server/src/ws.ts`
 
 - [ ] **Step 6.1: Decide where the DictationService lives**
@@ -1555,6 +1576,7 @@ git commit -m "feat(server): wire dictation RPCs into WebSocket handler group"
 Extend the typed `WsRpcClient` with the four dictation methods. Expose a server-capability selector atom.
 
 **Files:**
+
 - Modify: `apps/web/src/rpc/wsRpcClient.ts`
 - Modify: `apps/web/src/rpc/serverState.ts`
 
@@ -1573,8 +1595,7 @@ This shows the existing pattern. Add `dictation: { start, audioFrame, stop, subs
 In `serverState.ts`, add:
 
 ```ts
-export const selectDictationCapability = (config: ServerConfig | null) =>
-  config?.dictation ?? null;
+export const selectDictationCapability = (config: ServerConfig | null) => config?.dictation ?? null;
 ```
 
 Plus a tiny test for the null-handling branch.
@@ -1596,6 +1617,7 @@ git commit -m "feat(web): expose dictation methods on WsRpcClient"
 Pure function. Float32 input at any sample rate → Int16 output at 16 kHz mono. Linear interpolation. Tested headless without an `AudioContext`.
 
 **Files:**
+
 - Create: `apps/web/src/dictation/pcmResampler.ts`
 - Create: `apps/web/src/dictation/pcmResampler.test.ts`
 
@@ -1703,6 +1725,7 @@ git commit -m "feat(web): add PCM resampler for dictation audio capture"
 Wraps the pure resampler in an `AudioWorkletProcessor`, posting Int16 frames over `MessageChannel` every 50 ms.
 
 **Files:**
+
 - Create: `apps/web/src/dictation/pcmResamplerWorklet.ts`
 - Modify: `apps/web/vite.config.ts`
 
@@ -1790,6 +1813,7 @@ git commit -m "feat(web): register PCM resampler AudioWorklet"
 Wraps `getUserMedia` + `AudioContext` + `AudioWorkletNode`. Emits Int16 frames via a callback. Cleans up MediaStream tracks on stop.
 
 **Files:**
+
 - Create: `apps/web/src/dictation/audioCapture.ts`
 - Create: `apps/web/src/dictation/audioCapture.test.ts`
 
@@ -1852,9 +1876,9 @@ describe("startAudioCapture", () => {
   it("rejects when isSecureContext is false", async () => {
     // @ts-expect-error
     globalThis.window.isSecureContext = false;
-    await expect(
-      startAudioCapture({ workletUrl: "/x.js", onFrame: () => {} }),
-    ).rejects.toThrow(/secure context/i);
+    await expect(startAudioCapture({ workletUrl: "/x.js", onFrame: () => {} })).rejects.toThrow(
+      /secure context/i,
+    );
   });
 
   it("posts Int16 frames from the worklet to the onFrame callback", async () => {
@@ -1874,8 +1898,9 @@ describe("startAudioCapture", () => {
   it("stop() releases the MediaStream tracks and closes the AudioContext", async () => {
     const handle = await startAudioCapture({ workletUrl: "/x.js", onFrame: () => {} });
     await handle.stop();
-    const track = (fakeStream as never as { getAudioTracks(): { stop: ReturnType<typeof vi.fn> }[] })
-      .getAudioTracks()[0]!;
+    const track = (
+      fakeStream as never as { getAudioTracks(): { stop: ReturnType<typeof vi.fn> }[] }
+    ).getAudioTracks()[0]!;
     expect(track.stop).toHaveBeenCalled();
   });
 });
@@ -1896,9 +1921,7 @@ export interface AudioCaptureHandle {
   stop(): Promise<void>;
 }
 
-export async function startAudioCapture(
-  options: AudioCaptureOptions,
-): Promise<AudioCaptureHandle> {
+export async function startAudioCapture(options: AudioCaptureOptions): Promise<AudioCaptureHandle> {
   if (!window.isSecureContext) {
     throw new Error(
       "Dictation requires a secure context (HTTPS). Try `tailscale serve` for local dev.",
@@ -1957,6 +1980,7 @@ git commit -m "feat(web): wrap getUserMedia + AudioWorklet for dictation"
 State machine + capability resolver, both as Effect Atoms.
 
 **Files:**
+
 - Create: `apps/web/src/dictation/dictationCapability.ts`
 - Create: `apps/web/src/dictation/dictationCapability.test.ts`
 - Create: `apps/web/src/dictation/dictationStore.ts`
@@ -2060,6 +2084,7 @@ export function resolveDictationCapability(
 The store is a state machine with these states: `idle | requesting-permission | recording | stopping | error`. Use Effect Atom (`Atom.make`, `Atom.keepAlive`, registered via `appAtomRegistry`) the same way `serverState.ts` does.
 
 Test the legal transitions:
+
 - `idle → requesting-permission → recording` (on user click + grant)
 - `idle → error` (on permission deny)
 - `recording → stopping → idle` (on user stop)
@@ -2210,6 +2235,7 @@ git commit -m "feat(web): add dictation capability resolver and state store"
 ## Task 12: Lexical DictationPlugin
 
 Anchor model:
+
 1. On `started`, capture selection, insert a zero-width text node, remember its key.
 2. On `partial`, replace the anchor node's text content with the partial.
 3. On `commit`, promote the anchor to a normal text node (just clear the anchor key), insert a fresh zero-width anchor immediately after.
@@ -2218,12 +2244,14 @@ Anchor model:
 All edits go through `editor.update(...)` calls tagged with `HISTORY_MERGE_TAG` so partial updates collapse into one undo entry.
 
 Plugin exposes commands:
+
 - `INSERT_DICTATION_PARTIAL_COMMAND(text: string)`
 - `COMMIT_DICTATION_COMMAND(text: string)`
 - `START_DICTATION_ANCHOR_COMMAND()`
 - `DISCARD_DICTATION_ANCHOR_COMMAND()`
 
 **Files:**
+
 - Create: `apps/web/src/components/composer/DictationPlugin.tsx`
 - Create: `apps/web/src/components/composer/DictationPlugin.test.tsx`
 
@@ -2255,7 +2283,14 @@ function CaptureEditor() {
 
 function renderPlugin() {
   render(
-    <LexicalComposer initialConfig={{ namespace: "test", onError: (e) => { throw e; } }}>
+    <LexicalComposer
+      initialConfig={{
+        namespace: "test",
+        onError: (e) => {
+          throw e;
+        },
+      }}
+    >
       <DictationPlugin />
       <CaptureEditor />
     </LexicalComposer>,
@@ -2311,15 +2346,12 @@ import {
 } from "lexical";
 import { useEffect, useRef } from "react";
 
-export const START_DICTATION_ANCHOR_COMMAND: LexicalCommand<undefined> = createCommand(
-  "START_DICTATION_ANCHOR",
-);
+export const START_DICTATION_ANCHOR_COMMAND: LexicalCommand<undefined> =
+  createCommand("START_DICTATION_ANCHOR");
 export const INSERT_DICTATION_PARTIAL_COMMAND: LexicalCommand<string> = createCommand(
   "INSERT_DICTATION_PARTIAL",
 );
-export const COMMIT_DICTATION_COMMAND: LexicalCommand<string> = createCommand(
-  "COMMIT_DICTATION",
-);
+export const COMMIT_DICTATION_COMMAND: LexicalCommand<string> = createCommand("COMMIT_DICTATION");
 export const DISCARD_DICTATION_ANCHOR_COMMAND: LexicalCommand<undefined> = createCommand(
   "DISCARD_DICTATION_ANCHOR",
 );
@@ -2457,6 +2489,7 @@ git commit -m "feat(web): add Lexical DictationPlugin with anchor model"
 Slot a `ComposerDictateButton` into `ComposerPrimaryActions`'s sibling space, subscribe `ChatComposer` to the dictation store, dispatch Lexical commands as events arrive, auto-stop on `activeThreadId` change, add the keybinding.
 
 **Files:**
+
 - Create: `apps/web/src/components/chat/ComposerDictateButton.tsx`
 - Create: `apps/web/src/components/chat/ComposerDictateButton.test.tsx`
 - Modify: `apps/web/src/components/chat/ChatComposer.tsx`
@@ -2497,7 +2530,13 @@ import { MicIcon } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 export interface ComposerDictateButtonProps {
-  state: "idle" | "requesting-permission" | "recording" | "stopping" | "error" | "unavailable-secure-context";
+  state:
+    | "idle"
+    | "requesting-permission"
+    | "recording"
+    | "stopping"
+    | "error"
+    | "unavailable-secure-context";
   preserveComposerFocusOnPointerDown?: boolean;
   unavailableTooltip?: string | null;
   onClick: () => void;
@@ -2529,12 +2568,15 @@ export const ComposerDictateButton = memo(function ComposerDictateButton({
       onClick={onClick}
       disabled={isBusy || isUnavailable}
       aria-label={
-        isRecording ? "Stop dictation" :
-        isBusy ? "Dictation busy" :
-        isUnavailable ? (unavailableTooltip ?? "Dictation unavailable") :
-        "Start dictation"
+        isRecording
+          ? "Stop dictation"
+          : isBusy
+            ? "Dictation busy"
+            : isUnavailable
+              ? (unavailableTooltip ?? "Dictation unavailable")
+              : "Start dictation"
       }
-      title={isUnavailable ? unavailableTooltip ?? undefined : undefined}
+      title={isUnavailable ? (unavailableTooltip ?? undefined) : undefined}
       {...pointerProps}
     >
       <MicIcon className="size-4" aria-hidden="true" />
@@ -2597,6 +2639,7 @@ git commit -m "feat(web): integrate dictate button, store subscription, and Ctrl
 Read-only "Dictation" section showing capability state, model label, binary path, install instructions link.
 
 **Files:**
+
 - Modify: settings page (find with `grep -rn "ServerSettings\|settings page\|<SettingsPage" apps/web/src/components`)
 
 - [ ] **Step 14.1: Locate the settings page module and add a section**
@@ -2606,6 +2649,7 @@ Read-only "Dictation" section showing capability state, model label, binary path
 ```
 
 Component renders:
+
 - Status: ✓ Available / ✗ Unavailable
 - Model label
 - Binary path
