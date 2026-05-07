@@ -1331,9 +1331,26 @@ export const ChatComposer = memo(
     // Refs for the dictation pipeline, kept off-state to avoid re-render loops.
     const dictationAudioCaptureHandleRef = useRef<AudioCaptureHandle | null>(null);
     const dictationBrowserRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+    const dictationBrowserMicStreamRef = useRef<MediaStream | null>(null);
+    const dictationBrowserNoResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dictationFrameSeqRef = useRef<number>(0);
     const dictationActiveSessionIdRef = useRef<string | null>(null);
     const dictationBrowserInterimRef = useRef("");
+
+    const stopBrowserMicStream = useCallback(() => {
+      const stream = dictationBrowserMicStreamRef.current;
+      dictationBrowserMicStreamRef.current = null;
+      if (!stream) return;
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+    }, []);
+
+    const clearBrowserNoResultTimer = useCallback(() => {
+      const timer = dictationBrowserNoResultTimerRef.current;
+      dictationBrowserNoResultTimerRef.current = null;
+      if (timer) clearTimeout(timer);
+    }, []);
 
     const stopDictationPipeline = useCallback(
       async (
@@ -1343,6 +1360,8 @@ export const ChatComposer = memo(
         const recognition = dictationBrowserRecognitionRef.current;
         dictationBrowserRecognitionRef.current = null;
         if (recognition) {
+          clearBrowserNoResultTimer();
+          stopBrowserMicStream();
           const interim = dictationBrowserInterimRef.current.trim();
           dictationBrowserInterimRef.current = "";
           if (interim.length > 0) {
@@ -1385,7 +1404,7 @@ export const ChatComposer = memo(
           // dictation.error; swallow here so we don't double-report.
         }
       },
-      [dictationStore, environmentId],
+      [clearBrowserNoResultTimer, dictationStore, environmentId, stopBrowserMicStream],
     );
 
     // Subscribe to the server's dictation event stream while connected. Each
@@ -1453,11 +1472,29 @@ export const ChatComposer = memo(
         if (Recognition) {
           const sessionId = `browser_${randomUUID()}`;
           try {
+            if (!navigator.mediaDevices?.getUserMedia) {
+              dictationStore.dispatch({
+                type: "backend-error",
+                code: "internal",
+                message: "Browser microphone capture is unavailable.",
+              });
+              return;
+            }
+            const micStream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              },
+            });
+            dictationBrowserMicStreamRef.current = micStream;
+
             const recognition = new Recognition();
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = "en-US";
             recognition.onresult = (event) => {
+              clearBrowserNoResultTimer();
               let finalText = "";
               let interimText = "";
               for (let index = event.resultIndex; index < event.results.length; index += 1) {
@@ -1483,6 +1520,8 @@ export const ChatComposer = memo(
               );
             };
             recognition.onerror = (event) => {
+              clearBrowserNoResultTimer();
+              stopBrowserMicStream();
               composerEditorRef.current?.dispatchLexicalCommand(
                 DISCARD_DICTATION_ANCHOR_COMMAND,
                 undefined,
@@ -1501,6 +1540,8 @@ export const ChatComposer = memo(
             };
             recognition.onend = () => {
               if (dictationBrowserRecognitionRef.current !== recognition) return;
+              clearBrowserNoResultTimer();
+              stopBrowserMicStream();
               dictationBrowserRecognitionRef.current = null;
               const interim = dictationBrowserInterimRef.current.trim();
               dictationBrowserInterimRef.current = "";
@@ -1533,19 +1574,50 @@ export const ChatComposer = memo(
               undefined,
             );
             recognition.start();
+            dictationBrowserNoResultTimerRef.current = setTimeout(() => {
+              if (dictationBrowserRecognitionRef.current !== recognition) return;
+              dictationBrowserRecognitionRef.current = null;
+              dictationActiveSessionIdRef.current = null;
+              dictationBrowserInterimRef.current = "";
+              stopBrowserMicStream();
+              try {
+                recognition.abort();
+              } catch {
+                // ignore — we are switching to an explicit error state
+              }
+              composerEditorRef.current?.dispatchLexicalCommand(
+                DISCARD_DICTATION_ANCHOR_COMMAND,
+                undefined,
+              );
+              dictationStore.dispatch({
+                type: "backend-error",
+                code: "internal",
+                message:
+                  "Microphone opened, but the browser speech engine produced no transcript. Try Chrome/Chromium with speech recognition enabled.",
+              });
+            }, 8_000);
           } catch (error) {
+            clearBrowserNoResultTimer();
+            stopBrowserMicStream();
             dictationBrowserRecognitionRef.current = null;
             dictationActiveSessionIdRef.current = null;
             composerEditorRef.current?.dispatchLexicalCommand(
               DISCARD_DICTATION_ANCHOR_COMMAND,
               undefined,
             );
-            dictationStore.dispatch({
-              type: "backend-error",
-              code: "internal",
-              message:
-                error instanceof Error ? error.message : "Failed to start speech recognition.",
-            });
+            const isPermissionError =
+              error instanceof DOMException &&
+              (error.name === "NotAllowedError" || error.name === "SecurityError");
+            if (isPermissionError) {
+              dictationStore.dispatch({ type: "permission-denied" });
+            } else {
+              dictationStore.dispatch({
+                type: "backend-error",
+                code: "internal",
+                message:
+                  error instanceof Error ? error.message : "Failed to start speech recognition.",
+              });
+            }
           }
           return;
         }
@@ -1617,9 +1689,11 @@ export const ChatComposer = memo(
       }
     }, [
       activeThreadId,
+      clearBrowserNoResultTimer,
       dictationCapability.available,
       dictationStore,
       environmentId,
+      stopBrowserMicStream,
       stopDictationPipeline,
     ]);
 

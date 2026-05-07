@@ -30,7 +30,9 @@ export function reduce(state: DictationState, event: DictationEvent): DictationS
           }
         : state;
     case "permission-denied":
-      return state.state === "requesting-permission"
+      return state.state === "requesting-permission" ||
+        state.state === "recording" ||
+        state.state === "stopping"
         ? { state: "error", reason: "Microphone permission denied." }
         : state;
     case "request-stop":
