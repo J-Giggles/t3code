@@ -14,7 +14,7 @@ Surface the relationship between projects, worktrees, agent threads, and sub-age
 - Every git worktree of a project appears as a node under that project — including ones the agent itself just created.
 - Each agent thread renders under the worktree it is running on.
 - Each sub-agent renders as a peer of agents under its target worktree, marked with a "subagent" badge, with a "↑ Back to parent agent" affordance in its read-only view.
-- A parent agent (which may be running at the project root with no worktree of its own) can create worktrees and spawn sub-agents into *different* worktrees than the parent's own.
+- A parent agent (which may be running at the project root with no worktree of its own) can create worktrees and spawn sub-agents into _different_ worktrees than the parent's own.
 
 The user-visible outcome: a sidebar that reads like a feature/branch graph rather than a flat thread list, with sub-agent activity legible at a glance.
 
@@ -26,7 +26,7 @@ t3code (`apps/server` Node.js + WebSocket; `apps/web` React/Vite) already models
 - **Worktrees** are first-class to the VCS layer: `apps/server/src/vcs/GitVcsDriverCore.ts` already parses `git worktree list --porcelain` (inside `listRefs`) and exposes `createWorktree` / `removeWorktree`.
 - **Sub-agent tool calls** (Claude's `Task`, Codex's equivalent, OpenCode's equivalent) are detected and classified as `collab_agent_tool_call` in all three adapters (`apps/server/src/provider/Layers/{Claude,Codex,OpenCode}Adapter.ts`), with prompt and `subagent_type` extracted.
 - **Sidebar grouping** (`apps/web/src/sidebarProjectGrouping.ts`) groups projects by logical project key and environment. There is no worktree layer between project and threads today.
-- **MCP awareness** exists in adapters as a *consumer* (we recognize MCP tool calls); we do not currently expose an MCP server to providers.
+- **MCP awareness** exists in adapters as a _consumer_ (we recognize MCP tool calls); we do not currently expose an MCP server to providers.
 - **`parentThreadId`** does not exist anywhere — net new.
 
 ## 3. Approach
@@ -105,15 +105,16 @@ Per-provider gymnastics are accepted. Where a provider's CLI cleanly supports di
 
 ### 5.1 New modules — server
 
-| Module | Responsibility |
-|---|---|
-| `apps/server/src/mcp/T3OrchestrationMcpServer.ts` | In-process MCP server. Exposes `t3_spawn_agent` and `t3_create_worktree`. One instance per provider session. |
-| `apps/server/src/orchestration/Services/SubagentRouter.ts` | Receives spawn requests. Enforces concurrency, timeout, retries. Creates child Thread aggregate. Drives turn lifecycle. Awaits "turn complete". Returns final assistant text. Handles cancellation. |
-| `apps/server/src/orchestration/Services/WorktreeDiscovery.ts` | Per-project poller against `GitVcsDriver.listWorktrees()`. Diffs against last-known set. Emits add/remove events. Synchronous invalidation hook. |
+| Module                                                        | Responsibility                                                                                                                                                                                      |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/server/src/mcp/T3OrchestrationMcpServer.ts`             | In-process MCP server. Exposes `t3_spawn_agent` and `t3_create_worktree`. One instance per provider session.                                                                                        |
+| `apps/server/src/orchestration/Services/SubagentRouter.ts`    | Receives spawn requests. Enforces concurrency, timeout, retries. Creates child Thread aggregate. Drives turn lifecycle. Awaits "turn complete". Returns final assistant text. Handles cancellation. |
+| `apps/server/src/orchestration/Services/WorktreeDiscovery.ts` | Per-project poller against `GitVcsDriver.listWorktrees()`. Diffs against last-known set. Emits add/remove events. Synchronous invalidation hook.                                                    |
 
 ### 5.2 Schema changes — contracts
 
 `packages/contracts/src/orchestration.ts`:
+
 - `Thread.parentThreadId: ThreadId | null` (default `null` for top-level agents)
 - `Thread.kind: "agent" | "subagent"` (default `"agent"`)
 - `Thread.subagentAttempt?: { ordinal: number; totalAllowed: number }` (only on retry-attempt threads)
@@ -128,26 +129,29 @@ Per-provider gymnastics are accepted. Where a provider's CLI cleanly supports di
 ### 5.3 Provider adapter changes — per-provider gymnastics
 
 `apps/server/src/provider/Layers/ClaudeAdapter.ts`:
+
 - Pass `disallowedTools: ["Task"]` to `query()`
 - Pass `mcpServers: { t3: T3OrchestrationMcpServer }` to `query()`
 
 `apps/server/src/provider/Layers/CodexAdapter.ts`:
+
 - Codex app-server tool registration: TBD-during-impl per provider docs.
 - If clean disable+inject is feasible, intercept. Otherwise: projection mode — observe `collab_agent_tool_call` events, materialize child Thread record from captured prompt/result on completion.
 
 `apps/server/src/provider/Layers/OpenCodeAdapter.ts`:
+
 - Same shape as Codex; OpenCode-specific mechanism.
 
 Adapter init logs whether a given session is in **interception** or **projection** mode at startup, once per session.
 
 ### 5.4 New modules — web
 
-| Module | Responsibility |
-|---|---|
-| `apps/web/src/sidebarWorktreeGrouping.ts` (+ `.test.ts`) | Pure derivation: `Project[] × Thread[] × Worktree[] → ProjectWorktreeTree`. Decides root-node placement, ordering, error-thread retention. |
-| `apps/web/src/components/sidebar/WorktreeGroup.tsx` | Renders a worktree node header + thread rows beneath. Collapsible. |
-| `apps/web/src/components/sidebar/SubagentBadge.tsx` | Small visual indicator on rows where `kind === "subagent"`. |
-| `apps/web/src/components/SubagentReadOnlyChrome.tsx` | Wrapper around `ChatView` for sub-agent threads: hides composer, adds banner "Sub-agent of <parent title>", adds "↑ Back to parent agent" button (always navigates to `parentThreadId` — option A from §6.3). |
+| Module                                                   | Responsibility                                                                                                                                                                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/sidebarWorktreeGrouping.ts` (+ `.test.ts`) | Pure derivation: `Project[] × Thread[] × Worktree[] → ProjectWorktreeTree`. Decides root-node placement, ordering, error-thread retention.                                                                    |
+| `apps/web/src/components/sidebar/WorktreeGroup.tsx`      | Renders a worktree node header + thread rows beneath. Collapsible.                                                                                                                                            |
+| `apps/web/src/components/sidebar/SubagentBadge.tsx`      | Small visual indicator on rows where `kind === "subagent"`.                                                                                                                                                   |
+| `apps/web/src/components/SubagentReadOnlyChrome.tsx`     | Wrapper around `ChatView` for sub-agent threads: hides composer, adds banner "Sub-agent of <parent title>", adds "↑ Back to parent agent" button (always navigates to `parentThreadId` — option A from §6.3). |
 
 ### 5.5 Modified modules — web
 
@@ -156,7 +160,7 @@ Adapter init logs whether a given session is in **interception** or **projection
 - `apps/web/src/components/Sidebar.logic.ts` — within a worktree group, sort threads by `createdAt` regardless of kind (badge differentiates them; simpler mental model than "agents above sub-agents"). Locked decision.
 - `apps/web/src/components/ChatView.tsx` — when `thread.kind === "subagent"`, render via `SubagentReadOnlyChrome`.
 - `apps/web/src/router.ts` + `apps/web/src/threadSelectionStore.ts` — support direct navigation to `parentThreadId` (back button always navigates explicitly, never relies on history — option A from §6.3).
-- `apps/web/src/sidebarProjectGrouping.ts` — unchanged in shape; worktree grouping plugs in *under* the project layer it produces.
+- `apps/web/src/sidebarProjectGrouping.ts` — unchanged in shape; worktree grouping plugs in _under_ the project layer it produces.
 
 ### 5.6 Touched but not restructured
 
@@ -202,6 +206,7 @@ Parent (Claude on /repo)         T3 MCP        SubagentRouter         Child thre
 ```
 
 Key semantics:
+
 - Child appears in sidebar **immediately on creation**, not on completion.
 - "Turn complete" matches the existing turn-lifecycle definition (final assistant message, no tool calls pending). This mirrors native Task semantics.
 - Provider/model **inherit from parent by default**; tool args override if specified (validated against `providerInstances` and `providerModels` registries).
@@ -248,23 +253,23 @@ Two recipes applied uniformly:
 
 ### Error catalogue
 
-| Where | Cause | Code | Notes |
-|---|---|---|---|
-| `t3_create_worktree` | branch already exists | `BRANCH_CONFLICT` | non-retryable |
-| `t3_create_worktree` | FS error / disk full | `WORKTREE_FS_ERROR` | non-retryable |
-| `t3_create_worktree` | not a git repo | `NOT_A_REPO` | non-retryable |
-| `t3_spawn_agent` | path not in `git worktree list` | `WORKTREE_NOT_FOUND` | validation against fresh list, not cache |
-| `t3_spawn_agent` | malformed args | `INVALID_ARGS` | non-retryable |
-| `t3_spawn_agent` | provider not authenticated/available | `PROVIDER_UNAVAILABLE` | retryable |
-| `t3_spawn_agent` | model not in provider's list | `INVALID_ARGS` | non-retryable |
-| sub-agent runtime | child errors mid-turn / provider crash | `SUBAGENT_FAILED` | retryable |
-| sub-agent runtime | timeout expired | `SUBAGENT_TIMED_OUT` | non-retryable (don't burn more time) |
-| coordination | parent cancelled while child running | `SUBAGENT_CANCELLED` | non-retryable |
-| coordination | child deleted manually | `SUBAGENT_CANCELLED` | non-retryable |
-| coordination | worktree removed externally | child enters `error: "worktree removed"`; node persists per visibility rule |  |
-| concurrency | queue wait exceeded parent timeoutMs | `SUBAGENT_QUEUE_TIMEOUT` | non-retryable |
-| concurrency | queue length cap exceeded | `CONCURRENCY_LIMIT_EXCEEDED` | non-retryable |
-| MCP startup | adapter can't disable native sub-agent tool | warned at session start; falls back to projection mode for that provider |  |
+| Where                | Cause                                       | Code                                                                        | Notes                                    |
+| -------------------- | ------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------- |
+| `t3_create_worktree` | branch already exists                       | `BRANCH_CONFLICT`                                                           | non-retryable                            |
+| `t3_create_worktree` | FS error / disk full                        | `WORKTREE_FS_ERROR`                                                         | non-retryable                            |
+| `t3_create_worktree` | not a git repo                              | `NOT_A_REPO`                                                                | non-retryable                            |
+| `t3_spawn_agent`     | path not in `git worktree list`             | `WORKTREE_NOT_FOUND`                                                        | validation against fresh list, not cache |
+| `t3_spawn_agent`     | malformed args                              | `INVALID_ARGS`                                                              | non-retryable                            |
+| `t3_spawn_agent`     | provider not authenticated/available        | `PROVIDER_UNAVAILABLE`                                                      | retryable                                |
+| `t3_spawn_agent`     | model not in provider's list                | `INVALID_ARGS`                                                              | non-retryable                            |
+| sub-agent runtime    | child errors mid-turn / provider crash      | `SUBAGENT_FAILED`                                                           | retryable                                |
+| sub-agent runtime    | timeout expired                             | `SUBAGENT_TIMED_OUT`                                                        | non-retryable (don't burn more time)     |
+| coordination         | parent cancelled while child running        | `SUBAGENT_CANCELLED`                                                        | non-retryable                            |
+| coordination         | child deleted manually                      | `SUBAGENT_CANCELLED`                                                        | non-retryable                            |
+| coordination         | worktree removed externally                 | child enters `error: "worktree removed"`; node persists per visibility rule |                                          |
+| concurrency          | queue wait exceeded parent timeoutMs        | `SUBAGENT_QUEUE_TIMEOUT`                                                    | non-retryable                            |
+| concurrency          | queue length cap exceeded                   | `CONCURRENCY_LIMIT_EXCEEDED`                                                | non-retryable                            |
+| MCP startup          | adapter can't disable native sub-agent tool | warned at session start; falls back to projection mode for that provider    |                                          |
 
 ### Retry semantics (formerly out-of-scope, now in v1)
 
@@ -292,6 +297,7 @@ Two recipes applied uniformly:
 ### Observability
 
 Existing `serverLogger` patterns (see `docs/observability.md`):
+
 - `subagent.spawn`, `subagent.completed`, `subagent.failed`, `subagent.cancelled`, `subagent.timed_out`, `subagent.queued`, `subagent.slot_granted`, `subagent.retry_attempted`
 - `worktree.added`, `worktree.removed`, `worktree.invalidated`
 - All emit structured fields: `parentThreadId`, `childThreadId`, `worktreePath`, `provider`, `attemptOrdinal` where applicable.
@@ -313,6 +319,7 @@ Per the existing project conventions: Vitest, colocated `.test.ts`, `bun fmt` / 
 ### 9.1 Unit tests
 
 **Web:**
+
 - `sidebarWorktreeGrouping.test.ts`:
   - empty project → root node only
   - threads on multiple worktrees → grouped under their respective nodes
@@ -326,6 +333,7 @@ Per the existing project conventions: Vitest, colocated `.test.ts`, `bun fmt` / 
   - banner shows parent thread title
 
 **Server:**
+
 - `SubagentRouter.test.ts`:
   - spawn creates child with correct `parentThreadId`, `kind`, `worktreePath`, inherited provider+model
   - awaits "turn complete"; returns final assistant text
@@ -369,12 +377,12 @@ Following `provider-service-integration-tests.md` and `git-flows-integration-tes
 
 `apps/server/test/perf/subagent.bench.ts` (Vitest `bench`):
 
-| Metric | Budget |
-|---|---|
-| Spawn latency (parent tool call → child first user message accepted) | p95 < 750ms, p99 < 1.5s |
-| Steady state with 4 concurrent sub-agents per project, 5 min | server CPU < 60%, server RSS < 600MB |
-| Worktree polling overhead, 20 worktrees | < 50ms per cycle |
-| `sidebarWorktreeGrouping` derivation, 50 worktrees × 10 threads | < 5ms |
+| Metric                                                               | Budget                               |
+| -------------------------------------------------------------------- | ------------------------------------ |
+| Spawn latency (parent tool call → child first user message accepted) | p95 < 750ms, p99 < 1.5s              |
+| Steady state with 4 concurrent sub-agents per project, 5 min         | server CPU < 60%, server RSS < 600MB |
+| Worktree polling overhead, 20 worktrees                              | < 50ms per cycle                     |
+| `sidebarWorktreeGrouping` derivation, 50 worktrees × 10 threads      | < 5ms                                |
 
 CI policy: benchmarks run in a separate workflow. Regressions surface as warnings on PR comments. **A regression of >20% from baseline promotes to PR-blocking.** Hard-gating PRs on absolute numbers is too noisy; gating on regressions catches real changes.
 
@@ -403,7 +411,7 @@ Each phase has an exit criterion = relevant tests green + manual smoke for that 
 ## 11. Acceptance criteria (v1)
 
 - Sidebar groups threads by `Project → Worktree → Threads` with the synthetic root node always present per project.
-- Worktree nodes update on git worktree add/remove (via t3code-initiated calls *or* external shell) within 3s.
+- Worktree nodes update on git worktree add/remove (via t3code-initiated calls _or_ external shell) within 3s.
 - Threads with `kind === "subagent"` render in sidebar with a `subagent` badge regardless of origin (interception or projection).
 - Sub-agent thread view hides the composer and shows a banner + working "↑ Back to parent agent" button that navigates explicitly to `parentThreadId`.
 - A parent agent can call `t3_create_worktree` and immediately follow with `t3_spawn_agent` targeting that path, with no race.
