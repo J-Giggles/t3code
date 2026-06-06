@@ -1,0 +1,7 @@
+{
+  "name": "@t3code-local/staging-desktop",
+  "private": true,
+  "scripts": {
+    "dev": "node ../run-worktree-app.mjs staging desktop"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@t3code-local/main-t3-build",
+  "private": true,
+  "scripts": {
+    "dev": "node ../run-worktree-app.mjs main t3-build"
+  }
+}

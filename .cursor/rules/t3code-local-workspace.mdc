@@ -1,0 +1,105 @@
+---
+description: T3 Code local dual-worktree workspace — Omarchy launcher, agent launch/verify, staging-first
+alwaysApply: true
+---
+
+# T3 Code Local Workspace (Omarchy)
+
+Workspace root: `/home/jgigg/code/t3code-local`
+
+## Worktrees
+
+- **Main (live):** `t3code/` on branch `main` — user codes here.
+- **Staging (dev):** `t3code-staging/` on branch `staging` — default for T3 Code product changes.
+
+Follow `t3code/.agents/rules/t3code-local-workflow.md` when editing either worktree.
+
+## Launch T3 apps (Walker / agents)
+
+Omarchy Walker entries (`.desktop` in `~/.local/share/applications/`):
+
+| App | Desktop ID | Script |
+|-----|------------|--------|
+| T3 Code Local Main | `t3code-local-main.desktop` | `~/.local/bin/t3code-local-main` |
+| T3 Code Local Staging | `t3code-local-staging.desktop` | `~/.local/bin/t3code-local-staging` |
+
+**Agents must not** use the user launcher as-is (it opens Ghostty and waits for Enter). Run from **workspace root** (`t3code-local/`), not from a worktree:
+
+```bash
+cd /path/to/t3code-local
+./.agents/scripts/t3-launch.sh main|staging [--wait]
+```
+
+Or from the staging worktree via npm script:
+
+```bash
+cd t3code-staging && bun run launch
+```
+
+Or gtk-launch with agent env:
+
+```bash
+T3CODE_DISABLE_STARTUP_TERMINAL=1 gtk-launch t3code-local-staging.desktop
+```
+
+Regenerate launchers after changing `t3code/scripts/local-desktop-launchers.ts`:
+
+```bash
+cd t3code-staging && bun run install:local-launchers
+./.agents/scripts/t3-launch-restart-test.sh staging   # required when launcher behavior changes
+```
+
+**Agents must run verification commands** for any edit they make — not just unit tests. See `.cursor/rules/staging-implement-test-promote.mdc` for the verification matrix.
+
+## See / verify the app
+
+T3 desktop dev serves the UI on **Vite** (`VITE_DEV_SERVER_URL`). Ports are stable per instance via hashed `T3CODE_DEV_INSTANCE` (see `t3code/scripts/dev-runner.ts`).
+
+```bash
+./.agents/scripts/t3-verify.sh main|staging [--screenshot path.png]
+```
+
+Agent launches set `T3CODE_AGENT_AUTOMATION=1`, which enables Electron CDP:
+
+| App | CDP port |
+|-----|----------|
+| main | 9222 |
+| staging | 9232 |
+
+```bash
+./.agents/scripts/t3-verify.sh staging   # tries agent-browser connect <port>, then Vite fallback
+```
+
+## Headed staging UI control
+
+For product UI verification, agents should use the already-running, visible **T3code Staging** desktop window when it exists. Run `./.agents/scripts/t3-verify.sh staging` first to detect the Vite URL and Electron CDP. If CDP port **9232** is reachable, attach browser automation to that headed instance and click buttons, fill fields, inspect UI state, and exercise workflows a user would exercise.
+
+Omarchy **T3code Dev** and promotion **Promote & Relaunch Dev** keep the Ghostty startup terminal path and force staging into agent automation mode with CDP port **9232** plus `~/.local/share/t3code-local/staging/agent-automation.json`.
+
+Only launch staging when it is not running or was not launched with agent automation:
+
+```bash
+./.agents/scripts/t3-launch.sh staging --wait
+```
+
+Keep the staging window headed and visible while testing so the user can watch the interaction. Capture screenshots with:
+
+```bash
+./.agents/scripts/t3-verify.sh staging --screenshot /tmp/t3-staging-check.png
+```
+
+If CDP or screenshot tooling is unavailable, report the limitation and use Vite fallback evidence only as a partial check.
+
+Metadata: `~/.local/share/t3code-local/{main|staging}/agent-automation.json`
+
+Startup logs: `~/.local/share/t3code-local/{main|staging}/logs/startup-*.log`
+
+Hyprland window class: `t3code-local-main` or `t3code-local-staging` (grim screenshot in verify script).
+
+## Staging → test → promote
+
+Follow `.cursor/rules/staging-implement-test-promote.mdc`:
+
+1. Implement on `t3code-staging` only
+2. Run checks + `./.agents/scripts/t3-launch.sh staging --wait` + `./.agents/scripts/t3-verify.sh staging`
+3. Stop after staging verification unless the user explicitly asks to promote to `main` in the current turn

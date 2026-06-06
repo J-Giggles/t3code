@@ -1,0 +1,15 @@
+{
+  "folders": [
+    {
+      "name": "T3 Code Local",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "fallow.configPath": "${workspaceFolder}/.fallowrc.jsonc",
+    "editor.formatOnSave": true
+  },
+  "extensions": {
+    "recommendations": ["fallow-rs.fallow-vscode", "oxc.oxc-vscode"]
+  }
+}

@@ -1,0 +1,56 @@
+---
+description: Regenerate .context and workspace maps so agents learn how t3code-local works
+alwaysApply: true
+---
+
+# Project context for agents (CCS)
+
+This workspace uses the [Codebase Context Specification](https://github.com/) pattern under `.context/`.
+
+## When to refresh context
+
+Run **before**:
+
+- First session on an unfamiliar area of the monorepo
+- Large refactors touching server, web, desktop, or contracts
+- After merging `staging` → `main` or pulling upstream
+
+Run **after**:
+
+- New top-level packages, apps, or launcher/workflow changes
+- Schema or WebSocket protocol changes in `packages/contracts`
+
+## Session hook (automatic)
+
+Opening this workspace runs `.cursor/hooks/session-start.sh` on `sessionStart`:
+
+- Background refresh → `.context/refresh.log`
+- Sets session `env`: `T3CODE_LOCAL_WORKSPACE`, `T3CODE_AGENT_AUTOMATION=1`
+- Injects workspace summary via `additional_context` (when Cursor delivers it)
+
+## How to refresh manually (do not guess file trees)
+
+From workspace root:
+
+```bash
+./.agents/scripts/refresh-project-context.sh
+```
+
+That script:
+
+1. Generates factual `filesystem-map.md` and `inputs-and-state.md` via CCS Python tools
+2. Synthesizes `functions-and-flows.md` from existing context files
+3. Updates timestamps in `.context/docs.md`
+
+Then read in order:
+
+1. `.context/index.md`
+2. `.context/docs.md`
+3. Focused files under `.context/` as needed
+4. Worktree `t3code/AGENTS.md` for task completion commands
+
+## What agents should write back
+
+When you discover a **stable** convention not in `.context/docs.md` (launcher paths, port strategy, chat sync, branch promotion), append a short bullet to `.context/docs.md` under **Agent-maintained notes** — do not create a second doc file.
+
+Do not commit secrets, tokens, or full `.env` contents into `.context/`.

@@ -1,0 +1,20 @@
+{
+  "name": "t3code-local-workspace",
+  "private": true,
+  "description": "Omarchy workspace root (t3code-local/) — Walker-equivalent desktop launchers",
+  "packageManager": "bun@1.3.9",
+  "workspaces": [
+    "local-dev-bundle/*"
+  ],
+  "scripts": {
+    "dev": "bash .agents/scripts/t3-start.sh dev",
+    "start:main": "bash .agents/scripts/t3-start.sh main",
+    "start:staging": "bash .agents/scripts/t3-start.sh staging",
+    "start:dev": "bash .agents/scripts/t3-start.sh dev",
+    "t3code": "bash .agents/scripts/t3-start.sh main",
+    "t3code:staging": "bash .agents/scripts/t3-start.sh staging",
+    "t3code:dev": "bash .agents/scripts/t3-start.sh dev",
+    "install:launchers": "bash .agents/scripts/t3-start.sh --install-launchers",
+    "bootstrap": "bash .agents/scripts/bootstrap-worktrees.sh"
+  }
+}

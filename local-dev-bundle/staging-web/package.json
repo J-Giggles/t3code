@@ -1,0 +1,7 @@
+{
+  "name": "@t3code-local/staging-web",
+  "private": true,
+  "scripts": {
+    "dev": "node ../run-worktree-app.mjs staging web"
+  }
+}

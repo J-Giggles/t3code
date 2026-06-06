@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  // Dual-worktree Omarchy workspace: t3code (main) mirrors t3code-staging after promotion.
+  // Scope Fallow to staging so the Cursor extension does not report cross-worktree clones.
+  "ignorePatterns": ["t3code/**"],
+  "duplicates": {
+    "ignore": ["t3code/**"]
+  }
+}

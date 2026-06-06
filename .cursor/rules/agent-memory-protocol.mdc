@@ -1,0 +1,28 @@
+---
+description: Preserve verified project learnings as local project memory
+alwaysApply: true
+---
+
+# Agent Memory Protocol
+
+Use project-local memory as the durable source of truth.
+
+Before substantial investigation or implementation:
+
+- Read `AGENTS.md`.
+- Read `.context/index.md` for orientation when present.
+- Read `.context/docs.md` when project conventions, workflows, commands, or architecture matter.
+
+During work:
+
+- Track candidate learnings separately from verified project facts.
+- Do not persist secrets, private env values, customer data, speculation, or one-off debugging noise.
+
+After substantial work, propose **Memory Candidates** before writing durable memory:
+
+- Learned fact or rule
+- Evidence/source
+- Confidence
+- Suggested destination
+
+Use `.context/docs.md` for durable facts, workflows, commands, ports, and gotchas. Use `.context/index.md` only for high-level orientation. Use `.cursor/rules/*.mdc` only for instructions future Cursor agents must actively follow.

@@ -1,0 +1,1885 @@
+# Inputs and State: t3code
+
+Generated from framework-oriented code heuristics. Treat this as factual extraction to review, not a final interpretation.
+
+## Summary
+
+- Files scanned: 1389
+- Environment inputs: 257
+- Route and request inputs: 119
+- Form inputs: 2
+- State and storage entries: 169
+- Hardcoded values: 1295
+
+## Environment Inputs
+
+- `ACP_MOCK_BAD_TYPED_REQUEST`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:110
+- `ACP_MOCK_EXIT_IMMEDIATELY_CODE`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:14
+- `ACP_MOCK_EXIT_IMMEDIATELY_CODE`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:15
+- `ACP_MOCK_MALFORMED_OUTPUT`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:9
+- `ACP_MOCK_MALFORMED_OUTPUT_EXIT_CODE`: env fallback "0")) in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:11
+- `ACP_MOCK_MALFORMED_OUTPUT_EXIT_CODE`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:11
+- `APP_VARIANT`: process.env access in `apps/mobile/app.config.ts`:5
+- `APP_VERSION`: import.meta.env access in `apps/web/src/branding.ts`:103
+- `APP_VERSION`: process.env access in `apps/web/vite.config.ts`:12
+- `APP_VERSION`: import.meta.env access in `apps/web/vite.config.ts`:114
+- `CODEX_BIN`: env fallback "codex", in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
+- `CODEX_BIN`: process.env access in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
+- `CODEX_BINARY_PATH`: process.env access in `apps/server/integration/orchestrationEngine.integration.test.ts`:269
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:160
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:160
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:226
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:226
+- `CONVEX_URL`: env fallback readConvexLocalEnv().CONVEX_URL ?? null, in `apps/server/scripts/convex-attachment-backfill.ts`:121
+- `CONVEX_URL`: process.env access in `apps/server/scripts/convex-attachment-backfill.ts`:121
+- `CONVEX_URL`: process.env access in `apps/server/src/persistence/Layers/DualWriteOrchestrationEventStore.test.ts`:112
+- `CONVEX_URL`: process.env access in `packages/convex/env.ts`:16
+- `CONVEX_URL`: process.env access in `packages/convex/scripts/convex-dev.mjs`:175
+- `CONVEX_URL`: process.env access in `scripts/sqlite-to-convex-migrate.ts`:953
+- `CURSOR_AGENT_BIN`: env fallback "agent" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
+- `CURSOR_AGENT_BIN`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
+- `CURSOR_CONTEXT`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
+- `CURSOR_CONTEXT`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
+- `CURSOR_FAST`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
+- `CURSOR_FAST`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
+- `CURSOR_PROMPT_WAIT_MS`: env fallback "4000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
+- `CURSOR_PROMPT_WAIT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
+- `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
+- `CURSOR_REASONING`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
+- `CURSOR_REQUEST_TIMEOUT_MS`: env fallback "20000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
+- `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
+- `DEV`: import.meta.env access in `apps/web/src/branding.ts`:84
+- `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_DISABLE_CACHE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:54
+- `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: env fallback (process.env.NODE_ENV === "test" ? "javascript" : "native") in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
+- `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
+- `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:167
+- `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:186
+- `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:197
+- `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:199
+- `GITHUB_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:516
+- `HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:128
+- `HOME`: env fallback process.env.USERPROFILE ?? "" in `packages/ssh/src/config.ts`:211
+- `HOME`: process.env access in `packages/ssh/src/config.ts`:211
+- `HOST`: process.env access in `apps/web/vite.config.ts`:9
+- `LOCALAPPDATA`: process.env access in `scripts/build-desktop-artifact.ts`:160
+- `NODE_ENV`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:49
+- `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:88
+- `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:99
+- `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:140
+- `PATH`: process.env access in `packages/convex/scripts/convex-dev.mjs`:127
+- `PATH`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:144
+- `PORT`: env fallback 4173), in `apps/marketing/astro.config.mjs`:5
+- `PORT`: process.env access in `apps/marketing/astro.config.mjs`:5
+- `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:8
+- `PORT`: process.env access in `apps/web/vite.config.ts`:8
+- `PYTHON`: process.env access in `scripts/build-desktop-artifact.ts`:154
+- `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:168
+- `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:187
+- `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:202
+- `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:204
+- `T3_ACP_EMIT_ASK_QUESTION`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:20
+- `T3_ACP_EMIT_GENERIC_TOOL_PLACEHOLDERS`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:19
+- `T3_ACP_EMIT_INTERLEAVED_ASSISTANT_TOOL_CALLS`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:18
+- `T3_ACP_EMIT_TOOL_CALLS`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:16
+- `T3_ACP_EMIT_TOOL_CALLS`: process.env access in `apps/server/src/provider/Layers/CursorAdapter.test.ts`:462
+- `T3_ACP_EMIT_TOOL_CALLS`: process.env access in `apps/server/src/provider/Layers/CursorAdapter.test.ts`:463
+- `T3_ACP_EMIT_TOOL_CALLS`: process.env access in `apps/server/src/provider/Layers/CursorAdapter.test.ts`:599
+- `T3_ACP_EMIT_TOOL_CALLS`: process.env access in `apps/server/src/provider/Layers/CursorAdapter.test.ts`:601
+- `T3_ACP_EXIT_LOG_PATH`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:15
+- `T3_ACP_EXIT_ON_SET_CONFIG_OPTION`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:22
+- `T3_ACP_FAIL_SET_CONFIG_OPTION`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:21
+- `T3_ACP_PROMPT_RESPONSE_TEXT`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:23
+- `T3_ACP_REQUEST_LOG_PATH`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:14
+- `T3_CURSOR_ACP_PROBE`: process.env access in `apps/server/src/provider/acp/CursorAcpCliProbe.test.ts`:14
+- `T3_FAKE_CLAUDE_ARGS_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:92
+- `T3_FAKE_CLAUDE_ARGS_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:115
+- `T3_FAKE_CLAUDE_ARGS_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:117
+- `T3_FAKE_CLAUDE_ARGS_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:161
+- `T3_FAKE_CLAUDE_ARGS_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:163
+- `T3_FAKE_CLAUDE_ARGS_MUST_NOT_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:93
+- `T3_FAKE_CLAUDE_ARGS_MUST_NOT_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:121
+- `T3_FAKE_CLAUDE_ARGS_MUST_NOT_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:123
+- `T3_FAKE_CLAUDE_ARGS_MUST_NOT_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:167
+- `T3_FAKE_CLAUDE_ARGS_MUST_NOT_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:169
+- `T3_FAKE_CLAUDE_EXIT_CODE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:90
+- `T3_FAKE_CLAUDE_EXIT_CODE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:103
+- `T3_FAKE_CLAUDE_EXIT_CODE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:105
+- `T3_FAKE_CLAUDE_EXIT_CODE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:149
+- `T3_FAKE_CLAUDE_EXIT_CODE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:151
+- `T3_FAKE_CLAUDE_HOME_MUST_BE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:95
+- `T3_FAKE_CLAUDE_HOME_MUST_BE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:133
+- `T3_FAKE_CLAUDE_HOME_MUST_BE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:135
+- `T3_FAKE_CLAUDE_HOME_MUST_BE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:179
+- `T3_FAKE_CLAUDE_HOME_MUST_BE`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:181
+- `T3_FAKE_CLAUDE_OUTPUT`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:89
+- `T3_FAKE_CLAUDE_OUTPUT`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:100
+- `T3_FAKE_CLAUDE_OUTPUT`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:143
+- `T3_FAKE_CLAUDE_OUTPUT`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:145
+- `T3_FAKE_CLAUDE_STDERR`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:91
+- `T3_FAKE_CLAUDE_STDERR`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:109
+- `T3_FAKE_CLAUDE_STDERR`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:111
+- `T3_FAKE_CLAUDE_STDERR`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:155
+- `T3_FAKE_CLAUDE_STDERR`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:157
+- `T3_FAKE_CLAUDE_STDIN_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:94
+- `T3_FAKE_CLAUDE_STDIN_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:127
+- `T3_FAKE_CLAUDE_STDIN_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:129
+- `T3_FAKE_CLAUDE_STDIN_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:173
+- `T3_FAKE_CLAUDE_STDIN_MUST_CONTAIN`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:175
+- `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:169
+- `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:188
+- `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:207
+- `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:209
+- `T3CODE_AGENT_AUTOMATION`: env fallback "1", in `apps/desktop/src/ipc/methods/promotion.ts`:28
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:28
+- `T3CODE_AGENT_AUTOMATION`: env fallback "1", in `apps/desktop/src/ipc/methods/promotion.ts`:44
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:44
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:16
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:18
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:45
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:47
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:22
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:82
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:93
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:249
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:295
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:194
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:513
+- `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:131
+- `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:132
+- `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/env.ts`:27
+- `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-dev.mjs`:34
+- `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-ready.mjs`:100
+- `T3CODE_CONVEX_EVENT_FOLLOW`: process.env access in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:16
+- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `packages/convex/scripts/convex-dev.mjs`:192
+- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `scripts/local-desktop-launcher-run.ts`:249
+- `T3CODE_CURSOR_ENABLED`: process.env access in `apps/server/src/provider/Layers/ProviderRegistry.test.ts`:69
+- `T3CODE_DESKTOP_UPDATE_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:515
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/config.ts`:63
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/promotionStatus.ts`:271
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:19
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:80
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:86
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:88
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:99
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:101
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:38
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:40
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:51
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:53
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/web/vite.config.ts`:13
+- `T3CODE_DEV_INSTANCE`: process.env access in `scripts/local-desktop-launcher-run.ts`:60
+- `T3CODE_DEV_STACK`: process.env access in `apps/desktop/scripts/dev-bundle.mjs`:6
+- `T3CODE_DEV_STACK`: process.env access in `apps/desktop/scripts/dev-electron.mjs`:15
+- `T3CODE_DEV_STACK`: process.env access in `apps/server/scripts/dev-bundle.mjs`:6
+- `T3CODE_DEV_STACK`: process.env access in `apps/server/scripts/dev-server.mjs`:6
+- `T3CODE_DEV_STACK`: process.env access in `apps/web/vite.config.ts`:14
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/free-local-desktop-ports.ts`:21
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:23
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:65
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:83
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:54
+- `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:133
+- `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:134
+- `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:33
+- `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-ready.mjs`:99
+- `T3CODE_LAUNCH_FAST`: process.env access in `packages/convex/scripts/convex-dev.mjs`:193
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:19
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:22
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:32
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:34
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:56
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:248
+- `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:18
+- `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:21
+- `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:27
+- `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:29
+- `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.ts`:51
+- `T3CODE_LAUNCH_VERBOSE`: process.env access in `scripts/local-desktop-launcher-output.ts`:53
+- `T3CODE_LAUNCHER_PID_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:457
+- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:265
+- `T3CODE_LOCAL_PROMOTION_STATUS`: process.env access in `apps/web/vite.config.ts`:16
+- `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:266
+- `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:63
+- `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:64
+- `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:85
+- `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:87
+- `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.ts`:101
+- `T3CODE_PERSISTENCE`: process.env access in `packages/convex/env.ts`:37
+- `T3CODE_PORT_OFFSET`: process.env access in `scripts/local-desktop-launcher-access.ts`:114
+- `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:35
+- `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:36
+- `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:41
+- `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:43
+- `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.ts`:44
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/desktop/scripts/dev-electron.mjs`:87
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:17
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:19
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:50
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:52
+- `T3CODE_RUNTIME_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", "runtime.log") in `scripts/local-desktop-launcher-run.ts`:109
+- `T3CODE_RUNTIME_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:109
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/config.ts`:64
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:83
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:87
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:89
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:104
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:106
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:39
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:41
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:56
+- `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:58
+- `T3CODE_STARTUP_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", `startup-${formatTimestamp(new Date())}.... in `scripts/local-desktop-launcher-run.ts`:111
+- `T3CODE_STARTUP_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:111
+- `T3CODE_STRICT_PROVIDER_LIFECYCLE_GUARD`: process.env access in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:58
+- `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:60
+- `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:61
+- `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:95
+- `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:97
+- `T3CODE_WEB_SOURCEMAP`: process.env access in `apps/web/vite.config.ts`:30
+- `TEMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
+- `TMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
+- `TMPDIR`: env fallback process.env.TEMP ?? process.env.TMP ?? "/tmp" in `apps/server/src/git/GitManager.ts`:703
+- `TMPDIR`: process.env access in `apps/server/src/git/GitManager.ts`:703
+- `USERPROFILE`: process.env access in `packages/ssh/src/config.ts`:211
+- `VERCEL_ENV`: process.env access in `apps/web/vite.config.ts`:22
+- `VERCEL_PROJECT_PRODUCTION_URL`: process.env access in `apps/web/vite.config.ts`:22
+- `VERCEL_PROJECT_PRODUCTION_URL`: process.env access in `apps/web/vite.config.ts`:23
+- `VERCEL_URL`: process.env access in `apps/web/vite.config.ts`:25
+- `VERCEL_URL`: process.env access in `apps/web/vite.config.ts`:26
+- `VITE_DEV_SERVER_URL`: process.env access in `apps/desktop/scripts/dev-electron.mjs`:20
+- `VITE_DEV_SERVER_URL`: process.env access in `apps/desktop/scripts/electron-launcher.mjs`:19
+- `VITE_DEV_SERVER_URL`: import.meta.env access in `apps/web/src/environments/primary/target.ts`:43
+- `VITE_HOSTED_APP_CHANNEL`: import.meta.env access in `apps/web/src/branding.ts`:68
+- `VITE_HOSTED_APP_CHANNEL`: import.meta.env access in `apps/web/src/hostedPairing.ts`:22
+- `VITE_HOSTED_APP_CHANNEL`: process.env access in `apps/web/vite.config.ts`:11
+- `VITE_HOSTED_APP_CHANNEL`: import.meta.env access in `apps/web/vite.config.ts`:113
+- `VITE_HOSTED_APP_URL`: import.meta.env access in `apps/web/src/hostedPairing.ts`:14
+- `VITE_HOSTED_APP_URL`: process.env access in `apps/web/vite.config.ts`:18
+- `VITE_HOSTED_APP_URL`: import.meta.env access in `apps/web/vite.config.ts`:112
+- `VITE_HTTP_URL`: import.meta.env access in `apps/web/src/environments/primary/target.ts`:69
+- `VITE_HTTP_URL`: import.meta.env access in `apps/web/src/hostedPairing.ts`:18
+- `VITE_T3CODE_LOCAL_DESKTOP_VARIANT`: import.meta.env access in `apps/web/src/branding.ts`:70
+- `VITE_T3CODE_LOCAL_DESKTOP_VARIANT`: import.meta.env access in `apps/web/vite.config.ts`:115
+- `VITE_T3CODE_LOCAL_DESKTOP_VARIANT`: import.meta.env access in `apps/web/vitest.config.ts`:9
+- `VITE_T3CODE_LOCAL_PROMOTION_STATUS`: import.meta.env access in `apps/web/src/branding.ts`:73
+- `VITE_T3CODE_LOCAL_PROMOTION_STATUS`: import.meta.env access in `apps/web/vite.config.ts`:118
+- `VITE_T3CODE_LOCAL_PROMOTION_STATUS`: import.meta.env access in `apps/web/vitest.config.ts`:10
+- `VITE_WS_URL`: import.meta.env access in `apps/web/src/environments/primary/target.ts`:70
+- `VITE_WS_URL`: import.meta.env access in `apps/web/src/hostedPairing.ts`:18
+- `VITE_WS_URL`: process.env access in `apps/web/vite.config.ts`:10
+- `VITE_WS_URL`: import.meta.env access in `apps/web/vite.config.ts`:111
+- `WSL_DISTRO_NAME`: process.env access in `apps/server/src/telemetry/Layers/AnalyticsService.ts`:94
+- `XDG_RUNTIME_DIR`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:58
+
+## Route Inputs
+
+- `assistantMessageId`: route params access in `apps/web/src/store.ts`:894
+- `branchName`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:35
+- `commitMessage`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:55
+- `commitMessage`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:68
+- `completedAt`: route params access in `apps/web/src/store.ts`:893
+- `confirmAction`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:29
+- `delta`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:875
+- `dictionarySuggestions`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:182
+- `dictionarySuggestions`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:188
+- `draftId`: route params access in `apps/web/src/threadRoutes.ts`:51
+- `draftId`: route params access in `apps/web/src/threadRoutes.ts`:57
+- `editFlags`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:215
+- `editFlags`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:216
+- `editFlags`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:217
+- `editFlags`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:218
+- `effort`: route params access in `apps/web/src/components/ChatView.tsx`:348
+- `environmentId`: route params access in `apps/mobile/src/app/new/draft.tsx`:16
+- `environmentId`: route params access in `apps/mobile/src/app/new/draft.tsx`:17
+- `environmentId`: route params access in `apps/mobile/src/app/new/draft.tsx`:18
+- `environmentId`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:267
+- `environmentId`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:504
+- `environmentId`: route params access in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:221
+- `environmentId`: route params access in `apps/mobile/src/features/threads/ThreadRouteScreen.tsx`:80
+- `environmentId`: route params access in `apps/mobile/src/state/use-thread-selection.ts`:60
+- `environmentId`: route params access in `apps/mobile/src/state/use-thread-selection.ts`:70
+- `environmentId`: route params access in `apps/web/src/threadRoutes.ts`:34
+- `environmentId`: route params access in `apps/web/src/threadRoutes.ts`:38
+- `environmentId`: route params access in `apps/web/src/threadRoutes.ts`:44
+- `environmentId`: route params access in `apps/web/src/threadRoutes.ts`:47
+- `filePaths`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:56
+- `filePaths`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:69
+- `hasActionableProposedPlan`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:233
+- `hasPendingApprovals`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:231
+- `hasPendingUserInput`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:232
+- `includesCommit`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:36
+- `item`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:556
+- `item`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:592
+- `item`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:596
+- `itemId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:569
+- `linkURL`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:194
+- `linkURL`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:199
+- `mediaType`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:206
+- `misspelledWord`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:181
+- `mode`: route params access in `apps/mobile/src/app/connections/new.tsx`:30
+- `mode`: route params access in `apps/server/scripts/acp-mock-agent.ts`:533
+- `mode`: route params access in `apps/server/scripts/acp-mock-agent.ts`:534
+- `modeId`: route params access in `apps/server/scripts/acp-mock-agent.ts`:528
+- `modeId`: route params access in `apps/server/scripts/acp-mock-agent.ts`:529
+- `model`: route params access in `apps/web/src/components/ChatView.tsx`:347
+- `models`: route params access in `apps/web/src/components/ChatView.tsx`:347
+- `payload`: route params access in `apps/server/src/provider/hermesTuiGateway.ts`:72
+- `plan`: route params access in `apps/server/src/provider/acp/CursorAcpExtension.ts`:75
+- `previous`: route params access in `apps/web/src/store.ts`:885
+- `previous`: route params access in `apps/web/src/store.ts`:886
+- `projectId`: route params access in `apps/mobile/src/app/new/draft.tsx`:19
+- `provider`: route params access in `apps/web/src/components/ChatView.tsx`:347
+- `questions`: route params access in `apps/server/src/provider/acp/CursorAcpExtension.ts`:59
+- `remoteUrl`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:750
+- `repositoryTitle`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:751
+- `requestedAt`: route params access in `apps/web/src/store.ts`:891
+- `requestId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:846
+- `requestId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:847
+- `requestId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:848
+- `sessionId`: route params access in `apps/server/scripts/acp-mock-agent.ts`:540
+- `sessionId`: route params access in `apps/server/scripts/acp-mock-agent.ts`:541
+- `sessionId`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:409
+- `sessionId`: route params access in `apps/server/src/provider/acp/AcpSessionRuntime.ts`:645
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:206
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:219
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:222
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:225
+- `source`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:516
+- `sourceProposedPlan`: route params access in `apps/web/src/store.ts`:887
+- `startedAt`: route params access in `apps/web/src/store.ts`:892
+- `state`: route params access in `apps/web/src/store.ts`:890
+- `terminalId`: route params access in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:227
+- `terminalId`: route params access in `apps/mobile/src/lib/routes.ts`:65
+- `text`: route params access in `apps/web/src/components/ChatView.tsx`:349
+- `thread`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:475
+- `threadId`: route params access in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:222
+- `threadId`: route params access in `apps/mobile/src/features/threads/ThreadRouteScreen.tsx`:82
+- `threadId`: route params access in `apps/mobile/src/state/use-thread-selection.ts`:61
+- `threadId`: route params access in `apps/mobile/src/state/use-thread-selection.ts`:70
+- `threadId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:514
+- `threadId`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:194
+- `threadId`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:221
+- `threadId`: route params access in `apps/web/src/threadRoutes.ts`:34
+- `threadId`: route params access in `apps/web/src/threadRoutes.ts`:38
+- `threadId`: route params access in `apps/web/src/threadRoutes.ts`:44
+- `threadId`: route params access in `apps/web/src/threadRoutes.ts`:47
+- `todos`: route params access in `apps/server/src/provider/acp/CursorAcpExtension.ts`:85
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:393
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:394
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:395
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:396
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:397
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:398
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:399
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:400
+- `toolCall`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:404
+- `turn`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:533
+- `turnId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:538
+- `turnId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:544
+- `turnId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:555
+- `turnId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:568
+- `turnId`: route params access in `apps/web/src/store.ts`:885
+- `turnId`: route params access in `apps/web/src/store.ts`:889
+- `update`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:421
+- `x`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:209
+- `y`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:209
+
+## Query Inputs
+
+- `channel`: search param lookup in `apps/web/src/hostedPairing.test.ts`:57
+- `cwd`: search param lookup in `apps/server/src/http.ts`:284
+- `host`: search param lookup in `apps/web/src/hostedPairing.test.ts`:40
+- `host`: search param lookup in `apps/web/src/hostedPairing.ts`:48
+- `label`: search param lookup in `apps/web/src/hostedPairing.test.ts`:41
+- `label`: search param lookup in `apps/web/src/hostedPairing.ts`:50
+- `token`: search param lookup in `apps/mobile/src/features/connection/pairing.ts`:36
+- `token`: search param lookup in `apps/web/src/authBootstrap.test.ts`:370
+- `token`: search param lookup in `apps/web/src/authBootstrap.test.ts`:378
+
+## Request Payloads
+
+- None detected by the current heuristics.
+
+## Form and UI Inputs
+
+- `publish-repository-path`: JSX field name in `apps/web/src/components/GitActionsControl.tsx`:677
+- `ssh-password`: JSX field name in `apps/web/src/components/desktop/SshPasswordPromptDialog.tsx`:191
+
+## State Variables
+
+- `activeCount`: useState initial 0 in `apps/web/src/lib/sourceControlActions.ts`:163
+- `activeThreadRef`: useState initial scopeThreadRef(ENVIRONMENT_A, SHARED_THREAD_ID in `apps/web/src/components/GitActionsControl.browser.tsx`:249
+- `addBackendDialogOpen`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1433
+- `branchQuery`: useState initial "" in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:159
+- `branchQuery`: useState initial "" in `apps/web/src/components/BranchToolbarBranchSelector.tsx`:201
+- `browseGeneration`: useState initial 0 in `apps/web/src/components/CommandPalette.tsx`:412
+- `canRetry`: useState initial false in `apps/web/src/components/auth/PairingRouteSurface.tsx`:174
+- `canScrollTurnStripLeft`: useState initial false in `apps/web/src/components/DiffPanel.tsx`:132
+- `canScrollTurnStripRight`: useState initial false in `apps/web/src/components/DiffPanel.tsx`:133
+- `codeInput`: useState initial "" in `apps/mobile/src/app/connections/new.tsx`:28
+- `command`: useState initial "" in `apps/web/src/components/ProjectScriptsControl.tsx`:112
+- `commentText`: useState initial "" in `apps/mobile/src/features/review/ReviewCommentComposerSheet.tsx`:54
+- `composerCursor`: useState initial ( in `apps/web/src/components/chat/ChatComposer.tsx`:817
+- `composerExpanded`: useState initial false in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:206
+- `contextWindow`: useState initial "1M" in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:166
+- `copied`: useState initial false in `apps/web/src/components/ChatMarkdown.tsx`:155
+- `copied`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:242
+- `credential`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:49
+- `cursorPosition`: useState initial 0 in `apps/mobile/src/features/threads/ThreadComposer.tsx`:217
+- `deleteConfirmOpen`: useState initial false in `apps/web/src/components/ProjectScriptsControl.tsx`:118
+- `dialogCommitMessage`: useState initial "" in `apps/mobile/src/features/threads/git/GitCommitSheet.tsx`:39
+- `dialogCommitMessage`: useState initial "" in `apps/web/src/components/GitActionsControl.tsx`:973
+- `dialogOpen`: useState initial false in `apps/web/src/components/ProjectScriptsControl.tsx`:110
+- `dialogOpen`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:927
+- `diffIgnoreWhitespace`: useState initial settings.diffIgnoreWhitespace in `apps/web/src/components/DiffPanel.tsx`:125
+- `diffPanelMountState`: useState initial ( in `apps/web/src/routes/_chat.$environmentId.$threadId.tsx`:173
+- `diffWordWrap`: useState initial settings.diffWordWrap in `apps/web/src/components/DiffPanel.tsx`:124
+- `disableTailscaleServeDialogOpen`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1464
+- `dismissed`: useState initial false in `apps/web/src/components/sidebar/SidebarUpdatePill.tsx`:27
+- `draft`: useReducer initial row, createKeybindingRowDraft in `apps/web/src/components/settings/KeybindingsSettings.tsx`:768
+- `draft`: useReducer initial { keyDraft: "", whenDraft: undefined, isRecording: false, isWhenDraftValid: t... in `apps/web/src/components/settings/KeybindingsSettings.tsx`:929
+- `draft`: useState initial props.value ?? "" in `apps/web/src/components/settings/ProviderInstanceCard.tsx`:167
+- `draft`: useState initial value in `apps/web/src/hooks/useCommitOnBlur.ts`:19
+- `drawerHeight`: useState initial ( in `apps/web/src/components/ThreadTerminalDrawer.tsx`:860
+- `drawerVisible`: useState initial false in `apps/mobile/src/features/threads/ThreadRouteScreen.tsx`:79
+- `errorMessage`: useState initial initialErrorMessage ?? "" in `apps/web/src/components/auth/PairingRouteSurface.tsx`:50
+- `expanded`: useState initial false in `apps/web/src/components/chat/MessagesTimeline.tsx`:825
+- `expanded`: useState initial false in `apps/web/src/components/chat/ProposedPlanCard.tsx`:42
+- `expanded`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:166
+- `expressionDraft`: useState initial expression in `apps/web/src/components/settings/KeybindingsSettings.tsx`:587
+- `fastMode`: useState initial false in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:165
+- `fontSize`: useState initial cachedFontSize ?? DEFAULT_TERMINAL_FONT_SIZE in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:248
+- `hasAttemptedSubmit`: useState initial false in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:131
+- `hasLoadedDiscoveredSshHosts`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1405
+- `hasMeasuredSurface`: useState initial true in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:270
+- `hasResolvedFontPreference`: useState initial cachedFontSize !== null, in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:266
+- `hasUserEditedPublishRepository`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:363
+- `hostInput`: useState initial "" in `apps/mobile/src/app/connections/new.tsx`:27
+- `iconPickerOpen`: useState initial false in `apps/web/src/components/ProjectScriptsControl.tsx`:114
+- `input`: useState initial "" in `apps/web/src/components/settings/ProviderModelsSection.tsx`:100
+- `instanceId`: useState initial "" in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:124
+- `instanceIdDirty`: useState initial false in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:125
+- `isAccessoryDismissed`: useState initial false in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:250
+- `isAddingBinding`: useState initial false in `apps/web/src/components/settings/KeybindingsSettings.tsx`:1068
+- `isAddingSavedBackend`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1441
+- `isAddInstanceDialogOpen`: useState initial false in `apps/web/src/components/settings/SettingsPanels.tsx`:925
+- `isAdvertisedEndpointListExpanded`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1473
+- `isBranchMenuOpen`: useState initial false in `apps/web/src/components/BranchToolbarBranchSelector.tsx`:200
+- `isChangingUpdateChannel`: useState initial false in `apps/web/src/components/settings/SettingsPanels.tsx`:161
+- `isCommitDialogOpen`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:972
+- `isComposerFocused`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:831
+- `isComposerFooterCompact`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:828
+- `isComposerModelPickerOpen`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:830
+- `isComposerPrimaryActionsCompact`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:829
+- `isConnecting`: useState initial false in `apps/web/src/components/ChatView.tsx`:870
+- `isCreatingPairingLink`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:929
+- `isDesktopServerExposureDialogOpen`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1460
+- `isDragOverComposer`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:827
+- `isEditing`: useState initial false in `apps/web/src/components/settings/ProviderInstanceCard.tsx`:168
+- `isEditingFiles`: useState initial false in `apps/mobile/src/features/threads/git/GitCommitSheet.tsx`:41
+- `isEditingFiles`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:975
+- `isExpanded`: useState initial false in `apps/web/src/components/chat/MessagesTimeline.tsx`:643
+- `isExpanded`: useState initial false in `apps/web/src/components/settings/SourceControlSettings.tsx`:226
+- `isFetchingNextPage`: useState initial false in `apps/web/src/components/BranchToolbarBranchSelector.tsx`:219
+- `isFocused`: useState initial false in `apps/mobile/src/features/threads/ThreadComposer.tsx`:153
+- `isLoadingDesktopAccessManagement`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1425
+- `isLoadingDiscoveredSshHosts`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1406
+- `isMenuOpen`: useState initial false in `apps/web/src/components/chat/TraitsPicker.tsx`:361
+- `isOpeningLogsDirectory`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:828
+- `isPickingProjectFolder`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:416
+- `isPublishDialogOpen`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:976
+- `isRecoveringSession`: useState initial false in `apps/web/src/components/ChatView.tsx`:1597
+- `isRefreshingProviders`: useState initial false in `apps/web/src/components/settings/SettingsPanels.tsx`:924
+- `isRemoteProjectCloning`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:419
+- `isRemoteProjectLookingUp`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:418
+- `isResponding`: useState initial false in `apps/web/src/components/desktop/SshPasswordPromptDialog.tsx`:34
+- `isRevealDialogOpen`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:470
+- `isRevertingCheckpoint`: useState initial false in `apps/web/src/components/ChatView.tsx`:871
+- `isRevokingOtherDesktopClients`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1432
+- `isSaveDialogOpen`: useState initial false in `apps/web/src/components/chat/ProposedPlanCard.tsx`:43
+- `isSavingToWorkspace`: useState initial false in `apps/web/src/components/PlanSidebar.tsx`:78
+- `isSavingToWorkspace`: useState initial false in `apps/web/src/components/chat/ProposedPlanCard.tsx`:45
+- `isSearchOpen`: useState initial false in `apps/web/src/components/settings/KeybindingsSettings.tsx`:1065
+- `isSubmitting`: useState initial false in `apps/mobile/src/app/connections/new.tsx`:29
+- `isSubmitting`: useState initial false in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:518
+- `isSubmitting`: useState initial false in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:682
+- `isSubmitting`: useState initial false in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:755
+- `isSubmitting`: useState initial false in `apps/web/src/components/auth/PairingRouteSurface.tsx`:51
+- `isTerminalDetailsOpen`: useState initial false in `apps/web/src/components/chat/MessagesTimeline.tsx`:1261
+- `isUpdatingDesktopServerExposure`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1459
+- `isUpdatingTailscaleServe`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1461
+- `keybinding`: useState initial "" in `apps/web/src/components/ProjectScriptsControl.tsx`:116
+- `keyboardFocusRequest`: useState initial 0 in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:249
+- `label`: useState initial props.environment.environmentLabel in `apps/mobile/src/features/connection/ConnectionEnvironmentRow.tsx`:42
+- `label`: useState initial "" in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:122
+- `lastGridSize`: useState initial { cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_ROWS, } in `apps/mobile/src/features/terminal/ThreadTerminalPanel.tsx`:40
+- `lastGridSize`: useState initial cachedRouteGridSize ?? { cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_... in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:242
+- `localFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:590
+- `measuredOverlayHeight`: useState initial 0 in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:211
+- `message`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:169
+- `mounted`: useState initial props.visible in `apps/mobile/src/features/threads/ThreadNavigationDrawer.tsx`:50
+- `name`: useState initial "" in `apps/web/src/components/ProjectScriptsControl.tsx`:111
+- `newBranchName`: useState initial "" in `apps/mobile/src/features/threads/git/GitBranchesSheet.tsx`:41
+- `now`: useState initial ( in `apps/web/src/components/desktop/SshPasswordPromptDialog.tsx`:35
+- `nowMs`: useState initial ( in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:171
+- `nowMs`: useState initial ( in `apps/web/src/components/WebSocketConnectionSurface.tsx`:150
+- `nowMs`: useState initial ( in `apps/web/src/components/settings/settingsLayout.tsx`:10
+- `open`: useState initial false in `apps/web/src/components/ui/toast.tsx`:141
+- `open`: useState initial false in `apps/web/src/components/ui/toast.tsx`:181
+- `pairingLabel`: useState initial "" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:928
+- `password`: useState initial "" in `apps/web/src/components/desktop/SshPasswordPromptDialog.tsx`:33
+- `pathInput`: useState initial ( in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:679
+- `pathInput`: useState initial ( in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:752
+- `planSidebarOpen`: useState initial false in `apps/web/src/components/ChatView.tsx`:886
+- `preview`: useState initial initialPreview in `apps/web/src/components/chat/ExpandedImageDialog.tsx`:15
+- `projectRenameTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1140
+- `prompt`: useState initial "" in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:156
+- `proposedPlanExpanded`: useState initial false in `apps/web/src/components/PlanSidebar.tsx`:77
+- `publishAdvancedOpen`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:358
+- `publishRemoteName`: useState initial "origin" in `apps/web/src/components/GitActionsControl.tsx`:355
+- `publishRepository`: useState initial "" in `apps/web/src/components/GitActionsControl.tsx`:352
+- `publishWizardStep`: useState initial 0 in `apps/web/src/components/GitActionsControl.tsx`:357
+- `query`: useState initial "" in `apps/web/src/components/CommandPalette.tsx`:399
+- `query`: useState initial "" in `apps/web/src/components/settings/KeybindingsSettings.tsx`:1064
+- `reference`: useState initial initialReference ?? "" in `apps/web/src/components/PullRequestThreadDialog.tsx`:47
+- `referenceDirty`: useState initial false in `apps/web/src/components/PullRequestThreadDialog.tsx`:48
+- `refreshing`: useState initial false in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:212
+- `renamingTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1135
+- `repositoryInput`: useState initial "" in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:517
+- `resizeEpoch`: useState initial 0 in `apps/web/src/components/ThreadTerminalDrawer.tsx`:861
+- `resourceWindowMs`: useState initial 15 * 60_000 in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:808
+- `restoreSignal`: useState initial 0 in `apps/web/src/routes/settings.tsx`:37
+- `revealed`: useState initial false in `apps/web/src/components/settings/RedactedSensitiveText.tsx`:34
+- `runOnWorktreeCreate`: useState initial false in `apps/web/src/components/ProjectScriptsControl.tsx`:115
+- `savedBackendHost`: useState initial "" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1435
+- `savedBackendPairingCode`: useState initial "" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1436
+- `savedBackendSshHost`: useState initial "" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1437
+- `savedBackendSshPort`: useState initial "" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1439
+- `savedBackendSshUsername`: useState initial "" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1438
+- `savePath`: useState initial "" in `apps/web/src/components/chat/ProposedPlanCard.tsx`:44
+- `scannerLocked`: useState initial false in `apps/mobile/src/app/connections/new.tsx`:32
+- `searchQuery`: useState initial "" in `apps/mobile/src/app/index.tsx`:17
+- `searchQuery`: useState initial "" in `apps/web/src/components/chat/ModelPickerContent.tsx`:97
+- `sessionRecoveryNowMs`: useState initial ( in `apps/web/src/components/ChatView.tsx`:1596
+- `showScanner`: useState initial params.mode === "scan_qr" in `apps/mobile/src/app/connections/new.tsx`:30
+- `showScrollToBottom`: useState initial false in `apps/web/src/components/ChatView.tsx`:862
+- `submitting`: useState initial false in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:158
+- `tailscaleServePortInput`: useState initial String(DEFAULT_TAILSCALE_SERVE_PORT in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1465
+- `terminalFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:893
+- `tokensPatchJson`: useState initial ( in `apps/mobile/src/features/review/useNativeReviewDiffHighlighting.ts`:51
+- `toolbarScrollEdges`: useState initial { showLeftFade: false, showRightFade: false, } in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:256
+- `uncontrolledIsMenuOpen`: useState initial false in `apps/web/src/components/chat/ProviderModelPicker.tsx`:48
+- `url`: useState initial props.environment.displayUrl in `apps/mobile/src/features/connection/ConnectionEnvironmentRow.tsx`:43
+- `visibleHighlightRequest`: useState initial 0 in `apps/mobile/src/features/review/useNativeReviewDiffHighlighting.ts`:52
+- `wizardStep`: useState initial 0 in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:120
+- `worktreeBaseBranch`: useState initial currentBranchLabel === "Detached HEAD" ? "main" : currentBranchLabel, in `apps/mobile/src/features/threads/git/GitBranchesSheet.tsx`:42
+- `worktreeBranchName`: useState initial "" in `apps/mobile/src/features/threads/git/GitBranchesSheet.tsx`:45
+
+## Storage Keys
+
+- `t3code:last-editor`: localStorage key in `apps/web/src/components/ChatView.browser.tsx`:2329
+- `t3code:ui-state:v1`: localStorage key in `apps/web/src/localApi.test.ts`:723
+
+## Hardcoded Values
+
+- `0`: timer duration (ms) in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:182
+- `0`: timer duration (ms) in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:253
+- `0`: timer duration (ms) in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:907
+- `0`: timer duration (ms) in `apps/web/src/components/ThreadTerminalDrawer.tsx`:648
+- `0`: timer duration (ms) in `apps/web/src/components/chat/ModelPickerContent.tsx`:138
+- `0`: timer duration (ms) in `apps/web/src/components/chat/ModelPickerContent.tsx`:525
+- `0`: timer duration (ms) in `apps/web/src/proposedPlan.ts`:119
+- `0`: timer duration (ms) in `apps/web/src/rpc/serverState.test.ts`:211
+- `10`: timer duration (ms) in `apps/web/src/rpc/serverState.test.ts`:129
+- `10`: timer duration (ms) in `apps/web/src/rpc/wsTransport.test.ts`:108
+- `100`: timer duration (ms) in `apps/mobile/src/features/threads/ThreadComposer.tsx`:173
+- `1000`: timer duration (ms) in `apps/mobile/src/state/use-vcs-action-state.ts`:122
+- `1000`: timer duration (ms) in `apps/web/src/components/GitActionsControl.tsx`:1141
+- `1000`: timer duration (ms) in `apps/web/src/components/chat/MessagesTimeline.tsx`:589
+- `1000`: timer duration (ms) in `apps/web/src/components/chat/MessagesTimeline.tsx`:623
+- `11434`: localhost port in `packages/contracts/src/providerInstance.test.ts`:189
+- `11434`: localhost port in `packages/contracts/src/settings.test.ts`:45
+- `11434`: localhost port in `packages/contracts/src/settings.test.ts`:60
+- `11434`: localhost port in `packages/contracts/src/settings.test.ts`:150
+- `1200`: timer duration (ms) in `apps/mobile/src/features/threads/ThreadFeed.tsx`:868
+- `1200`: timer duration (ms) in `apps/web/src/components/ChatMarkdown.tsx`:168
+- `1234`: localhost port in `apps/server/src/provider/localRuntime.test.ts`:21
+- `13773`: localhost port in `scripts/dev-runner.test.ts`:296
+- `13773`: localhost port in `scripts/dev-runner.test.ts`:339
+- `13773`: localhost port in `scripts/dev-runner.test.ts`:340
+- `14697`: port literal in `scripts/local-desktop-launcher-human-log.test.ts`:22
+- `150`: timer duration (ms) in `apps/mobile/src/features/threads/NewTaskDraftScreen.tsx`:262
+- `16247`: port literal in `scripts/local-desktop-launcher-access.test.ts`:22
+- `180`: timer duration (ms) in `apps/web/src/components/Sidebar.tsx`:1426
+- `200`: timer duration (ms) in `apps/web/src/components/chat/ComposerPendingUserInputPanel.tsx`:86
+- `22`: port literal in `apps/desktop/src/settings/DesktopSavedEnvironments.test.ts`:29
+- `22`: port literal in `apps/web/src/clientPersistenceStorage.test.ts`:17
+- `22`: port literal in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:1135
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:229
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:344
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:360
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:541
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:557
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:635
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:648
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:674
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:688
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:800
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:817
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:845
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:855
+- `22`: port literal in `apps/web/src/environments/runtime/service.addSavedEnvironment.test.ts`:894
+- `2222`: port literal in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:1153
+- `2222`: port literal in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:1192
+- `2222`: port literal in `packages/ssh/src/command.test.ts`:58
+- `2222`: port literal in `packages/ssh/src/command.test.ts`:72
+- `2222`: port literal in `packages/ssh/src/command.test.ts`:140
+- `2222`: port literal in `packages/ssh/src/tunnel.test.ts`:150
+- `2222`: port literal in `packages/ssh/src/tunnel.test.ts`:221
+- `2222`: port literal in `packages/ssh/src/tunnel.test.ts`:289
+- `2222`: port literal in `packages/ssh/src/tunnel.test.ts`:316
+- `2222`: port literal in `packages/ssh/src/tunnel.test.ts`:374
+- `25`: timer duration (ms) in `apps/web/src/components/KeybindingsToast.browser.tsx`:451
+- `250`: timer duration (ms) in `apps/web/src/components/KeybindingsToast.browser.tsx`:585
+- `3000`: localhost port in `apps/server/src/provider/acp/CursorAcpSupport.test.ts`:67
+- `3000`: localhost port in `apps/server/src/provider/acp/CursorAcpSupport.test.ts`:73
+- `3000`: localhost port in `apps/web/src/components/chat/ProviderModelPicker.browser.tsx`:32
+- `3000`: localhost port in `apps/web/src/components/chat/ProviderModelPicker.browser.tsx`:33
+- `3000`: localhost port in `apps/web/src/components/chat/ProviderModelPicker.browser.tsx`:49
+- `3000`: localhost port in `apps/web/src/components/chat/ProviderModelPicker.browser.tsx`:57
+- `3000`: localhost port in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:160
+- `3000`: localhost port in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:161
+- `3000`: localhost port in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:177
+- `3000`: localhost port in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:185
+- `3000`: localhost port in `apps/web/src/localApi.test.ts`:129
+- `3000`: localhost port in `apps/web/src/localApi.test.ts`:130
+- `3000`: localhost port in `apps/web/src/localApi.test.ts`:835
+- `3000`: localhost port in `apps/web/src/localApi.test.ts`:836
+- `3000`: localhost port in `apps/web/src/localApi.test.ts`:852
+- `3000`: localhost port in `apps/web/src/localApi.test.ts`:853
+- `3000`: localhost port in `scripts/build-desktop-artifact.test.ts`:68
+- `3020`: localhost port in `apps/web/src/rpc/wsConnectionState.test.ts`:28
+- `3020`: localhost port in `apps/web/src/rpc/wsConnectionState.test.ts`:37
+- `3020`: localhost port in `apps/web/src/rpc/wsConnectionState.test.ts`:48
+- `3020`: localhost port in `apps/web/src/rpc/wsConnectionState.test.ts`:67
+- `3020`: localhost port in `apps/web/src/rpc/wsConnectionState.test.ts`:81
+- `3020`: localhost port in `apps/web/src/rpc/wsConnectionState.test.ts`:97
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:130
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:159
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:169
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:190
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:222
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:267
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:323
+- `3020`: localhost port in `apps/web/src/rpc/wsTransport.test.ts`:375
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:114
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:140
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:146
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:186
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:222
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:250
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:274
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:288
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:311
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:367
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:425
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:480
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:589
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:698
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:745
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:784
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:817
+- `3020`: localhost port in `packages/client-runtime/src/wsTransport.test.ts`:849
+- `3773`: port literal in `apps/desktop/src/backend/DesktopBackendManager.test.ts`:40
+- `3773`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:271
+- `3773`: port literal in `apps/desktop/src/backend/tailscaleEndpointProvider.test.ts`:40
+- `3773`: port literal in `apps/desktop/src/backend/tailscaleEndpointProvider.test.ts`:103
+- `3773`: port literal in `apps/desktop/src/backend/tailscaleEndpointProvider.test.ts`:136
+- `3773`: port literal in `apps/desktop/src/window/DesktopWindow.test.ts`:81
+- `3773`: port literal in `apps/server/src/auth/Layers/ServerAuthPolicy.test.ts`:42
+- `3773`: port literal in `apps/server/src/cli/config.test.ts`:586
+- `3773`: localhost port in `apps/server/src/startupAccess.test.ts`:14
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:100
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:101
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:111
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:112
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:113
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:517
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:518
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:532
+- `3773`: localhost port in `apps/web/src/authBootstrap.test.ts`:533
+- `3773`: localhost port in `apps/web/src/environments/primary/bootstrap.test.ts`:61
+- `3773`: localhost port in `apps/web/src/environments/primary/bootstrap.test.ts`:84
+- `3773`: localhost port in `apps/web/src/environments/primary/bootstrap.test.ts`:85
+- `3773`: localhost port in `packages/client-runtime/src/knownEnvironment.test.ts`:42
+- `3773`: localhost port in `packages/client-runtime/src/knownEnvironment.test.ts`:43
+- `3773`: localhost port in `packages/client-runtime/src/knownEnvironment.test.ts`:47
+- `4001`: port literal in `apps/server/src/cli/config.test.ts`:114
+- `4123`: port literal in `apps/server/src/startupAccess.test.ts`:50
+- `4123`: localhost port in `scripts/build-desktop-artifact.test.ts`:69
+- `4141`: localhost port in `apps/desktop/src/updates/DesktopUpdates.test.ts`:191
+- `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:138
+- `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:155
+- `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:172
+- `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:202
+- `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:230
+- `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:247
+- `4222`: port literal in `scripts/dev-runner.test.ts`:180
+- `4222`: localhost port in `scripts/dev-runner.test.ts`:186
+- `4222`: localhost port in `scripts/dev-runner.test.ts`:187
+- `4222`: port literal in `scripts/dev-runner.test.ts`:305
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:282
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:283
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:323
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:324
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:482
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:483
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:513
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:514
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:519
+- `4318`: localhost port in `apps/server/src/cli/config.test.ts`:520
+- `4318`: localhost port in `apps/server/src/server.test.ts`:2171
+- `4318`: localhost port in `apps/server/src/server.test.ts`:2172
+- `4318`: localhost port in `apps/server/src/server.test.ts`:2204
+- `4318`: localhost port in `apps/server/src/server.test.ts`:2206
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:498
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:499
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:505
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:506
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:539
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:540
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:561
+- `4318`: localhost port in `apps/server/src/serverSettings.test.ts`:562
+- `4318`: localhost port in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:232
+- `4318`: localhost port in `apps/web/src/components/settings/SettingsPanels.browser.tsx`:761
+- `4318`: localhost port in `apps/web/src/components/settings/SettingsPanels.logic.test.ts`:19
+- `4318`: localhost port in `apps/web/src/components/settings/SettingsPanels.logic.test.ts`:21
+- `4318`: localhost port in `apps/web/src/components/settings/SettingsPanels.logic.test.ts`:23
+- `4318`: localhost port in `apps/web/src/components/settings/SettingsPanels.logic.test.ts`:31
+- `4318`: localhost port in `apps/web/src/components/settings/SettingsPanels.logic.test.ts`:36
+- `4318`: localhost port in `packages/contracts/src/settings.test.ts`:206
+- `4318`: localhost port in `packages/contracts/src/settings.test.ts`:225
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:19
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:20
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:28
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:29
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:33
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:34
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:43
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:44
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:49
+- `4318`: localhost port in `packages/shared/src/serverSettings.test.ts`:50
+- `4888`: port literal in `apps/desktop/src/backend/DesktopBackendConfiguration.test.ts`:27
+- `4888`: port literal in `apps/server/src/cli/config.test.ts`:28
+- `4888`: port literal in `apps/server/src/cli/config.test.ts`:275
+- `4888`: port literal in `apps/server/src/cli/config.test.ts`:326
+- `4888`: port literal in `apps/server/src/cli/config.test.ts`:400
+- `4888`: port literal in `apps/server/src/cli/config.test.ts`:522
+- `500`: timer duration (ms) in `apps/web/src/components/KeybindingsToast.browser.tsx`:621
+- `5000`: timer duration (ms) in `apps/server/src/vcs/VcsProcess.test.ts`:127
+- `5173`: localhost port in `apps/desktop/src/app/DesktopAppIdentity.test.ts`:200
+- `5173`: localhost port in `apps/desktop/src/app/DesktopEnvironment.test.ts`:46
+- `5173`: localhost port in `apps/desktop/src/app/DesktopEnvironment.test.ts`:70
+- `5173`: localhost port in `apps/desktop/src/app/DesktopEnvironment.test.ts`:102
+- `5173`: localhost port in `apps/desktop/src/app/DesktopEnvironment.test.ts`:125
+- `5173`: localhost port in `apps/desktop/src/app/DesktopEnvironment.test.ts`:141
+- `5173`: localhost port in `apps/server/src/terminal/Layers/Manager.test.ts`:1190
+- `5733`: localhost port in `apps/server/src/server.test.ts`:1872
+- `5733`: localhost port in `apps/server/src/server.test.ts`:1933
+- `5735`: localhost port in `apps/web/src/authBootstrap.test.ts`:162
+- `5735`: localhost port in `apps/web/src/authBootstrap.test.ts`:176
+- `5735`: localhost port in `apps/web/src/environments/primary/bootstrap.test.ts`:142
+- `5735`: localhost port in `apps/web/src/environments/primary/bootstrap.test.ts`:145
+- `600`: timer duration (ms) in `apps/mobile/src/app/connections/new.tsx`:105
+- `7331`: localhost port in `scripts/dev-runner.test.ts`:181
+- `7331`: localhost port in `scripts/dev-runner.test.ts`:192
+- `8443`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:206
+- `8443`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:214
+- `8788`: port literal in `apps/server/src/cli/config.test.ts`:181
+- `8788`: port literal in `apps/server/src/cli/config.test.ts`:251
+- `8788`: port literal in `apps/server/src/cli/config.test.ts`:452
+- `9000`: localhost port in `apps/web/src/components/settings/SettingsPanels.logic.test.ts`:33
+- `9000`: localhost port in `apps/web/src/components/settings/SettingsPanels.logic.test.ts`:36
+- `ABOUT_TIMEOUT_MS`: constant 8_000 in `apps/server/src/provider/Layers/CursorProvider.ts`:701
+- `ACP_APPROVAL_MODE_ALIASES`: constant ["ask"] in `apps/server/src/provider/Layers/CursorAdapter.ts`:85
+- `ACP_IMPLEMENT_MODE_ALIASES`: constant ["code", "agent", "default", "chat", "implement"] in `apps/server/src/provider/Layers/CursorAdapter.ts`:84
+- `ACP_PLAN_MODE_ALIASES`: constant ["plan", "architect"] in `apps/server/src/provider/Layers/CursorAdapter.ts`:83
+- `ACTIVE_THREAD_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/chat/MessagesTimeline.test.tsx`:90
+- `ADD_PROJECT_SUBMENU_PLACEHOLDER`: constant "Enter path (e.g. ~/projects/my-app)" in `apps/web/src/components/ChatView.browser.tsx`:127
+- `ADDON_ICON_CLASS`: constant "size-4" in `apps/web/src/components/CommandPalette.logic.ts`:12
+- `AGENT_METHODS`: constant ${yield* encodeAgentMethods(upstreamMeta.agentMethods)} as const in `packages/effect-acp/scripts/generate.ts`:253
+- `AGENT_METHODS`: constant { in `packages/effect-acp/src/_generated/meta.gen.ts`:4
+- `ALL_RPC_METHODS`: constant Array.from(WsRpcGroup.requests.keys()) in `apps/web/test/wsRpcHarness.ts`:42
+- `ANCHORED_TOAST_TIMEOUT_MS`: constant 1000 in `apps/web/src/components/chat/MessageCopyButton.tsx`:9
+- `ANONYMOUS_LINK_HINT`: constant "Convex CLI may be blocked on an account-link prompt. " + in `packages/convex/scripts/convex-ready.mjs`:41
+- `ANSI_ESCAPE_CHAR`: constant String.fromCharCode(27) in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:48
+- `ANSI_ESCAPE_REGEX`: constant new RegExp(`${ANSI_ESCAPE_CHAR}\\[[0-9 in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:49
+- `ANTIGRAVITY_ICON_DATA_URL`: constant "data:image/png in `apps/web/src/components/Icons.tsx`:629
+- `API_URL`: constant `https://api.github.com/repos/${REPO}/releases/latest` in `apps/marketing/src/lib/releases.ts`:5
+- `APP_BASE_NAME`: constant "T3 Code" in `apps/desktop/src/app/DesktopEnvironment.ts`:87
+- `APP_BASE_NAME`: constant injectedDesktopAppBranding?.baseName ?? "T3 Code" in `apps/web/src/branding.ts`:80
+- `APP_BUNDLE_ID`: constant isDevelopment ? "com.t3tools.t3code.dev" : "com.t3tools.t3code" in `apps/desktop/scripts/electron-launcher.mjs`:21
+- `APP_DISPLAY_NAME`: constant isDevelopment ? "T3 Code (Dev)" : "T3 Code (Alpha)" in `apps/desktop/scripts/electron-launcher.mjs`:20
+- `APP_DISPLAY_NAME`: constant injectedDesktopAppBranding?.displayName ?? APP_DOCUMENT_TITLE in `apps/web/src/branding.ts`:102
+- `APP_DOCUMENT_TITLE`: constant resolveDocumentTitle({ in `apps/web/src/branding.ts`:97
+- `APP_STAGE_LABEL`: constant injectedDesktopAppBranding?.stageLabel ?? in `apps/web/src/branding.ts`:81
+- `APP_STAGE_VARIANT_LABEL`: constant APP_VARIANT_LABEL in `apps/web/src/branding.ts`:94
+- `APP_VARIANT`: constant resolveAppVariant(process.env.APP_VARIANT) in `apps/mobile/app.config.ts`:5
+- `APP_VARIANT_LABEL`: constant variantFromBaseName ?? resolveLocalVariantLabelFromEnvSlug(envSlugFromBranding) in `apps/web/src/branding.ts`:87
+- `APP_VERSION`: constant import.meta.env.APP_VERSION || "0.0.0" in `apps/web/src/branding.ts`:103
+- `APPROVAL_REQUEST_ID`: constant asApprovalRequestId("req-approval-1") in `apps/server/integration/orchestrationEngine.integration.test.ts`:48
+- `ARCHIVED_SECONDARY_THREAD_ID`: constant "thread-secondary-project-archived" as ThreadId in `apps/web/src/components/ChatView.browser.tsx`:103
+- `ARCHIVED_THREADS_ENVIRONMENT_KEY_SEPARATOR`: constant "\u001f" in `packages/client-runtime/src/archivedThreadsState.ts`:26
+- `ASKPASS_POSIX_SCRIPT`: constant `#!/bin/sh in `packages/ssh/src/auth.ts`:72
+- `ASKPASS_WINDOWS_LAUNCHER_SCRIPT`: constant `@echo off\r in `packages/ssh/src/auth.ts`:84
+- `ASKPASS_WINDOWS_SCRIPT`: constant `# Invoked by ssh via SSH_ASKPASS (through ssh-askpass.cmd) when T3 Code re-r... in `packages/ssh/src/auth.ts`:88
+- `ASSOCIATIONS_PATH`: constant path.join( in `scripts/sync-vscode-icons.mjs`:19
+- `ATTACHMENT_FILENAME_EXTENSIONS`: constant [...SAFE_IMAGE_FILE_EXTENSIONS, ".bin"] in `apps/server/src/attachmentStore.ts`:13
+- `ATTACHMENT_ID_PATTERN`: constant new RegExp( in `apps/server/src/attachmentStore.ts`:17
+- `ATTACHMENT_ID_THREAD_SEGMENT_MAX_CHARS`: constant 80 in `apps/server/src/attachmentStore.ts`:14
+- `ATTACHMENT_ID_THREAD_SEGMENT_PATTERN`: constant "[a-z0-9_]+(?:-[a-z0-9_]+)*" in `apps/server/src/attachmentStore.ts`:15
+- `ATTACHMENT_ID_UUID_PATTERN`: constant "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" in `apps/server/src/attachmentStore.ts`:16
+- `ATTACHMENT_SVG`: constant "<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'></svg>" in `apps/web/src/components/ChatView.browser.tsx`:126
+- `ATTACHMENTS_ROUTE_PREFIX`: constant "/attachments" in `apps/server/src/attachmentPaths.ts`:4
+- `ATTR_DB_SYSTEM_NAME`: constant "db.system.name" in `apps/server/src/persistence/NodeSqliteClient.ts`:26
+- `AUTH_PROBE_TIMEOUT_MS`: constant 10_000 in `apps/server/src/provider/providerSnapshot.ts`:22
+- `AUTH_SESSION_ESTABLISH_STEP_MS`: constant 100 in `apps/web/src/environments/primary/auth.ts`:63
+- `AUTH_SESSION_ESTABLISH_TIMEOUT_MS`: constant 2_000 in `apps/web/src/environments/primary/auth.ts`:62
+- `AUTHORIZATION_PREFIX`: constant "Bearer " in `apps/server/src/auth/Layers/ServerAuth.ts`:37
+- `AUTO_FEATURE_BRANCH_FALLBACK`: constant "feature/update" in `packages/shared/src/git.ts`:50
+- `AUTO_UPDATE_POLL_INTERVAL`: constant "4 minutes" in `apps/desktop/src/updates/DesktopUpdates.ts`:45
+- `AUTO_UPDATE_STARTUP_DELAY`: constant "15 seconds" in `apps/desktop/src/updates/DesktopUpdates.ts`:44
+- `AVAILABLE_PROVIDER_OPTIONS`: constant PROVIDER_OPTIONS.filter(isAvailableProviderOption) in `apps/web/src/components/chat/providerIconUtils.ts`:31
+- `AZURE_DEVOPS_CLI_PR_CHECKOUT_PATTERN`: constant /^az\s+repos\s+pr\s+checkout\s+(.+)$/i in `apps/web/src/pullRequestReference.ts`:10
+- `AZURE_DEVOPS_PULL_REQUEST_URL_PATTERN`: constant /^https:\/\/(?:dev\.azure\.com\/[^/\s]+\/[^/\s]+|[^/\s]+\.visualstudio\.com\/... in `apps/web/src/pullRequestReference.ts`:5
+- `BACKEND_READINESS_PATH`: constant "/.well-known/t3/environment" in `apps/desktop/src/backend/DesktopBackendManager.ts`:39
+- `BACKTICK_SURROUND_CLOSE_SYMBOL`: constant SURROUND_SYMBOLS_MAP.get("`") ?? null in `apps/web/src/components/ComposerPromptEditor.tsx`:93
+- `BADGE_BASE_CLASS`: constant "pointer-events-none absolute -right-0.5 top-0.5 z-10 flex size-3.5 items-cen... in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:36
+- `BASE_ENVIRONMENT`: constant { in `apps/web/src/environments/primary/bootstrap.test.ts`:21
+- `BASE_SERVER_PORT`: constant 13773 in `scripts/dev-runner.ts`:30
+- `BASE_TIME_MS`: constant Date.parse(NOW_ISO) in `apps/web/src/components/ChatView.browser.tsx`:125
+- `BASE_WEB_PORT`: constant 5733 in `scripts/dev-runner.ts`:31
+- `BASE_WEB_PORT`: constant 5733 in `scripts/local-desktop-env.ts`:13
+- `BENIGN_ERROR_LOG_SNIPPETS`: constant [ in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:52
+- `BOOTSTRAP_PREAMBLE`: constant "Continue this conversation using the transcript context below. The final sec... in `apps/web/src/historyBootstrap.ts`:10
+- `BOOTSTRAP_RETRY_STEP_MS`: constant 500 in `apps/web/src/environments/primary/auth.ts`:191
+- `BOOTSTRAP_RETRY_TIMEOUT_MS`: constant 15_000 in `apps/web/src/environments/primary/auth.ts`:190
+- `BOOTSTRAP_SSH_BEARER_SESSION_CHANNEL`: constant "desktop:bootstrap-ssh-bearer-session" in `apps/desktop/dist-electron/preload.cjs`:29
+- `BOOTSTRAP_SSH_BEARER_SESSION_CHANNEL`: constant "desktop:bootstrap-ssh-bearer-session" in `apps/desktop/src/ipc/channels.ts`:26
+- `BRANCH_NAME`: constant "feature/toast-scope" in `apps/web/src/components/GitActionsControl.browser.tsx`:11
+- `BRAND_ASSET_PATHS`: constant { in `scripts/lib/brand-assets.ts`:1
+- `BRAND_MARK_SOURCE`: constant require("../../../../assets/dev/blueprint-ios-1024.png") in `apps/mobile/src/components/BrandMark.tsx`:5
+- `BREAKPOINTS`: constant { in `apps/web/src/hooks/useMediaQuery.ts`:3
+- `BROWSE_STALE_TIME_MS`: constant 30_000 in `apps/web/src/components/CommandPalette.tsx`:123
+- `BROWSER_RESUME_RECONNECT_COOLDOWN_MS`: constant 2_000 in `apps/web/src/environments/runtime/service.ts`:153
+- `BUFFERED_MESSAGE_TEXT_BY_MESSAGE_ID_CACHE_CAPACITY`: constant 20_000 in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:53
+- `BUFFERED_MESSAGE_TEXT_BY_MESSAGE_ID_TTL`: constant Duration.minutes(120) in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:54
+- `BUFFERED_PROPOSED_PLAN_BY_ID_CACHE_CAPACITY`: constant 10_000 in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:55
+- `BUFFERED_PROPOSED_PLAN_BY_ID_TTL`: constant Duration.minutes(120) in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:56
+- `CACHE_KEY`: constant "t3code-latest-release" in `apps/marketing/src/lib/releases.ts`:6
+- `CAPABILITIES_PROBE_TIMEOUT_MS`: constant 8_000 in `apps/server/src/provider/Layers/ClaudeProvider.ts`:421
+- `CAPABILITIES_PROBE_TTL`: constant Duration.minutes(5) in `apps/server/src/provider/Drivers/ClaudeDriver.ts`:56
+- `CARD_SHADOW`: constant Platform.select({ in `apps/mobile/src/features/connection/ConnectionSheetButton.tsx`:8
+- `CARD_SHADOW_DARK`: constant Platform.select({ in `apps/mobile/src/features/connection/ConnectionSheetButton.tsx`:18
+- `CHAT_ATTACHMENT_ID_MAX_CHARS`: constant 128 in `packages/contracts/src/orchestration.ts`:145
+- `CHAT_STORE_PRESETS`: constant [ in `apps/server/scripts/convex-attachment-backfill.ts`:23
+- `CHAT_STORE_PRESETS`: constant [ in `scripts/chat-store-locations.ts`:10
+- `CHECK_LOCAL_PROMOTION_CHANNEL`: constant "desktop:check-local-promotion" in `apps/desktop/dist-electron/preload.cjs`:36
+- `CHECK_LOCAL_PROMOTION_CHANNEL`: constant "desktop:check-local-promotion" in `apps/desktop/src/ipc/channels.ts`:33
+- `CHECKPOINT_DIFF_MAX_OUTPUT_BYTES`: constant 10_000_000 in `apps/server/src/vcs/GitVcsDriver.ts`:230
+- `CHECKPOINT_REFS_PREFIX`: constant "refs/t3/checkpoints" in `apps/server/src/checkpointing/Utils.ts`:4
+- `CLAUDE_AGENT_DRIVER`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/Layers/ProviderAdapterRegistry.test.ts`:26
+- `CLAUDE_AGENT_DRIVER`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/Layers/ProviderService.test.ts`:78
+- `CLAUDE_AGENT_DRIVER`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/providerStatusCache.test.ts`:23
+- `CLAUDE_AGENT_DRIVER`: constant ProviderDriverKind.make("claudeAgent") in `apps/web/src/composerDraftStore.test.ts`:28
+- `CLAUDE_AGENT_EFFORT_OPTIONS`: constant [ in `apps/mobile/src/features/threads/claudeEffortOptions.ts`:1
+- `CLAUDE_AGENT_INSTANCE`: constant ProviderInstanceId.make("claudeAgent") in `apps/web/src/composerDraftStore.test.ts`:25
+- `CLAUDE_AGENT_PROVIDER`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/integration/orchestrationEngine.integration.test.ts`:51
+- `CLAUDE_DRIVER_KIND`: constant ProviderDriverKind.make("claudeAgent") in `packages/contracts/src/model.ts`:131
+- `CLAUDE_EFFORT_OPTIONS`: constant { in `apps/server/src/provider/Layers/ClaudeProvider.ts`:54
+- `CLAUDE_ID`: constant ProviderInstanceId.make("claudeAgent") in `apps/web/src/modelOrdering.test.ts`:11
+- `CLAUDE_INSTANCE_ID`: constant ProviderInstanceId.make("claudeAgent") in `apps/web/src/components/chat/ProviderModelPicker.browser.tsx`:214
+- `CLAUDE_PRESENTATION`: constant { in `apps/server/src/provider/Layers/ClaudeProvider.ts`:47
+- `CLAUDE_SETTING_SOURCES`: constant [ in `apps/server/src/provider/Layers/ClaudeAdapter.ts`:597
+- `CLAUDE_TIMEOUT_MS`: constant 180_000 in `apps/server/src/textGeneration/ClaudeTextGeneration.ts`:47
+- `CLEAN_CHANNEL_QUERY_TRANSFORMS`: constant [ in `apps/web/vercel.ts`:7
+- `CLIENT_METHODS`: constant ${yield* encodeClientMethods(upstreamMeta.clientMethods)} as const in `packages/effect-acp/scripts/generate.ts`:255
+- `CLIENT_METHODS`: constant { in `packages/effect-acp/src/_generated/meta.gen.ts`:21
+- `CLIENT_NOTIFICATION_METHODS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:87
+- `CLIENT_NOTIFICATION_PARAMS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:594
+- `CLIENT_REQUEST_METHODS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:6
+- `CLIENT_REQUEST_PARAMS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:432
+- `CLIENT_REQUEST_RESPONSES`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:513
+- `CLIENT_SETTINGS_DOCUMENT_KEY`: constant "client-settings:v1" in `apps/server/src/clientPersistence.ts`:15
+- `CLIENT_SETTINGS_PERSISTENCE_ERROR_SCOPE`: constant "[CLIENT_SETTINGS]" in `apps/web/src/hooks/useSettings.ts`:26
+- `CLIENT_SETTINGS_STORAGE_KEY`: constant "t3code:client-settings:v1" in `apps/web/src/clientPersistenceStorage.ts`:14
+- `CLIENT_TRACING_RESOURCE`: constant { in `apps/web/src/observability/clientTracing.ts`:14
+- `CLIENT_UI_STATE_DOCUMENT_KEY`: constant "client-ui-state:v1" in `apps/server/src/clientPersistence.ts`:16
+- `CLIENT_UI_STATE_STORAGE_KEY`: constant "t3code:ui-state:v1" in `apps/web/src/clientPersistenceStorage.ts`:15
+- `CLONE_URLS`: constant { in `apps/server/src/sourceControl/SourceControlRepositoryService.test.ts`:16
+- `CODE_FENCE_LANGUAGE_PREFIXES`: constant [ in `apps/web/src/components/ChatMarkdown.tsx`:296
+- `CODE_FENCE_LANGUAGE_REGEX`: constant /(?:^|\s)language-([^\s]+)/ in `apps/web/src/components/ChatMarkdown.tsx`:69
+- `CODEX_APP_SERVER_FORCE_KILL_AFTER`: constant "2 seconds" as const in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:56
+- `CODEX_APP_SERVER_PROVIDER_STATUS_TIMEOUT_MESSAGE`: constant "Timed out while checking Codex app-server provider status." in `apps/server/src/provider/Layers/CodexProvider.ts`:40
+- `CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS`: constant `<collaboration_mode># Collaboration Mode: Default in `apps/server/src/provider/CodexDeveloperInstructions.ts`:123
+- `CODEX_DRIVER`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Layers/ProviderAdapterRegistry.test.ts`:25
+- `CODEX_DRIVER`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Layers/ProviderService.test.ts`:77
+- `CODEX_DRIVER`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/providerMaintenanceRunner.test.ts`:30
+- `CODEX_DRIVER`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/providerStatusCache.test.ts`:22
+- `CODEX_DRIVER`: constant ProviderDriverKind.make("codex") in `apps/web/src/composerDraftStore.test.ts`:27
+- `CODEX_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `packages/contracts/src/model.ts`:130
+- `CODEX_GIT_TEXT_GENERATION_REASONING_EFFORT`: constant "low" in `apps/server/src/textGeneration/CodexTextGeneration.ts`:40
+- `CODEX_INSTANCE`: constant ProviderInstanceId.make("codex") in `apps/web/src/composerDraftStore.test.ts`:23
+- `CODEX_INSTANCE_ID`: constant ProviderInstanceId.make("codex") in `apps/server/src/provider/providerMaintenanceRunner.test.ts`:33
+- `CODEX_INSTANCE_ID`: constant ProviderInstanceId.make("codex") in `apps/web/src/components/chat/ProviderModelPicker.browser.tsx`:213
+- `CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS`: constant `<collaboration_mode># Plan Mode (Conversational) in `apps/server/src/provider/CodexDeveloperInstructions.ts`:1
+- `CODEX_PRESENTATION`: constant { in `apps/server/src/provider/Layers/CodexProvider.ts`:35
+- `CODEX_PROVIDER`: constant ProviderDriverKind.make("codex") in `apps/server/integration/orchestrationEngine.integration.test.ts`:50
+- `CODEX_PROVIDER`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Layers/ProviderService.ts`:66
+- `CODEX_SECONDARY_INSTANCE`: constant ProviderInstanceId.make("codex_secondary") in `apps/web/src/composerDraftStore.test.ts`:24
+- `CODEX_STDERR_LOG_REGEX`: constant /^\d{4}-\d{2}-\d{2}T\S+\s+(TRACE|DEBUG|INFO|WARN|ERROR)\s+\S+:\s+(.*)$/ in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:50
+- `CODEX_TIMEOUT_MS`: constant 180_000 in `apps/server/src/textGeneration/CodexTextGeneration.ts`:41
+- `CODEX_WORK_ID`: constant ProviderInstanceId.make("codex_work") in `apps/web/src/modelOrdering.test.ts`:10
+- `COLLAPSED_THREAD_LIMIT`: constant 6 in `apps/mobile/src/features/home/HomeScreen.tsx`:67
+- `COLLAPSED_USER_MESSAGE_FADE_HEIGHT_REM`: constant 1.75 in `apps/web/src/components/chat/MessagesTimeline.tsx`:805
+- `COLLAPSED_USER_MESSAGE_FADE_MASK`: constant `linear-gradient(to bottom, black calc(100% - ${COLLAPSED_USER_MESSAGE_FADE_H... in `apps/web/src/components/chat/MessagesTimeline.tsx`:806
+- `COMMIT_DIALOG_DESCRIPTION`: constant "Review and confirm your commit. Leave the message blank to auto-generate one." in `apps/web/src/components/GitActionsControl.tsx`:304
+- `COMMIT_DIALOG_TITLE`: constant "Commit changes" in `apps/web/src/components/GitActionsControl.tsx`:303
+- `COMMIT_HASH_DISPLAY_LENGTH`: constant 12 in `apps/desktop/src/app/DesktopAppIdentity.ts`:14
+- `COMMIT_HASH_PATTERN`: constant /^[0-9a-f]{7,40}$/i in `apps/desktop/src/app/DesktopAppIdentity.ts`:13
+- `COMMIT_TIMEOUT_MS`: constant 10 * 60_000 in `apps/server/src/git/GitManager.ts`:92
+- `COMPILER_METHODS`: constant new Set<keyof typeof Schema>([ in `oxlint-plugin-t3code/rules/no-inline-schema-compile.ts`:9
+- `COMPOSER_COLLAPSED_CHROME`: constant 68 in `apps/mobile/src/features/threads/ThreadComposer.tsx`:56
+- `COMPOSER_COMPACT_MIN_LEFT_CONTROLS_WIDTH_PX`: constant 208 in `apps/web/src/routes/_chat.$environmentId.$threadId.tsx`:32
+- `COMPOSER_DRAFT_STORAGE_KEY`: constant "t3code:composer-drafts:v1" in `apps/web/src/composerDraftStore.ts`:48
+- `COMPOSER_DRAFT_STORAGE_VERSION`: constant 6 in `apps/web/src/composerDraftStore.ts`:49
+- `COMPOSER_EDITOR_HMR_KEY`: constant `composer-editor-${Math.random().toString(36).slice(2)}` in `apps/web/src/components/ComposerPromptEditor.tsx`:78
+- `COMPOSER_EXPANDED_CHROME`: constant 174 in `apps/mobile/src/features/threads/ThreadComposer.tsx`:62
+- `COMPOSER_EXPANDED_TOOLBAR_CHROME`: constant 54 in `apps/mobile/src/features/threads/ThreadComposer.tsx`:69
+- `COMPOSER_FLOATING_LAYER_SELECTOR`: constant [ in `apps/web/src/components/chat/ChatComposer.tsx`:138
+- `COMPOSER_FOOTER_COMPACT_BREAKPOINT_PX`: constant 620 in `apps/web/src/components/composerFooterLayout.ts`:1
+- `COMPOSER_FOOTER_WIDE_ACTIONS_COMPACT_BREAKPOINT_PX`: constant 780 in `apps/web/src/components/composerFooterLayout.ts`:2
+- `COMPOSER_INLINE_CHIP_CLASS_NAME`: constant "inline-flex max-w-full select-none items-center gap-1 rounded-md border bord... in `apps/web/src/components/composerInlineChip.ts`:1
+- `COMPOSER_INLINE_CHIP_DISMISS_BUTTON_CLASS_NAME`: constant "ml-0.5 inline-flex size-3.5 shrink-0 cursor-pointer items-center justify-cen... in `apps/web/src/components/composerInlineChip.ts`:13
+- `COMPOSER_INLINE_CHIP_ICON_CLASS_NAME`: constant "size-3.5 shrink-0 opacity-85" in `apps/web/src/components/composerInlineChip.ts`:4
+- `COMPOSER_INLINE_CHIP_LABEL_CLASS_NAME`: constant "truncate select-none leading-tight" in `apps/web/src/components/composerInlineChip.ts`:6
+- `COMPOSER_INLINE_SKILL_CHIP_CLASS_NAME`: constant "inline-flex max-w-full select-none items-center gap-1 rounded-md border bord... in `apps/web/src/components/composerInlineChip.ts`:8
+- `COMPOSER_PATH_SEARCH_DEBOUNCE_MS`: constant 120 in `apps/web/src/lib/composerPathSearchState.ts`:22
+- `COMPOSER_PATH_SEARCH_LIMIT`: constant 80 in `apps/web/src/lib/composerPathSearchState.ts`:21
+- `COMPOSER_PATH_SEARCH_STALE_TIME_MS`: constant 15_000 in `apps/mobile/src/state/use-composer-path-search.ts`:20
+- `COMPOSER_PATH_SEARCH_STALE_TIME_MS`: constant 15_000 in `apps/web/src/lib/composerPathSearchState.ts`:23
+- `COMPOSER_PERSIST_DEBOUNCE_MS`: constant 300 in `apps/web/src/composerDraftStore.ts`:56
+- `COMPOSER_PRIMARY_ACTIONS_COMPACT_BREAKPOINT_PX`: constant COMPOSER_FOOTER_WIDE_ACTIONS_COMPACT_BREAKPOINT_PX in `apps/web/src/components/composerFooterLayout.ts`:3
+- `CONFIRM_BUTTON_INDEX`: constant 1 in `apps/desktop/src/electron/ElectronDialog.ts`:8
+- `CONFIRM_CHANNEL`: constant "desktop:confirm" in `apps/desktop/dist-electron/preload.cjs`:5
+- `CONFIRM_CHANNEL`: constant "desktop:confirm" in `apps/desktop/src/ipc/channels.ts`:2
+- `CONNECTIONS_KEY`: constant "t3code.connections" in `apps/mobile/src/lib/storage.ts`:10
+- `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/dist-electron/preload.cjs`:7
+- `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/src/ipc/channels.ts`:4
+- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-dev.mjs`:105
+- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/setup-local.mjs`:21
+- `CONVEX_DOCUMENT_JSON_BYTE_BUDGET`: constant 450_000 in `apps/server/src/persistence/Layers/convexDocumentJson.ts`:2
+- `CONVEX_MUTATION_BYTE_BUDGET`: constant 900_000 in `scripts/sqlite-to-convex-migrate.ts`:84
+- `CONVEX_READY_FILENAME`: constant "convex-ready.json" in `packages/convex/scripts/convex-ready.mjs`:4
+- `CORE_WHEN_VARIABLES`: constant ["terminalFocus", "terminalOpen", "true", "false"] as const in `apps/web/src/components/settings/KeybindingsSettings.logic.ts`:32
+- `CURRENT_SCHEMA_RELEASE`: constant "v0.11.3" in `packages/effect-acp/scripts/generate.ts`:16
+- `CURSOR_ACP_MODEL_CAPABILITY_TIMEOUT`: constant "4 seconds" in `apps/server/src/provider/Layers/CursorProvider.ts`:57
+- `CURSOR_ACP_MODEL_DISCOVERY_CONCURRENCY`: constant 1 in `apps/server/src/provider/Layers/CursorProvider.ts`:60
+- `CURSOR_ACP_MODEL_DISCOVERY_TIMEOUT_MS`: constant 15_000 in `apps/server/src/provider/Layers/CursorProvider.ts`:56
+- `CURSOR_DRIVER`: constant ProviderDriverKind.make("cursor") in `apps/server/src/provider/Layers/ProviderAdapterRegistry.test.ts`:28
+- `CURSOR_DRIVER`: constant ProviderDriverKind.make("cursor") in `apps/server/src/provider/Layers/ProviderService.test.ts`:79
+- `CURSOR_DRIVER`: constant ProviderDriverKind.make("cursor") in `apps/server/src/provider/providerMaintenanceRunner.test.ts`:31
+- `CURSOR_DRIVER`: constant ProviderDriverKind.make("cursor") in `apps/web/src/composerDraftStore.test.ts`:29
+- `CURSOR_DRIVER_KIND`: constant ProviderDriverKind.make("cursor") in `packages/contracts/src/model.ts`:132
+- `CURSOR_INSTANCE`: constant ProviderInstanceId.make("cursor") in `apps/web/src/composerDraftStore.test.ts`:26
+- `CURSOR_INSTANCE_ID`: constant ProviderInstanceId.make("cursor") in `apps/server/src/provider/providerMaintenanceRunner.test.ts`:34
+- `CURSOR_PARAMETERIZED_MODEL_PICKER_CAPABILITIES`: constant { in `apps/server/src/provider/Layers/CursorProvider.ts`:62
+- `CURSOR_PARAMETERIZED_MODEL_PICKER_MIN_VERSION_DATE`: constant 2026_04_08 in `apps/server/src/provider/Layers/CursorProvider.ts`:61
+- `CURSOR_PRESENTATION`: constant { in `apps/server/src/provider/Layers/CursorProvider.ts`:47
+- `CURSOR_RESUME_VERSION`: constant 1 as const in `apps/server/src/provider/Layers/CursorAdapter.ts`:82
+- `CURSOR_TIMEOUT_MS`: constant 180_000 in `apps/server/src/textGeneration/CursorTextGeneration.ts`:29
+- `DEFAULT_API_BASE_URL`: constant "https://api.bitbucket.org/2.0" in `apps/server/src/sourceControl/BitbucketApi.ts`:23
+- `DEFAULT_APP_SERVER_FORCE_KILL_AFTER`: constant "2 seconds" as const in `packages/effect-codex-app-server/src/client.ts`:20
+- `DEFAULT_ARCHIVED_THREADS_IDLE_TTL_MS`: constant 5 * 60_000 in `packages/client-runtime/src/archivedThreadsState.ts`:28
+- `DEFAULT_ARCHIVED_THREADS_STALE_TIME_MS`: constant 5_000 in `packages/client-runtime/src/archivedThreadsState.ts`:27
+- `DEFAULT_AUTOMATIC_GIT_FETCH_INTERVAL`: constant Duration.seconds(30) in `packages/contracts/src/settings.ts`:466
+- `DEFAULT_BACKEND_READINESS_INTERVAL`: constant Duration.millis(100) in `apps/desktop/src/backend/DesktopBackendManager.ts`:36
+- `DEFAULT_BACKEND_READINESS_REQUEST_TIMEOUT`: constant Duration.seconds(1) in `apps/desktop/src/backend/DesktopBackendManager.ts`:37
+- `DEFAULT_BACKEND_READINESS_TIMEOUT`: constant Duration.minutes(1) in `apps/desktop/src/backend/DesktopBackendManager.ts`:35
+- `DEFAULT_BACKEND_TERMINATE_GRACE`: constant Duration.seconds(2) in `apps/desktop/src/backend/DesktopBackendManager.ts`:38
+- `DEFAULT_BASE_BRANCH_CANDIDATES`: constant ["main", "master"] as const in `apps/server/src/vcs/GitVcsDriverCore.ts`:59
+- `DEFAULT_BATCH_WINDOW_MS`: constant 200 in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:25
+- `DEFAULT_BINDINGS`: constant compile([ in `apps/web/src/keybindings.test.ts`:86
+- `DEFAULT_CHECK_COMMAND`: constant "bun run build" in `apps/web/src/localPromotionActions.ts`:17
+- `DEFAULT_CONVEX_PORT`: constant 3210 in `packages/convex/scripts/convex-dev.mjs`:22
+- `DEFAULT_DEBOUNCE_MS`: constant 200 in `packages/client-runtime/src/composerPathSearchState.ts`:56
+- `DEFAULT_DESKTOP_BACKEND_PORT`: constant 3773 in `apps/desktop/src/app/DesktopApp.ts`:25
+- `DEFAULT_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:64
+- `DEFAULT_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/web/src/components/settings/SettingsPanels.tsx`:105
+- `DEFAULT_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/web/src/providerModels.ts`:16
+- `DEFAULT_DRIVER_OPTION`: constant DRIVER_OPTIONS[0]! in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:65
+- `DEFAULT_EXPORT_INTERVAL_MS`: constant 1_000 in `apps/web/src/observability/clientTracing.ts`:13
+- `DEFAULT_GIT_TEXT_GENERATION_MODEL`: constant "gpt-5.4-mini" in `packages/contracts/src/model.ts`:138
+- `DEFAULT_GROUPING_SETTINGS`: constant { in `apps/web/src/environmentGrouping.test.ts`:39
+- `DEFAULT_HISTORY_LINE_LIMIT`: constant 5_000 in `apps/server/src/terminal/Layers/Manager.ts`:52
+- `DEFAULT_HOSTED_APP_URL`: constant "https://app.t3.codes" in `apps/web/src/hostedPairing.ts`:3
+- `DEFAULT_HOSTNAME`: constant "127.0.0.1" in `apps/server/src/provider/opencodeRuntime.ts`:44
+- `DEFAULT_IDLE_TTL_MS`: constant 5 * 60_000 in `packages/client-runtime/src/filesystemBrowseState.ts`:54
+- `DEFAULT_IDLE_TTL_MS`: constant 5 * 60_000 in `packages/client-runtime/src/sourceControlDiscoveryState.ts`:93
+- `DEFAULT_INACTIVITY_THRESHOLD_MS`: constant 30 * 60 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:16
+- `DEFAULT_LIMIT`: constant 20 in `packages/client-runtime/src/composerPathSearchState.ts`:57
+- `DEFAULT_LOCAL_MODEL`: constant "ollama/llama3" in `packages/contracts/src/model.ts`:139
+- `DEFAULT_MAX_BUFFER_BYTES`: constant 512 * 1024 in `packages/client-runtime/src/terminalSessionState.ts`:111
+- `DEFAULT_MAX_BYTES`: constant 10 * 1024 * 1024 in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:23
+- `DEFAULT_MAX_FILES`: constant 10 in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:24
+- `DEFAULT_MAX_OUTPUT_BYTES`: constant 8 * 1024 * 1024 in `apps/server/src/processRunner.ts`:97
+- `DEFAULT_MAX_OUTPUT_BYTES`: constant 1_000_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:42
+- `DEFAULT_MAX_OUTPUT_BYTES`: constant 1_000_000 in `apps/server/src/vcs/VcsProcess.ts`:47
+- `DEFAULT_MAX_RETAINED_INACTIVE_SESSIONS`: constant 128 in `apps/server/src/terminal/Layers/Manager.ts`:56
+- `DEFAULT_MODEL`: constant "gpt-5.4" in `packages/contracts/src/model.ts`:137
+- `DEFAULT_NEGATIVE_CACHE_TTL`: constant Duration.minutes(1) in `apps/server/src/project/Layers/RepositoryIdentityResolver.ts`:78
+- `DEFAULT_ONE_TIME_TOKEN_TTL_MINUTES`: constant Duration.minutes(5) in `apps/server/src/auth/Layers/BootstrapCredentialService.ts`:38
+- `DEFAULT_OPEN_COLS`: constant 120 in `apps/server/src/terminal/Layers/Manager.ts`:57
+- `DEFAULT_OPEN_ROWS`: constant 30 in `apps/server/src/terminal/Layers/Manager.ts`:58
+- `DEFAULT_OPENCODE_SERVER_TIMEOUT_MS`: constant 15_000 in `apps/server/src/provider/opencodeRuntime.ts`:43
+- `DEFAULT_OPENCODE_SETTINGS`: constant Schema.decodeSync(OpenCodeSettings)({ in `apps/server/src/textGeneration/OpenCodeTextGeneration.test.ts`:135
+- `DEFAULT_PERSIST_DEBOUNCE_MS`: constant 40 in `apps/server/src/terminal/Layers/Manager.ts`:53
+- `DEFAULT_PORT`: constant 3773 in `apps/server/src/config.ts`:17
+- `DEFAULT_POSITIVE_CACHE_TTL`: constant Duration.minutes(1) in `apps/server/src/project/Layers/RepositoryIdentityResolver.ts`:77
+- `DEFAULT_PROCESS_KILL_GRACE_MS`: constant 1_000 in `apps/server/src/terminal/Layers/Manager.ts`:55
+- `DEFAULT_PROMOTION_CHECK_COMMAND`: constant ["bun", "run", "build"] as const in `apps/server/src/local/promotionApply.ts`:18
+- `DEFAULT_PROVIDER_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `packages/shared/src/model.ts`:13
+- `DEFAULT_READ_FROM_SEQUENCE_LIMIT`: constant 1_000 in `apps/server/src/persistence/Layers/ConvexOrchestrationEventStore.ts`:21
+- `DEFAULT_READ_FROM_SEQUENCE_LIMIT`: constant 1_000 in `apps/server/src/persistence/Layers/OrchestrationEventStore.ts`:67
+- `DEFAULT_REMOTE_PORT`: constant 3773 in `packages/ssh/src/tunnel.ts`:51
+- `DEFAULT_REMOTE_REQUEST_TIMEOUT_MS`: constant 10_000 in `packages/client-runtime/src/remote.ts`:24
+- `DEFAULT_REPOSITORY_IDENTITY_CACHE_CAPACITY`: constant 512 in `apps/server/src/project/Layers/RepositoryIdentityResolver.ts`:76
+- `DEFAULT_REQUEST_TIMEOUT_MS`: constant 30_000 in `apps/server/src/provider/hermesTuiGateway.ts`:40
+- `DEFAULT_RESOLVED_KEYBINDINGS`: constant compileResolvedKeybindingsConfig(DEFAULT_KEYBINDINGS) in `packages/shared/src/keybindings.ts`:283
+- `DEFAULT_RPC_SPAN_ATTRIBUTES`: constant { in `apps/server/src/observability/RpcInstrumentation.ts`:14
+- `DEFAULT_RUNTIME_MODE`: constant "full-access" in `apps/server/src/persistence/Migrations/006_ProjectionThreadSessionRuntimeModeColumns.ts`:4
+- `DEFAULT_SESSION_SUBJECT`: constant "cli-issued-session" in `apps/server/src/auth/Services/AuthControlPlane.ts`:14
+- `DEFAULT_SESSION_TTL`: constant Duration.days(30) in `apps/server/src/auth/Layers/SessionCredentialService.ts`:34
+- `DEFAULT_SLOW_SPAN_THRESHOLD_MS`: constant 1_000 in `apps/server/src/diagnostics/TraceDiagnostics.ts`:65
+- `DEFAULT_SSH_COMMAND_TIMEOUT_MS`: constant 60_000 in `packages/ssh/src/command.ts`:17
+- `DEFAULT_SSH_PASSWORD_PROMPT_TIMEOUT_MS`: constant 3 * 60 * 1000 in `apps/desktop/src/ssh/DesktopSshPasswordPrompts.ts`:18
+- `DEFAULT_STALE_TIME_MS`: constant 30_000 in `packages/client-runtime/src/filesystemBrowseState.ts`:53
+- `DEFAULT_STALE_TIME_MS`: constant 30_000 in `packages/client-runtime/src/sourceControlDiscoveryState.ts`:92
+- `DEFAULT_SUBPROCESS_POLL_INTERVAL_MS`: constant 1_000 in `apps/server/src/terminal/Layers/Manager.ts`:54
+- `DEFAULT_SUBSCRIPTION_RETRY_DELAY`: constant Duration.millis(250) in `packages/client-runtime/src/wsTransport.ts`:47
+- `DEFAULT_SWEEP_INTERVAL_MS`: constant 5 * 60 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:17
+- `DEFAULT_T3_HOME`: constant Effect.map(Effect.service(Path.Path), (path) => in `scripts/dev-runner.ts`:37
+- `DEFAULT_TAILSCALE_SERVE_PORT`: constant 443 in `apps/desktop/src/settings/DesktopAppSettings.ts`:36
+- `DEFAULT_TAILSCALE_SERVE_PORT`: constant 443 in `apps/web/src/components/settings/ConnectionsSettings.tsx`:107
+- `DEFAULT_TAILSCALE_SERVE_PORT`: constant 443 in `packages/tailscale/src/tailscale.ts`:9
+- `DEFAULT_TERMINAL_COLS`: constant 80 in `apps/mobile/src/features/terminal/ThreadTerminalPanel.tsx`:26
+- `DEFAULT_TERMINAL_COLS`: constant 80 in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:79
+- `DEFAULT_TERMINAL_FONT_SIZE`: constant 10 in `apps/mobile/src/features/terminal/terminalPreferences.ts`:1
+- `DEFAULT_TERMINAL_ID`: constant "term-1" in `packages/contracts/src/terminal.ts`:9
+- `DEFAULT_TERMINAL_ROWS`: constant 24 in `apps/mobile/src/features/terminal/ThreadTerminalPanel.tsx`:27
+- `DEFAULT_TERMINAL_ROWS`: constant 24 in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:80
+- `DEFAULT_TEST_MODEL_SELECTION`: constant createModelSelection( in `apps/server/src/textGeneration/CodexTextGeneration.test.ts`:19
+- `DEFAULT_TEST_MODEL_SELECTION`: constant { in `apps/server/src/textGeneration/OpenCodeTextGeneration.test.ts`:102
+- `DEFAULT_TEXT_GENERATION_INSTANCE_ID`: constant ProviderInstanceId.make("codex") in `apps/web/src/modelSelection.ts`:34
+- `DEFAULT_THREAD_TERMINAL_HEIGHT`: constant 280 in `apps/web/src/types.ts`:26
+- `DEFAULT_THREAD_TERMINAL_ID`: constant "term-1" in `apps/web/src/types.ts`:27
+- `DEFAULT_THREAD_TITLE`: constant "New thread" in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:90
+- `DEFAULT_TIMEOUT`: constant "60 seconds" in `apps/server/src/processRunner.ts`:96
+- `DEFAULT_TIMEOUT_MS`: constant 4_000 in `apps/server/src/provider/providerSnapshot.ts`:20
+- `DEFAULT_TIMEOUT_MS`: constant 30_000 in `apps/server/src/sourceControl/AzureDevOpsCli.ts`:17
+- `DEFAULT_TIMEOUT_MS`: constant 30_000 in `apps/server/src/sourceControl/GitHubCli.ts`:17
+- `DEFAULT_TIMEOUT_MS`: constant 30_000 in `apps/server/src/sourceControl/GitLabCli.ts`:16
+- `DEFAULT_TIMEOUT_MS`: constant 30_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:41
+- `DEFAULT_TIMEOUT_MS`: constant 30_000 in `apps/server/src/vcs/VcsProcess.ts`:46
+- `DEFAULT_VCS_STATUS_REFRESH_INTERVAL`: constant Duration.seconds(30) in `apps/server/src/vcs/VcsStatusBroadcaster.ts`:26
+- `DEFAULT_VERSION_STDOUT`: constant "opencode 1.14.19\n" in `apps/server/src/provider/Layers/OpenCodeProvider.test.ts`:21
+- `DEFAULT_WEBSOCKET_TOKEN_TTL`: constant Duration.minutes(5) in `apps/server/src/auth/Layers/SessionCredentialService.ts`:35
+- `DEFAULT_WHEN_VARIABLE`: constant [...DEFAULT_WHEN_VARIABLES].find( in `apps/web/src/components/settings/KeybindingsSettings.logic.ts`:39
+- `DEFAULT_WHEN_VARIABLES`: constant new Set<string>(CORE_WHEN_VARIABLES) in `apps/web/src/components/settings/KeybindingsSettings.logic.ts`:34
+- `DESKTOP_BACKEND_CHILD_LOG_FIBER_ID`: constant "#backend-child" in `apps/desktop/src/app/DesktopObservability.ts`:24
+- `DESKTOP_BACKEND_ENV_NAMES`: constant [ in `apps/desktop/src/backend/DesktopBackendConfiguration.ts`:40
+- `DESKTOP_BACKEND_PORT_PROBE_HOSTS`: constant ["127.0.0.1", "0.0.0.0", "::"] as const in `apps/desktop/src/app/DesktopApp.ts`:27
+- `DESKTOP_CONVEX_ENV_NAMES`: constant [ in `apps/desktop/src/backend/DesktopBackendConfiguration.ts`:53
+- `DESKTOP_DEV_LOOPBACK_HOST`: constant "127.0.0.1" in `scripts/dev-runner.ts`:34
+- `DESKTOP_LAN_BIND_HOST`: constant "0.0.0.0" in `apps/desktop/src/backend/DesktopServerExposure.ts`:28
+- `DESKTOP_LOG_FILE_MAX_BYTES`: constant 10 * 1024 * 1024 in `apps/desktop/src/app/DesktopObservability.ts`:22
+- `DESKTOP_LOG_FILE_MAX_FILES`: constant 10 in `apps/desktop/src/app/DesktopObservability.ts`:23
+- `DESKTOP_LOOPBACK_HOST`: constant "127.0.0.1" in `apps/desktop/src/backend/DesktopServerExposure.ts`:27
+- `DESKTOP_SCHEME`: constant "t3" in `apps/desktop/src/electron/ElectronProtocol.ts`:15
+- `DESKTOP_SETTINGS_RELATIVE_PATH`: constant "dev/desktop-settings.json" in `scripts/local-desktop-launcher-access.ts`:16
+- `DESKTOP_TASK_PREFIX`: constant /^@t3tools\/desktop:dev:\s+dev:(?<task>[\w-]+)\s+\|\s+(?<rest>.*)$/ in `scripts/local-desktop-launcher-human-log.ts`:5
+- `DESKTOP_TRACE_BATCH_WINDOW_MS`: constant 200 in `apps/desktop/src/app/DesktopObservability.ts`:25
+- `DETACHED_IGNORE_STDIO_OPTIONS`: constant { in `apps/server/src/process/externalLauncher.ts`:57
+- `DETECTION_CACHE_CAPACITY`: constant 2_048 in `apps/server/src/vcs/VcsDriverRegistry.ts`:14
+- `DEV_PORT_PROBE_HOSTS`: constant ["127.0.0.1", "0.0.0.0", "::1", "::"] as const in `scripts/dev-runner.ts`:35
+- `DEV_RUNNER_MODES`: constant Object.keys(MODE_ARGS) as Array<DevMode> in `scripts/dev-runner.ts`:87
+- `DEV_RUNNER_SCRIPT`: constant "scripts/dev-runner.ts" in `scripts/local-desktop-launcher-deps.ts`:18
+- `DEVELOPMENT_ICON_OVERRIDES`: constant resolveWebIconOverrides("development", "dist/client") in `scripts/lib/brand-assets.ts`:94
+- `DIFF_INLINE_DEFAULT_WIDTH`: constant "clamp(24rem,34vw,36rem)" in `apps/web/src/routes/_chat.$environmentId.$threadId.tsx`:29
+- `DIFF_INLINE_SIDEBAR_MAX_WIDTH`: constant 256 * 16 in `apps/web/src/routes/_chat.$environmentId.$threadId.tsx`:31
+- `DIFF_INLINE_SIDEBAR_MIN_WIDTH`: constant 22 * 16 in `apps/web/src/routes/_chat.$environmentId.$threadId.tsx`:30
+- `DIFF_INLINE_SIDEBAR_WIDTH_STORAGE_KEY`: constant "chat_diff_sidebar_width" in `apps/web/src/routes/_chat.$environmentId.$threadId.tsx`:28
+- `DIFF_PANEL_UNSAFE_CSS`: constant ` in `apps/web/src/components/DiffPanel.tsx`:49
+- `DIFF_THEME_NAMES`: constant { in `apps/web/src/lib/diffRendering.ts`:4
+- `DIRTY_WORKTREE_SECTION_ID`: constant "git:working-tree" in `apps/mobile/src/features/review/reviewModel.ts`:10
+- `DIRTY_WORKTREE_SUBTITLE`: constant "Tracked, staged, and untracked worktree changes" in `apps/mobile/src/features/review/reviewModel.ts`:12
+- `DIRTY_WORKTREE_TITLE`: constant "Dirty worktree" in `apps/mobile/src/features/review/reviewModel.ts`:11
+- `DISCONNECT_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:disconnect-ssh-environment" in `apps/desktop/dist-electron/preload.cjs`:27
+- `DISCONNECT_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:disconnect-ssh-environment" in `apps/desktop/src/ipc/channels.ts`:24
+- `DISCORD_RELEASE_TARGETS`: constant ["prerelease", "latest"] as const in `scripts/notify-discord-release.ts`:51
+- `DISCOVER_SSH_HOSTS_CHANNEL`: constant "desktop:discover-ssh-hosts" in `apps/desktop/dist-electron/preload.cjs`:25
+- `DISCOVER_SSH_HOSTS_CHANNEL`: constant "desktop:discover-ssh-hosts" in `apps/desktop/src/ipc/channels.ts`:22
+- `DISMISS_STORAGE_PREFIX`: constant "t3code-local-promotion-dismiss:" in `apps/web/src/hooks/useLocalPromotionToast.ts`:12
+- `DISMISS_TRANSITION_MS`: constant 220 in `apps/web/src/components/chat/ComposerBannerStack.tsx`:8
+- `DRIVER_KIND`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/Drivers/ClaudeDriver.ts`:54
+- `DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Drivers/CodexDriver.ts`:57
+- `DRIVER_KIND`: constant ProviderDriverKind.make("cursor") in `apps/server/src/provider/Drivers/CursorDriver.ts`:51
+- `DRIVER_KIND`: constant ProviderDriverKind.make("hermes") in `apps/server/src/provider/Drivers/HermesDriver.ts`:26
+- `DRIVER_KIND`: constant ProviderDriverKind.make("local") in `apps/server/src/provider/Drivers/LocalDriver.ts`:21
+- `DRIVER_KIND`: constant ProviderDriverKind.make("opencode") in `apps/server/src/provider/Drivers/OpenCodeDriver.ts`:52
+- `DRIVER_OPTION_BY_VALUE`: constant PROVIDER_CLIENT_DEFINITION_BY_VALUE in `apps/web/src/components/settings/providerDriverMeta.ts`:95
+- `DRIVER_OPTIONS`: constant PROVIDER_CLIENT_DEFINITIONS in `apps/web/src/components/settings/providerDriverMeta.ts`:94
+- `DYNAMIC_THEME_COLOR_SELECTOR`: constant `meta[name="${THEME_COLOR_META_NAME}"][data-dynamic-theme-color="true"]` in `apps/web/src/hooks/useTheme.ts`:16
+- `EDITORS`: constant [ in `packages/contracts/src/editor.ts`:15
+- `EFFECT_LOG`: constant /^\[?(?<time>\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]?\s+(?<level>INFO|WARN|ERROR)\s+\(... in `scripts/local-desktop-launcher-human-log.ts`:7
+- `EMPTY`: constant { data: null, error: null, cause: null, isPending: false } in `packages/client-runtime/src/vcsStatusState.test.ts`:61
+- `EMPTY_CAPABILITIES`: constant createModelCapabilities({ optionDescriptors: [] }) in `apps/server/src/provider/localRuntime.ts`:60
+- `EMPTY_CHECKPOINT_DIFF_ATOM`: constant Atom.make(EMPTY_CHECKPOINT_DIFF_STATE).pipe( in `packages/client-runtime/src/checkpointDiffState.ts`:65
+- `EMPTY_CHECKPOINT_DIFF_STATE`: constant Object.freeze<CheckpointDiffState>({ in `packages/client-runtime/src/checkpointDiffState.ts`:43
+- `EMPTY_COMPOSER_DRAFT_MODEL_STATE`: constant Object.freeze<ComposerDraftModelState>({ in `apps/web/src/composerDraftStore.ts`:480
+- `EMPTY_COMPOSER_PATH_SEARCH_ATOM`: constant Atom.make(EMPTY_COMPOSER_PATH_SEARCH_STATE).pipe( in `packages/client-runtime/src/composerPathSearchState.ts`:66
+- `EMPTY_COMPOSER_PATH_SEARCH_STATE`: constant Object.freeze<ComposerPathSearchState>({ in `packages/client-runtime/src/composerPathSearchState.ts`:43
+- `EMPTY_ENVIRONMENT_RUNTIME_ATOM`: constant Atom.make(EMPTY_ENVIRONMENT_RUNTIME_STATE).pipe( in `packages/client-runtime/src/environmentRuntimeState.ts`:37
+- `EMPTY_ENVIRONMENT_RUNTIME_STATE`: constant Object.freeze<EnvironmentRuntimeState>({ in `packages/client-runtime/src/environmentRuntimeState.ts`:21
+- `EMPTY_FILESYSTEM_BROWSE_ATOM`: constant Atom.make(EMPTY_FILESYSTEM_BROWSE_STATE).pipe( in `packages/client-runtime/src/filesystemBrowseState.ts`:47
+- `EMPTY_FILESYSTEM_BROWSE_STATE`: constant Object.freeze<FilesystemBrowseState>({ in `packages/client-runtime/src/filesystemBrowseState.ts`:25
+- `EMPTY_GIT_REVIEW_SECTIONS`: constant Object.freeze<ReadonlyArray<ReviewDiffPreviewSource>>([]) in `apps/mobile/src/features/review/reviewState.ts`:10
+- `EMPTY_KNOWN_TERMINAL_SESSIONS`: constant Object.freeze<Array<KnownTerminalSession>>([]) in `packages/client-runtime/src/terminalSessionState.ts`:109
+- `EMPTY_KNOWN_TERMINAL_SESSIONS_ATOM`: constant Atom.make(EMPTY_KNOWN_TERMINAL_SESSIONS).pipe( in `packages/client-runtime/src/terminalSessionState.ts`:151
+- `EMPTY_MODEL_CAPABILITIES`: constant createModelCapabilities({ optionDescriptors: [] }) in `apps/server/src/provider/Layers/LocalProvider.ts`:28
+- `EMPTY_MODEL_JUMP_LABELS`: constant new Map<string, string>() in `apps/web/src/components/chat/ModelPickerContent.tsx`:44
+- `EMPTY_PERSISTED_DRAFT_STORE_STATE`: constant Object.freeze<PersistedComposerDraftStoreState>({ in `apps/web/src/composerDraftStore.ts`:463
+- `EMPTY_REVIEW_ASYNC_STATE`: constant Object.freeze<ReviewAsyncState>({ in `apps/mobile/src/features/review/reviewState.ts`:13
+- `EMPTY_REVIEW_ASYNC_STATE_ATOM`: constant Atom.make(EMPTY_REVIEW_ASYNC_STATE).pipe( in `apps/mobile/src/features/review/reviewState.ts`:32
+- `EMPTY_REVIEW_DIFF_PREVIEW_RESULT_ATOM`: constant Atom.make( in `apps/mobile/src/features/review/reviewDiffPreviewState.ts`:61
+- `EMPTY_REVIEW_GIT_SECTIONS_ATOM`: constant Atom.make(EMPTY_GIT_REVIEW_SECTIONS).pipe( in `apps/mobile/src/features/review/reviewState.ts`:20
+- `EMPTY_REVIEW_LOADING_TURN_IDS`: constant Object.freeze<Readonly<Record<string, boolean>>>({}) in `apps/mobile/src/features/review/reviewState.ts`:12
+- `EMPTY_REVIEW_SECTION_FILE_IDS`: constant Object.freeze< in `apps/mobile/src/features/review/reviewState.ts`:17
+- `EMPTY_REVIEW_SECTION_FILE_IDS_ATOM`: constant Atom.make(EMPTY_REVIEW_SECTION_FILE_IDS).pipe( in `apps/mobile/src/features/review/reviewState.ts`:36
+- `EMPTY_REVIEW_SELECTED_SECTION_ID_ATOM`: constant Atom.make<string | null>(null).pipe( in `apps/mobile/src/features/review/reviewState.ts`:28
+- `EMPTY_REVIEW_TURN_DIFFS`: constant Object.freeze<Readonly<Record<string, string>>>({}) in `apps/mobile/src/features/review/reviewState.ts`:11
+- `EMPTY_REVIEW_TURN_DIFFS_ATOM`: constant Atom.make(EMPTY_REVIEW_TURN_DIFFS).pipe( in `apps/mobile/src/features/review/reviewState.ts`:24
+- `EMPTY_SET`: constant new Set<string>() in `apps/web/src/threadSelectionStore.ts`:35
+- `EMPTY_SHELL_SNAPSHOT_ATOM`: constant Atom.make(EMPTY_SHELL_SNAPSHOT_STATE).pipe( in `packages/client-runtime/src/shellSnapshotState.ts`:42
+- `EMPTY_SHELL_SNAPSHOT_STATE`: constant Object.freeze<ShellSnapshotState>({ in `packages/client-runtime/src/shellSnapshotState.ts`:20
+- `EMPTY_SOURCE_CONTROL_DISCOVERY_ATOM`: constant Atom.make( in `packages/client-runtime/src/sourceControlDiscoveryState.ts`:52
+- `EMPTY_SOURCE_CONTROL_DISCOVERY_STATE`: constant Object.freeze<SourceControlDiscoveryState>({ in `packages/client-runtime/src/sourceControlDiscoveryState.ts`:28
+- `EMPTY_TERMINAL_BUFFER_ATOM`: constant Atom.make(EMPTY_TERMINAL_BUFFER_STATE).pipe( in `packages/client-runtime/src/terminalSessionState.ts`:141
+- `EMPTY_TERMINAL_BUFFER_STATE`: constant Object.freeze<TerminalBufferState>({ in `packages/client-runtime/src/terminalSessionState.ts`:91
+- `EMPTY_TERMINAL_ID_LIST`: constant Object.freeze<Array<string>>([]) in `packages/client-runtime/src/terminalSessionState.ts`:110
+- `EMPTY_TERMINAL_ID_LIST_ATOM`: constant Atom.make(EMPTY_TERMINAL_ID_LIST).pipe( in `packages/client-runtime/src/terminalSessionState.ts`:156
+- `EMPTY_TERMINAL_SESSION_ATOM`: constant Atom.make(EMPTY_TERMINAL_SESSION_STATE).pipe( in `packages/client-runtime/src/terminalSessionState.ts`:146
+- `EMPTY_TERMINAL_SESSION_STATE`: constant Object.freeze<TerminalSessionState>({ in `packages/client-runtime/src/terminalSessionState.ts`:99
+- `EMPTY_THREAD_DETAIL_ATOM`: constant Atom.make(EMPTY_THREAD_DETAIL_STATE).pipe( in `packages/client-runtime/src/threadDetailState.ts`:92
+- `EMPTY_THREAD_DETAIL_STATE`: constant Object.freeze<ThreadDetailState>({ in `packages/client-runtime/src/threadDetailState.ts`:68
+- `EMPTY_THREAD_DRAFT`: constant Object.freeze<ComposerThreadDraftState>({ in `apps/web/src/composerDraftStore.ts`:485
+- `EMPTY_THREAD_JUMP_LABELS`: constant new Map<string, string>() in `apps/web/src/components/Sidebar.tsx`:221
+- `EMPTY_VCS_ACTION_ATOM`: constant Atom.make(EMPTY_VCS_ACTION_STATE).pipe( in `packages/client-runtime/src/vcsActionState.ts`:84
+- `EMPTY_VCS_ACTION_STATE`: constant Object.freeze<VcsActionState>({ in `packages/client-runtime/src/vcsActionState.ts`:58
+- `EMPTY_VCS_REF_ATOM`: constant Atom.make(EMPTY_VCS_REF_STATE).pipe( in `packages/client-runtime/src/vcsRefState.ts`:52
+- `EMPTY_VCS_REF_STATE`: constant Object.freeze<VcsRefState>({ in `packages/client-runtime/src/vcsRefState.ts`:33
+- `EMPTY_VCS_STATUS_ATOM`: constant Atom.make(EMPTY_VCS_STATUS_STATE).pipe( in `packages/client-runtime/src/vcsStatusState.ts`:58
+- `EMPTY_VCS_STATUS_STATE`: constant Object.freeze<VcsStatusState>({ in `packages/client-runtime/src/vcsStatusState.ts`:32
+- `ENDPOINT_ROW_CLASSNAME`: constant "border-t border-border/60 px-4 py-2.5 first:border-t-0 sm:px-5" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:326
+- `ENSURE_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:ensure-ssh-environment" in `apps/desktop/dist-electron/preload.cjs`:26
+- `ENSURE_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:ensure-ssh-environment" in `apps/desktop/src/ipc/channels.ts`:23
+- `ENVIRONMENT_A`: constant "environment-local" as never in `apps/web/src/components/GitActionsControl.browser.tsx`:8
+- `ENVIRONMENT_B`: constant "environment-remote" as never in `apps/web/src/components/GitActionsControl.browser.tsx`:9
+- `ENVIRONMENT_ID`: constant EnvironmentId.make("environment-1") in `apps/web/src/lib/chatThreadActions.test.ts`:11
+- `ENVIRONMENT_VARIABLE_NAME_MAX_CHARS`: constant 128 in `packages/contracts/src/providerInstance.ts`:50
+- `ENVIRONMENT_VARIABLE_NAME_PATTERN`: constant /^[a-zA-Z_][a-zA-Z0-9_]*$/ in `apps/web/src/components/settings/ProviderInstanceCard.tsx`:60
+- `ENVIRONMENT_VARIABLE_NAME_PATTERN`: constant /^[a-zA-Z_][a-zA-Z0-9_]*$/ in `packages/contracts/src/providerInstance.ts`:51
+- `ERROR_CORRECTION_LEVELS`: constant { in `apps/web/src/components/ui/qr-code.tsx`:15
+- `ERROR_DESCRIPTION_CLAMP_MIN_CHARS`: constant 180 in `apps/web/src/components/ui/toast.tsx`:87
+- `EXISTING_SERVER_OPENCODE_SETTINGS`: constant Schema.decodeSync(OpenCodeSettings)({ in `apps/server/src/textGeneration/OpenCodeTextGeneration.test.ts`:138
+- `EXTERNAL_SCHEME_PATTERN`: constant /^([A-Za-z][A-Za-z0-9+.-]*):(.*)$/ in `apps/web/src/markdown-links.ts`:6
+- `FALLBACK_PROJECT_FAVICON_SVG`: constant `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" heigh... in `apps/server/src/http.ts`:40
+- `FALLBACK_PROJECT_ID`: constant ProjectId.make("project-2") in `apps/web/src/lib/chatThreadActions.test.ts`:13
+- `FATAL_CODEX_STDERR_SNIPPETS`: constant ["failed to connect to websocket"] in `apps/server/src/provider/Layers/CodexAdapter.ts`:150
+- `FAVICON_CANDIDATES`: constant [ in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:12
+- `FETCH_SSH_ENVIRONMENT_DESCRIPTOR_CHANNEL`: constant "desktop:fetch-ssh-environment-descriptor" in `apps/desktop/dist-electron/preload.cjs`:28
+- `FETCH_SSH_ENVIRONMENT_DESCRIPTOR_CHANNEL`: constant "desktop:fetch-ssh-environment-descriptor" in `apps/desktop/src/ipc/channels.ts`:25
+- `FETCH_SSH_SESSION_STATE_CHANNEL`: constant "desktop:fetch-ssh-session-state" in `apps/desktop/dist-electron/preload.cjs`:30
+- `FETCH_SSH_SESSION_STATE_CHANNEL`: constant "desktop:fetch-ssh-session-state" in `apps/desktop/src/ipc/channels.ts`:27
+- `FILE_PATH_PATTERN`: constant /(?:~\/|\.{1,2}\/|\/|[A-Za-z]:[\\/]|\\\\)[^\s"'`<>]+|[A-Za-z0-9._-]+(?:\/[A-Z... in `apps/web/src/terminal-links.ts`:40
+- `FILESYSTEM_PATH_MAX_LENGTH`: constant 512 in `packages/contracts/src/filesystem.ts`:4
+- `FIXTURE_TURN_ID`: constant "fixture-turn" in `apps/server/integration/orchestrationEngine.integration.test.ts`:47
+- `FLUSH_BUFFER_THRESHOLD`: constant 32 in `packages/shared/src/observability.ts`:11
+- `FNV_OFFSET_BASIS_32`: constant 0x811c9dc5 in `apps/mobile/src/features/review/reviewModel.ts`:207
+- `FNV_OFFSET_BASIS_32`: constant 0x811c9dc5 in `apps/web/src/lib/diffRendering.ts`:15
+- `FNV_PRIME_32`: constant 0x01000193 in `apps/mobile/src/features/review/reviewModel.ts`:208
+- `FNV_PRIME_32`: constant 0x01000193 in `apps/web/src/lib/diffRendering.ts`:16
+- `FOLLOW_BATCH_LIMIT`: constant 128 in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:13
+- `FOLLOW_POLL_INTERVAL`: constant Duration.millis(750) in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:12
+- `FORCED_WS_RECONNECT_DEBOUNCE_MS`: constant 5_000 in `apps/web/src/components/WebSocketConnectionSurface.tsx`:16
+- `FRESH_START_HINT_MS`: constant 20_000 in `packages/convex/scripts/convex-ready.mjs`:39
+- `FRESH_START_SLOW_HINT_MS`: constant 60_000 in `packages/convex/scripts/convex-ready.mjs`:40
+- `FRESH_TARGET`: constant { environmentId: EnvironmentId.make("env-local"), cwd: "/fresh" } as const in `packages/client-runtime/src/vcsStatusState.test.ts`:64
+- `GENERIC_LOCAL_ENVIRONMENT_LABELS`: constant new Set(["local", "local environment"]) in `apps/web/src/components/BranchToolbar.logic.ts`:18
+- `GET_ADVERTISED_ENDPOINTS_CHANNEL`: constant "desktop:get-advertised-endpoints" in `apps/desktop/dist-electron/preload.cjs`:40
+- `GET_ADVERTISED_ENDPOINTS_CHANNEL`: constant "desktop:get-advertised-endpoints" in `apps/desktop/src/ipc/channels.ts`:37
+- `GET_APP_BRANDING_CHANNEL`: constant "desktop:get-app-branding" in `apps/desktop/dist-electron/preload.cjs`:16
+- `GET_APP_BRANDING_CHANNEL`: constant "desktop:get-app-branding" in `apps/desktop/src/ipc/channels.ts`:13
+- `GET_CLIENT_SETTINGS_CHANNEL`: constant "desktop:get-client-settings" in `apps/desktop/dist-electron/preload.cjs`:18
+- `GET_CLIENT_SETTINGS_CHANNEL`: constant "desktop:get-client-settings" in `apps/desktop/src/ipc/channels.ts`:15
+- `GET_LOCAL_ENVIRONMENT_BOOTSTRAP_CHANNEL`: constant "desktop:get-local-environment-bootstrap" in `apps/desktop/dist-electron/preload.cjs`:17
+- `GET_LOCAL_ENVIRONMENT_BOOTSTRAP_CHANNEL`: constant "desktop:get-local-environment-bootstrap" in `apps/desktop/src/ipc/channels.ts`:14
+- `GET_SAVED_ENVIRONMENT_REGISTRY_CHANNEL`: constant "desktop:get-saved-environment-registry" in `apps/desktop/dist-electron/preload.cjs`:20
+- `GET_SAVED_ENVIRONMENT_REGISTRY_CHANNEL`: constant "desktop:get-saved-environment-registry" in `apps/desktop/src/ipc/channels.ts`:17
+- `GET_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:get-saved-environment-secret" in `apps/desktop/dist-electron/preload.cjs`:22
+- `GET_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:get-saved-environment-secret" in `apps/desktop/src/ipc/channels.ts`:19
+- `GET_SERVER_EXPOSURE_STATE_CHANNEL`: constant "desktop:get-server-exposure-state" in `apps/desktop/dist-electron/preload.cjs`:34
+- `GET_SERVER_EXPOSURE_STATE_CHANNEL`: constant "desktop:get-server-exposure-state" in `apps/desktop/src/ipc/channels.ts`:31
+- `GIT_CHECK_IGNORE_MAX_STDIN_BYTES`: constant 256 * 1024 in `apps/server/src/vcs/GitVcsDriver.ts`:229
+- `GIT_CWD`: constant "/repo/project" in `apps/web/src/components/GitActionsControl.browser.tsx`:10
+- `GIT_FETCH_INTERVAL_STEP_SECONDS`: constant 5 in `apps/web/src/components/settings/SourceControlSettings.tsx`:72
+- `GIT_LIST_BRANCHES_DEFAULT_LIMIT`: constant 100 in `apps/server/src/vcs/GitVcsDriverCore.ts`:60
+- `GIT_LIST_BRANCHES_MAX_LIMIT`: constant 200 in `packages/contracts/src/git.ts`:7
+- `GIT_STATUS_WINDOW_REFRESH_DEBOUNCE_MS`: constant 250 in `apps/web/src/components/GitActionsControl.tsx`:129
+- `GITHUB_API_BASE`: constant "https://api.github.com/repos/openai/codex/contents/codex-rs/app-server-proto... in `packages/effect-codex-app-server/scripts/generate.ts`:22
+- `GITHUB_CLI_PR_CHECKOUT_PATTERN`: constant /^gh\s+pr\s+checkout\s+(.+)$/i in `apps/web/src/pullRequestReference.ts`:8
+- `GITHUB_PULL_REQUEST_URL_PATTERN`: constant /^https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/pull\/(\d+)(?:[/?#].*)?$/i in `apps/web/src/pullRequestReference.ts`:1
+- `GITLAB_CLI_MR_CHECKOUT_PATTERN`: constant /^glab\s+mr\s+checkout\s+(.+)$/i in `apps/web/src/pullRequestReference.ts`:9
+- `GITLAB_MERGE_REQUEST_URL_PATTERN`: constant /^https:\/\/[^/\s]*gitlab[^/\s]*\/.+\/-\/merge_requests\/(\d+)(?:[/?#].*)?$/i in `apps/web/src/pullRequestReference.ts`:3
+- `GLOBAL_THREAD_SEGMENT`: constant "_global" in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:26
+- `HANDLED_TURN_START_KEY_MAX`: constant 10_000 in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:87
+- `HANDLED_TURN_START_KEY_TTL`: constant Duration.minutes(30) in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:88
+- `HEIGHT_TRANSITION_FALLBACK_MS`: constant 250 in `apps/web/src/components/AnimatedHeight.tsx`:5
+- `HERMES_DRIVER_KIND`: constant ProviderDriverKind.make("hermes") in `packages/contracts/src/model.ts`:134
+- `HIGHLIGHT_LINE_PATTERNS`: constant [ in `scripts/local-desktop-launcher-output.ts`:46
+- `HOSTED_APP_CHANNEL`: constant hostedAppChannel === "latest" || hostedAppChannel === "nightly" ? hostedAppCh... in `apps/web/src/branding.ts`:76
+- `HOSTED_APP_CHANNEL_LABEL`: constant HOSTED_APP_CHANNEL === "nightly" ? "Nightly" : HOSTED_APP_CHANNEL === "latest... in `apps/web/src/branding.ts`:78
+- `HOSTED_APP_URL`: constant "https://app.t3.codes" in `scripts/local-desktop-launcher-access.ts`:13
+- `HOSTED_PAIRING_HOST_PARAM`: constant "host" in `packages/shared/src/remote.ts`:4
+- `HOSTED_PAIRING_LABEL_PARAM`: constant "label" in `packages/shared/src/remote.ts`:5
+- `HOSTED_WEB_CHANNEL_COOKIE`: constant "t3code_web_channel" in `apps/web/vercel.ts`:4
+- `HUNG_SESSION_RECONNECT_GRACE_MS`: constant 12_000 in `apps/web/src/session-logic.ts`:181
+- `HUNG_SESSION_STALL_THRESHOLD_MS`: constant 45_000 in `apps/web/src/session-logic.ts`:180
+- `HYPR_APP_RULES_SOURCE_LINE`: constant "source = ~/.config/hypr/apps/t3code-local.conf" in `scripts/install-local-desktop-launchers.ts`:17
+- `ICON_SOURCE_FILES`: constant [ in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:37
+- `IDLE_REVIEW_HIGHLIGHTER_STATE`: constant Object.freeze<ReviewHighlighterState>({ in `apps/mobile/src/features/review/reviewHighlighterState.ts`:37
+- `IGNORED_DIRECTORY_NAMES`: constant new Set([ in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:36
+- `IMAGE_ONLY_BOOTSTRAP_PROMPT`: constant "[User attached one or more images without additional text. Respond using the... in `apps/web/src/components/ChatView.tsx`:207
+- `IMAGE_SIZE_LIMIT_LABEL`: constant `${Math.round(PROVIDER_SEND_TURN_MAX_IMAGE_BYTES / (1024 * 1024))}MB` in `apps/web/src/components/chat/ChatComposer.tsx`:114
+- `IMMEDIATE_RESUMABLE_SESSION_STATUSES`: constant new Set<string>(["ready", "interrupted", "stopped"]) in `apps/web/src/session-logic.ts`:197
+- `INITIAL_CHECKPOINT_DIFF_STATE`: constant Object.freeze<CheckpointDiffState>({ in `packages/client-runtime/src/checkpointDiffState.ts`:49
+- `INITIAL_FILESYSTEM_BROWSE_STATE`: constant Object.freeze<FilesystemBrowseState>({ in `packages/client-runtime/src/filesystemBrowseState.ts`:31
+- `INITIAL_RESTART_DELAY`: constant Duration.millis(500) in `apps/desktop/src/backend/DesktopBackendManager.ts`:33
+- `INITIAL_SERVER_CONFIG_SNAPSHOT_WAIT_MS`: constant 150 in `apps/web/src/environments/runtime/service.ts`:154
+- `INITIAL_SHELL_SNAPSHOT_STATE`: constant Object.freeze<ShellSnapshotState>({ in `packages/client-runtime/src/shellSnapshotState.ts`:26
+- `INITIAL_SOURCE_CONTROL_DISCOVERY_STATE`: constant Object.freeze<SourceControlDiscoveryState>({ in `packages/client-runtime/src/sourceControlDiscoveryState.ts`:34
+- `INITIAL_THREAD_DETAIL_STATE`: constant Object.freeze<ThreadDetailState>({ in `packages/client-runtime/src/threadDetailState.ts`:75
+- `INITIAL_VCS_REF_STATE`: constant Object.freeze<VcsRefState>({ in `packages/client-runtime/src/vcsRefState.ts`:39
+- `INITIAL_VCS_STATUS_STATE`: constant Object.freeze<VcsStatusState>({ in `packages/client-runtime/src/vcsStatusState.ts`:39
+- `INITIAL_WS_CONNECTION_STATUS`: constant Object.freeze<WsConnectionStatus>({ in `apps/web/src/rpc/wsConnectionState.ts`:35
+- `INITIALIZING_REVIEW_HIGHLIGHTER_STATE`: constant Object.freeze<ReviewHighlighterState>({ in `apps/mobile/src/features/review/reviewHighlighterState.ts`:43
+- `INLINE_TERMINAL_CONTEXT_PLACEHOLDER`: constant "\uFFFC" in `apps/web/src/lib/terminalContext.ts`:37
+- `INSTANCE_ID_PATTERN`: constant /^[a-zA-Z][a-zA-Z0-9_-]*$/ in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:63
+- `INTEGRITY_CHECKSUM`: constant '4db4a41e972cec1b64cc569c66952d82' in `apps/web/public/mockServiceWorker.js`:11
+- `INVALID_BOOTSTRAP_CREDENTIAL_MESSAGES`: constant new Set([ in `apps/web/src/environments/primary/auth.ts`:114
+- `IOS_NAV_BAR_HEIGHT`: constant 44 in `apps/mobile/src/features/review/ReviewSheet.tsx`:33
+- `IOS_NAV_BAR_HEIGHT`: constant 44 in `apps/mobile/src/features/threads/ThreadFeed.tsx`:824
+- `IS_MOCKED_RESPONSE`: constant Symbol('isMockedResponse') in `apps/web/public/mockServiceWorker.js`:12
+- `ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL`: constant "desktop:issue-ssh-websocket-token" in `apps/desktop/dist-electron/preload.cjs`:31
+- `ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL`: constant "desktop:issue-ssh-websocket-token" in `apps/desktop/src/ipc/channels.ts`:28
+- `ITEM_ICON_CLASS`: constant "size-4 text-muted-foreground/80" in `apps/web/src/components/CommandPalette.logic.ts`:11
+- `ITEM_ROW_CLASSNAME`: constant "border-t border-border/60 px-4 py-4 first:border-t-0 sm:px-5" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:325
+- `ITEM_ROW_INNER_CLASSNAME`: constant "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:328
+- `KNOWN_SHARED_DIRECTORIES`: constant [ in `apps/server/src/provider/Drivers/CodexHomeLayout.ts`:19
+- `KNOWN_WHEN_VARIABLES`: constant new Set(DEFAULT_WHEN_VARIABLES) in `apps/web/src/components/settings/KeybindingsSettings.logic.ts`:43
+- `LANGUAGES_URL`: constant `https://raw.githubusercontent.com/vscode-icons/vscode-icons/${VERSION_TAG}/s... in `scripts/sync-vscode-icons.mjs`:15
+- `LARGE_DB_HINT`: constant "Local backend is still starting (large shared databases can take 1–2 minutes... in `packages/convex/scripts/convex-ready.mjs`:44
+- `LARGE_DIFF_CHARACTER_THRESHOLD`: constant 24_000 in `apps/mobile/src/features/review/reviewModel.ts`:212
+- `LARGE_DIFF_LINE_THRESHOLD`: constant 400 in `apps/mobile/src/features/review/reviewModel.ts`:211
+- `LAST_EDITOR_KEY`: constant "t3code:last-editor" in `apps/web/src/editorPreferences.ts`:5
+- `LAST_INVOKED_SCRIPT_BY_PROJECT_KEY`: constant "t3code:last-invoked-script-by-project" in `apps/web/src/components/ChatView.logic.ts`:22
+- `LATEST_ORIGIN`: constant "https://latest.app.t3.codes" in `apps/web/vercel.ts`:5
+- `LATEST_PROMPT_HEADER`: constant "Latest user request (answer this now):" in `apps/web/src/historyBootstrap.ts`:13
+- `LATEST_VERSION_CACHE_TTL_MS`: constant 60 * 60 * 1_000 in `apps/server/src/provider/providerMaintenance.ts`:15
+- `LATEST_VERSION_TIMEOUT_MS`: constant 4_000 in `apps/server/src/provider/providerMaintenance.ts`:16
+- `LAUNCHCTL_TIMEOUT`: constant Duration.seconds(2) in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:43
+- `LAUNCHER_VERSION`: constant 2 in `apps/desktop/scripts/electron-launcher.mjs`:22
+- `LEGACY_PERSISTED_STATE_KEYS`: constant [ in `apps/web/src/uiStateStore.ts`:12
+- `LEGACY_TEST_ENVIRONMENT_ID`: constant EnvironmentId.make("__legacy__") in `apps/web/src/composerDraftStore.test.ts`:152
+- `LINK_ICON_HTML_RE`: constant /<link\b(?=[^>]*\brel=["'](?:icon|shortcut icon)["'])(?=[^>]*\bhref=["']([^"'... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:48
+- `LINK_ICON_OBJ_RE`: constant /(?=[^}]*\brel\s*:\s*["'](?:icon|shortcut icon)["'])(?=[^}]*\bhref\s*:\s*["']... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:50
+- `LOCAL_DESKTOP_CDP_PORTS`: constant { in `scripts/local-desktop-launchers.ts`:10
+- `LOCAL_DESKTOP_DEV_BUNDLE`: constant { in `scripts/local-desktop-launchers.ts`:541
+- `LOCAL_DESKTOP_DEV_BUNDLE_ID`: constant "t3code-local-dev" in `scripts/local-desktop-dev-bundle-lock.ts`:15
+- `LOCAL_DESKTOP_DEV_INSTANCES`: constant { in `scripts/local-desktop-launchers.ts`:15
+- `LOCAL_DESKTOP_LOOPBACK_HOST`: constant "127.0.0.1" in `scripts/local-desktop-env.ts`:16
+- `LOCAL_DESKTOP_WORKTREE_ENV_NAMES`: constant [ in `apps/desktop/src/backend/DesktopBackendConfiguration.ts`:61
+- `LOCAL_DEV_BUNDLE_TURBO_PACKAGES`: constant [ in `scripts/local-dev-bundle-turbo.ts`:2
+- `LOCAL_DEV_DESKTOP_ID`: constant "t3code-local-dev.desktop" in `apps/server/src/local/promotionApply.ts`:19
+- `LOCAL_DRIVER_KIND`: constant ProviderDriverKind.make("local") in `apps/web/src/localModelPrivacy.ts`:6
+- `LOCAL_DRIVER_KIND`: constant ProviderDriverKind.make("local") in `packages/contracts/src/model.ts`:135
+- `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/ChatView.browser.tsx`:106
+- `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/CommandPalette.logic.test.ts`:10
+- `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/KeybindingsToast.browser.tsx`:71
+- `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/chat/CompactComposerControlsMenu.browser.tsx`:22
+- `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/chat/TraitsPicker.test.tsx`:15
+- `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/lib/threadSort.test.ts`:12
+- `LOCAL_MAIN_BASE_NAME`: constant "T3code" in `apps/desktop/src/app/DesktopEnvironment.ts`:88
+- `LOCAL_PRESENTATION`: constant { in `apps/server/src/provider/Layers/LocalProvider.ts`:23
+- `LOCAL_STAGING_BASE_NAME`: constant "T3code Staging" in `apps/desktop/src/app/DesktopEnvironment.ts`:89
+- `LOCAL_STAGING_HOME_SUFFIX`: constant "/t3code-local/staging" in `apps/server/src/persistence/resolvePersistenceMode.ts`:1
+- `LOCAL_STAGING_PROVIDER_RUNTIME_BLOCKED_DETAIL`: constant "T3code Staging cannot run provider agents. Start agent turns and resumes on ... in `apps/server/src/config.ts`:51
+- `LOCAL_STORAGE_CHANGE_EVENT`: constant "t3code:local_storage_change" in `apps/web/src/hooks/useLocalStorage.ts`:46
+- `LOG_SCOPE`: constant "provider-observability" in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:27
+- `LOGIN_SHELL_ENV_NAMES`: constant [ in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:31
+- `LOGIN_SHELL_TIMEOUT`: constant Duration.seconds(5) in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:42
+- `LOOPBACK_HOST`: constant "127.0.0.1" in `scripts/local-desktop-launcher-access.ts`:14
+- `LOOPBACK_HOSTNAMES`: constant new Set(["127.0.0.1", "::1", "localhost"]) in `apps/server/src/http.ts`:42
+- `LOOPBACK_HOSTNAMES`: constant new Set(["127.0.0.1", "::1", "localhost"]) in `apps/web/src/environments/primary/target.ts`:12
+- `MALFORMED_INLINE_CODE_FENCE_PATTERN`: constant /```([^`\n][\s\S]*?)```/g in `apps/web/src/components/ChatMarkdown.tsx`:295
+- `MANIFEST_PATH`: constant path.join(REPO_ROOT, "apps/web/src/vscode-icons-manifest.json") in `scripts/sync-vscode-icons.mjs`:18
+- `MARKDOWN_FILE_LINK_CLASS_NAME`: constant "chat-markdown-file-link relative top-[2px] max-w-full no-underline" in `apps/web/src/components/ChatMarkdown.tsx`:309
+- `MARKDOWN_FILE_LINK_ICON_CLASS_NAME`: constant "chat-markdown-file-link-icon size-3.5 shrink-0" in `apps/web/src/components/ChatMarkdown.tsx`:311
+- `MARKDOWN_FILE_LINK_LABEL_CLASS_NAME`: constant "chat-markdown-file-link-label truncate" in `apps/web/src/components/ChatMarkdown.tsx`:312
+- `MARKDOWN_LINK_HREF_PATTERN`: constant /\[[^\]]*]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g in `apps/web/src/components/ChatMarkdown.tsx`:294
+- `MAX_BUFFERED_ASSISTANT_CHARS`: constant 24_000 in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:57
+- `MAX_CACHED_THREAD_DETAIL_SUBSCRIPTIONS`: constant 32 in `apps/web/src/environments/runtime/service.ts`:152
+- `MAX_COLLAPSED_USER_MESSAGE_LENGTH`: constant 600 in `apps/web/src/components/chat/MessagesTimeline.tsx`:804
+- `MAX_COLLAPSED_USER_MESSAGE_LINES`: constant 8 in `apps/web/src/components/chat/MessagesTimeline.tsx`:803
+- `MAX_CUSTOM_MODEL_COUNT`: constant 32 in `apps/web/src/modelSelection.ts`:32
+- `MAX_CUSTOM_MODEL_LENGTH`: constant 256 in `apps/web/src/modelSelection.ts`:33
+- `MAX_DRAWER_HEIGHT_RATIO`: constant 0.75 in `apps/web/src/components/ThreadTerminalDrawer.tsx`:53
+- `MAX_HASH_OFFSET`: constant 3000 in `scripts/dev-runner.ts`:32
+- `MAX_HIDDEN_MOUNTED_TERMINAL_THREADS`: constant 10 in `apps/web/src/components/ChatView.logic.ts`:23
+- `MAX_HIGHLIGHT_CACHE_ENTRIES`: constant 500 in `apps/web/src/components/ChatMarkdown.tsx`:70
+- `MAX_HIGHLIGHT_CACHE_MEMORY_BYTES`: constant 50 * 1024 * 1024 in `apps/web/src/components/ChatMarkdown.tsx`:71
+- `MAX_KEYBINDING_VALUE_LENGTH`: constant 64 in `packages/contracts/src/keybindings.ts`:4
+- `MAX_KEYBINDING_WHEN_LENGTH`: constant 256 in `packages/contracts/src/keybindings.ts`:5
+- `MAX_KEYBINDINGS_COUNT`: constant 256 in `packages/contracts/src/keybindings.ts`:8
+- `MAX_PORT`: constant 65535 in `scripts/dev-runner.ts`:33
+- `MAX_PROGRESS_TEXT_LENGTH`: constant 500 in `apps/server/src/git/GitManager.ts`:93
+- `MAX_RESTART_DELAY`: constant Duration.seconds(10) in `apps/desktop/src/backend/DesktopBackendManager.ts`:34
+- `MAX_RETAINED_SAMPLES`: constant 20_000 in `apps/server/src/diagnostics/ProcessResourceMonitor.ts`:24
+- `MAX_SCRIPT_ID_LENGTH`: constant 24 in `packages/contracts/src/keybindings.ts`:7
+- `MAX_SIDEBAR_THREAD_PREVIEW_COUNT`: constant 15 in `packages/contracts/src/settings.ts`:32
+- `MAX_TCP_PORT`: constant 65_535 in `apps/desktop/src/app/DesktopApp.ts`:26
+- `MAX_TERMINAL_FONT_SIZE`: constant 14 in `apps/mobile/src/features/terminal/terminalPreferences.ts`:4
+- `MAX_TERMINAL_LABEL_LENGTH`: constant 128 in `apps/server/src/terminal/Layers/Manager.ts`:61
+- `MAX_TERMINALS_PER_GROUP`: constant 4 in `apps/web/src/types.ts`:28
+- `MAX_THREAD_ACTIVITIES`: constant 500 in `apps/web/src/store.ts`:132
+- `MAX_THREAD_CHECKPOINTS`: constant 500 in `apps/server/src/orchestration/projector.ts`:33
+- `MAX_THREAD_CHECKPOINTS`: constant 500 in `apps/web/src/store.ts`:130
+- `MAX_THREAD_MESSAGES`: constant 2_000 in `apps/server/src/orchestration/projector.ts`:32
+- `MAX_THREAD_MESSAGES`: constant 2_000 in `apps/web/src/store.ts`:129
+- `MAX_THREAD_PROPOSED_PLANS`: constant 200 in `apps/web/src/store.ts`:131
+- `MAX_TRACKED_RPC_ACK_REQUESTS`: constant 256 in `apps/web/src/rpc/requestLatencyState.ts`:7
+- `MAX_VISIBLE_WORK_LOG_ENTRIES`: constant 6 in `apps/mobile/src/features/threads/ThreadFeed.tsx`:103
+- `MAX_VISIBLE_WORK_LOG_ENTRIES`: constant 6 in `apps/web/src/components/chat/MessagesTimeline.logic.ts`:6
+- `MAX_WHEN_EXPRESSION_DEPTH`: constant 64 in `packages/contracts/src/keybindings.ts`:6
+- `MEDIA_QUERY`: constant "(prefers-color-scheme: dark)" in `apps/web/src/hooks/useTheme.ts`:10
+- `MENTION_TOKEN_REGEX`: constant /(^|\s)@([^\s@]+)(?=\s)/g in `apps/web/src/composer-editor-mentions.ts`:24
+- `MENU_ACTION_CHANNEL`: constant "desktop:menu-action" in `apps/desktop/dist-electron/preload.cjs`:9
+- `MENU_ACTION_CHANNEL`: constant "desktop:menu-action" in `apps/desktop/src/ipc/channels.ts`:6
+- `MERGE_STAGING_AND_RELAUNCH_MAIN_CHANNEL`: constant "desktop:merge-staging-and-relaunch-main" in `apps/desktop/dist-electron/preload.cjs`:37
+- `MERGE_STAGING_AND_RELAUNCH_MAIN_CHANNEL`: constant "desktop:merge-staging-and-relaunch-main" in `apps/desktop/src/ipc/channels.ts`:34
+- `MESSAGE_CREATED_AT`: constant "2026-04-13T12:00:00.000Z" in `apps/web/src/components/chat/MessagesTimeline.browser.tsx`:49
+- `MESSAGE_CREATED_AT`: constant "2026-03-17T19:12:28.000Z" in `apps/web/src/components/chat/MessagesTimeline.test.tsx`:91
+- `MESSAGES_AWAITING_META`: constant new Set([ in `scripts/local-desktop-launcher-human-log.ts`:15
+- `METADATA_LINE`: constant /^(?:.*\|\s+)?(?<key>port|mode|baseUrl|endpointUrl|logDir|source|scope|runId|... in `scripts/local-desktop-launcher-human-log.ts`:10
+- `MIGRATABLE_SQLITE_TABLES`: constant [ in `scripts/sqlite-to-convex-migrate.ts`:25
+- `MIGRATE_SIZE_THRESHOLD_BYTES`: constant 1_024 * 1_024 in `packages/convex/scripts/convex-state-link.mjs`:8
+- `MIN_DRAWER_HEIGHT`: constant 180 in `apps/web/src/components/ThreadTerminalDrawer.tsx`:52
+- `MIN_SIDEBAR_THREAD_PREVIEW_COUNT`: constant 1 in `packages/contracts/src/settings.ts`:31
+- `MIN_TERMINAL_FONT_SIZE`: constant 6 in `apps/mobile/src/features/terminal/terminalPreferences.ts`:3
+- `MINIMUM_CLAUDE_OPUS_4_7_VERSION`: constant "2.1.111" in `apps/server/src/provider/Layers/ClaudeProvider.ts`:52
+- `MINIMUM_CLAUDE_OPUS_4_8_VERSION`: constant "2.1.154" in `apps/server/src/provider/Layers/ClaudeProvider.ts`:51
+- `MINIMUM_OPENCODE_VERSION`: constant "1.14.19" in `apps/server/src/provider/Layers/OpenCodeProvider.ts`:34
+- `MISSING_BINDING_ERROR`: constant "Cannot recover this chat because no provider session binding was persisted." in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:54
+- `MISSING_RESUME_STATE_ERROR`: constant "T3 Code restarted while this chat was active, but no provider resume state w... in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:33
+- `MOBILE_PAIRING_URL_PARAM`: constant "pairingUrl" in `apps/mobile/src/features/connection/pairing.ts`:3
+- `MODE_ARGS`: constant { in `scripts/dev-runner.ts`:41
+- `MODEL`: constant "test-model" in `apps/web/src/components/chat/composerProviderState.test.tsx`:19
+- `MODEL_PICKER_FAVORITE_SCORE_BOOST`: constant 24 in `apps/web/src/components/chat/modelPickerSearch.ts`:18
+- `MODEL_PICKER_JUMP_KEYBINDING_COMMANDS`: constant [ in `packages/contracts/src/keybindings.ts`:23
+- `MODEL_PICKER_KEYBINDING_COMMANDS`: constant [ in `packages/contracts/src/keybindings.ts`:44
+- `MONOREPO_LINK`: constant "node_modules/@t3tools/monorepo" in `scripts/local-desktop-launcher-deps.ts`:17
+- `MONOREPO_ROOT`: constant NodePath.resolve(NodePath.dirname(fileURLToPath(import.meta.url)), "..") in `scripts/dev-runner.ts`:28
+- `MULTI_CLICK_SELECTION_ACTION_DELAY_MS`: constant 260 in `apps/web/src/components/ThreadTerminalDrawer.tsx`:54
+- `NATIVE_REVIEW_DIFF_CONTENT_WIDTH`: constant 2_800 in `apps/mobile/src/features/review/nativeReviewDiffAdapter.ts`:22
+- `NATIVE_REVIEW_DIFF_HIGHLIGHT_CHUNK_SIZE`: constant 500 in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:65
+- `NATIVE_REVIEW_DIFF_LANGUAGES`: constant [ in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:167
+- `NATIVE_REVIEW_DIFF_MODULE_NAME`: constant "T3ReviewDiffSurface" in `apps/mobile/src/features/diffs/nativeReviewDiffSurface.ts`:5
+- `NATIVE_REVIEW_DIFF_ROW_HEIGHT`: constant 20 in `apps/mobile/src/features/review/nativeReviewDiffAdapter.ts`:21
+- `NATIVE_REVIEW_DIFF_SHIKI_THEMES`: constant [ in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:162
+- `NATIVE_REVIEW_DIFF_STYLE`: constant { in `apps/mobile/src/features/review/nativeReviewDiffAdapter.ts`:24
+- `NATIVE_REVIEW_DIFF_THEME_NAME_BY_SCHEME`: constant { in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:69
+- `NATIVE_REVIEW_DIFF_VISIBLE_MAX_ROWS`: constant 360 in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:67
+- `NATIVE_REVIEW_DIFF_VISIBLE_OVERSCAN_ROWS`: constant 160 in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:66
+- `NATIVE_REVIEW_MAX_WORD_DIFF_COVERAGE`: constant 0.45 in `apps/mobile/src/features/review/nativeReviewDiffAdapter.ts`:19
+- `NATIVE_REVIEW_MAX_WORD_DIFF_RANGE_COUNT`: constant 4 in `apps/mobile/src/features/review/nativeReviewDiffAdapter.ts`:18
+- `NATIVE_TERMINAL_MODULE_NAME`: constant "T3TerminalSurface" in `apps/mobile/src/features/terminal/nativeTerminalModule.ts`:5
+- `NEGATIVE_DETECTION_CACHE_TTL`: constant Duration.minutes(1) in `apps/server/src/vcs/VcsDriverRegistry.ts`:16
+- `NEW_BADGE_CLASS`: constant `${BADGE_BASE_CLASS} text-amber-600 dark:text-amber-300 ` in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:38
+- `NEW_MODEL_KEYS`: constant new Set<string>([ in `apps/web/src/components/chat/modelPickerModelHighlights.ts`:7
+- `NIGHTLY_ORIGIN`: constant "https://nightly.app.t3.codes" in `apps/web/vercel.ts`:6
+- `NIGHTLY_VERSION_PATTERN`: constant /-nightly\.\d{8}\.\d+$/ in `apps/desktop/src/updates/updateChannels.ts`:3
+- `NON_REPOSITORY_STATUS_DETAILS`: constant Object.freeze<GitVcsDriver.GitStatusDetails>({ in `apps/server/src/vcs/GitVcsDriverCore.ts`:61
+- `NON_TEXT_FILE_EXTENSIONS`: constant new Set([ in `apps/mobile/src/features/review/reviewModel.ts`:213
+- `NOOP`: constant () => undefined in `apps/web/src/environments/runtime/service.ts`:155
+- `NOW_ISO`: constant "2026-03-04T12:00:00.000Z" in `apps/web/src/components/ChatView.browser.tsx`:124
+- `NOW_ISO`: constant "2026-03-04T12:00:00.000Z" in `apps/web/src/components/KeybindingsToast.browser.tsx`:72
+- `NUMBER_FORMAT`: constant new Intl.NumberFormat() in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:35
+- `OLLAMA_MODEL`: constant { in `apps/web/src/localModelPrivacy.test.ts`:52
+- `OMITTED_SUMMARY`: constant (count: number) => in `apps/web/src/historyBootstrap.ts`:14
+- `OPEN_EXTERNAL_CHANNEL`: constant "desktop:open-external" in `apps/desktop/dist-electron/preload.cjs`:8
+- `OPEN_EXTERNAL_CHANNEL`: constant "desktop:open-external" in `apps/desktop/src/ipc/channels.ts`:5
+- `OPENCODE_CONFIG_CONTENT_ENV`: constant "OPENCODE_CONFIG_CONTENT" in `apps/web/src/localModelPrivacy.ts`:8
+- `OPENCODE_DRIVER`: constant ProviderDriverKind.make("opencode") in `apps/server/src/provider/Layers/ProviderAdapterRegistry.test.ts`:27
+- `OPENCODE_DRIVER`: constant ProviderDriverKind.make("opencode") in `apps/server/src/provider/providerMaintenanceRunner.test.ts`:32
+- `OPENCODE_DRIVER`: constant ProviderDriverKind.make("opencode") in `apps/server/src/provider/providerStatusCache.test.ts`:24
+- `OPENCODE_DRIVER_KIND`: constant ProviderDriverKind.make("opencode") in `apps/web/src/localModelPrivacy.ts`:7
+- `OPENCODE_DRIVER_KIND`: constant ProviderDriverKind.make("opencode") in `packages/contracts/src/model.ts`:133
+- `OPENCODE_EMPTY_CONFIG_CONTENT`: constant "{}" in `apps/server/src/provider/opencodeRuntime.ts`:40
+- `OPENCODE_INSTANCE_ID`: constant ProviderInstanceId.make("opencode") in `apps/server/src/provider/providerMaintenanceRunner.test.ts`:35
+- `OPENCODE_INSTANCE_ID`: constant ProviderInstanceId.make("opencode") in `apps/web/src/components/chat/ProviderModelPicker.browser.tsx`:215
+- `OPENCODE_PRESENTATION`: constant { in `apps/server/src/provider/Layers/OpenCodeProvider.ts`:30
+- `OPENCODE_RUNTIME_ERROR_TAG`: constant "OpenCodeRuntimeError" in `apps/server/src/provider/opencodeRuntime.ts`:100
+- `OPENCODE_SERVER_READY_PREFIX`: constant "opencode server listening" in `apps/server/src/provider/opencodeRuntime.ts`:42
+- `OPENCODE_TEXT_GENERATION_IDLE_TTL`: constant "30 seconds" in `apps/server/src/textGeneration/OpenCodeTextGeneration.ts`:41
+- `OPENCODE_TEXT_GENERATION_IDLE_TTL_MS`: constant 30_000 in `apps/server/src/textGeneration/OpenCodeTextGeneration.test.ts`:107
+- `ORCHESTRATION_PROJECTOR_NAMES`: constant { in `apps/server/src/orchestration/Layers/ProjectionPipeline.ts`:50
+- `ORCHESTRATION_WS_METHODS`: constant { in `packages/contracts/src/orchestration.ts`:25
+- `ORDERED`: constant [THREAD_A, THREAD_B, THREAD_C, THREAD_D, THREAD_E] as const in `apps/web/src/threadSelectionStore.test.ts`:12
+- `OTHER_ENV_TARGET`: constant { environmentId: EnvironmentId.make("env-remote"), cwd: "/repo" } as const in `packages/client-runtime/src/vcsStatusState.test.ts`:65
+- `OTHER_TEST_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-remote") in `apps/web/src/composerDraftStore.test.ts`:151
+- `OTHER_THREAD_REF`: constant scopeThreadRef("environment-b" as never, THREAD_ID) in `apps/web/src/terminalUiStateStore.test.ts`:14
+- `OTLP_TRACES_PROXY_PATH`: constant "/api/observability/v1/traces" in `apps/server/src/http.ts`:41
+- `OUTPUT_TRUNCATED_MARKER`: constant "\n\n[truncated]" in `apps/server/src/vcs/GitVcsDriverCore.ts`:43
+- `OUTPUT_TRUNCATED_MARKER`: constant "\n\n[truncated]" in `apps/server/src/vcs/VcsProcess.ts`:48
+- `PACKAGE_VERSION`: constant '2.12.11' in `apps/web/public/mockServiceWorker.js`:10
+- `PAIRING_PAGE_PATH`: constant "/pair" in `packages/shared/src/advertisedEndpoint.ts`:24
+- `PAIRING_TOKEN_ALPHABET`: constant "23456789ABCDEFGHJKLMNPQRSTUVWXYZ" in `apps/server/src/auth/Layers/BootstrapCredentialService.ts`:39
+- `PAIRING_TOKEN_LENGTH`: constant 12 in `apps/server/src/auth/Layers/BootstrapCredentialService.ts`:40
+- `PAIRING_TOKEN_PARAM`: constant "token" in `packages/shared/src/remote.ts`:3
+- `PATH_CAPTURE_END`: constant "__T3CODE_PATH_END__" in `packages/shared/src/shell.ts`:8
+- `PATH_CAPTURE_START`: constant "__T3CODE_PATH_START__" in `packages/shared/src/shell.ts`:7
+- `PENDING`: constant { data: null, error: null, cause: null, isPending: true } in `packages/client-runtime/src/vcsStatusState.test.ts`:60
+- `PENDING_COMPOSER_PATH_SEARCH_STATE`: constant Object.freeze<ComposerPathSearchState>({ in `packages/client-runtime/src/composerPathSearchState.ts`:49
+- `PERSISTED_STATE_KEY`: constant CLIENT_UI_STATE_STORAGE_KEY in `apps/web/src/uiStateStore.ts`:11
+- `PICK_FOLDER_CHANNEL`: constant "desktop:pick-folder" in `apps/desktop/dist-electron/preload.cjs`:4
+- `PICK_FOLDER_CHANNEL`: constant "desktop:pick-folder" in `apps/desktop/src/ipc/channels.ts`:1
+- `PICKER_TOOLTIP_CLASS`: constant "max-w-64 text-balance font-normal leading-snug" in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:43
+- `PICKER_TOOLTIP_SIDE`: constant "left" as const in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:42
+- `PIERRE_DARK_SHIKI_THEME`: constant { in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:118
+- `PIERRE_LIGHT_SHIKI_THEME`: constant { in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:74
+- `POLL_INTERVAL_MS`: constant 60_000 in `apps/web/src/hooks/useLocalPromotionToast.ts`:13
+- `POSITION_ONLY_PATTERN`: constant /^\d+(?::\d+)?$/ in `apps/web/src/markdown-links.ts`:11
+- `POSITION_SUFFIX_PATTERN`: constant /:\d+(?::\d+)?$/ in `apps/web/src/markdown-links.ts`:10
+- `POSITIVE_DETECTION_CACHE_TTL`: constant Duration.seconds(2) in `apps/server/src/vcs/VcsDriverRegistry.ts`:15
+- `POSIX_FILE_ROOT_PREFIXES`: constant [ in `apps/web/src/markdown-links.ts`:12
+- `POSIX_PATH_DELIMITER`: constant ":" in `packages/shared/src/shell.ts`:11
+- `POSIX_PROCESS_QUERY_COMMAND`: constant "pid=,ppid=,pgid=,stat=,pcpu=,rss=,etime=,command=" in `apps/server/src/diagnostics/ProcessDiagnostics.ts`:30
+- `POWERSHELL_ARGUMENTS_PREFIX`: constant [ in `apps/server/src/process/externalLauncher.ts`:49
+- `PREFERENCES_KEY`: constant "t3code.preferences" in `apps/mobile/src/lib/storage.ts`:11
+- `PREPARED_COMMIT_PATCH_MAX_OUTPUT_BYTES`: constant 49_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:44
+- `PRESENTATION`: constant { in `apps/server/src/provider/Layers/HermesProvider.ts`:42
+- `PRIVATE_ENTRY_NAMES`: constant new Set(["auth.json", "models_cache.json"]) in `apps/server/src/provider/Drivers/CodexHomeLayout.ts`:31
+- `PROCESS_DIAGNOSTICS_IDLE_TTL_MS`: constant 5 * 60_000 in `apps/web/src/lib/processDiagnosticsState.ts`:16
+- `PROCESS_DIAGNOSTICS_STALE_TIME_MS`: constant 2_000 in `apps/web/src/lib/processDiagnosticsState.ts`:15
+- `PROCESS_QUERY_MAX_OUTPUT_BYTES`: constant 2 * 1024 * 1024 in `apps/server/src/diagnostics/ProcessDiagnostics.ts`:31
+- `PROCESS_QUERY_TIMEOUT_MS`: constant 1_000 in `apps/server/src/diagnostics/ProcessDiagnostics.ts`:29
+- `PROCESS_RESOURCE_HISTORY_INPUT_SEPARATOR`: constant ":" in `apps/web/src/lib/processDiagnosticsState.ts`:18
+- `PROCESS_RESOURCE_HISTORY_STALE_TIME_MS`: constant 5_000 in `apps/web/src/lib/processDiagnosticsState.ts`:17
+- `PROCESS_TERMINATE_GRACE`: constant Duration.seconds(1) in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:44
+- `PROJECT_CLI_LIVE_SERVER_TIMEOUT`: constant Duration.seconds(1) in `apps/server/src/cli/project.ts`:80
+- `PROJECT_DRAFT_KEY`: constant `${LOCAL_ENVIRONMENT_ID}:${PROJECT_ID}` in `apps/web/src/components/ChatView.browser.tsx`:111
+- `PROJECT_FAVICON_CACHE_CONTROL`: constant "public, max-age=3600" in `apps/server/src/http.ts`:39
+- `PROJECT_ID`: constant asProjectId("project-1") in `apps/server/integration/orchestrationEngine.integration.test.ts`:45
+- `PROJECT_ID`: constant "project-1" as ProjectId in `apps/web/src/components/ChatView.browser.tsx`:104
+- `PROJECT_ID`: constant ProjectId.make("project-1") in `apps/web/src/components/CommandPalette.logic.test.ts`:11
+- `PROJECT_ID`: constant "project-1" as ProjectId in `apps/web/src/components/KeybindingsToast.browser.tsx`:70
+- `PROJECT_ID`: constant ProjectId.make("project-1") in `apps/web/src/lib/chatThreadActions.test.ts`:12
+- `PROJECT_ID`: constant ProjectId.make("project-1") in `apps/web/src/lib/threadSort.test.ts`:13
+- `PROJECT_LOGICAL_KEY`: constant deriveLogicalProjectKeyFromSettings( in `apps/web/src/components/ChatView.browser.tsx`:112
+- `PROJECT_SCRIPT_KEYBINDING_INVALID_MESSAGE`: constant "Invalid keybinding." in `apps/web/src/lib/projectScriptKeybindings.ts`:9
+- `PROJECT_SEARCH_ENTRIES_MAX_LIMIT`: constant 200 in `packages/contracts/src/project.ts`:4
+- `PROJECT_WRITE_FILE_PATH_MAX_LENGTH`: constant 512 in `packages/contracts/src/project.ts`:5
+- `PROMOTE_STAGING_AND_RELAUNCH_DEV_CHANNEL`: constant "desktop:promote-staging-and-relaunch-dev" in `apps/desktop/dist-electron/preload.cjs`:38
+- `PROMOTE_STAGING_AND_RELAUNCH_DEV_CHANNEL`: constant "desktop:promote-staging-and-relaunch-dev" in `apps/desktop/src/ipc/channels.ts`:35
+- `PROTOCOL_VERSION`: constant ${yield* encodeVersion(upstreamMeta.version)} as const in `packages/effect-acp/scripts/generate.ts`:257
+- `PROTOCOL_VERSION`: constant 1 as const in `packages/effect-acp/src/_generated/meta.gen.ts`:35
+- `PROVIDER`: constant ProviderDriverKind.make("codex") in `apps/server/integration/fixtures/providerRuntime.ts`:4
+- `PROVIDER`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/Layers/ClaudeAdapter.ts`:91
+- `PROVIDER`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/Layers/ClaudeProvider.ts`:46
+- `PROVIDER`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Layers/CodexAdapter.ts`:72
+- `PROVIDER`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:46
+- `PROVIDER`: constant ProviderDriverKind.make("cursor") in `apps/server/src/provider/Layers/CursorAdapter.ts`:81
+- `PROVIDER`: constant ProviderDriverKind.make("cursor") in `apps/server/src/provider/Layers/CursorProvider.ts`:46
+- `PROVIDER`: constant ProviderDriverKind.make("hermes") in `apps/server/src/provider/Layers/HermesAdapter.ts`:44
+- `PROVIDER`: constant ProviderDriverKind.make("hermes") in `apps/server/src/provider/Layers/HermesProvider.ts`:31
+- `PROVIDER`: constant ProviderDriverKind.make("local") in `apps/server/src/provider/Layers/LocalAdapter.ts`:20
+- `PROVIDER`: constant ProviderDriverKind.make("local") in `apps/server/src/provider/Layers/LocalProvider.ts`:22
+- `PROVIDER`: constant ProviderDriverKind.make("opencode") in `apps/server/src/provider/Layers/OpenCodeAdapter.ts`:55
+- `PROVIDER`: constant ProviderDriverKind.make("opencode") in `apps/server/src/provider/Layers/OpenCodeProvider.ts`:29
+- `PROVIDER_ACCENT_SWATCHES`: constant [ in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:33
+- `PROVIDER_ACCENT_SWATCHES`: constant [ in `apps/web/src/components/settings/ProviderInstanceCard.tsx`:51
+- `PROVIDER_DETECTION_CACHE_CAPACITY`: constant 2_048 in `apps/server/src/sourceControl/SourceControlProviderRegistry.ts`:24
+- `PROVIDER_DETECTION_CACHE_TTL`: constant Duration.seconds(5) in `apps/server/src/sourceControl/SourceControlProviderRegistry.ts`:25
+- `PROVIDER_INSTANCE_ID_PATTERN`: constant /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/ in `apps/web/src/composerDraftStore.ts`:592
+- `PROVIDER_SEND_TURN_MAX_ATTACHMENTS`: constant 8 in `packages/contracts/src/orchestration.ts`:142
+- `PROVIDER_SEND_TURN_MAX_IMAGE_BYTES`: constant 10 * 1024 * 1024 in `packages/contracts/src/orchestration.ts`:143
+- `PROVIDER_SEND_TURN_MAX_IMAGE_DATA_URL_CHARS`: constant 14_000_000 in `packages/contracts/src/orchestration.ts`:144
+- `PROVIDER_SEND_TURN_MAX_INPUT_CHARS`: constant 120_000 in `packages/contracts/src/orchestration.ts`:141
+- `PROVIDER_SETTINGS`: constant DRIVER_OPTIONS.map((definition) => ({ in `apps/web/src/components/settings/SettingsPanels.tsx`:123
+- `PROVIDER_SLUG_MAX_CHARS`: constant 64 in `packages/contracts/src/providerInstance.ts`:40
+- `PROVIDER_SLUG_PATTERN`: constant /^[a-zA-Z][a-zA-Z0-9_-]*$/ in `packages/contracts/src/providerInstance.ts`:49
+- `PROVIDER_STATUS_DEBOUNCE_MS`: constant 200 in `apps/server/src/ws.ts`:126
+- `PROVIDER_STATUS_STYLES`: constant { in `apps/web/src/components/settings/providerStatus.ts`:7
+- `PROVIDER_UPDATE_ACTION_TOAST_MESSAGE`: constant "Install the update now or review provider settings." in `apps/server/src/provider/providerMaintenance.ts`:17
+- `PROVIDER_UPDATE_DISMISSALS_STORAGE_KEY`: constant "t3code:provider-update-dismissals:v1" in `apps/web/src/providerUpdateDismissal.ts`:6
+- `PROVIDER_UPDATE_PILL_PROGRESS_STYLES`: constant { in `apps/web/src/components/sidebar/SidebarProviderUpdatePill.tsx`:24
+- `PROVIDER_UPDATE_PILL_STYLES`: constant { in `apps/web/src/components/sidebar/SidebarProviderUpdatePill.tsx`:13
+- `PROVIDER_UPDATE_SUCCESS_VISIBLE_MS`: constant 3_000 in `apps/web/src/components/ProviderUpdateLaunchNotification.logic.ts`:43
+- `PROXY_WARMUP_MS`: constant 120_000 in `apps/web/vite.config.ts`:62
+- `PUBLIC_PATH_PREFIX_META_NAME`: constant "t3code-public-path-prefix" in `apps/server/src/http.ts`:43
+- `PUBLIC_PATH_PREFIX_META_SELECTOR`: constant 'meta[name="t3code-public-path-prefix"]' in `apps/web/src/publicPath.ts`:3
+- `PUBLISH_ICON_OVERRIDES`: constant resolveWebIconOverrides("production", "dist/client") in `scripts/lib/brand-assets.ts`:96
+- `PUBLISH_PROVIDER_OPTIONS`: constant [ in `apps/web/src/components/GitActionsControl.tsx`:132
+- `PUBLISHABLE_T3_VERSION_PATTERN`: constant /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u in `packages/ssh/src/command.ts`:16
+- `PULL_REQUEST_NUMBER_PATTERN`: constant /^#?(\d+)$/ in `apps/web/src/pullRequestReference.ts`:7
+- `QUIET_HUMAN_PATTERNS`: constant [ in `scripts/local-desktop-launcher-human-log.ts`:23
+- `QUIET_LINE_PATTERNS`: constant [ in `scripts/local-desktop-launcher-output.ts`:7
+- `RANGE_COMMIT_SUMMARY_MAX_OUTPUT_BYTES`: constant 19_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:45
+- `RANGE_DIFF_PATCH_MAX_OUTPUT_BYTES`: constant 59_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:47
+- `RANGE_DIFF_SUMMARY_MAX_OUTPUT_BYTES`: constant 19_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:46
+- `READ_PAGE_SIZE`: constant 500 in `apps/server/src/persistence/Layers/ConvexOrchestrationEventStore.ts`:22
+- `READ_PAGE_SIZE`: constant 500 in `apps/server/src/persistence/Layers/OrchestrationEventStore.ts`:68
+- `RECENT_LIMIT`: constant 20 in `apps/server/src/diagnostics/TraceDiagnostics.ts`:67
+- `RECENT_THREAD_LIMIT`: constant 12 in `apps/web/src/components/CommandPalette.logic.ts`:10
+- `RECOVERABLE_HERMES_COMPLETION_ERROR`: constant "'NoneType' object is not iterable" as const in `apps/server/src/provider/Layers/HermesAdapter.ts`:133
+- `RECOVERABLE_STATUSES`: constant new Set<ProviderSessionRuntimeStatus>(["running", "starting"]) in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:31
+- `RECOVERABLE_THREAD_RESUME_ERROR_SNIPPETS`: constant [ in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:57
+- `REDACTED_TEXT_ALPHABET`: constant "abcdefghjkmnpqrstuvwxyz23456789" in `apps/web/src/components/settings/RedactedSensitiveText.tsx`:6
+- `RELATIVE_FILE_NAME_PATTERN`: constant /^[A-Za-z0-9._-]+\.[A-Za-z0-9_-]+(?::\d+){0,2}$/ in `apps/web/src/markdown-links.ts`:9
+- `RELATIVE_FILE_PATH_PATTERN`: constant /^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)+(?::\d+){0,2}$/ in `apps/web/src/markdown-links.ts`:8
+- `RELATIVE_PATH_PREFIX_PATTERN`: constant /^(~\/|\.{1,2}\/)/ in `apps/web/src/markdown-links.ts`:7
+- `RELEASES_URL`: constant `https://github.com/${REPO}/releases` in `apps/marketing/src/lib/releases.ts`:3
+- `REMOTE_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-remote") in `apps/web/src/components/ChatView.browser.tsx`:107
+- `REMOTE_LAUNCH_SCRIPT`: constant `set -eu in `packages/ssh/src/tunnel.ts`:465
+- `REMOTE_LOG_TAIL_SCRIPT`: constant `set -eu in `packages/ssh/src/tunnel.ts`:652
+- `REMOTE_NODE_ENV_SCRIPT`: constant `prepend_path_if_dir() { in `packages/ssh/src/tunnel.ts`:348
+- `REMOTE_PAIRING_SCRIPT`: constant `set -eu in `packages/ssh/src/tunnel.ts`:620
+- `REMOTE_PICK_PORT_SCRIPT`: constant `const fs = require("node:fs") in `packages/ssh/src/tunnel.ts`:267
+- `REMOTE_PORT_SCAN_WINDOW`: constant 200 in `packages/ssh/src/tunnel.ts`:52
+- `REMOTE_READY_TIMEOUT_MS`: constant 15_000 in `packages/ssh/src/tunnel.ts`:56
+- `REMOTE_REUSE_READY_TIMEOUT_MS`: constant 2_000 in `packages/ssh/src/tunnel.ts`:57
+- `REMOTE_RUNNER_SCRIPT`: constant `#!/bin/sh in `packages/ssh/src/tunnel.ts`:440
+- `REMOTE_STOP_SCRIPT`: constant `set -eu in `packages/ssh/src/tunnel.ts`:633
+- `REMOTE_WAIT_READY_SCRIPT`: constant `const http = require("node:http") in `packages/ssh/src/tunnel.ts`:300
+- `REMOVE_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:remove-saved-environment-secret" in `apps/desktop/dist-electron/preload.cjs`:24
+- `REMOVE_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:remove-saved-environment-secret" in `apps/desktop/src/ipc/channels.ts`:21
+- `REPO`: constant "pingdotgg/t3code" in `apps/marketing/src/lib/releases.ts`:1
+- `REPO_ROOT`: constant process.cwd() in `scripts/sync-vscode-icons.mjs`:17
+- `REQUEST_ID`: constant RuntimeRequestId.make("req-1") in `apps/server/integration/fixtures/providerRuntime.ts`:8
+- `REQUIRED_SNAPSHOT_PROJECTORS`: constant [ in `apps/server/src/orchestration/Layers/ProjectionSnapshotQueryShared.ts`:126
+- `RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:resolve-ssh-password-prompt" in `apps/desktop/dist-electron/preload.cjs`:33
+- `RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:resolve-ssh-password-prompt" in `apps/desktop/src/ipc/channels.ts`:30
+- `RESOURCE_HISTORY_WINDOWS`: constant [ in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:522
+- `RESULT_DISMISS_MS`: constant 5_000 in `apps/mobile/src/state/use-vcs-action-state.ts`:45
+- `RESUME_THREAD_ID`: constant ThreadId.make("thread-claude-resume") in `apps/server/src/provider/Layers/ClaudeAdapter.test.ts`:268
+- `RETENTION_MS`: constant 60 * 60_000 in `apps/server/src/diagnostics/ProcessResourceMonitor.ts`:23
+- `RETRY_SIGNAL`: constant "wait_for_retry" in `apps/server/integration/OrchestrationEngineHarness.integration.ts`:143
+- `REVIEW_COMMENT_ATTRIBUTE_PATTERN`: constant /([a-zA-Z][a-zA-Z0-9_-]*)="([^"]*)"/g in `apps/mobile/src/features/review/reviewCommentSelection.ts`:40
+- `REVIEW_COMMENT_ATTRIBUTE_PATTERN`: constant /([a-zA-Z][a-zA-Z0-9_-]*)="([^"]*)"/g in `apps/web/src/reviewCommentContext.ts`:25
+- `REVIEW_COMMENT_BLOCK_PATTERN`: constant /<review_comment\b([^>]*)>\s*([\s\S]*?)<\/review_comment>/g in `apps/mobile/src/features/review/reviewCommentSelection.ts`:39
+- `REVIEW_COMMENT_BLOCK_PATTERN`: constant /<review_comment\b([^>]*)>\s*([\s\S]*?)<\/review_comment>/g in `apps/web/src/reviewCommentContext.ts`:24
+- `REVIEW_COMMENT_DIFF_FENCE_PATTERN`: constant /```diff\s*\n([\s\S]*?)\n```/ in `apps/web/src/reviewCommentContext.ts`:26
+- `REVIEW_COMMENT_PREVIEW_MAX_LINES`: constant 5 in `apps/mobile/src/features/review/ReviewCommentComposerSheet.tsx`:41
+- `REVIEW_DELETE_STRIPE_COUNT`: constant REVIEW_DIFF_LINE_HEIGHT / 2 in `apps/mobile/src/features/review/reviewDiffRendering.tsx`:15
+- `REVIEW_DIFF_LINE_HEIGHT`: constant 26 in `apps/mobile/src/features/review/reviewDiffRendering.tsx`:14
+- `REVIEW_DIFF_PATCH_MAX_OUTPUT_BYTES`: constant 120_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:48
+- `REVIEW_DIFF_PREVIEW_IDLE_TTL_MS`: constant 5 * 60_000 in `apps/mobile/src/features/review/reviewDiffPreviewState.ts`:13
+- `REVIEW_DIFF_PREVIEW_KEY_SEPARATOR`: constant "\u001f" in `apps/mobile/src/features/review/reviewDiffPreviewState.ts`:14
+- `REVIEW_DIFF_PREVIEW_STALE_TIME_MS`: constant 5_000 in `apps/mobile/src/features/review/reviewDiffPreviewState.ts`:12
+- `REVIEW_HEADER_SPACING`: constant 0 in `apps/mobile/src/features/review/ReviewSheet.tsx`:34
+- `REVIEW_HIGHLIGHT_CHUNK_LINE_THRESHOLD`: constant 8 in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:58
+- `REVIEW_HIGHLIGHT_CHUNK_SIZE`: constant 200 in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:59
+- `REVIEW_HIGHLIGHT_RESULT_CACHE_LIMIT`: constant 8 in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:57
+- `REVIEW_HIGHLIGHTER_DISABLE_RESULT_CACHE`: constant resolveReviewHighlighterBooleanFlag( in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:53
+- `REVIEW_HIGHLIGHTER_ENGINE_ENV_VALUE`: constant process.env.EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE ?? in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:47
+- `REVIEW_HIGHLIGHTER_ENGINE_PREFERENCE`: constant resolveReviewHighlighterEnginePreference( in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:50
+- `REVIEW_INITIAL_LANGUAGE_MODULES`: constant [ in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:63
+- `REVIEW_INITIAL_LANGUAGES`: constant [ in `apps/mobile/src/features/review/reviewHighlighterState.ts`:27
+- `REVIEW_MAX_WORD_ALT_LINE_LENGTH`: constant 1_000 in `apps/mobile/src/features/review/reviewWordDiffs.ts`:16
+- `REVIEW_MONO_FONT_FAMILY`: constant Platform.select({ in `apps/mobile/src/features/review/reviewDiffRendering.tsx`:8
+- `REVIEW_PERF_PREFIX`: constant "t3.review" in `apps/mobile/src/features/review/reviewPerf.ts`:9
+- `REVIEW_TOKENIZE_MAX_LINE_LENGTH`: constant 1_000 in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:60
+- `REVIEW_UNTRACKED_DIFF_MAX_OUTPUT_BYTES`: constant 80_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:49
+- `RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY`: constant "(max-width: 980px)" in `apps/web/src/rightPanelLayout.ts`:1
+- `RIGHT_PANEL_SHEET_CLASS_NAME`: constant "w-[min(42vw,28rem)] min-w-80 max-w-[28rem] p-0 max-[760px]:w-[min(88vw,24rem... in `apps/web/src/rightPanelLayout.ts`:2
+- `ROOT_RELATIVE_HTML_ATTRIBUTE_PATTERN`: constant /\b(src|href)=(["'])\/(?!\/)([^"']*)\2/gu in `apps/server/src/http.ts`:44
+- `ROUTER_HOST`: constant "app.t3.codes" in `apps/web/vercel.ts`:3
+- `RPC_SPAN_PREFIX`: constant "ws.rpc" in `apps/server/src/observability/RpcInstrumentation.ts`:13
+- `RUNNING_SOURCE_CONTROL_ACTIONS`: constant ["runStackedAction", "pull", "publishRepository"] as const in `apps/web/src/components/GitActionsControl.tsx`:130
+- `RUNTIME_DIR_NAME`: constant ".runtime" in `scripts/local-desktop-dev-bundle-run.ts`:29
+- `SAFE_EXTERNAL_PROTOCOLS`: constant new Set(["http:", "https:"]) in `apps/desktop/src/electron/ElectronShell.ts`:8
+- `SAFE_IMAGE_FILE_EXTENSIONS`: constant new Set([ in `apps/server/src/imageMime.ts`:17
+- `SAMPLE_INTERVAL_MS`: constant 5_000 in `apps/server/src/diagnostics/ProcessResourceMonitor.ts`:22
+- `SAVED_CONNECTION_BOOTSTRAP_TIMEOUT_MS`: constant 8_000 in `apps/mobile/src/state/use-remote-environment-registry.ts`:55
+- `SAVED_ENVIRONMENT_REGISTRY_STORAGE_KEY`: constant "t3code:saved-environment-registry:v1" in `apps/web/src/clientPersistenceStorage.ts`:16
+- `SCRIPT_RUN_COMMAND_PATTERN`: constant Schema.TemplateLiteral([ in `packages/contracts/src/keybindings.ts`:64
+- `SCRIPT_TERMINAL_COLS`: constant 120 in `apps/web/src/components/ChatView.tsx`:351
+- `SCRIPT_TERMINAL_ROWS`: constant 30 in `apps/web/src/components/ChatView.tsx`:352
+- `SECOND_PROJECT_ID`: constant "project-2" as ProjectId in `apps/web/src/components/ChatView.browser.tsx`:105
+- `SECONDARY_HASH_MULTIPLIER`: constant 0x85ebca6b in `apps/mobile/src/features/review/reviewModel.ts`:210
+- `SECONDARY_HASH_MULTIPLIER`: constant 0x85ebca6b in `apps/web/src/lib/diffRendering.ts`:18
+- `SECONDARY_HASH_SEED`: constant 0x9e3779b9 in `apps/mobile/src/features/review/reviewModel.ts`:209
+- `SECONDARY_HASH_SEED`: constant 0x9e3779b9 in `apps/web/src/lib/diffRendering.ts`:17
+- `SELECTED_BUTTON_CLASS`: constant "bg-background text-foreground shadow-sm" in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:33
+- `SELECTED_INDICATOR_CLASS`: constant "pointer-events-none absolute -right-1 top-1/2 z-10 h-5 w-0.5 -translate-y-1/... in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:34
+- `SEMVER_NUMBER_SEGMENT`: constant /^\d+$/ in `packages/shared/src/semver.ts`:8
+- `SERVER_ENVIRONMENT_DESCRIPTOR_PATH`: constant "/.well-known/t3/environment" in `apps/web/src/environments/primary/context.ts`:13
+- `SERVER_NOTIFICATION_METHODS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:103
+- `SERVER_NOTIFICATION_PARAMS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:622
+- `SERVER_PROBE_CONNECT_TIMEOUT_MS`: constant 2_000 in `scripts/local-desktop-launcher-access.ts`:256
+- `SERVER_READY_PATH`: constant "/.well-known/t3/environment" in `scripts/local-desktop-launcher-access.ts`:15
+- `SERVER_REQUEST_METHODS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:91
+- `SERVER_REQUEST_PARAMS`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:598
+- `SERVER_REQUEST_RESPONSES`: constant { in `packages/effect-codex-app-server/src/_generated/meta.gen.ts`:610
+- `SERVER_SETTINGS_KEYS`: constant new Set<string>(Struct.keys(ServerSettings.fields)) in `apps/web/src/hooks/useSettings.ts`:151
+- `SESSION_COOKIE_NAME`: constant "t3_session" in `apps/server/src/auth/utils.ts`:5
+- `SESSION_ID`: constant "fixture-session" in `apps/server/integration/fixtures/providerRuntime.ts`:5
+- `SET_CLIENT_SETTINGS_CHANNEL`: constant "desktop:set-client-settings" in `apps/desktop/dist-electron/preload.cjs`:19
+- `SET_CLIENT_SETTINGS_CHANNEL`: constant "desktop:set-client-settings" in `apps/desktop/src/ipc/channels.ts`:16
+- `SET_SAVED_ENVIRONMENT_REGISTRY_CHANNEL`: constant "desktop:set-saved-environment-registry" in `apps/desktop/dist-electron/preload.cjs`:21
+- `SET_SAVED_ENVIRONMENT_REGISTRY_CHANNEL`: constant "desktop:set-saved-environment-registry" in `apps/desktop/src/ipc/channels.ts`:18
+- `SET_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:set-saved-environment-secret" in `apps/desktop/dist-electron/preload.cjs`:23
+- `SET_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:set-saved-environment-secret" in `apps/desktop/src/ipc/channels.ts`:20
+- `SET_SERVER_EXPOSURE_MODE_CHANNEL`: constant "desktop:set-server-exposure-mode" in `apps/desktop/dist-electron/preload.cjs`:35
+- `SET_SERVER_EXPOSURE_MODE_CHANNEL`: constant "desktop:set-server-exposure-mode" in `apps/desktop/src/ipc/channels.ts`:32
+- `SET_TAILSCALE_SERVE_ENABLED_CHANNEL`: constant "desktop:set-tailscale-serve-enabled" in `apps/desktop/dist-electron/preload.cjs`:39
+- `SET_TAILSCALE_SERVE_ENABLED_CHANNEL`: constant "desktop:set-tailscale-serve-enabled" in `apps/desktop/src/ipc/channels.ts`:36
+- `SET_THEME_CHANNEL`: constant "desktop:set-theme" in `apps/desktop/dist-electron/preload.cjs`:6
+- `SET_THEME_CHANNEL`: constant "desktop:set-theme" in `apps/desktop/src/ipc/channels.ts`:3
+- `SHADOW_LOCAL_ENTRY_NAMES`: constant new Set(["log", "memories", "tmp"]) in `apps/server/src/provider/Drivers/CodexHomeLayout.ts`:32
+- `SHARED_CONVEX_CLOUD_PORT`: constant 3210 in `scripts/local-desktop-env.ts`:14
+- `SHARED_CONVEX_REFRESH_PATH_PREFIXES`: constant [ in `apps/server/src/local/promotionStatus.ts`:21
+- `SHARED_CONVEX_SITE_PORT`: constant 3211 in `scripts/local-desktop-env.ts`:15
+- `SHARED_REPO_CANONICAL_KEY`: constant "github.com/example/shared-repo" in `apps/web/src/environmentGrouping.test.ts`:38
+- `SHARED_SERVER_SETTINGS_KEY`: constant "local-server-settings" in `apps/server/src/serverSettings.ts`:68
+- `SHARED_SETTINGS_POLL_INTERVAL`: constant Duration.millis(750) in `apps/server/src/serverSettings.ts`:69
+- `SHARED_THREAD_ID`: constant ThreadId.make("thread-shared") in `apps/web/src/components/GitActionsControl.browser.tsx`:7
+- `SHELL_ENV_NAME_PATTERN`: constant /^[A-Z0-9_]+$/ in `packages/shared/src/shell.ts`:9
+- `SHELL_SNAPSHOT_CACHE_DIRECTORY`: constant "shell-snapshots" in `apps/mobile/src/lib/storage.ts`:13
+- `SHELL_SNAPSHOT_CACHE_SCHEMA_VERSION`: constant 1 in `apps/mobile/src/lib/storage.ts`:12
+- `SHELL_WRAPPER_SPECS`: constant [ in `apps/mobile/src/lib/threadActivity.ts`:463
+- `SHELL_WRAPPER_SPECS`: constant [ in `apps/web/src/session-logic.ts`:999
+- `SHIKI_THEME_NAME_BY_SCHEME`: constant { in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:43
+- `SHORT_SHA_LENGTH`: constant 7 in `apps/server/src/git/GitManager.ts`:94
+- `SIDEBAR_COOKIE_MAX_AGE`: constant 60 * 60 * 24 * 7 in `apps/web/src/components/ui/sidebar.tsx`:25
+- `SIDEBAR_COOKIE_NAME`: constant "sidebar_state" in `apps/web/src/components/ui/sidebar.tsx`:24
+- `SIDEBAR_LIST_ANIMATION_OPTIONS`: constant { in `apps/web/src/components/Sidebar.tsx`:217
+- `SIDEBAR_RESIZE_DEFAULT_MIN_WIDTH`: constant 16 * 16 in `apps/web/src/components/ui/sidebar.tsx`:29
+- `SIDEBAR_THREAD_PREWARM_LIMIT`: constant 10 in `apps/web/src/components/Sidebar.logic.ts`:23
+- `SIDEBAR_WIDTH`: constant "16rem" in `apps/web/src/components/ui/sidebar.tsx`:26
+- `SIDEBAR_WIDTH_ICON`: constant "3rem" in `apps/web/src/components/ui/sidebar.tsx`:28
+- `SIDEBAR_WIDTH_MOBILE`: constant "100vw" in `apps/web/src/components/ui/sidebar.tsx`:27
+- `SIGNING_SECRET_NAME`: constant "server-signing-key" in `apps/server/src/auth/Layers/SessionCredentialService.ts`:33
+- `SILENT_METADATA_KEYS`: constant new Set(["scope", "runId", "component", "logDir"]) in `scripts/local-desktop-launcher-human-log.ts`:13
+- `SKILL_CHIP_ICON_SVG`: constant `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentC... in `apps/web/src/components/composerInlineChip.ts`:11
+- `SKILL_TOKEN_REGEX`: constant /(^|\s)\$([a-zA-Z][a-zA-Z0-9:_-]*)(?=\s|$)/g in `apps/web/src/components/chat/SkillInlineText.tsx`:12
+- `SKILL_TOKEN_REGEX`: constant /(^|\s)\$([a-zA-Z][a-zA-Z0-9:_-]*)(?=\s)/g in `apps/web/src/composer-editor-mentions.ts`:25
+- `SLOW_RPC_ACK_THRESHOLD_MS`: constant 15_000 in `apps/web/src/rpc/requestLatencyState.ts`:6
+- `SNAPSHOT_REFRESH_INTERVAL`: constant Duration.minutes(5) in `apps/server/src/provider/Drivers/ClaudeDriver.ts`:55
+- `SNAPSHOT_REFRESH_INTERVAL`: constant Duration.minutes(5) in `apps/server/src/provider/Drivers/CodexDriver.ts`:58
+- `SNAPSHOT_REFRESH_INTERVAL`: constant Duration.minutes(5) in `apps/server/src/provider/Drivers/CursorDriver.ts`:52
+- `SNAPSHOT_REFRESH_INTERVAL`: constant Duration.minutes(5) in `apps/server/src/provider/Drivers/HermesDriver.ts`:27
+- `SNAPSHOT_REFRESH_INTERVAL`: constant Duration.minutes(5) in `apps/server/src/provider/Drivers/LocalDriver.ts`:22
+- `SNAPSHOT_REFRESH_INTERVAL`: constant Duration.minutes(5) in `apps/server/src/provider/Drivers/OpenCodeDriver.ts`:53
+- `SOON_BADGE_CLASS`: constant `${BADGE_BASE_CLASS} text-muted-foreground ` in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:39
+- `SOURCE_CONTROL_DISCOVERY_IDLE_TTL_MS`: constant 5 * 60_000 in `apps/web/src/lib/sourceControlDiscoveryState.ts`:22
+- `SOURCE_CONTROL_DISCOVERY_STALE_TIME_MS`: constant 30_000 in `apps/web/src/lib/sourceControlDiscoveryState.ts`:21
+- `SOURCE_CONTROL_DISCOVERY_TARGET`: constant { key: "primary" } as const in `apps/web/src/lib/sourceControlDiscoveryState.ts`:20
+- `SOURCE_CONTROL_SKELETON_ROWS`: constant ["primary", "secondary"] as const in `apps/web/src/components/settings/SourceControlSettings.tsx`:71
+- `SQLITE_MIGRATE_PRESETS`: constant [ in `scripts/sqlite-to-convex-migrate.ts`:18
+- `SQLITE_RELATIVE`: constant NodePath.join("local", "default", "convex_local_backend.sqlite3") in `packages/convex/scripts/convex-state-link.mjs`:6
+- `SQLITE_TO_CONVEX_COUNT_FIELD`: constant { in `scripts/sqlite-to-convex-migrate.ts`:46
+- `SSH_ASKPASS_DIR_NAME`: constant "t3code-ssh-askpass" in `packages/ssh/src/auth.ts`:61
+- `SSH_HTTP_STATUS_RE`: constant /^\[ssh_http:(\d+)\]\s/u in `apps/web/src/environments/runtime/service.ts`:156
+- `SSH_PASSWORD_PROMPT_CANCELLED_RESULT`: constant "ssh-password-prompt-cancelled" in `apps/desktop/dist-electron/preload.cjs`:41
+- `SSH_PASSWORD_PROMPT_CANCELLED_RESULT`: constant "ssh-password-prompt-cancelled" in `apps/desktop/src/ipc/channels.ts`:38
+- `SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:ssh-password-prompt" in `apps/desktop/dist-electron/preload.cjs`:32
+- `SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:ssh-password-prompt" in `apps/desktop/src/ipc/channels.ts`:29
+- `SSH_READY_PROBE_TIMEOUT_MS`: constant 1_000 in `packages/ssh/src/tunnel.ts`:54
+- `SSH_READY_TIMEOUT_MS`: constant 20_000 in `packages/ssh/src/tunnel.ts`:53
+- `STAGING_MIRROR_SUMMARY`: constant "Read-only mirror of Main. Run agents on T3code (main) in `apps/web/src/components/localDesktopChrome.tsx`:6
+- `STATIC_KEYBINDING_COMMANDS`: constant [ in `packages/contracts/src/keybindings.ts`:50
+- `STATUS_RESULT_CACHE_CAPACITY`: constant 2_048 in `apps/server/src/git/GitManager.ts`:97
+- `STATUS_RESULT_CACHE_TTL`: constant Duration.seconds(1) in `apps/server/src/git/GitManager.ts`:96
+- `STATUS_UPSTREAM_REFRESH_CACHE_CAPACITY`: constant 2_048 in `apps/server/src/vcs/GitVcsDriverCore.ts`:55
+- `STATUS_UPSTREAM_REFRESH_ENV`: constant Object.freeze({ in `apps/server/src/vcs/GitVcsDriverCore.ts`:56
+- `STATUS_UPSTREAM_REFRESH_FAILURE_COOLDOWN`: constant Duration.seconds(5) in `apps/server/src/vcs/GitVcsDriverCore.ts`:54
+- `STATUS_UPSTREAM_REFRESH_INTERVAL`: constant Duration.seconds(15) in `apps/server/src/vcs/GitVcsDriverCore.ts`:51
+- `STATUS_UPSTREAM_REFRESH_TIMEOUT`: constant Duration.seconds(5) in `apps/server/src/vcs/GitVcsDriverCore.ts`:52
+- `STORAGE_KEY`: constant "t3code:theme" in `apps/web/src/hooks/useTheme.ts`:9
+- `STREAM_METHODS`: constant new Set<string>([ in `apps/web/test/wsRpcHarness.ts`:29
+- `STRICT_PROVIDER_LIFECYCLE_GUARD`: constant process.env.T3CODE_STRICT_PROVIDER_LIFECYCLE_GUARD !== "0" in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:58
+- `SUPPORTED_CLAUDE_IMAGE_MIME_TYPES`: constant new Set([ in `apps/server/src/provider/Layers/ClaudeAdapter.ts`:591
+- `SURROUND_SYMBOLS_MAP`: constant new Map<string, string>(SURROUND_SYMBOLS) in `apps/web/src/components/ComposerPromptEditor.tsx`:92
+- `TAILSCALE_PROBE_TIMEOUT_MS`: constant 2_500 in `packages/tailscale/src/tailscale.ts`:12
+- `TAILSCALE_ROUTING_STATE_FILE`: constant "tailscale-routing.json" in `scripts/local-desktop-launcher-access.ts`:17
+- `TAILSCALE_SERVE_TIMEOUT_MS`: constant 10_000 in `packages/tailscale/src/tailscale.ts`:11
+- `TAILSCALE_STATUS_TIMEOUT_MS`: constant 1_500 in `packages/tailscale/src/tailscale.ts`:10
+- `TARGET`: constant { in `packages/client-runtime/src/checkpointDiffState.test.ts`:19
+- `TARGET`: constant { in `packages/client-runtime/src/composerPathSearchState.test.ts`:25
+- `TARGET`: constant { environmentId: EnvironmentId.make("env-local") } as const in `packages/client-runtime/src/environmentRuntimeState.test.ts`:14
+- `TARGET`: constant { environmentId: EnvironmentId.make("env-local") } as const in `packages/client-runtime/src/shellSnapshotState.test.ts`:59
+- `TARGET`: constant { in `packages/client-runtime/src/terminalSessionState.test.ts`:28
+- `TARGET`: constant { in `packages/client-runtime/src/threadDetailState.test.ts`:61
+- `TARGET`: constant { environmentId: EnvironmentId.make("env-local"), cwd: "/repo" } as const in `packages/client-runtime/src/vcsActionState.test.ts`:37
+- `TARGET`: constant { environmentId: EnvironmentId.make("env-local"), cwd: "/repo" } as const in `packages/client-runtime/src/vcsRefState.test.ts`:21
+- `TARGET`: constant { environmentId: EnvironmentId.make("env-local"), cwd: "/repo" } as const in `packages/client-runtime/src/vcsStatusState.test.ts`:63
+- `TARGET_WITH_POSITION_PATTERN`: constant /^(.*?):(\d+)(?::(\d+))?$/ in `apps/server/src/process/externalLauncher.ts`:48
+- `TASK_LOG_HORIZONTAL_PADDING`: constant 10 in `scripts/local-desktop-launcher-line-format.ts`:5
+- `TEMP_WORKTREE_BRANCH_PATTERN`: constant new RegExp(`^${WORKTREE_BRANCH_PREFIX}\\/[0-9a-f]{8}$`) in `packages/shared/src/git.ts`:14
+- `TERMINAL_ACCESSORY_FADE_WIDTH`: constant 18 in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:82
+- `TERMINAL_ACCESSORY_HEIGHT`: constant 52 in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:81
+- `TERMINAL_BUFFER_REPLAY_STABILITY_DELAY_MS`: constant 180 in `apps/mobile/src/features/terminal/terminalBufferReplay.ts`:3
+- `TERMINAL_CONTEXT_HEADER_PATTERN`: constant /^(.*?)\s+line(?:s)?\s+(\d+)(?:-(\d+))?$/i in `apps/web/src/components/chat/userMessageTerminalContexts.ts`:3
+- `TERMINAL_DELETE_TO_LINE_START`: constant "\u0015" in `apps/web/src/keybindings.ts`:49
+- `TERMINAL_ENV_BLOCKLIST`: constant new Set(["PORT", "ELECTRON_RENDERER_PORT", "ELECTRON_RUN_AS_NODE"]) in `apps/server/src/terminal/Layers/Manager.ts`:59
+- `TERMINAL_FONT_SIZE_STEP`: constant 0.5 in `apps/mobile/src/features/terminal/terminalPreferences.ts`:2
+- `TERMINAL_LINE_END`: constant "\u0005" in `apps/web/src/keybindings.ts`:48
+- `TERMINAL_LINE_START`: constant "\u0001" in `apps/web/src/keybindings.ts`:47
+- `TERMINAL_UI_STATE_STORAGE_KEY`: constant "t3code:terminal-state:v1" in `apps/web/src/terminalUiStateStore.ts`:30
+- `TERMINAL_WORD_BACKWARD`: constant "\u001bb" in `apps/web/src/keybindings.ts`:45
+- `TERMINAL_WORD_FORWARD`: constant "\u001bf" in `apps/web/src/keybindings.ts`:46
+- `TEST_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/composerDraftStore.test.ts`:150
+- `TEST_EPOCH`: constant DateTime.makeUnsafe("1970-01-01T00:00:00.000Z") in `apps/server/src/server.test.ts`:55
+- `TEST_EPOCH`: constant DateTime.makeUnsafe("1970-01-01T00:00:00.000Z") in `apps/server/src/sourceControl/SourceControlProviderRegistry.test.ts`:18
+- `TEST_EPOCH`: constant DateTime.makeUnsafe("1970-01-01T00:00:00.000Z") in `apps/server/src/vcs/VcsProvisioningService.test.ts`:12
+- `TEST_NODE_ENGINE_RANGE`: constant "^22.16 || ^23.11 || >=24.10" in `packages/ssh/src/tunnel.test.ts`:29
+- `TEST_SESSION_EXPIRES_AT`: constant "2026-05-01T12:00:00.000Z" in `apps/web/test/authHttpHandlers.ts`:8
+- `THEME_COLOR_META_NAME`: constant "theme-color" in `apps/web/src/hooks/useTheme.ts`:15
+- `THEME_OPTIONS`: constant [ in `apps/web/src/components/settings/SettingsPanels.tsx`:84
+- `THREAD_A`: constant ThreadId.make("thread-a") in `apps/web/src/threadSelectionStore.test.ts`:6
+- `THREAD_B`: constant ThreadId.make("thread-b") in `apps/web/src/threadSelectionStore.test.ts`:7
+- `THREAD_C`: constant ThreadId.make("thread-c") in `apps/web/src/threadSelectionStore.test.ts`:8
+- `THREAD_D`: constant ThreadId.make("thread-d") in `apps/web/src/threadSelectionStore.test.ts`:9
+- `THREAD_DETAIL_SUBSCRIPTION_IDLE_EVICTION_MS`: constant 15 * 60 * 1000 in `apps/web/src/environments/runtime/service.ts`:151
+- `THREAD_E`: constant ThreadId.make("thread-e") in `apps/web/src/threadSelectionStore.test.ts`:10
+- `THREAD_ID`: constant "fixture-thread" in `apps/server/integration/fixtures/providerRuntime.ts`:6
+- `THREAD_ID`: constant ThreadId.make("thread-1") in `apps/server/integration/orchestrationEngine.integration.test.ts`:46
+- `THREAD_ID`: constant ThreadId.make("thread-claude-1") in `apps/server/src/provider/Layers/ClaudeAdapter.test.ts`:267
+- `THREAD_ID`: constant "thread-browser-test" as ThreadId in `apps/web/src/components/ChatView.browser.tsx`:101
+- `THREAD_ID`: constant "thread-kb-toast-test" as ThreadId in `apps/web/src/components/KeybindingsToast.browser.tsx`:69
+- `THREAD_ID`: constant ThreadId.make("thread-terminal-browser") in `apps/web/src/components/ThreadTerminalDrawer.browser.tsx`:134
+- `THREAD_ID`: constant ThreadId.make("thread-1") in `apps/web/src/terminalUiStateStore.test.ts`:12
+- `THREAD_JUMP_HINT_SHOW_DELAY_MS`: constant 100 in `apps/web/src/components/Sidebar.logic.ts`:20
+- `THREAD_JUMP_KEYBINDING_COMMANDS`: constant [ in `packages/contracts/src/keybindings.ts`:10
+- `THREAD_KEY`: constant scopedThreadKey(THREAD_REF) in `apps/web/src/components/ChatView.browser.tsx`:109
+- `THREAD_KEYBINDING_COMMANDS`: constant [ in `packages/contracts/src/keybindings.ts`:37
+- `THREAD_MAIN_CONTENT_MIN_WIDTH`: constant 40 * 16 in `apps/web/src/components/AppSidebarLayout.tsx`:13
+- `THREAD_REF`: constant scopeThreadRef(LOCAL_ENVIRONMENT_ID, THREAD_ID) in `apps/web/src/components/ChatView.browser.tsx`:108
+- `THREAD_REF`: constant scopeThreadRef("environment-a" as never, THREAD_ID) in `apps/web/src/terminalUiStateStore.test.ts`:13
+- `THREAD_SELECTION_SAFE_SELECTOR`: constant "[data-thread-item], [data-thread-selection-safe]" in `apps/web/src/components/Sidebar.logic.ts`:19
+- `THREAD_SIDEBAR_MIN_WIDTH`: constant 13 * 16 in `apps/web/src/components/AppSidebarLayout.tsx`:12
+- `THREAD_SIDEBAR_WIDTH_STORAGE_KEY`: constant "chat_thread_sidebar_width" in `apps/web/src/components/AppSidebarLayout.tsx`:11
+- `THREAD_TITLE`: constant "Browser test thread" in `apps/web/src/components/ChatView.browser.tsx`:102
+- `TIMELINE_LIST_FOOTER`: constant <div className="h-3 sm:h-4" /> in `apps/web/src/components/chat/MessagesTimeline.tsx`:113
+- `TIMELINE_LIST_HEADER`: constant <div className="h-3 sm:h-4" /> in `apps/web/src/components/chat/MessagesTimeline.tsx`:112
+- `TIMESTAMP_FORMAT_LABELS`: constant { in `apps/web/src/components/settings/SettingsPanels.tsx`:99
+- `TOAST_DESCRIPTION_MAX`: constant 72 in `apps/server/src/git/GitManager.ts`:95
+- `TOAST_ICONS`: constant { in `apps/web/src/components/ui/toast.tsx`:78
+- `TOOL_LIFECYCLE_ITEM_TYPES`: constant [ in `packages/contracts/src/providerRuntime.ts`:105
+- `TOP_LIMIT`: constant 10 in `apps/server/src/diagnostics/TraceDiagnostics.ts`:66
+- `TRACE_DIAGNOSTICS_IDLE_TTL_MS`: constant 5 * 60_000 in `apps/web/src/lib/traceDiagnosticsState.ts`:13
+- `TRACE_DIAGNOSTICS_STALE_TIME_MS`: constant 5_000 in `apps/web/src/lib/traceDiagnosticsState.ts`:12
+- `TRAILING_PUNCTUATION_PATTERN`: constant /[., in `apps/web/src/terminal-links.ts`:42
+- `TRAILING_TERMINAL_CONTEXT_BLOCK_PATTERN`: constant /\n*<terminal_context>\n([\s\S]*?)\n<\/terminal_context>\s*$/ in `apps/web/src/lib/terminalContext.ts`:39
+- `TRANSCRIPT_HEADER`: constant "Transcript context:" in `apps/web/src/historyBootstrap.ts`:12
+- `TRANSIENT_BOOTSTRAP_STATUS_CODES`: constant new Set([502, 503, 504]) in `apps/web/src/environments/primary/auth.ts`:189
+- `TRANSPORT_ERROR_PATTERNS`: constant [ in `packages/client-runtime/src/transportError.ts`:1
+- `TUNNEL_SHUTDOWN_TIMEOUT_MS`: constant 2_000 in `packages/ssh/src/tunnel.ts`:55
+- `TURN_ID`: constant "fixture-turn" in `apps/server/integration/fixtures/providerRuntime.ts`:7
+- `TURN_MESSAGE_IDS_BY_TURN_CACHE_CAPACITY`: constant 10_000 in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:51
+- `TURN_MESSAGE_IDS_BY_TURN_TTL`: constant Duration.minutes(120) in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:52
+- `ULTRATHINK_FRAME_CLASSES`: constant { in `apps/web/src/components/chat/composerProviderState.test.tsx`:57
+- `ULTRATHINK_PROMPT_PREFIX`: constant "Ultrathink:\n" in `apps/web/src/components/chat/TraitsPicker.tsx`:47
+- `UNRECOVERABLE_HUNG_SESSION_RECOVERY_DETAIL_MARKERS`: constant [ in `apps/web/src/session-logic.ts`:199
+- `UPDATE`: constant makePackageManagedProviderMaintenanceResolver({ in `apps/server/src/provider/Drivers/ClaudeDriver.ts`:67
+- `UPDATE`: constant makePackageManagedProviderMaintenanceResolver({ in `apps/server/src/provider/Drivers/CodexDriver.ts`:59
+- `UPDATE`: constant makeStaticProviderMaintenanceResolver( in `apps/server/src/provider/Drivers/CursorDriver.ts`:53
+- `UPDATE`: constant makePackageManagedProviderMaintenanceResolver({ in `apps/server/src/provider/Drivers/OpenCodeDriver.ts`:63
+- `UPDATE_CHECK_CHANNEL`: constant "desktop:update-check" in `apps/desktop/dist-electron/preload.cjs`:15
+- `UPDATE_CHECK_CHANNEL`: constant "desktop:update-check" in `apps/desktop/src/ipc/channels.ts`:12
+- `UPDATE_DOWNLOAD_CHANNEL`: constant "desktop:update-download" in `apps/desktop/dist-electron/preload.cjs`:13
+- `UPDATE_DOWNLOAD_CHANNEL`: constant "desktop:update-download" in `apps/desktop/src/ipc/channels.ts`:10
+- `UPDATE_GET_STATE_CHANNEL`: constant "desktop:update-get-state" in `apps/desktop/dist-electron/preload.cjs`:11
+- `UPDATE_GET_STATE_CHANNEL`: constant "desktop:update-get-state" in `apps/desktop/src/ipc/channels.ts`:8
+- `UPDATE_INSTALL_CHANNEL`: constant "desktop:update-install" in `apps/desktop/dist-electron/preload.cjs`:14
+- `UPDATE_INSTALL_CHANNEL`: constant "desktop:update-install" in `apps/desktop/src/ipc/channels.ts`:11
+- `UPDATE_OUTPUT_MAX_BYTES`: constant 10_000 in `apps/server/src/provider/providerMaintenanceRunner.ts`:31
+- `UPDATE_SET_CHANNEL_CHANNEL`: constant "desktop:update-set-channel" in `apps/desktop/dist-electron/preload.cjs`:12
+- `UPDATE_SET_CHANNEL_CHANNEL`: constant "desktop:update-set-channel" in `apps/desktop/src/ipc/channels.ts`:9
+- `UPDATE_STATE_CHANNEL`: constant "desktop:update-state" in `apps/desktop/dist-electron/preload.cjs`:10
+- `UPDATE_STATE_CHANNEL`: constant "desktop:update-state" in `apps/desktop/src/ipc/channels.ts`:7
+- `UPDATE_TIMEOUT_MS`: constant 5 * 60_000 in `apps/server/src/provider/providerMaintenanceRunner.ts`:30
+- `UPSTREAM_CACHE_FILE`: constant "launcher-upstream-cache.json" in `scripts/local-desktop-launcher-run.ts`:48
+- `UPSTREAM_REF`: constant "07b695190f30a450e4921f71f77473e564395c59" in `packages/effect-codex-app-server/scripts/generate.ts`:20
+- `URL_PATTERN`: constant /https?:\/\/[^\s"'`<>]+/g in `apps/web/src/terminal-links.ts`:39
+- `USER_AGENT`: constant "effect-codex-app-server-generator" in `packages/effect-codex-app-server/scripts/generate.ts`:21
+- `UUID_ROUTE_RE`: constant /^\/draft\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/ in `apps/web/src/components/ChatView.browser.tsx`:110
+- `VCS_REF_LIST_LIMIT`: constant 100 in `apps/mobile/src/state/use-vcs-refs.ts`:19
+- `VCS_REF_LIST_LIMIT`: constant 100 in `apps/web/src/lib/vcsRefState.ts`:19
+- `VCS_REF_STALE_TIME_MS`: constant 5_000 in `apps/mobile/src/state/use-vcs-refs.ts`:20
+- `VCS_REF_STALE_TIME_MS`: constant 5_000 in `apps/web/src/lib/vcsRefState.ts`:20
+- `VCS_STATUS_REFRESH_DEBOUNCE_MS`: constant 1_000 in `packages/client-runtime/src/vcsStatusState.ts`:95
+- `VCS_STATUS_REFRESH_FAILURE_BASE_DELAY`: constant Duration.seconds(30) in `apps/server/src/vcs/VcsStatusBroadcaster.ts`:27
+- `VCS_STATUS_REFRESH_FAILURE_MAX_DELAY`: constant Duration.minutes(15) in `apps/server/src/vcs/VcsStatusBroadcaster.ts`:28
+- `VERSION`: constant process.argv[2] ?? "12.17.0" in `scripts/sync-vscode-icons.mjs`:12
+- `VERSION_MISMATCH_DISMISSALS_STORAGE_KEY`: constant "t3code:version-mismatch-dismissals:v1" in `apps/web/src/versionSkew.ts`:13
+- `VERSION_TAG`: constant `v${VERSION}` in `scripts/sync-vscode-icons.mjs`:13
+- `VSCODE_ICONS_BASE_URL`: constant `https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@${VSCODE_ICONS_VERSION... in `apps/web/src/vscode-icons.ts`:5
+- `VSCODE_ICONS_VERSION`: constant "v12.17.0" in `apps/web/src/vscode-icons.ts`:4
+- `VSIX_URL`: constant `https://open-vsx.org/api/vscode-icons-team/vscode-icons/${VERSION}/file/vsco... in `scripts/sync-vscode-icons.mjs`:14
+- `WCO_CLASS_NAME`: constant "wco" in `apps/web/src/lib/windowControlsOverlay.ts`:1
+- `WEB_ASSET_BRANDS`: constant [ in `scripts/apply-web-brand-assets.ts`:17
+- `WEB_ASSET_CHANNELS`: constant ["latest", "nightly"] as const in `scripts/lib/brand-assets.ts`:28
+- `WEB_ICON_SOURCE_PATHS_BY_BRAND`: constant { in `scripts/lib/brand-assets.ts`:48
+- `WEB_ICON_TARGET_FILENAMES`: constant { in `scripts/lib/brand-assets.ts`:41
+- `WEBSOCKET_TOKEN_QUERY_PARAM`: constant "wsToken" in `apps/server/src/auth/Layers/ServerAuth.ts`:38
+- `WINDOW_UNAVAILABLE_MESSAGE`: constant "T3 Code window is not available for SSH authentication." in `apps/desktop/src/ssh/DesktopSshPasswordPrompts.ts`:19
+- `WINDOWS_COMMAND_NOT_FOUND_PATTERNS`: constant [ in `apps/server/src/processRunner.ts`:99
+- `WINDOWS_DRIVE_PATH_PATTERN`: constant /^[A-Za-z]:[\\/]/ in `apps/web/src/markdown-links.ts`:4
+- `WINDOWS_PATH_DELIMITER`: constant " in `packages/shared/src/shell.ts`:10
+- `WINDOWS_PROFILE_ENV_NAMES`: constant ["PATH", "FNM_DIR", "FNM_MULTISHELL_PATH"] as const in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:40
+- `WINDOWS_SHELL_CANDIDATES`: constant ["pwsh.exe", "powershell.exe"] as const in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:41
+- `WINDOWS_SHELL_CANDIDATES`: constant ["pwsh.exe", "powershell.exe"] as const in `packages/shared/src/shell.ts`:12
+- `WINDOWS_UNC_PATH_PATTERN`: constant /^\\\\/ in `apps/web/src/markdown-links.ts`:5
+- `WORKING_INDICATOR_HEIGHT`: constant 44 in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:166
+- `WORKSPACE_CACHE_MAX_KEYS`: constant 4 in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:33
+- `WORKSPACE_CACHE_TTL_MS`: constant 15_000 in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:32
+- `WORKSPACE_FILES_MAX_OUTPUT_BYTES`: constant 16 * 1024 * 1024 in `apps/server/src/vcs/GitVcsDriver.ts`:228
+- `WORKSPACE_FILES_MAX_OUTPUT_BYTES`: constant 120_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:50
+- `WORKSPACE_GIT_HARDENED_CONFIG_ARGS`: constant [ in `apps/server/src/vcs/GitVcsDriver.ts`:231
+- `WORKSPACE_INDEX_MAX_ENTRIES`: constant 25_000 in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:34
+- `WORKSPACE_SCAN_READDIR_CONCURRENCY`: constant 32 in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:35
+- `WORKTREE_BRANCH_PREFIX`: constant "t3code" in `packages/shared/src/git.ts`:13
+- `WS_METHODS`: constant { in `packages/contracts/src/rpc.ts`:116
+- `WS_RECONNECT_BACKOFF_FACTOR`: constant DEFAULT_RECONNECT_BACKOFF.backoffFactor in `apps/web/src/rpc/wsConnectionState.ts`:11
+- `WS_RECONNECT_INITIAL_DELAY_MS`: constant DEFAULT_RECONNECT_BACKOFF.initialDelayMs in `apps/web/src/rpc/wsConnectionState.ts`:10
+- `WS_RECONNECT_MAX_ATTEMPTS`: constant WS_RECONNECT_MAX_RETRIES + 1 in `apps/web/src/rpc/wsConnectionState.ts`:14
+- `WS_RECONNECT_MAX_DELAY_MS`: constant DEFAULT_RECONNECT_BACKOFF.maxDelayMs in `apps/web/src/rpc/wsConnectionState.ts`:12
+- `WS_RECONNECT_MAX_RETRIES`: constant DEFAULT_RECONNECT_BACKOFF.maxRetries! in `apps/web/src/rpc/wsConnectionState.ts`:13
+
+## Notes
+
+- This inventory is biased toward React, Next.js, and Node-style patterns.
+- Use this output to author `.context/inputs-and-state.md` or a matching section in `docs.md`.
+- Add interpretation separately for which entries are important, long-lived, user-facing, or only local UI state.
