@@ -10,16 +10,16 @@ const appName = process.argv[3]?.trim();
 
 const APP_SPECS = {
   web: {
-    relativeCwd: "apps/web",
-    command: ["bun", "run", "dev"],
+    relativeCwd: ".",
+    command: ["node", "scripts/dev-runner.ts", "dev:web"],
   },
   desktop: {
-    relativeCwd: "apps/desktop",
-    command: ["bun", "run", "dev"],
+    relativeCwd: ".",
+    command: ["node", "scripts/dev-runner.ts", "dev:desktop-bundle"],
   },
   "t3-build": {
     relativeCwd: "apps/server",
-    command: ["bun", "run", "build"],
+    command: ["node", "scripts/dev-server.mjs"],
   },
 };
 
@@ -40,10 +40,12 @@ if (!worktreePath) {
   throw new Error(`T3CODE_APP_ROOT missing in ${stackName} stack env`);
 }
 
+const worktreeBin = NodePath.join(worktreePath, "node_modules", ".bin");
 const childEnv = {
   ...process.env,
   ...stackEnv,
   T3CODE_TURBO_UI: "stream",
+  PATH: [worktreeBin, process.env.PATH].filter(Boolean).join(":"),
 };
 
 const child = NodeChildProcess.spawn(appSpec.command[0], appSpec.command.slice(1), {
