@@ -1,7 +1,0 @@
-{
-  "name": "@t3code-local/convex",
-  "private": true,
-  "scripts": {
-    "dev": "node ../run-convex-dev.mjs"
-  }
-}

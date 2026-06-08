@@ -1,0 +1,7 @@
+{
+  "name": "@t3code-local/main-convex",
+  "private": true,
+  "scripts": {
+    "dev": "node ../run-convex-dev.mjs main-convex"
+  }
+}
