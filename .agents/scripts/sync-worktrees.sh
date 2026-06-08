@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 for dir in "$MAIN_DIR" "$STAGING_DIR"; do
-  if [[ ! -d "$dir/.git" ]]; then
+  if [[ ! -e "$dir/.git" ]]; then
     echo "Missing worktree: $dir" >&2
     exit 1
   fi
