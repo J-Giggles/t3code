@@ -58,11 +58,15 @@ esac
 
 FREE_PORT_ARGS=()
 if [[ -n "$FORCE_RELAUNCH" ]]; then
-  cat >&2 <<EOF
+  if [[ "$VARIANT" == "dev" ]]; then
+    cat >&2 <<EOF
 Agent launches cannot force-relaunch T3code Dev.
 Use the existing Dev windows, or quit T3code Dev manually before launching a solo app.
 EOF
-  exit 1
+    exit 1
+  fi
+  FREE_PORT_ARGS+=(--force-relaunch)
+  export T3CODE_FORCE_SOLO_LAUNCH=1
 fi
 
 free_local_desktop_ports "$VARIANT" "${FREE_PORT_ARGS[@]}"
