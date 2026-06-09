@@ -1,6 +1,6 @@
 # T3 Code Local — agent reference
 
-Last refreshed: 2026-06-06T14:42:29+0100
+Last refreshed: 2026-06-09T08:57:41+0100
 
 ## Omarchy launcher
 
@@ -52,7 +52,7 @@ User launchers open a **Ghostty** startup terminal and keep it open until Enter 
 - Live app: `t3code/` on `main`
 - Promotion staging → main is **manual only** (terminal merge or in-app toast); agents must not auto-merge
 - Main runs **stable** dev stack (`T3CODE_DEV_STACK=stable`): build-once, no HMR/Electron restarts until relaunch after promotion
-- Staging is a **read-only mirror** of main activity (Convex event follower + projection snapshots); dispatch blocked unless `T3CODE_STAGING_ALLOW_DISPATCH=1`
+- Staging is a **read-only mirror** of main activity (separate Convex on 3220, seeded from main, incremental event follower); dispatch blocked unless `T3CODE_STAGING_ALLOW_DISPATCH=1`
 - When staging is clean and ahead of main, both instances can show a promotion toast with **Relaunch main with updates**
 
 See `t3code-staging/docs/t3code-local.md` and `t3code/.agents/rules/t3code-local-workflow.md`.
@@ -98,9 +98,10 @@ If you open a single worktree folder directly (`t3code-staging/` only), Fallow a
 
 ## Agent-maintained notes
 
-- **Anonymous local Convex (2026-06):** Shared data at `~/.local/share/t3code-local/convex/`. All `convex dev` / `--once` spawns must set `CONVEX_AGENT_MODE=anonymous` when `CONVEX_DEPLOYMENT` starts with `anonymous:` (via `withLocalAnonymousConvexCliEnv` in `packages/convex/scripts/convex-shared-deployment.mjs`) or the CLI blocks on an account-link prompt and startup hangs. Cold boot of a large shared SQLite DB can take ~1–2 minutes; ready marker is written after `GET /version` succeeds.
+- **Anonymous local Convex (2026-06):** Main data at `~/.local/share/t3code-local/convex/` (3210); staging at `~/.local/share/t3code-local/staging/convex/` (3220). All `convex dev` / `--once` spawns must set `CONVEX_AGENT_MODE=anonymous` when `CONVEX_DEPLOYMENT` starts with `anonymous:` (via `withLocalAnonymousConvexCliEnv` in `packages/convex/scripts/convex-shared-deployment.mjs`) or the CLI blocks on an account-link prompt and startup hangs. Cold boot of a large SQLite DB can take ~1–2 minutes; ready marker is written after `GET /version` succeeds.
 - **Fixed local desktop ports (2026-06):** `scripts/local-desktop-env.ts` defines stable main/staging URLs (web/server/CDP). `t3-start.sh`, `t3-launch.sh`, and `local-desktop-launcher-run.ts` call `free-local-desktop-ports.ts` before launch; `dev-runner` keeps hashed offsets for `t3code-local-main` / `t3code-local-staging` instead of bumping when ports are busy.
 - **T3code Dev solo-launch guard (2026-06):** While `t3code-local-dev.bundle.pid` points at a live dev-bundle supervisor, solo `main`/`staging` launches prompt to quit Dev and relaunch (clack confirm / `[y/N]`). Pass `--force-relaunch` or `T3CODE_FORCE_SOLO_LAUNCH=1` to skip the prompt (required for agent launches).
+- **Dev attach + staging isolation (2026-06):** `start:dev` probes main health; when healthy it keeps main processes and starts staging Turbo tasks only (`local-desktop-dev-bundle-attach.ts`). Solo `start:staging` tears down staging only (`tearDownDevBundleForSoloRelaunch({ preserveVariant: "main" })`). `free-local-desktop-ports.ts dev` frees staging ports only in attach mode. Env: `T3CODE_DEV_ATTACH_MAIN=1` (force attach), `T3CODE_DEV_FORCE_FULL_RELAUNCH=1` (kill both). Staging desktop promotion relaunches staging with attach; **main** promotion (including Tailscale mobile `POST /t3code-main/api/local/promotion-apply`) merges and relaunches main via `promotion-relaunch-request.json` + desktop watcher.
 
 - Project memory convention: use `.context/docs.md` for durable project facts and `.cursor/rules/*.mdc` only for actionable Cursor instructions; agents should propose Memory Candidates with evidence and confidence before writing new memory.
-- **Local Convex (2026-06):** Walker **T3code** and **T3code Staging** set `T3CODE_PERSISTENCE=convex` and share one local backend data dir: `~/.local/share/t3code-local/convex/` (port `3210` from `packages/convex/.env.local`). Per-instance `T3CODE_HOME` (`main` / `staging`) still isolates logs and desktop settings. `bun run dev` runs `@t3tools/convex#dev` + web + desktop; `convex-dev.mjs` reuses a healthy backend on 3210 or starts a new one. SQLite → Convex import: `bun run migrate:sqlite-to-convex -- --preset local-main|local-staging --backup`.
+- **Local Convex (2026-06):** Main uses `~/.local/share/t3code-local/convex/` (port **3210**). Staging uses `~/.local/share/t3code-local/staging/convex/` (port **3220**). First staging launch seeds from main when empty; staging server follower replicates main orchestration events. Promotion copies staging Convex → main after git merge. Per-instance `T3CODE_HOME` still isolates logs and desktop settings.

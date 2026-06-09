@@ -4,12 +4,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 
 ## Summary
 
-- Files scanned: 1389
-- Environment inputs: 255
+- Files scanned: 1399
+- Environment inputs: 260
 - Route and request inputs: 119
 - Form inputs: 2
-- State and storage entries: 168
-- Hardcoded values: 1297
+- State and storage entries: 169
+- Hardcoded values: 1306
 
 ## Environment Inputs
 
@@ -26,52 +26,52 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CODEX_BIN`: process.env access in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
 - `CODEX_BIN`: env fallback "codex", in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
 - `CODEX_BINARY_PATH`: process.env access in `apps/server/integration/orchestrationEngine.integration.test.ts`:269
-- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:160
-- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:160
-- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:226
-- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:226
-- `CONVEX_URL`: env fallback readConvexLocalEnv().CONVEX_URL ?? null, in `apps/server/scripts/convex-attachment-backfill.ts`:121
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:161
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:161
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:230
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:230
 - `CONVEX_URL`: process.env access in `apps/server/scripts/convex-attachment-backfill.ts`:121
+- `CONVEX_URL`: env fallback readConvexLocalEnv().CONVEX_URL ?? null, in `apps/server/scripts/convex-attachment-backfill.ts`:121
 - `CONVEX_URL`: process.env access in `apps/server/src/persistence/Layers/DualWriteOrchestrationEventStore.test.ts`:112
 - `CONVEX_URL`: process.env access in `packages/convex/env.ts`:16
-- `CONVEX_URL`: process.env access in `packages/convex/scripts/convex-dev.mjs`:175
+- `CONVEX_URL`: process.env access in `packages/convex/scripts/convex-dev.mjs`:176
 - `CONVEX_URL`: process.env access in `scripts/sqlite-to-convex-migrate.ts`:953
 - `CURSOR_AGENT_BIN`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
 - `CURSOR_AGENT_BIN`: env fallback "agent" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
-- `CURSOR_CONTEXT`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
 - `CURSOR_CONTEXT`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
-- `CURSOR_FAST`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
+- `CURSOR_CONTEXT`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
 - `CURSOR_FAST`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
+- `CURSOR_FAST`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
 - `CURSOR_PROMPT_WAIT_MS`: env fallback "4000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
 - `CURSOR_PROMPT_WAIT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
-- `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
 - `CURSOR_REASONING`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
-- `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
+- `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
 - `CURSOR_REQUEST_TIMEOUT_MS`: env fallback "20000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
+- `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
 - `DEV`: import.meta.env access in `apps/web/src/branding.ts`:84
 - `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_DISABLE_CACHE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:54
-- `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
 - `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: env fallback (process.env.NODE_ENV === "test" ? "javascript" : "native") in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
+- `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:167
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:186
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:197
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:199
 - `GITHUB_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:516
-- `HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:128
-- `HOME`: process.env access in `packages/ssh/src/config.ts`:211
+- `HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:129
 - `HOME`: env fallback process.env.USERPROFILE ?? "" in `packages/ssh/src/config.ts`:211
+- `HOME`: process.env access in `packages/ssh/src/config.ts`:211
 - `HOST`: process.env access in `apps/web/vite.config.ts`:9
 - `LOCALAPPDATA`: process.env access in `scripts/build-desktop-artifact.ts`:160
 - `NODE_ENV`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:49
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:88
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:99
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:140
-- `PATH`: process.env access in `packages/convex/scripts/convex-dev.mjs`:127
-- `PATH`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:144
+- `PATH`: process.env access in `packages/convex/scripts/convex-dev.mjs`:128
+- `PATH`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:145
 - `PORT`: process.env access in `apps/marketing/astro.config.mjs`:5
 - `PORT`: env fallback 4173), in `apps/marketing/astro.config.mjs`:5
-- `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:8
 - `PORT`: process.env access in `apps/web/vite.config.ts`:8
+- `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:8
 - `PYTHON`: process.env access in `scripts/build-desktop-artifact.ts`:154
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:168
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:187
@@ -129,8 +129,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:188
 - `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:207
 - `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:209
-- `T3CODE_AGENT_AUTOMATION`: env fallback "1", in `apps/desktop/src/ipc/methods/promotion.ts`:29
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:29
+- `T3CODE_AGENT_AUTOMATION`: env fallback "1", in `apps/desktop/src/ipc/methods/promotion.ts`:29
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:16
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:18
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:45
@@ -138,22 +138,23 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:22
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:82
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:93
-- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:249
-- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:295
-- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:194
-- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:513
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:258
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:306
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:195
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:515
 - `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:131
 - `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:132
 - `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/env.ts`:27
-- `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-dev.mjs`:34
+- `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-dev.mjs`:35
 - `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-ready.mjs`:100
 - `T3CODE_CONVEX_EVENT_FOLLOW`: process.env access in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:16
-- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `packages/convex/scripts/convex-dev.mjs`:192
-- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `scripts/local-desktop-launcher-run.ts`:249
+- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `packages/convex/scripts/convex-dev.mjs`:196
+- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `scripts/local-desktop-launcher-run.ts`:251
 - `T3CODE_CURSOR_ENABLED`: process.env access in `apps/server/src/provider/Layers/ProviderRegistry.test.ts`:69
 - `T3CODE_DESKTOP_UPDATE_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:515
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/config.ts`:63
-- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/promotionStatus.ts`:271
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/http.ts`:122
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/promotionStatus.ts`:279
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:19
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:80
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:86
@@ -171,32 +172,36 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_DEV_STACK`: process.env access in `apps/server/scripts/dev-bundle.mjs`:6
 - `T3CODE_DEV_STACK`: process.env access in `apps/server/scripts/dev-server.mjs`:6
 - `T3CODE_DEV_STACK`: process.env access in `apps/web/vite.config.ts`:14
-- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/free-local-desktop-ports.ts`:21
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/free-local-desktop-ports.ts`:22
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:23
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:65
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:83
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:54
 - `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:133
 - `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:134
-- `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:33
+- `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:34
 - `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-ready.mjs`:99
-- `T3CODE_LAUNCH_FAST`: process.env access in `packages/convex/scripts/convex-dev.mjs`:193
+- `T3CODE_LAUNCH_FAST`: process.env access in `packages/convex/scripts/convex-dev.mjs`:197
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:19
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:22
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:32
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:34
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:56
-- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:248
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:250
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:18
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:21
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:27
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:29
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.ts`:51
 - `T3CODE_LAUNCH_VERBOSE`: process.env access in `scripts/local-desktop-launcher-output.ts`:53
-- `T3CODE_LAUNCHER_PID_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:457
-- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:265
+- `T3CODE_LAUNCHER_PID_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:459
+- `T3CODE_LOCAL_MAIN_CONVEX_DATA_DIR`: process.env access in `apps/server/src/local/promotionStatus.ts`:271
+- `T3CODE_LOCAL_MAIN_CONVEX_SITE_URL`: process.env access in `apps/server/src/local/promotionStatus.ts`:274
+- `T3CODE_LOCAL_MAIN_CONVEX_URL`: process.env access in `apps/server/src/local/promotionStatus.ts`:273
+- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:269
 - `T3CODE_LOCAL_PROMOTION_STATUS`: process.env access in `apps/web/vite.config.ts`:16
-- `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:266
+- `T3CODE_LOCAL_STAGING_CONVEX_DATA_DIR`: process.env access in `apps/server/src/local/promotionStatus.ts`:272
+- `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:270
 - `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:63
 - `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:64
 - `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:85
@@ -214,8 +219,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:19
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:50
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:52
-- `T3CODE_RUNTIME_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:109
 - `T3CODE_RUNTIME_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", "runtime.log") in `scripts/local-desktop-launcher-run.ts`:109
+- `T3CODE_RUNTIME_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:109
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/config.ts`:64
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:83
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:87
@@ -236,8 +241,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_WEB_SOURCEMAP`: process.env access in `apps/web/vite.config.ts`:30
 - `TEMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `TMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
-- `TMPDIR`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `TMPDIR`: env fallback process.env.TEMP ?? process.env.TMP ?? "/tmp" in `apps/server/src/git/GitManager.ts`:703
+- `TMPDIR`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `USERPROFILE`: process.env access in `packages/ssh/src/config.ts`:211
 - `VERCEL_ENV`: process.env access in `apps/web/vite.config.ts`:22
 - `VERCEL_PROJECT_PRODUCTION_URL`: process.env access in `apps/web/vite.config.ts`:22
@@ -286,7 +291,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `editFlags`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:216
 - `editFlags`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:217
 - `editFlags`: route params access in `apps/desktop/src/window/DesktopWindow.ts`:218
-- `effort`: route params access in `apps/web/src/components/ChatView.tsx`:348
+- `effort`: route params access in `apps/web/src/components/ChatView.tsx`:349
 - `environmentId`: route params access in `apps/mobile/src/app/new/draft.tsx`:16
 - `environmentId`: route params access in `apps/mobile/src/app/new/draft.tsx`:17
 - `environmentId`: route params access in `apps/mobile/src/app/new/draft.tsx`:18
@@ -302,9 +307,9 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `environmentId`: route params access in `apps/web/src/threadRoutes.ts`:47
 - `filePaths`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:56
 - `filePaths`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:69
-- `hasActionableProposedPlan`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:233
-- `hasPendingApprovals`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:231
-- `hasPendingUserInput`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:232
+- `hasActionableProposedPlan`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:234
+- `hasPendingApprovals`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:232
+- `hasPendingUserInput`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:233
 - `includesCommit`: route params access in `apps/mobile/src/features/threads/git/GitConfirmSheet.tsx`:36
 - `item`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:556
 - `item`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:592
@@ -319,14 +324,14 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `mode`: route params access in `apps/server/scripts/acp-mock-agent.ts`:534
 - `modeId`: route params access in `apps/server/scripts/acp-mock-agent.ts`:528
 - `modeId`: route params access in `apps/server/scripts/acp-mock-agent.ts`:529
-- `model`: route params access in `apps/web/src/components/ChatView.tsx`:347
-- `models`: route params access in `apps/web/src/components/ChatView.tsx`:347
+- `model`: route params access in `apps/web/src/components/ChatView.tsx`:348
+- `models`: route params access in `apps/web/src/components/ChatView.tsx`:348
 - `payload`: route params access in `apps/server/src/provider/hermesTuiGateway.ts`:72
 - `plan`: route params access in `apps/server/src/provider/acp/CursorAcpExtension.ts`:75
 - `previous`: route params access in `apps/web/src/store.ts`:885
 - `previous`: route params access in `apps/web/src/store.ts`:886
 - `projectId`: route params access in `apps/mobile/src/app/new/draft.tsx`:19
-- `provider`: route params access in `apps/web/src/components/ChatView.tsx`:347
+- `provider`: route params access in `apps/web/src/components/ChatView.tsx`:348
 - `questions`: route params access in `apps/server/src/provider/acp/CursorAcpExtension.ts`:59
 - `remoteUrl`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:750
 - `repositoryTitle`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:751
@@ -338,25 +343,25 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `sessionId`: route params access in `apps/server/scripts/acp-mock-agent.ts`:541
 - `sessionId`: route params access in `apps/server/src/provider/acp/AcpRuntimeModel.ts`:409
 - `sessionId`: route params access in `apps/server/src/provider/acp/AcpSessionRuntime.ts`:645
-- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:206
-- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:219
-- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:222
-- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:225
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:207
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:220
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:223
+- `sessionStatus`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:226
 - `source`: route params access in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:516
 - `sourceProposedPlan`: route params access in `apps/web/src/store.ts`:887
 - `startedAt`: route params access in `apps/web/src/store.ts`:892
 - `state`: route params access in `apps/web/src/store.ts`:890
 - `terminalId`: route params access in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:227
 - `terminalId`: route params access in `apps/mobile/src/lib/routes.ts`:65
-- `text`: route params access in `apps/web/src/components/ChatView.tsx`:349
+- `text`: route params access in `apps/web/src/components/ChatView.tsx`:350
 - `thread`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:475
 - `threadId`: route params access in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:222
 - `threadId`: route params access in `apps/mobile/src/features/threads/ThreadRouteScreen.tsx`:82
 - `threadId`: route params access in `apps/mobile/src/state/use-thread-selection.ts`:61
 - `threadId`: route params access in `apps/mobile/src/state/use-thread-selection.ts`:70
 - `threadId`: route params access in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:514
-- `threadId`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:194
-- `threadId`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:221
+- `threadId`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:195
+- `threadId`: route params access in `apps/web/src/environments/runtime/service.threadSubscriptions.test.ts`:222
 - `threadId`: route params access in `apps/web/src/threadRoutes.ts`:34
 - `threadId`: route params access in `apps/web/src/threadRoutes.ts`:38
 - `threadId`: route params access in `apps/web/src/threadRoutes.ts`:44
@@ -469,7 +474,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `isComposerFooterCompact`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:828
 - `isComposerModelPickerOpen`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:830
 - `isComposerPrimaryActionsCompact`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:829
-- `isConnecting`: useState initial false in `apps/web/src/components/ChatView.tsx`:874
+- `isConnecting`: useState initial false in `apps/web/src/components/ChatView.tsx`:875
 - `isCreatingPairingLink`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:929
 - `isDesktopServerExposureDialogOpen`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1460
 - `isDragOverComposer`: useState initial false in `apps/web/src/components/chat/ChatComposer.tsx`:827
@@ -486,13 +491,14 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `isOpeningLogsDirectory`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:828
 - `isPickingProjectFolder`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:416
 - `isPublishDialogOpen`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:976
-- `isRecoveringSession`: useState initial false in `apps/web/src/components/ChatView.tsx`:1601
+- `isRecoveringSession`: useState initial false in `apps/web/src/components/ChatView.tsx`:1602
 - `isRefreshingProviders`: useState initial false in `apps/web/src/components/settings/SettingsPanels.tsx`:924
 - `isRemoteProjectCloning`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:419
 - `isRemoteProjectLookingUp`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:418
 - `isResponding`: useState initial false in `apps/web/src/components/desktop/SshPasswordPromptDialog.tsx`:34
+- `isResuming`: useState initial false in `apps/web/src/components/SidebarSessionRecovery.tsx`:20
 - `isRevealDialogOpen`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:470
-- `isRevertingCheckpoint`: useState initial false in `apps/web/src/components/ChatView.tsx`:875
+- `isRevertingCheckpoint`: useState initial false in `apps/web/src/components/ChatView.tsx`:876
 - `isRevokingOtherDesktopClients`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1432
 - `isSaveDialogOpen`: useState initial false in `apps/web/src/components/chat/ProposedPlanCard.tsx`:43
 - `isSavingToWorkspace`: useState initial false in `apps/web/src/components/PlanSidebar.tsx`:78
@@ -512,7 +518,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `label`: useState initial "" in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:122
 - `lastGridSize`: useState initial { cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_ROWS, } in `apps/mobile/src/features/terminal/ThreadTerminalPanel.tsx`:40
 - `lastGridSize`: useState initial cachedRouteGridSize ?? { cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_... in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:242
-- `localFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:590
+- `localFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:591
 - `measuredOverlayHeight`: useState initial 0 in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:211
 - `message`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:169
 - `mounted`: useState initial props.visible in `apps/mobile/src/features/threads/ThreadNavigationDrawer.tsx`:50
@@ -529,7 +535,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `pathInput`: useState initial ( in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:679
 - `pathInput`: useState initial ( in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:752
 - `preview`: useState initial initialPreview in `apps/web/src/components/chat/ExpandedImageDialog.tsx`:15
-- `projectRenameTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1140
+- `projectRenameTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1141
 - `prompt`: useState initial "" in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:156
 - `proposedPlanExpanded`: useState initial false in `apps/web/src/components/PlanSidebar.tsx`:77
 - `publishAdvancedOpen`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:358
@@ -541,7 +547,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `reference`: useState initial initialReference ?? "" in `apps/web/src/components/PullRequestThreadDialog.tsx`:47
 - `referenceDirty`: useState initial false in `apps/web/src/components/PullRequestThreadDialog.tsx`:48
 - `refreshing`: useState initial false in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:212
-- `renamingTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1135
+- `renamingTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1136
 - `repositoryInput`: useState initial "" in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:517
 - `resizeEpoch`: useState initial 0 in `apps/web/src/components/ThreadTerminalDrawer.tsx`:861
 - `resourceWindowMs`: useState initial 15 * 60_000 in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:808
@@ -557,12 +563,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `scannerLocked`: useState initial false in `apps/mobile/src/app/connections/new.tsx`:32
 - `searchQuery`: useState initial "" in `apps/mobile/src/app/index.tsx`:17
 - `searchQuery`: useState initial "" in `apps/web/src/components/chat/ModelPickerContent.tsx`:97
-- `sessionRecoveryNowMs`: useState initial ( in `apps/web/src/components/ChatView.tsx`:1600
+- `sessionRecoveryNowMs`: useState initial ( in `apps/web/src/components/ChatView.tsx`:1601
 - `showScanner`: useState initial params.mode === "scan_qr" in `apps/mobile/src/app/connections/new.tsx`:30
-- `showScrollToBottom`: useState initial false in `apps/web/src/components/ChatView.tsx`:866
+- `showScrollToBottom`: useState initial false in `apps/web/src/components/ChatView.tsx`:867
 - `submitting`: useState initial false in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:158
 - `tailscaleServePortInput`: useState initial String(DEFAULT_TAILSCALE_SERVE_PORT in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1465
-- `terminalFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:897
+- `terminalFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:898
 - `tokensPatchJson`: useState initial ( in `apps/mobile/src/features/review/useNativeReviewDiffHighlighting.ts`:51
 - `toolbarScrollEdges`: useState initial { showLeftFade: false, showRightFade: false, } in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:256
 - `uncontrolledIsMenuOpen`: useState initial false in `apps/web/src/components/chat/ProviderModelPicker.tsx`:48
@@ -587,6 +593,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `0`: timer duration (ms) in `apps/web/src/components/chat/ModelPickerContent.tsx`:525
 - `0`: timer duration (ms) in `apps/web/src/proposedPlan.ts`:119
 - `0`: timer duration (ms) in `apps/web/src/rpc/serverState.test.ts`:211
+- `0`: timer duration (ms) in `apps/web/src/uiStateStore.test.ts`:790
+- `0`: timer duration (ms) in `apps/web/src/uiStateStore.test.ts`:843
 - `10`: timer duration (ms) in `apps/web/src/rpc/serverState.test.ts`:129
 - `10`: timer duration (ms) in `apps/web/src/rpc/wsTransport.test.ts`:108
 - `100`: timer duration (ms) in `apps/mobile/src/features/threads/ThreadComposer.tsx`:173
@@ -607,7 +615,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `14697`: port literal in `scripts/local-desktop-launcher-human-log.test.ts`:22
 - `150`: timer duration (ms) in `apps/mobile/src/features/threads/NewTaskDraftScreen.tsx`:262
 - `16247`: port literal in `scripts/local-desktop-launcher-access.test.ts`:22
-- `180`: timer duration (ms) in `apps/web/src/components/Sidebar.tsx`:1426
+- `180`: timer duration (ms) in `apps/web/src/components/Sidebar.tsx`:1427
 - `200`: timer duration (ms) in `apps/web/src/components/chat/ComposerPendingUserInputPanel.tsx`:86
 - `22`: port literal in `apps/desktop/src/settings/DesktopSavedEnvironments.test.ts`:29
 - `22`: port literal in `apps/web/src/clientPersistenceStorage.test.ts`:17
@@ -856,7 +864,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `BASE_SERVER_PORT`: constant 13773 in `scripts/dev-runner.ts`:30
 - `BASE_TIME_MS`: constant Date.parse(NOW_ISO) in `apps/web/src/components/ChatView.browser.tsx`:125
 - `BASE_WEB_PORT`: constant 5733 in `scripts/dev-runner.ts`:31
-- `BASE_WEB_PORT`: constant 5733 in `scripts/local-desktop-env.ts`:13
+- `BASE_WEB_PORT`: constant 5733 in `scripts/local-desktop-env.ts`:14
 - `BENIGN_ERROR_LOG_SNIPPETS`: constant [ in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:52
 - `BOOTSTRAP_PREAMBLE`: constant "Continue this conversation using the transcript context below. The final sec... in `apps/web/src/historyBootstrap.ts`:10
 - `BOOTSTRAP_RETRY_STEP_MS`: constant 500 in `apps/web/src/environments/primary/auth.ts`:191
@@ -973,8 +981,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CONNECTIONS_KEY`: constant "t3code.connections" in `apps/mobile/src/lib/storage.ts`:10
 - `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/dist-electron/preload.cjs`:7
 - `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/src/ipc/channels.ts`:4
-- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-dev.mjs`:105
-- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/setup-local.mjs`:21
+- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-dev.mjs`:106
+- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/setup-local.mjs`:22
 - `CONVEX_DOCUMENT_JSON_BYTE_BUDGET`: constant 450_000 in `apps/server/src/persistence/Layers/convexDocumentJson.ts`:2
 - `CONVEX_MUTATION_BYTE_BUDGET`: constant 900_000 in `scripts/sqlite-to-convex-migrate.ts`:84
 - `CONVEX_READY_FILENAME`: constant "convex-ready.json" in `packages/convex/scripts/convex-ready.mjs`:4
@@ -1008,9 +1016,9 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_BATCH_WINDOW_MS`: constant 200 in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:25
 - `DEFAULT_BINDINGS`: constant compile([ in `apps/web/src/keybindings.test.ts`:86
 - `DEFAULT_CHECK_COMMAND`: constant "bun run build" in `apps/web/src/localPromotionActions.ts`:17
-- `DEFAULT_CONVEX_PORT`: constant 3210 in `packages/convex/scripts/convex-dev.mjs`:22
+- `DEFAULT_CONVEX_PORT`: constant 3210 in `packages/convex/scripts/convex-dev.mjs`:23
 - `DEFAULT_DEBOUNCE_MS`: constant 200 in `packages/client-runtime/src/composerPathSearchState.ts`:56
-- `DEFAULT_DESKTOP_BACKEND_PORT`: constant 3773 in `apps/desktop/src/app/DesktopApp.ts`:25
+- `DEFAULT_DESKTOP_BACKEND_PORT`: constant 3773 in `apps/desktop/src/app/DesktopApp.ts`:26
 - `DEFAULT_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:64
 - `DEFAULT_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/web/src/components/settings/SettingsPanels.tsx`:105
 - `DEFAULT_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/web/src/providerModels.ts`:16
@@ -1023,7 +1031,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_HOSTNAME`: constant "127.0.0.1" in `apps/server/src/provider/opencodeRuntime.ts`:44
 - `DEFAULT_IDLE_TTL_MS`: constant 5 * 60_000 in `packages/client-runtime/src/filesystemBrowseState.ts`:54
 - `DEFAULT_IDLE_TTL_MS`: constant 5 * 60_000 in `packages/client-runtime/src/sourceControlDiscoveryState.ts`:93
-- `DEFAULT_INACTIVITY_THRESHOLD_MS`: constant 30 * 60 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:16
+- `DEFAULT_INACTIVITY_THRESHOLD_MS`: constant 30 * 60 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:20
 - `DEFAULT_LIMIT`: constant 20 in `packages/client-runtime/src/composerPathSearchState.ts`:57
 - `DEFAULT_LOCAL_MODEL`: constant "ollama/llama3" in `packages/contracts/src/model.ts`:139
 - `DEFAULT_MAX_BUFFER_BYTES`: constant 512 * 1024 in `packages/client-runtime/src/terminalSessionState.ts`:111
@@ -1044,7 +1052,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_PORT`: constant 3773 in `apps/server/src/config.ts`:17
 - `DEFAULT_POSITIVE_CACHE_TTL`: constant Duration.minutes(1) in `apps/server/src/project/Layers/RepositoryIdentityResolver.ts`:77
 - `DEFAULT_PROCESS_KILL_GRACE_MS`: constant 1_000 in `apps/server/src/terminal/Layers/Manager.ts`:55
-- `DEFAULT_PROMOTION_CHECK_COMMAND`: constant ["bun", "run", "build"] as const in `apps/server/src/local/promotionApply.ts`:18
+- `DEFAULT_PROMOTION_CHECK_COMMAND`: constant ["bun", "run", "build"] as const in `apps/server/src/local/promotionApply.ts`:20
 - `DEFAULT_PROVIDER_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `packages/shared/src/model.ts`:13
 - `DEFAULT_READ_FROM_SEQUENCE_LIMIT`: constant 1_000 in `apps/server/src/persistence/Layers/ConvexOrchestrationEventStore.ts`:21
 - `DEFAULT_READ_FROM_SEQUENCE_LIMIT`: constant 1_000 in `apps/server/src/persistence/Layers/OrchestrationEventStore.ts`:67
@@ -1060,11 +1068,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_SLOW_SPAN_THRESHOLD_MS`: constant 1_000 in `apps/server/src/diagnostics/TraceDiagnostics.ts`:65
 - `DEFAULT_SSH_COMMAND_TIMEOUT_MS`: constant 60_000 in `packages/ssh/src/command.ts`:17
 - `DEFAULT_SSH_PASSWORD_PROMPT_TIMEOUT_MS`: constant 3 * 60 * 1000 in `apps/desktop/src/ssh/DesktopSshPasswordPrompts.ts`:18
+- `DEFAULT_STALE_RUNNING_THRESHOLD_MS`: constant 30 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:21
 - `DEFAULT_STALE_TIME_MS`: constant 30_000 in `packages/client-runtime/src/filesystemBrowseState.ts`:53
 - `DEFAULT_STALE_TIME_MS`: constant 30_000 in `packages/client-runtime/src/sourceControlDiscoveryState.ts`:92
 - `DEFAULT_SUBPROCESS_POLL_INTERVAL_MS`: constant 1_000 in `apps/server/src/terminal/Layers/Manager.ts`:54
 - `DEFAULT_SUBSCRIPTION_RETRY_DELAY`: constant Duration.millis(250) in `packages/client-runtime/src/wsTransport.ts`:47
-- `DEFAULT_SWEEP_INTERVAL_MS`: constant 5 * 60 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:17
+- `DEFAULT_SWEEP_INTERVAL_MS`: constant 5 * 60 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:22
 - `DEFAULT_T3_HOME`: constant Effect.map(Effect.service(Path.Path), (path) => in `scripts/dev-runner.ts`:37
 - `DEFAULT_TAILSCALE_SERVE_PORT`: constant 443 in `apps/desktop/src/settings/DesktopAppSettings.ts`:36
 - `DEFAULT_TAILSCALE_SERVE_PORT`: constant 443 in `apps/web/src/components/settings/ConnectionsSettings.tsx`:107
@@ -1080,7 +1089,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_TEXT_GENERATION_INSTANCE_ID`: constant ProviderInstanceId.make("codex") in `apps/web/src/modelSelection.ts`:34
 - `DEFAULT_THREAD_TERMINAL_HEIGHT`: constant 280 in `apps/web/src/types.ts`:26
 - `DEFAULT_THREAD_TERMINAL_ID`: constant "term-1" in `apps/web/src/types.ts`:27
-- `DEFAULT_THREAD_TITLE`: constant "New thread" in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:90
+- `DEFAULT_THREAD_TITLE`: constant "New thread" in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:92
 - `DEFAULT_TIMEOUT`: constant "60 seconds" in `apps/server/src/processRunner.ts`:96
 - `DEFAULT_TIMEOUT_MS`: constant 4_000 in `apps/server/src/provider/providerSnapshot.ts`:20
 - `DEFAULT_TIMEOUT_MS`: constant 30_000 in `apps/server/src/sourceControl/AzureDevOpsCli.ts`:17
@@ -1095,7 +1104,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_WHEN_VARIABLES`: constant new Set<string>(CORE_WHEN_VARIABLES) in `apps/web/src/components/settings/KeybindingsSettings.logic.ts`:34
 - `DESKTOP_BACKEND_CHILD_LOG_FIBER_ID`: constant "#backend-child" in `apps/desktop/src/app/DesktopObservability.ts`:24
 - `DESKTOP_BACKEND_ENV_NAMES`: constant [ in `apps/desktop/src/backend/DesktopBackendConfiguration.ts`:40
-- `DESKTOP_BACKEND_PORT_PROBE_HOSTS`: constant ["127.0.0.1", "0.0.0.0", "::"] as const in `apps/desktop/src/app/DesktopApp.ts`:27
+- `DESKTOP_BACKEND_PORT_PROBE_HOSTS`: constant ["127.0.0.1", "0.0.0.0", "::"] as const in `apps/desktop/src/app/DesktopApp.ts`:28
 - `DESKTOP_CONVEX_ENV_NAMES`: constant [ in `apps/desktop/src/backend/DesktopBackendConfiguration.ts`:53
 - `DESKTOP_DEV_LOOPBACK_HOST`: constant "127.0.0.1" in `scripts/dev-runner.ts`:34
 - `DESKTOP_LAN_BIND_HOST`: constant "0.0.0.0" in `apps/desktop/src/backend/DesktopServerExposure.ts`:28
@@ -1126,7 +1135,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DISCORD_RELEASE_TARGETS`: constant ["prerelease", "latest"] as const in `scripts/notify-discord-release.ts`:51
 - `DISCOVER_SSH_HOSTS_CHANNEL`: constant "desktop:discover-ssh-hosts" in `apps/desktop/dist-electron/preload.cjs`:25
 - `DISCOVER_SSH_HOSTS_CHANNEL`: constant "desktop:discover-ssh-hosts" in `apps/desktop/src/ipc/channels.ts`:22
-- `DISMISS_STORAGE_PREFIX`: constant "t3code-local-promotion-dismiss:" in `apps/web/src/hooks/useLocalPromotionToast.ts`:12
+- `DISMISS_STORAGE_PREFIX`: constant "t3code-local-promotion-dismiss:" in `apps/web/src/hooks/useLocalPromotionToast.ts`:19
 - `DISMISS_TRANSITION_MS`: constant 220 in `apps/web/src/components/chat/ComposerBannerStack.tsx`:8
 - `DRIVER_KIND`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/Drivers/ClaudeDriver.ts`:54
 - `DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Drivers/CodexDriver.ts`:57
@@ -1180,7 +1189,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `EMPTY_THREAD_DETAIL_ATOM`: constant Atom.make(EMPTY_THREAD_DETAIL_STATE).pipe( in `packages/client-runtime/src/threadDetailState.ts`:92
 - `EMPTY_THREAD_DETAIL_STATE`: constant Object.freeze<ThreadDetailState>({ in `packages/client-runtime/src/threadDetailState.ts`:68
 - `EMPTY_THREAD_DRAFT`: constant Object.freeze<ComposerThreadDraftState>({ in `apps/web/src/composerDraftStore.ts`:485
-- `EMPTY_THREAD_JUMP_LABELS`: constant new Map<string, string>() in `apps/web/src/components/Sidebar.tsx`:221
+- `EMPTY_THREAD_JUMP_LABELS`: constant new Map<string, string>() in `apps/web/src/components/Sidebar.tsx`:222
 - `EMPTY_VCS_ACTION_ATOM`: constant Atom.make(EMPTY_VCS_ACTION_STATE).pipe( in `packages/client-runtime/src/vcsActionState.ts`:84
 - `EMPTY_VCS_ACTION_STATE`: constant Object.freeze<VcsActionState>({ in `packages/client-runtime/src/vcsActionState.ts`:58
 - `EMPTY_VCS_REF_ATOM`: constant Atom.make(EMPTY_VCS_REF_STATE).pipe( in `packages/client-runtime/src/vcsRefState.ts`:52
@@ -1249,8 +1258,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `GITLAB_CLI_MR_CHECKOUT_PATTERN`: constant /^glab\s+mr\s+checkout\s+(.+)$/i in `apps/web/src/pullRequestReference.ts`:9
 - `GITLAB_MERGE_REQUEST_URL_PATTERN`: constant /^https:\/\/[^/\s]*gitlab[^/\s]*\/.+\/-\/merge_requests\/(\d+)(?:[/?#].*)?$/i in `apps/web/src/pullRequestReference.ts`:3
 - `GLOBAL_THREAD_SEGMENT`: constant "_global" in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:26
-- `HANDLED_TURN_START_KEY_MAX`: constant 10_000 in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:87
-- `HANDLED_TURN_START_KEY_TTL`: constant Duration.minutes(30) in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:88
+- `HANDLED_TURN_START_KEY_MAX`: constant 10_000 in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:89
+- `HANDLED_TURN_START_KEY_TTL`: constant Duration.minutes(30) in `apps/server/src/orchestration/Layers/ProviderCommandReactor.ts`:90
 - `HEIGHT_TRANSITION_FALLBACK_MS`: constant 250 in `apps/web/src/components/AnimatedHeight.tsx`:5
 - `HERMES_DRIVER_KIND`: constant ProviderDriverKind.make("hermes") in `packages/contracts/src/model.ts`:134
 - `HIGHLIGHT_LINE_PATTERNS`: constant [ in `scripts/local-desktop-launcher-output.ts`:46
@@ -1266,9 +1275,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `ICON_SOURCE_FILES`: constant [ in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:37
 - `IDLE_REVIEW_HIGHLIGHTER_STATE`: constant Object.freeze<ReviewHighlighterState>({ in `apps/mobile/src/features/review/reviewHighlighterState.ts`:37
 - `IGNORED_DIRECTORY_NAMES`: constant new Set([ in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:36
-- `IMAGE_ONLY_BOOTSTRAP_PROMPT`: constant "[User attached one or more images without additional text. Respond using the... in `apps/web/src/components/ChatView.tsx`:207
+- `IMAGE_ONLY_BOOTSTRAP_PROMPT`: constant "[User attached one or more images without additional text. Respond using the... in `apps/web/src/components/ChatView.tsx`:208
 - `IMAGE_SIZE_LIMIT_LABEL`: constant `${Math.round(PROVIDER_SEND_TURN_MAX_IMAGE_BYTES / (1024 * 1024))}MB` in `apps/web/src/components/chat/ChatComposer.tsx`:114
-- `IMMEDIATE_RESUMABLE_SESSION_STATUSES`: constant new Set<string>(["ready", "interrupted", "stopped"]) in `apps/web/src/session-logic.ts`:197
+- `IMMEDIATE_RESUMABLE_SESSION_STATUSES`: constant new Set<OrchestrationSessionStatus>([ in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:80
+- `IMMEDIATE_RESUMABLE_SESSION_STATUSES`: constant new Set<string>([ in `apps/web/src/session-logic.ts`:210
 - `INITIAL_CHECKPOINT_DIFF_STATE`: constant Object.freeze<CheckpointDiffState>({ in `packages/client-runtime/src/checkpointDiffState.ts`:49
 - `INITIAL_FILESYSTEM_BROWSE_STATE`: constant Object.freeze<FilesystemBrowseState>({ in `packages/client-runtime/src/filesystemBrowseState.ts`:31
 - `INITIAL_RESTART_DELAY`: constant Duration.millis(500) in `apps/desktop/src/backend/DesktopBackendManager.ts`:33
@@ -1306,18 +1316,23 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LATEST_VERSION_TIMEOUT_MS`: constant 4_000 in `apps/server/src/provider/providerMaintenance.ts`:16
 - `LAUNCHCTL_TIMEOUT`: constant Duration.seconds(2) in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:43
 - `LAUNCHER_VERSION`: constant 2 in `apps/desktop/scripts/electron-launcher.mjs`:22
+- `LEGACY_DISMISS_KEY_PREFIX`: constant "committed" in `apps/web/src/hooks/localPromotionToast.logic.ts`:3
 - `LEGACY_PERSISTED_STATE_KEYS`: constant [ in `apps/web/src/uiStateStore.ts`:12
 - `LEGACY_TEST_ENVIRONMENT_ID`: constant EnvironmentId.make("__legacy__") in `apps/web/src/composerDraftStore.test.ts`:152
 - `LINK_ICON_HTML_RE`: constant /<link\b(?=[^>]*\brel=["'](?:icon|shortcut icon)["'])(?=[^>]*\bhref=["']([^"'... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:48
 - `LINK_ICON_OBJ_RE`: constant /(?=[^}]*\brel\s*:\s*["'](?:icon|shortcut icon)["'])(?=[^}]*\bhref\s*:\s*["']... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:50
-- `LOCAL_DESKTOP_CDP_PORTS`: constant { in `scripts/local-desktop-launchers.ts`:10
-- `LOCAL_DESKTOP_DEV_BUNDLE`: constant { in `scripts/local-desktop-launchers.ts`:541
+- `LOCAL_BACKEND_SQLITE_RELATIVE_PATH`: constant NodePath.join( in `packages/convex/scripts/convex-shared-deployment.mjs`:107
+- `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/local/promotionApply.ts`:22
+- `LOCAL_DESKTOP_CDP_PORTS`: constant { in `scripts/local-desktop-launchers.ts`:21
+- `LOCAL_DESKTOP_CONVEX_PORTS`: constant { in `scripts/local-desktop-launchers.ts`:4
+- `LOCAL_DESKTOP_DEV_BUNDLE`: constant { in `scripts/local-desktop-launchers.ts`:571
 - `LOCAL_DESKTOP_DEV_BUNDLE_ID`: constant "t3code-local-dev" in `scripts/local-desktop-dev-bundle-lock.ts`:15
-- `LOCAL_DESKTOP_DEV_INSTANCES`: constant { in `scripts/local-desktop-launchers.ts`:15
-- `LOCAL_DESKTOP_LOOPBACK_HOST`: constant "127.0.0.1" in `scripts/local-desktop-env.ts`:16
+- `LOCAL_DESKTOP_DEV_INSTANCES`: constant { in `scripts/local-desktop-launchers.ts`:26
+- `LOCAL_DESKTOP_LOOPBACK_HOST`: constant "127.0.0.1" in `scripts/local-desktop-env.ts`:15
 - `LOCAL_DESKTOP_WORKTREE_ENV_NAMES`: constant [ in `apps/desktop/src/backend/DesktopBackendConfiguration.ts`:61
-- `LOCAL_DEV_BUNDLE_TURBO_PACKAGES`: constant [ in `scripts/local-dev-bundle-turbo.ts`:2
-- `LOCAL_DEV_DESKTOP_ID`: constant "t3code-local-dev.desktop" in `apps/server/src/local/promotionApply.ts`:19
+- `LOCAL_DEV_BUNDLE_MAIN_TURBO_PACKAGES`: constant [ in `scripts/local-dev-bundle-turbo.ts`:2
+- `LOCAL_DEV_BUNDLE_STAGING_TURBO_PACKAGES`: constant [ in `scripts/local-dev-bundle-turbo.ts`:10
+- `LOCAL_DEV_BUNDLE_TURBO_PACKAGES`: constant [ in `scripts/local-dev-bundle-turbo.ts`:18
 - `LOCAL_DRIVER_KIND`: constant ProviderDriverKind.make("local") in `apps/web/src/localModelPrivacy.ts`:6
 - `LOCAL_DRIVER_KIND`: constant ProviderDriverKind.make("local") in `packages/contracts/src/model.ts`:135
 - `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/ChatView.browser.tsx`:106
@@ -1329,8 +1344,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LOCAL_MAIN_BASE_NAME`: constant "T3code" in `apps/desktop/src/app/DesktopEnvironment.ts`:88
 - `LOCAL_PRESENTATION`: constant { in `apps/server/src/provider/Layers/LocalProvider.ts`:23
 - `LOCAL_STAGING_BASE_NAME`: constant "T3code Staging" in `apps/desktop/src/app/DesktopEnvironment.ts`:89
+- `LOCAL_STAGING_DESKTOP_ID`: constant "t3code-local-staging.desktop" in `apps/server/src/local/promotionApply.ts`:21
 - `LOCAL_STAGING_HOME_SUFFIX`: constant "/t3code-local/staging" in `apps/server/src/persistence/resolvePersistenceMode.ts`:1
 - `LOCAL_STAGING_PROVIDER_RUNTIME_BLOCKED_DETAIL`: constant "T3code Staging cannot run provider agents. Start agent turns and resumes on ... in `apps/server/src/config.ts`:51
+- `LOCAL_STAGING_RECOVERY_BLOCKED_DETAIL`: constant "T3code Staging is a read-only mirror. Resume this chat in T3code (main)." in `apps/web/src/session-logic.ts`:198
 - `LOCAL_STORAGE_CHANGE_EVENT`: constant "t3code:local_storage_change" in `apps/web/src/hooks/useLocalStorage.ts`:46
 - `LOG_SCOPE`: constant "provider-observability" in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:27
 - `LOGIN_SHELL_ENV_NAMES`: constant [ in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:31
@@ -1364,7 +1381,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `MAX_RETAINED_SAMPLES`: constant 20_000 in `apps/server/src/diagnostics/ProcessResourceMonitor.ts`:24
 - `MAX_SCRIPT_ID_LENGTH`: constant 24 in `packages/contracts/src/keybindings.ts`:7
 - `MAX_SIDEBAR_THREAD_PREVIEW_COUNT`: constant 15 in `packages/contracts/src/settings.ts`:32
-- `MAX_TCP_PORT`: constant 65_535 in `apps/desktop/src/app/DesktopApp.ts`:26
+- `MAX_TCP_PORT`: constant 65_535 in `apps/desktop/src/app/DesktopApp.ts`:27
 - `MAX_TERMINAL_FONT_SIZE`: constant 14 in `apps/mobile/src/features/terminal/terminalPreferences.ts`:4
 - `MAX_TERMINAL_LABEL_LENGTH`: constant 128 in `apps/server/src/terminal/Layers/Manager.ts`:61
 - `MAX_TERMINALS_PER_GROUP`: constant 4 in `apps/web/src/types.ts`:28
@@ -1396,8 +1413,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `MINIMUM_CLAUDE_OPUS_4_7_VERSION`: constant "2.1.111" in `apps/server/src/provider/Layers/ClaudeProvider.ts`:52
 - `MINIMUM_CLAUDE_OPUS_4_8_VERSION`: constant "2.1.154" in `apps/server/src/provider/Layers/ClaudeProvider.ts`:51
 - `MINIMUM_OPENCODE_VERSION`: constant "1.14.19" in `apps/server/src/provider/Layers/OpenCodeProvider.ts`:34
-- `MISSING_BINDING_ERROR`: constant "Cannot recover this chat because no provider session binding was persisted." in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:54
-- `MISSING_RESUME_STATE_ERROR`: constant "T3 Code restarted while this chat was active, but no provider resume state w... in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:33
+- `MISSING_BINDING_ERROR`: constant "Cannot recover this chat because no provider session binding was persisted." in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:63
+- `MISSING_RESUME_STATE_ERROR`: constant "T3 Code restarted while this chat was active, but no provider resume state w... in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:40
 - `MOBILE_PAIRING_URL_PARAM`: constant "pairingUrl" in `apps/mobile/src/features/connection/pairing.ts`:3
 - `MODE_ARGS`: constant { in `scripts/dev-runner.ts`:41
 - `MODEL`: constant "test-model" in `apps/web/src/components/chat/composerProviderState.test.tsx`:19
@@ -1474,7 +1491,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PICKER_TOOLTIP_SIDE`: constant "left" as const in `apps/web/src/components/chat/ModelPickerSidebar.tsx`:42
 - `PIERRE_DARK_SHIKI_THEME`: constant { in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:118
 - `PIERRE_LIGHT_SHIKI_THEME`: constant { in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:74
-- `POLL_INTERVAL_MS`: constant 60_000 in `apps/web/src/hooks/useLocalPromotionToast.ts`:13
+- `POLL_INTERVAL_MS`: constant 60_000 in `apps/web/src/hooks/useLocalPromotionToast.ts`:20
 - `POSITION_ONLY_PATTERN`: constant /^\d+(?::\d+)?$/ in `apps/web/src/markdown-links.ts`:11
 - `POSITION_SUFFIX_PATTERN`: constant /:\d+(?::\d+)?$/ in `apps/web/src/markdown-links.ts`:10
 - `POSITIVE_DETECTION_CACHE_TTL`: constant Duration.seconds(2) in `apps/server/src/vcs/VcsDriverRegistry.ts`:15
@@ -1559,7 +1576,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `RECENT_LIMIT`: constant 20 in `apps/server/src/diagnostics/TraceDiagnostics.ts`:67
 - `RECENT_THREAD_LIMIT`: constant 12 in `apps/web/src/components/CommandPalette.logic.ts`:10
 - `RECOVERABLE_HERMES_COMPLETION_ERROR`: constant "'NoneType' object is not iterable" as const in `apps/server/src/provider/Layers/HermesAdapter.ts`:133
-- `RECOVERABLE_STATUSES`: constant new Set<ProviderSessionRuntimeStatus>(["running", "starting"]) in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:31
+- `RECOVERABLE_STATUSES`: constant new Set<ProviderSessionRuntimeStatus>([ in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`:34
 - `RECOVERABLE_THREAD_RESUME_ERROR_SNIPPETS`: constant [ in `apps/server/src/provider/Layers/CodexSessionRuntime.ts`:57
 - `REDACTED_TEXT_ALPHABET`: constant "abcdefghjkmnpqrstuvwxyz23456789" in `apps/web/src/components/settings/RedactedSensitiveText.tsx`:6
 - `RELATIVE_FILE_NAME_PATTERN`: constant /^[A-Za-z0-9._-]+\.[A-Za-z0-9_-]+(?::\d+){0,2}$/ in `apps/web/src/markdown-links.ts`:9
@@ -1623,15 +1640,15 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `ROUTER_HOST`: constant "app.t3.codes" in `apps/web/vercel.ts`:3
 - `RPC_SPAN_PREFIX`: constant "ws.rpc" in `apps/server/src/observability/RpcInstrumentation.ts`:13
 - `RUNNING_SOURCE_CONTROL_ACTIONS`: constant ["runStackedAction", "pull", "publishRepository"] as const in `apps/web/src/components/GitActionsControl.tsx`:130
-- `RUNTIME_DIR_NAME`: constant ".runtime" in `scripts/local-desktop-dev-bundle-run.ts`:29
+- `RUNTIME_DIR_NAME`: constant ".runtime" in `scripts/local-desktop-dev-bundle-run.ts`:30
 - `SAFE_EXTERNAL_PROTOCOLS`: constant new Set(["http:", "https:"]) in `apps/desktop/src/electron/ElectronShell.ts`:8
 - `SAFE_IMAGE_FILE_EXTENSIONS`: constant new Set([ in `apps/server/src/imageMime.ts`:17
 - `SAMPLE_INTERVAL_MS`: constant 5_000 in `apps/server/src/diagnostics/ProcessResourceMonitor.ts`:22
 - `SAVED_CONNECTION_BOOTSTRAP_TIMEOUT_MS`: constant 8_000 in `apps/mobile/src/state/use-remote-environment-registry.ts`:55
 - `SAVED_ENVIRONMENT_REGISTRY_STORAGE_KEY`: constant "t3code:saved-environment-registry:v1" in `apps/web/src/clientPersistenceStorage.ts`:16
 - `SCRIPT_RUN_COMMAND_PATTERN`: constant Schema.TemplateLiteral([ in `packages/contracts/src/keybindings.ts`:64
-- `SCRIPT_TERMINAL_COLS`: constant 120 in `apps/web/src/components/ChatView.tsx`:351
-- `SCRIPT_TERMINAL_ROWS`: constant 30 in `apps/web/src/components/ChatView.tsx`:352
+- `SCRIPT_TERMINAL_COLS`: constant 120 in `apps/web/src/components/ChatView.tsx`:352
+- `SCRIPT_TERMINAL_ROWS`: constant 30 in `apps/web/src/components/ChatView.tsx`:353
 - `SECOND_PROJECT_ID`: constant "project-2" as ProjectId in `apps/web/src/components/ChatView.browser.tsx`:105
 - `SECONDARY_HASH_MULTIPLIER`: constant 0x85ebca6b in `apps/mobile/src/features/review/reviewModel.ts`:210
 - `SECONDARY_HASH_MULTIPLIER`: constant 0x85ebca6b in `apps/web/src/lib/diffRendering.ts`:18
@@ -1664,9 +1681,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SET_THEME_CHANNEL`: constant "desktop:set-theme" in `apps/desktop/dist-electron/preload.cjs`:6
 - `SET_THEME_CHANNEL`: constant "desktop:set-theme" in `apps/desktop/src/ipc/channels.ts`:3
 - `SHADOW_LOCAL_ENTRY_NAMES`: constant new Set(["log", "memories", "tmp"]) in `apps/server/src/provider/Drivers/CodexHomeLayout.ts`:32
-- `SHARED_CONVEX_CLOUD_PORT`: constant 3210 in `scripts/local-desktop-env.ts`:14
 - `SHARED_CONVEX_REFRESH_PATH_PREFIXES`: constant [ in `apps/server/src/local/promotionStatus.ts`:21
-- `SHARED_CONVEX_SITE_PORT`: constant 3211 in `scripts/local-desktop-env.ts`:15
 - `SHARED_PERSISTENCE_LOCAL_WRITE_GRACE_MS`: constant 1_500 in `apps/web/src/uiStateStore.ts`:58
 - `SHARED_PERSISTENCE_REFRESH_INTERVAL_MS`: constant 1_000 in `apps/web/src/uiStateStore.ts`:57
 - `SHARED_REPO_CANONICAL_KEY`: constant "github.com/example/shared-repo" in `apps/web/src/environmentGrouping.test.ts`:38
@@ -1677,12 +1692,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SHELL_SNAPSHOT_CACHE_DIRECTORY`: constant "shell-snapshots" in `apps/mobile/src/lib/storage.ts`:13
 - `SHELL_SNAPSHOT_CACHE_SCHEMA_VERSION`: constant 1 in `apps/mobile/src/lib/storage.ts`:12
 - `SHELL_WRAPPER_SPECS`: constant [ in `apps/mobile/src/lib/threadActivity.ts`:463
-- `SHELL_WRAPPER_SPECS`: constant [ in `apps/web/src/session-logic.ts`:999
+- `SHELL_WRAPPER_SPECS`: constant [ in `apps/web/src/session-logic.ts`:1028
 - `SHIKI_THEME_NAME_BY_SCHEME`: constant { in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:43
 - `SHORT_SHA_LENGTH`: constant 7 in `apps/server/src/git/GitManager.ts`:94
 - `SIDEBAR_COOKIE_MAX_AGE`: constant 60 * 60 * 24 * 7 in `apps/web/src/components/ui/sidebar.tsx`:25
 - `SIDEBAR_COOKIE_NAME`: constant "sidebar_state" in `apps/web/src/components/ui/sidebar.tsx`:24
-- `SIDEBAR_LIST_ANIMATION_OPTIONS`: constant { in `apps/web/src/components/Sidebar.tsx`:217
+- `SIDEBAR_LIST_ANIMATION_OPTIONS`: constant { in `apps/web/src/components/Sidebar.tsx`:218
 - `SIDEBAR_RESIZE_DEFAULT_MIN_WIDTH`: constant 16 * 16 in `apps/web/src/components/ui/sidebar.tsx`:29
 - `SIDEBAR_THREAD_PREWARM_LIMIT`: constant 10 in `apps/web/src/components/Sidebar.logic.ts`:23
 - `SIDEBAR_WIDTH`: constant "16rem" in `apps/web/src/components/ui/sidebar.tsx`:26
@@ -1810,7 +1825,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `TURN_MESSAGE_IDS_BY_TURN_TTL`: constant Duration.minutes(120) in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:52
 - `ULTRATHINK_FRAME_CLASSES`: constant { in `apps/web/src/components/chat/composerProviderState.test.tsx`:57
 - `ULTRATHINK_PROMPT_PREFIX`: constant "Ultrathink:\n" in `apps/web/src/components/chat/TraitsPicker.tsx`:47
-- `UNRECOVERABLE_HUNG_SESSION_RECOVERY_DETAIL_MARKERS`: constant [ in `apps/web/src/session-logic.ts`:199
+- `UNRECOVERABLE_HUNG_SESSION_RECOVERY_DETAIL_MARKERS`: constant [ in `apps/web/src/session-logic.ts`:217
 - `UPDATE`: constant makePackageManagedProviderMaintenanceResolver({ in `apps/server/src/provider/Drivers/ClaudeDriver.ts`:67
 - `UPDATE`: constant makePackageManagedProviderMaintenanceResolver({ in `apps/server/src/provider/Drivers/CodexDriver.ts`:59
 - `UPDATE`: constant makeStaticProviderMaintenanceResolver( in `apps/server/src/provider/Drivers/CursorDriver.ts`:53

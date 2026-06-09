@@ -9,6 +9,25 @@ This directory is the **workspace root** for dogfooding two T3 Code worktrees on
 | Live coding app | `t3code/` | `main` |
 | Product development | `t3code-staging/` | `staging` |
 
+### Do not edit or stop main during self-improvement
+
+When improving T3 Code itself (product code, launchers, agents, workflows), work **only** in `t3code-staging/` on branch `staging`. **Do not** edit `t3code/` (`main`), merge into `main`, promote, or change anything wired to the live main instance unless the user explicitly asks in the current turn.
+
+**Dev mode (`T3code Dev`) runs main and staging together** — that does not make main fair game. The main half is still the live app (`t3code/` on branch `main`, `t3code-local-main`). Leave it running and unchanged: no file edits under `t3code/`, no restarts, no relaunch of Dev mode, and no `start:main` / `t3-launch.sh main` cycles to test your work. Verify and interact with the **staging half only** (`t3code-staging`, `t3code-local-staging`, `t3-launch.sh staging`).
+
+The live main instance is the user's running session — often hosting active Cursor agent work. **Do not** stop, restart, relaunch, or kill main (including via Dev mode teardown) to verify or test staging changes. Killing or restarting main terminates in-flight agent processes even when staging keeps running.
+
+### Agent session continuity (live main + staging dev)
+
+| Goal | Safe launcher | Notes |
+|------|----------------|-------|
+| Live agents on other projects | **T3code** (`start:main`) | Keep main running; never relaunch Dev while agents are active |
+| Edit staging product code | **T3code Staging** (`start:staging`) | Solo staging relaunch never tears down main |
+| Main + staging side by side | **T3code Dev** (`start:dev`) | **Dev attach:** if main is healthy, relaunch keeps main and starts staging only (`T3CODE_DEV_ATTACH_MAIN=1`, auto when `T3CODE_AGENT_AUTOMATION=1`) |
+| Force full Dev kill | `T3CODE_DEV_FORCE_FULL_RELAUNCH=1` | Stops both stacks before Turbo (old behavior) |
+
+On **main** (desktop or Tailscale mobile via `/t3code-main/`): promotion toast is **Promote & Relaunch Main** — merges staging, relaunches main with updates; Tailscale Serve stays up and mobile reconnects when the server is back. On **staging**: **Promote & Relaunch Staging** merges and relaunches staging only (main agents keep running).
+
 ## Launch contract
 
 Launch must **always** work from **three entry points**, with the **same three modes** at each:

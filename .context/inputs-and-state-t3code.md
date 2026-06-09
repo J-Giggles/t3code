@@ -9,7 +9,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - Route and request inputs: 119
 - Form inputs: 2
 - State and storage entries: 169
-- Hardcoded values: 1295
+- Hardcoded values: 1296
 
 ## Environment Inputs
 
@@ -26,26 +26,26 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CODEX_BIN`: env fallback "codex", in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
 - `CODEX_BIN`: process.env access in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
 - `CODEX_BINARY_PATH`: process.env access in `apps/server/integration/orchestrationEngine.integration.test.ts`:269
-- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:160
-- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:160
-- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:226
-- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:226
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:161
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:161
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:230
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:230
 - `CONVEX_URL`: env fallback readConvexLocalEnv().CONVEX_URL ?? null, in `apps/server/scripts/convex-attachment-backfill.ts`:121
 - `CONVEX_URL`: process.env access in `apps/server/scripts/convex-attachment-backfill.ts`:121
 - `CONVEX_URL`: process.env access in `apps/server/src/persistence/Layers/DualWriteOrchestrationEventStore.test.ts`:112
 - `CONVEX_URL`: process.env access in `packages/convex/env.ts`:16
-- `CONVEX_URL`: process.env access in `packages/convex/scripts/convex-dev.mjs`:175
+- `CONVEX_URL`: process.env access in `packages/convex/scripts/convex-dev.mjs`:176
 - `CONVEX_URL`: process.env access in `scripts/sqlite-to-convex-migrate.ts`:953
-- `CURSOR_AGENT_BIN`: env fallback "agent" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
 - `CURSOR_AGENT_BIN`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
+- `CURSOR_AGENT_BIN`: env fallback "agent" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
 - `CURSOR_CONTEXT`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
 - `CURSOR_CONTEXT`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
-- `CURSOR_FAST`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
 - `CURSOR_FAST`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
+- `CURSOR_FAST`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
 - `CURSOR_PROMPT_WAIT_MS`: env fallback "4000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
 - `CURSOR_PROMPT_WAIT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
-- `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
 - `CURSOR_REASONING`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
+- `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
 - `CURSOR_REQUEST_TIMEOUT_MS`: env fallback "20000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
 - `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
 - `DEV`: import.meta.env access in `apps/web/src/branding.ts`:84
@@ -57,21 +57,21 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:197
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:199
 - `GITHUB_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:516
-- `HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:128
-- `HOME`: env fallback process.env.USERPROFILE ?? "" in `packages/ssh/src/config.ts`:211
+- `HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:129
 - `HOME`: process.env access in `packages/ssh/src/config.ts`:211
+- `HOME`: env fallback process.env.USERPROFILE ?? "" in `packages/ssh/src/config.ts`:211
 - `HOST`: process.env access in `apps/web/vite.config.ts`:9
 - `LOCALAPPDATA`: process.env access in `scripts/build-desktop-artifact.ts`:160
 - `NODE_ENV`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:49
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:88
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:99
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:140
-- `PATH`: process.env access in `packages/convex/scripts/convex-dev.mjs`:127
+- `PATH`: process.env access in `packages/convex/scripts/convex-dev.mjs`:128
 - `PATH`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:144
 - `PORT`: env fallback 4173), in `apps/marketing/astro.config.mjs`:5
 - `PORT`: process.env access in `apps/marketing/astro.config.mjs`:5
-- `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:8
 - `PORT`: process.env access in `apps/web/vite.config.ts`:8
+- `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:8
 - `PYTHON`: process.env access in `scripts/build-desktop-artifact.ts`:154
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:168
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:187
@@ -131,8 +131,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3_TEST_SSH_ASKPASS_LOG`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:209
 - `T3CODE_AGENT_AUTOMATION`: env fallback "1", in `apps/desktop/src/ipc/methods/promotion.ts`:28
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:28
-- `T3CODE_AGENT_AUTOMATION`: env fallback "1", in `apps/desktop/src/ipc/methods/promotion.ts`:44
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:44
+- `T3CODE_AGENT_AUTOMATION`: env fallback "1", in `apps/desktop/src/ipc/methods/promotion.ts`:44
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:16
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:18
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:45
@@ -147,10 +147,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:131
 - `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:132
 - `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/env.ts`:27
-- `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-dev.mjs`:34
+- `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-dev.mjs`:35
 - `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/scripts/convex-ready.mjs`:100
 - `T3CODE_CONVEX_EVENT_FOLLOW`: process.env access in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:16
-- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `packages/convex/scripts/convex-dev.mjs`:192
+- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `packages/convex/scripts/convex-dev.mjs`:196
 - `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `scripts/local-desktop-launcher-run.ts`:249
 - `T3CODE_CURSOR_ENABLED`: process.env access in `apps/server/src/provider/Layers/ProviderRegistry.test.ts`:69
 - `T3CODE_DESKTOP_UPDATE_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:515
@@ -180,9 +180,9 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:54
 - `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:133
 - `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:134
-- `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:33
+- `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:34
 - `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-ready.mjs`:99
-- `T3CODE_LAUNCH_FAST`: process.env access in `packages/convex/scripts/convex-dev.mjs`:193
+- `T3CODE_LAUNCH_FAST`: process.env access in `packages/convex/scripts/convex-dev.mjs`:197
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:19
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:22
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:32
@@ -216,8 +216,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:19
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:50
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:52
-- `T3CODE_RUNTIME_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", "runtime.log") in `scripts/local-desktop-launcher-run.ts`:109
 - `T3CODE_RUNTIME_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:109
+- `T3CODE_RUNTIME_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", "runtime.log") in `scripts/local-desktop-launcher-run.ts`:109
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/config.ts`:64
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:83
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:87
@@ -228,8 +228,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:41
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:56
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:58
-- `T3CODE_STARTUP_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", `startup-${formatTimestamp(new Date())}.... in `scripts/local-desktop-launcher-run.ts`:111
 - `T3CODE_STARTUP_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:111
+- `T3CODE_STARTUP_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", `startup-${formatTimestamp(new Date())}.... in `scripts/local-desktop-launcher-run.ts`:111
 - `T3CODE_STRICT_PROVIDER_LIFECYCLE_GUARD`: process.env access in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:58
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:60
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:61
@@ -238,8 +238,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_WEB_SOURCEMAP`: process.env access in `apps/web/vite.config.ts`:30
 - `TEMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `TMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
-- `TMPDIR`: env fallback process.env.TEMP ?? process.env.TMP ?? "/tmp" in `apps/server/src/git/GitManager.ts`:703
 - `TMPDIR`: process.env access in `apps/server/src/git/GitManager.ts`:703
+- `TMPDIR`: env fallback process.env.TEMP ?? process.env.TMP ?? "/tmp" in `apps/server/src/git/GitManager.ts`:703
 - `USERPROFILE`: process.env access in `packages/ssh/src/config.ts`:211
 - `VERCEL_ENV`: process.env access in `apps/web/vite.config.ts`:22
 - `VERCEL_PROJECT_PRODUCTION_URL`: process.env access in `apps/web/vite.config.ts`:22
@@ -976,8 +976,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CONNECTIONS_KEY`: constant "t3code.connections" in `apps/mobile/src/lib/storage.ts`:10
 - `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/dist-electron/preload.cjs`:7
 - `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/src/ipc/channels.ts`:4
-- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-dev.mjs`:105
-- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/setup-local.mjs`:21
+- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-dev.mjs`:106
+- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/setup-local.mjs`:22
 - `CONVEX_DOCUMENT_JSON_BYTE_BUDGET`: constant 450_000 in `apps/server/src/persistence/Layers/convexDocumentJson.ts`:2
 - `CONVEX_MUTATION_BYTE_BUDGET`: constant 900_000 in `scripts/sqlite-to-convex-migrate.ts`:84
 - `CONVEX_READY_FILENAME`: constant "convex-ready.json" in `packages/convex/scripts/convex-ready.mjs`:4
@@ -1011,7 +1011,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_BATCH_WINDOW_MS`: constant 200 in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:25
 - `DEFAULT_BINDINGS`: constant compile([ in `apps/web/src/keybindings.test.ts`:86
 - `DEFAULT_CHECK_COMMAND`: constant "bun run build" in `apps/web/src/localPromotionActions.ts`:17
-- `DEFAULT_CONVEX_PORT`: constant 3210 in `packages/convex/scripts/convex-dev.mjs`:22
+- `DEFAULT_CONVEX_PORT`: constant 3210 in `packages/convex/scripts/convex-dev.mjs`:23
 - `DEFAULT_DEBOUNCE_MS`: constant 200 in `packages/client-runtime/src/composerPathSearchState.ts`:56
 - `DEFAULT_DESKTOP_BACKEND_PORT`: constant 3773 in `apps/desktop/src/app/DesktopApp.ts`:25
 - `DEFAULT_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:64
@@ -1313,6 +1313,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LEGACY_TEST_ENVIRONMENT_ID`: constant EnvironmentId.make("__legacy__") in `apps/web/src/composerDraftStore.test.ts`:152
 - `LINK_ICON_HTML_RE`: constant /<link\b(?=[^>]*\brel=["'](?:icon|shortcut icon)["'])(?=[^>]*\bhref=["']([^"'... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:48
 - `LINK_ICON_OBJ_RE`: constant /(?=[^}]*\brel\s*:\s*["'](?:icon|shortcut icon)["'])(?=[^}]*\bhref\s*:\s*["']... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:50
+- `LOCAL_BACKEND_SQLITE_RELATIVE_PATH`: constant NodePath.join( in `packages/convex/scripts/convex-shared-deployment.mjs`:107
 - `LOCAL_DESKTOP_CDP_PORTS`: constant { in `scripts/local-desktop-launchers.ts`:10
 - `LOCAL_DESKTOP_DEV_BUNDLE`: constant { in `scripts/local-desktop-launchers.ts`:541
 - `LOCAL_DESKTOP_DEV_BUNDLE_ID`: constant "t3code-local-dev" in `scripts/local-desktop-dev-bundle-lock.ts`:15

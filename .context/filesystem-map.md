@@ -5,6 +5,7 @@ t3code-local/
 ├── .agents/
 │   ├── plans/
 │   └── scripts/
+│       ├── bootstrap-worktrees.sh
 │       ├── refresh-project-context.sh
 │       ├── t3-hypr-launch-context.sh
 │       ├── t3-hypr-place-windows.sh
@@ -27,6 +28,8 @@ t3code-local/
 ├── .cursor/
 │   ├── hooks/
 │   │   └── session-start.sh
+│   ├── plans/
+│   │   └── provider-history-backfill.plan.md
 │   ├── rules/
 │   │   ├── agent-memory-protocol.mdc
 │   │   ├── staging-implement-test-promote.mdc
@@ -45,9 +48,12 @@ t3code-local/
 ├── local-dev-bundle/
 │   ├── .runtime/
 │   │   ├── convex.env.json
+│   │   ├── main-convex.env.json
 │   │   ├── main.env.json
+│   │   ├── staging-convex.env.json
 │   │   └── staging.env.json
 │   ├── convex/
+│   ├── main-convex/
 │   │   └── package.json
 │   ├── main-desktop/
 │   │   └── package.json
@@ -55,6 +61,8 @@ t3code-local/
 │   ├── main-t3-build/
 │   │   └── package.json
 │   ├── main-web/
+│   │   └── package.json
+│   ├── staging-convex/
 │   │   └── package.json
 │   ├── staging-desktop/
 │   │   └── package.json
@@ -362,6 +370,8 @@ t3code-local/
 │   │   ├── dev-runner.ts
 │   │   ├── free-local-desktop-ports.ts
 │   │   ├── install-local-desktop-launchers.ts
+│   │   ├── local-desktop-dev-bundle-attach.test.ts
+│   │   ├── local-desktop-dev-bundle-attach.ts
 │   │   ├── local-desktop-dev-bundle-env.test.ts
 │   │   ├── local-desktop-dev-bundle-env.ts
 │   │   ├── local-desktop-dev-bundle-lock.test.ts
@@ -607,9 +617,11 @@ t3code-local/
 │   ├── tsconfig.base.json
 │   └── vite.config.ts
 ├── .fallowrc.jsonc
+├── .gitignore
 ├── AGENTS.md
 ├── package.json
 ├── pnpm-lock.yaml
+├── README.md
 ├── t3code-local.code-workspace
 └── turbo.json
 ```
