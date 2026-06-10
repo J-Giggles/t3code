@@ -7,15 +7,18 @@ t3code-local/
 │   └── scripts/
 │       ├── bootstrap-worktrees.sh
 │       ├── refresh-project-context.sh
+│       ├── t3-agent-repair-promotion.sh
 │       ├── t3-hypr-launch-context.sh
 │       ├── t3-hypr-place-windows.sh
 │       ├── t3-launch-restart-test.sh
 │       ├── t3-launch.sh
+│       ├── t3-recover.sh
 │       ├── t3-staging-convex-migrate.sh
 │       ├── t3-start.sh
 │       ├── t3-tailscale-remote-probe.sh
 │       ├── t3-tailscale-staging-env.sh
-│       └── t3-verify.sh
+│       ├── t3-verify.sh
+│       └── t3-worktree.sh
 ├── .context/
 │   ├── diagrams/
 │   ├── docs.md
@@ -35,6 +38,8 @@ t3code-local/
 │   │   ├── staging-implement-test-promote.mdc
 │   │   ├── t3code-local-project-context.mdc
 │   │   └── t3code-local-workspace.mdc
+│   ├── skills/
+│   │   └── promotion-stack-repair/
 │   └── hooks.json
 ├── .fallow/
 │   ├── .gitignore
@@ -42,6 +47,7 @@ t3code-local/
 ├── .vscode/
 │   ├── extensions.json
 │   └── settings.json
+├── db-backups/
 ├── docs/
 │   └── superpowers/
 │       └── plans/
@@ -101,6 +107,8 @@ t3code-local/
 │   │   ├── workflows/
 │   │   ├── pull_request_template.md
 │   │   └── VOUCHED.td
+│   ├── .local/
+│   │   └── convex/
 │   ├── .plans/
 │   │   ├── 01-shared-model-normalization.md
 │   │   ├── 02-typed-ipc-boundaries.md
@@ -146,6 +154,15 @@ t3code-local/
 │   │   ├── dev/
 │   │   ├── nightly/
 │   │   └── prod/
+│   ├── db-backups/
+│   │   ├── migrated-from-share-legacy-convex.corrupt-backup-20260610-20260610-103502/
+│   │   ├── migrated-from-share-legacy-convex.pre-promotion-1781024221276-20260610-103502/
+│   │   ├── migrated-from-share-legacy-convex.pre-promotion-1781027671773-20260610-103502/
+│   │   ├── migrated-from-share-legacy-convex.pre-promotion-1781033204101-20260610-103502/
+│   │   ├── migrated-from-share-legacy-convex.pre-promotion-1781034301725-20260610-103502/
+│   │   ├── migrated-from-share-legacy-convex.promoted-failed-20260610-103502/
+│   │   ├── migrated-from-share-main-20260610-103452/
+│   │   └── pre-promotion-1781106711111/
 │   ├── docs/
 │   │   ├── providers/
 │   │   ├── superpowers/
@@ -187,15 +204,20 @@ t3code-local/
 │   │   ├── dev-runner.ts
 │   │   ├── free-local-desktop-ports.ts
 │   │   ├── install-local-desktop-launchers.ts
+│   │   ├── local-desktop-dev-bundle-attach.test.ts
+│   │   ├── local-desktop-dev-bundle-attach.ts
 │   │   ├── local-desktop-dev-bundle-env.test.ts
 │   │   ├── local-desktop-dev-bundle-env.ts
 │   │   ├── local-desktop-dev-bundle-lock.test.ts
 │   │   ├── local-desktop-dev-bundle-lock.ts
 │   │   ├── local-desktop-dev-bundle-run.ts
+│   │   ├── local-desktop-dev-run.ts
 │   │   ├── local-desktop-env.test.ts
 │   │   ├── local-desktop-env.ts
 │   │   ├── local-desktop-launcher-access.test.ts
 │   │   ├── local-desktop-launcher-access.ts
+│   │   ├── local-desktop-launcher-convex.test.ts
+│   │   ├── local-desktop-launcher-convex.ts
 │   │   ├── local-desktop-launcher-deps.test.ts
 │   │   ├── local-desktop-launcher-deps.ts
 │   │   ├── local-desktop-launcher-human-log.test.ts
@@ -235,7 +257,9 @@ t3code-local/
 │   │   ├── tsconfig.json
 │   │   ├── tsconfig.tsbuildinfo
 │   │   ├── update-release-package-versions.test.ts
-│   │   └── update-release-package-versions.ts
+│   │   ├── update-release-package-versions.ts
+│   │   ├── worktree-cli.ts
+│   │   └── worktree-instance.ts
 │   ├── .gitattributes
 │   ├── .gitignore
 │   ├── .mise.toml
@@ -282,6 +306,8 @@ t3code-local/
 │   │   ├── workflows/
 │   │   ├── pull_request_template.md
 │   │   └── VOUCHED.td
+│   ├── .local/
+│   │   └── convex/
 │   ├── .plans/
 │   │   ├── 01-shared-model-normalization.md
 │   │   ├── 02-typed-ipc-boundaries.md
@@ -328,6 +354,8 @@ t3code-local/
 │   │   ├── nightly/
 │   │   └── prod/
 │   ├── caches/
+│   ├── db-backups/
+│   │   └── migrated-from-share-staging-20260610-103457/
 │   ├── docs/
 │   │   ├── providers/
 │   │   ├── superpowers/
@@ -377,10 +405,13 @@ t3code-local/
 │   │   ├── local-desktop-dev-bundle-lock.test.ts
 │   │   ├── local-desktop-dev-bundle-lock.ts
 │   │   ├── local-desktop-dev-bundle-run.ts
+│   │   ├── local-desktop-dev-run.ts
 │   │   ├── local-desktop-env.test.ts
 │   │   ├── local-desktop-env.ts
 │   │   ├── local-desktop-launcher-access.test.ts
 │   │   ├── local-desktop-launcher-access.ts
+│   │   ├── local-desktop-launcher-convex.test.ts
+│   │   ├── local-desktop-launcher-convex.ts
 │   │   ├── local-desktop-launcher-deps.test.ts
 │   │   ├── local-desktop-launcher-deps.ts
 │   │   ├── local-desktop-launcher-human-log.test.ts
@@ -420,7 +451,10 @@ t3code-local/
 │   │   ├── tsconfig.json
 │   │   ├── tsconfig.tsbuildinfo
 │   │   ├── update-release-package-versions.test.ts
-│   │   └── update-release-package-versions.ts
+│   │   ├── update-release-package-versions.ts
+│   │   ├── worktree-cli.ts
+│   │   └── worktree-instance.ts
+│   ├── src/
 │   ├── worktrees/
 │   ├── .gitattributes
 │   ├── .gitignore

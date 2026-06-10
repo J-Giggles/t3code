@@ -69,10 +69,16 @@ EOF
   export T3CODE_FORCE_SOLO_LAUNCH=1
 fi
 
-free_local_desktop_ports "$VARIANT" "${FREE_PORT_ARGS[@]}"
+# Walker T3code Dev (`t3code-local-dev`) tears down and frees ports inside dev-run.ts.
+if [[ "$VARIANT" != "dev" ]]; then
+  free_local_desktop_ports "$VARIANT" "${FREE_PORT_ARGS[@]}"
+fi
 
 export T3CODE_DISABLE_STARTUP_TERMINAL=1
-export T3CODE_TURBO_UI=stream
+# Walker uses the launcher's default T3CODE_TURBO_UI=tui; only override when explicitly requested.
+if [[ -z "${T3CODE_TURBO_UI:-}" ]]; then
+  unset T3CODE_TURBO_UI
+fi
 
 LAUNCHER_BIN="$HOME/.local/bin/$DESKTOP_ID"
 if [[ ! -x "$LAUNCHER_BIN" ]]; then
@@ -80,7 +86,8 @@ if [[ ! -x "$LAUNCHER_BIN" ]]; then
   exit 1
 fi
 
-"$LAUNCHER_BIN" &
+# Walker .desktop Exec= runs this same script; agents only skip the Ghostty startup terminal.
+env T3CODE_DISABLE_STARTUP_TERMINAL=1 "$LAUNCHER_BIN" &
 LAUNCH_PID=$!
 
 if [[ -z "$WAIT_FOR_VITE" ]]; then

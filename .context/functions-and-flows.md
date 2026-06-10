@@ -41,6 +41,18 @@ Generated from existing `.context` artifacts. Treat this as a reviewable draft t
 - Confirm which names are exact exported/runtime functions versus normalized summaries.
 - Add the high-signal end-to-end flows that connect inputs, state, actions, and side effects.
 
+## Tool
+
+### Normalized Actions
+
+- Seen: `tool.completed` from `docs.md`
+- Seen: `tool.updated` from `docs.md`
+
+### Review Notes
+
+- Confirm which names are exact exported/runtime functions versus normalized summaries.
+- Add the high-signal end-to-end flows that connect inputs, state, actions, and side effects.
+
 ## Finalize
 
 - Keep exact names where the codebase exposes them clearly.
