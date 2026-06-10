@@ -151,7 +151,18 @@ cmd_auto_repair() {
     return 0
   fi
   echo "Local server unreachable; cannot start auto-repair via HTTP." >&2
-  exit 1
+  echo "Running direct fallback for auto-repair" >&2
+  cd "$T3CODE_LOCAL_WORKSPACE/t3code-staging"
+  bun -e "
+    import { startPromotionAutoRepair } from './apps/server/src/local/stackAutoRepair.ts';
+    const result = await startPromotionAutoRepair({
+      reason: 'cli-auto-repair-fallback',
+      retryPromotion: $([[ \"$retry\" == \"retry\" || \"$retry\" == \"1\" || \"$retry\" == \"true\" ]] && echo true || echo false),
+      env: { ...process.env, T3CODE_HOME: process.env.HOME + '/.local/share/t3code-local/main' },
+    });
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(result.phase === 'failed' ? 1 : 0);
+  "
 }
 
 cmd_auto_repair_finalize() {
