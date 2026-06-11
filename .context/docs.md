@@ -1,6 +1,6 @@
 # T3 Code Local — agent reference
 
-Last refreshed: 2026-06-11T15:26:16+0100
+Last refreshed: 2026-06-11T16:32:24+0100
 
 ## Omarchy launcher
 
@@ -109,6 +109,8 @@ If you open a single worktree folder directly (`t3code-staging/` only), Fallow a
 - **Fixed local desktop ports (2026-06):** `scripts/local-desktop-env.ts` defines stable main/staging URLs (web/server/CDP). `t3-start.sh`, `t3-launch.sh`, and `local-desktop-launcher-run.ts` call `free-local-desktop-ports.ts` before launch; `dev-runner` keeps hashed offsets for `t3code-local-main` / `t3code-local-staging` instead of bumping when ports are busy.
 - **T3code Dev solo-launch guard (2026-06):** While `t3code-local-dev.bundle.pid` points at a live dev-bundle supervisor, solo `main`/`staging` launches prompt to quit Dev and relaunch (clack confirm / `[y/N]`). Pass `--force-relaunch` or `T3CODE_FORCE_SOLO_LAUNCH=1` to skip the prompt (required for agent launches).
 - **Dev attach + staging isolation (2026-06):** `start:dev` probes main health; when healthy it keeps main processes and starts staging Turbo tasks only (`local-desktop-dev-bundle-attach.ts`). Solo `start:staging` tears down staging only (`tearDownDevBundleForSoloRelaunch({ preserveVariant: "main" })`). `free-local-desktop-ports.ts dev` frees staging ports only in attach mode. Env: `T3CODE_DEV_ATTACH_MAIN=1` (force attach), `T3CODE_DEV_FORCE_FULL_RELAUNCH=1` (kill both). Staging desktop promotion relaunches staging with attach; **main** promotion (including Tailscale mobile `POST /t3code-main/api/local/promotion-apply`) merges and relaunches main via `promotion-relaunch-request.json` + desktop watcher.
+
+- **Tailscale path-prefixed pairing E2E (2026-06-11):** After dual-path Serve setup (`./.agents/scripts/t3-tailscale-staging-env.sh both`), verify path-preserved remote auth + orchestration over staging with `./.agents/scripts/t3-tailscale-pairing-e2e.sh staging`. Reads `~/.local/share/t3code-local/tailscale-routing.json` for `https://{magicDns}/t3code-staging/` unless `--http-base-url` is passed. Bun helper: `t3code-staging/scripts/tailscale-pairing-e2e.ts`.
 
 - Project memory convention: use `.context/docs.md` for durable project facts and `.cursor/rules/*.mdc` only for actionable Cursor instructions; agents should propose Memory Candidates with evidence and confidence before writing new memory.
 - **Local Convex promotion (2026-06):** First staging launch seeds from main when empty; staging server follower replicates main orchestration events. Promotion copies staging → main via `convex-promotion-sync.mjs`, stops **both** backends (3210/3211 and 3220/3221), runs SQLite integrity checks, and atomically replaces main data — previous main state moves to `t3code/db-backups/pre-promotion-{ts}/`. Copying while a backend is running corrupts SQLite. Launcher reconciliation rewrites deployment identity (`anonymous-convex` vs `anonymous-convex-staging`) when package `.env.local` disagrees with shared `config.json`.
