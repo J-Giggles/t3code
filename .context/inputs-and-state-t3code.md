@@ -4,12 +4,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 
 ## Summary
 
-- Files scanned: 1458
-- Environment inputs: 323
+- Files scanned: 1463
+- Environment inputs: 325
 - Route and request inputs: 119
 - Form inputs: 2
-- State and storage entries: 174
-- Hardcoded values: 1406
+- State and storage entries: 177
+- Hardcoded values: 1411
 
 ## Environment Inputs
 
@@ -17,8 +17,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `ACP_MOCK_EXIT_IMMEDIATELY_CODE`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:14
 - `ACP_MOCK_EXIT_IMMEDIATELY_CODE`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:15
 - `ACP_MOCK_MALFORMED_OUTPUT`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:9
-- `ACP_MOCK_MALFORMED_OUTPUT_EXIT_CODE`: env fallback "0")) in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:11
 - `ACP_MOCK_MALFORMED_OUTPUT_EXIT_CODE`: process.env access in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:11
+- `ACP_MOCK_MALFORMED_OUTPUT_EXIT_CODE`: env fallback "0")) in `packages/effect-acp/test/fixtures/acp-mock-peer.ts`:11
 - `APP_VARIANT`: process.env access in `apps/mobile/app.config.ts`:5
 - `APP_VERSION`: import.meta.env access in `apps/web/src/branding.ts`:121
 - `APP_VERSION`: process.env access in `apps/web/vite.config.ts`:12
@@ -28,15 +28,15 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CODEX_BINARY_PATH`: process.env access in `apps/server/integration/orchestrationEngine.integration.test.ts`:269
 - `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:171
 - `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:171
-- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:284
 - `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:284
-- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:332
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:284
 - `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:332
-- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-push-local.mjs`:160
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:332
 - `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-push-local.mjs`:160
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-push-local.mjs`:160
 - `CONVEX_SITE_URL`: process.env access in `scripts/local-desktop-launcher-deps.ts`:163
-- `CONVEX_URL`: process.env access in `apps/server/scripts/convex-attachment-backfill.ts`:121
 - `CONVEX_URL`: env fallback readConvexLocalEnv().CONVEX_URL ?? null, in `apps/server/scripts/convex-attachment-backfill.ts`:121
+- `CONVEX_URL`: process.env access in `apps/server/scripts/convex-attachment-backfill.ts`:121
 - `CONVEX_URL`: process.env access in `apps/server/src/persistence/Layers/DualWriteOrchestrationEventStore.test.ts`:112
 - `CONVEX_URL`: process.env access in `packages/convex/env.ts`:16
 - `CONVEX_URL`: process.env access in `packages/convex/scripts/convex-dev.mjs`:188
@@ -44,18 +44,18 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CONVEX_URL`: process.env access in `packages/convex/scripts/convex-status.mjs`:67
 - `CONVEX_URL`: process.env access in `scripts/local-desktop-launcher-deps.ts`:162
 - `CONVEX_URL`: process.env access in `scripts/sqlite-to-convex-migrate.ts`:954
-- `CURSOR_AGENT_BIN`: env fallback "agent" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
 - `CURSOR_AGENT_BIN`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
+- `CURSOR_AGENT_BIN`: env fallback "agent" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:63
 - `CURSOR_CONTEXT`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
 - `CURSOR_CONTEXT`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:61
 - `CURSOR_FAST`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
 - `CURSOR_FAST`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:62
-- `CURSOR_PROMPT_WAIT_MS`: env fallback "4000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
 - `CURSOR_PROMPT_WAIT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
-- `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
+- `CURSOR_PROMPT_WAIT_MS`: env fallback "4000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
 - `CURSOR_REASONING`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
-- `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
+- `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
 - `CURSOR_REQUEST_TIMEOUT_MS`: env fallback "20000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
+- `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
 - `DEV`: import.meta.env access in `apps/web/src/branding.ts`:100
 - `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_DISABLE_CACHE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:54
 - `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: env fallback (process.env.NODE_ENV === "test" ? "javascript" : "native") in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
@@ -80,8 +80,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PATH`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:145
 - `PORT`: env fallback 4173), in `apps/marketing/astro.config.mjs`:5
 - `PORT`: process.env access in `apps/marketing/astro.config.mjs`:5
-- `PORT`: process.env access in `apps/web/vite.config.ts`:8
 - `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:8
+- `PORT`: process.env access in `apps/web/vite.config.ts`:8
 - `PYTHON`: process.env access in `scripts/build-desktop-artifact.ts`:154
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:168
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:187
@@ -152,7 +152,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:209
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:303
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:634
-- `T3CODE_APP_ROOT`: process.env access in `apps/server/src/local/promotionApply.ts`:56
+- `T3CODE_APP_ROOT`: process.env access in `apps/server/src/local/promotionApply.ts`:64
+- `T3CODE_APP_ROOT`: process.env access in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:109
 - `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:147
 - `T3CODE_APP_ROOT`: process.env access in `apps/web/vite.config.ts`:148
 - `T3CODE_CONVEX_DATA_DIR`: process.env access in `packages/convex/env.ts`:27
@@ -201,14 +202,14 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:76
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:123
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:54
-- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/worktree-cli.ts`:203
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/worktree-cli.ts`:215
 - `T3CODE_HOME`: process.env access in `apps/desktop/scripts/dev-electron.mjs`:47
 - `T3CODE_HOME`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:216
 - `T3CODE_HOME`: process.env access in `apps/server/src/local/http.ts`:193
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:392
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:393
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:413
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:415
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:540
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:541
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:571
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:573
 - `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:149
 - `T3CODE_HOME`: process.env access in `apps/web/vite.config.ts`:150
 - `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:46
@@ -220,7 +221,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:34
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:71
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:289
-- `T3CODE_LAUNCH_REQUIRE_IDLE`: process.env access in `scripts/worktree-cli.ts`:204
+- `T3CODE_LAUNCH_REQUIRE_IDLE`: process.env access in `scripts/worktree-cli.ts`:216
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:18
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:21
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:27
@@ -236,7 +237,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_LOCAL_MAIN_CONVEX_DATA_DIR`: process.env access in `scripts/local-desktop-launcher-deps.ts`:160
 - `T3CODE_LOCAL_MAIN_CONVEX_SITE_URL`: process.env access in `apps/server/src/local/promotionStatus.ts`:351
 - `T3CODE_LOCAL_MAIN_CONVEX_URL`: process.env access in `apps/server/src/local/promotionStatus.ts`:350
-- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionApply.ts`:55
+- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionApply.ts`:63
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:346
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `packages/convex/scripts/convex-clean-storage-artifacts.mjs`:30
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `packages/convex/scripts/convex-prune-local.mjs`:36
@@ -251,6 +252,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `packages/convex/scripts/convex-vacuum-local.mjs`:38
 - `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `packages/convex/scripts/migrate-convex-data-to-worktree.mjs`:36
 - `T3CODE_LOCAL_WORKSPACE`: process.env access in `apps/server/src/local/promotionRepairAgent.ts`:34
+- `T3CODE_LOCAL_WORKSPACE`: process.env access in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:104
 - `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:63
 - `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:64
 - `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.test.ts`:85
@@ -258,7 +260,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_NO_FOCUS_STEAL`: process.env access in `apps/desktop/src/electron/ElectronWindow.ts`:101
 - `T3CODE_PERSISTENCE`: process.env access in `packages/convex/env.ts`:37
 - `T3CODE_PORT_OFFSET`: process.env access in `scripts/local-desktop-launcher-access.ts`:114
-- `T3CODE_PROMOTION_SKIP_CONVEX_SYNC`: process.env access in `apps/server/src/local/promotionApply.ts`:333
+- `T3CODE_PROMOTION_SKIP_CONVEX_SYNC`: process.env access in `apps/server/src/local/promotionApply.ts`:381
 - `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:35
 - `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:36
 - `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:41
@@ -289,23 +291,23 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_STAGING_CONVEX_COPY_MAIN`: process.env access in `packages/convex/scripts/convex-seed-staging-from-main.test.mjs`:73
 - `T3CODE_STAGING_CONVEX_COPY_MAIN`: process.env access in `packages/convex/scripts/convex-seed-staging-from-main.test.mjs`:97
 - `T3CODE_STAGING_CONVEX_RESEED`: process.env access in `packages/convex/scripts/convex-seed-staging-from-main.mjs`:99
-- `T3CODE_STARTUP_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:136
 - `T3CODE_STARTUP_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", `startup-${formatTimestamp(new Date())}.... in `scripts/local-desktop-launcher-run.ts`:136
+- `T3CODE_STARTUP_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:136
 - `T3CODE_STRICT_PROVIDER_LIFECYCLE_GUARD`: process.env access in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:58
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:60
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:61
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:95
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:97
 - `T3CODE_TURBO_UI`: process.env access in `scripts/local-desktop-dev-run.ts`:115
-- `T3CODE_TURBO_UI`: env fallback "stream", in `scripts/worktree-cli.ts`:220
-- `T3CODE_TURBO_UI`: process.env access in `scripts/worktree-cli.ts`:220
+- `T3CODE_TURBO_UI`: env fallback "stream", in `scripts/worktree-cli.ts`:235
+- `T3CODE_TURBO_UI`: process.env access in `scripts/worktree-cli.ts`:235
 - `T3CODE_WEB_SOURCEMAP`: process.env access in `apps/web/vite.config.ts`:30
 - `T3CODE_WORKTREE_ISOLATED`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:80
 - `T3CODE_WORKTREE_SLUG`: process.env access in `scripts/local-desktop-launcher-run.ts`:75
 - `TEMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `TMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
-- `TMPDIR`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `TMPDIR`: env fallback process.env.TEMP ?? process.env.TMP ?? "/tmp" in `apps/server/src/git/GitManager.ts`:703
+- `TMPDIR`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `USERPROFILE`: process.env access in `packages/ssh/src/config.ts`:211
 - `VERCEL_ENV`: process.env access in `apps/web/vite.config.ts`:22
 - `VERCEL_PROJECT_PRODUCTION_URL`: process.env access in `apps/web/vite.config.ts`:22
@@ -485,6 +487,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `codeInput`: useState initial "" in `apps/mobile/src/app/connections/new.tsx`:28
 - `command`: useState initial "" in `apps/web/src/components/ProjectScriptsControl.tsx`:112
 - `commentText`: useState initial "" in `apps/mobile/src/features/review/ReviewCommentComposerSheet.tsx`:54
+- `commitMessage`: useState initial "" in `apps/web/src/components/workspace-git/WorkspaceGitDashboard.tsx`:486
 - `composerCursor`: useState initial ( in `apps/web/src/components/chat/ChatComposer.tsx`:817
 - `composerExpanded`: useState initial false in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:206
 - `contextWindow`: useState initial "1M" in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:166
@@ -582,6 +585,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `label`: useState initial "" in `apps/web/src/components/settings/AddProviderInstanceDialog.tsx`:122
 - `lastGridSize`: useState initial { cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_ROWS, } in `apps/mobile/src/features/terminal/ThreadTerminalPanel.tsx`:40
 - `lastGridSize`: useState initial cachedRouteGridSize ?? { cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_... in `apps/mobile/src/features/terminal/ThreadTerminalRouteScreen.tsx`:242
+- `loading`: useState initial false in `apps/web/src/components/workspace-git/WorkspaceGitDashboard.tsx`:482
 - `localFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:635
 - `measuredOverlayHeight`: useState initial 0 in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:211
 - `message`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:170
@@ -592,8 +596,9 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `nowMs`: useState initial ( in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:171
 - `nowMs`: useState initial ( in `apps/web/src/components/WebSocketConnectionSurface.tsx`:150
 - `nowMs`: useState initial ( in `apps/web/src/components/settings/settingsLayout.tsx`:10
-- `open`: useState initial false in `apps/web/src/components/ui/toast.tsx`:141
-- `open`: useState initial false in `apps/web/src/components/ui/toast.tsx`:181
+- `open`: useState initial false in `apps/web/src/components/ui/toast.tsx`:149
+- `open`: useState initial false in `apps/web/src/components/ui/toast.tsx`:197
+- `open`: useState initial false in `apps/web/src/components/workspace-git/WorkspaceGitDashboard.tsx`:480
 - `pairingLabel`: useState initial "" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:929
 - `password`: useState initial "" in `apps/web/src/components/desktop/SshPasswordPromptDialog.tsx`:33
 - `pathInput`: useState initial ( in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:679
@@ -1064,9 +1069,9 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-push-local.mjs`:38
 - `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/setup-local.mjs`:22
 - `CONVEX_DOCUMENT_JSON_BYTE_BUDGET`: constant 450_000 in `apps/server/src/persistence/Layers/convexDocumentJson.ts`:2
-- `CONVEX_GENERATED_PATH_PREFIX`: constant "packages/convex/convex/_generated/" in `apps/server/src/local/promotionApply.ts`:39
+- `CONVEX_GENERATED_PATH_PREFIX`: constant "packages/convex/convex/_generated/" in `apps/server/src/local/promotionApply.ts`:47
 - `CONVEX_MUTATION_BYTE_BUDGET`: constant 900_000 in `scripts/sqlite-to-convex-migrate.ts`:85
-- `CONVEX_PROMOTION_SYNC_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionApply.ts`:42
+- `CONVEX_PROMOTION_SYNC_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionApply.ts`:50
 - `CONVEX_READY_FILENAME`: constant "convex-ready.json" in `apps/server/src/local/promotionConvexRestart.ts`:12
 - `CONVEX_READY_FILENAME`: constant "convex-ready.json" in `packages/convex/scripts/convex-ready.mjs`:4
 - `CONVEX_SQLITE_RELATIVE`: constant NodePath.join("local", "default", "convex_local_backend.sqlite3") in `apps/server/src/local/promotionStatus.ts`:24
@@ -1120,8 +1125,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_INACTIVITY_THRESHOLD_MS`: constant 30 * 60 * 1000 in `apps/server/src/provider/Layers/ProviderSessionReaper.ts`:21
 - `DEFAULT_LIMIT`: constant 20 in `packages/client-runtime/src/composerPathSearchState.ts`:57
 - `DEFAULT_LOCAL_MODEL`: constant "ollama/llama3" in `packages/contracts/src/model.ts`:139
-- `DEFAULT_MAIN_CONVEX_SITE_URL`: constant "http://127.0.0.1:3211" in `apps/server/src/local/promotionApply.ts`:41
-- `DEFAULT_MAIN_CONVEX_URL`: constant "http://127.0.0.1:3210" in `apps/server/src/local/promotionApply.ts`:40
+- `DEFAULT_MAIN_CONVEX_SITE_URL`: constant "http://127.0.0.1:3211" in `apps/server/src/local/promotionApply.ts`:49
+- `DEFAULT_MAIN_CONVEX_URL`: constant "http://127.0.0.1:3210" in `apps/server/src/local/promotionApply.ts`:48
 - `DEFAULT_MAIN_WORKTREE`: constant NodePath.resolve(import.meta.dirname, "../../t3code") in `scripts/repair-convex-pending-turns-from-history.ts`:123
 - `DEFAULT_MAX_BUFFER_BYTES`: constant 512 * 1024 in `packages/client-runtime/src/terminalSessionState.ts`:111
 - `DEFAULT_MAX_BYTES`: constant 10 * 1024 * 1024 in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:23
@@ -1143,7 +1148,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_PORT`: constant 3773 in `apps/server/src/config.ts`:17
 - `DEFAULT_POSITIVE_CACHE_TTL`: constant Duration.minutes(1) in `apps/server/src/project/Layers/RepositoryIdentityResolver.ts`:77
 - `DEFAULT_PROCESS_KILL_GRACE_MS`: constant 1_000 in `apps/server/src/terminal/Layers/Manager.ts`:55
-- `DEFAULT_PROMOTION_CHECK_COMMAND`: constant ["bun", "run", "build"] as const in `apps/server/src/local/promotionApply.ts`:33
+- `DEFAULT_PROMOTION_CHECK_COMMAND`: constant ["bun", "run", "build"] as const in `apps/server/src/local/promotionApply.ts`:37
 - `DEFAULT_PROVIDER_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `packages/shared/src/model.ts`:13
 - `DEFAULT_READ_FROM_SEQUENCE_LIMIT`: constant 1_000 in `apps/server/src/persistence/Layers/ConvexOrchestrationEventStore.ts`:21
 - `DEFAULT_READ_FROM_SEQUENCE_LIMIT`: constant 1_000 in `apps/server/src/persistence/Layers/OrchestrationEventStore.ts`:67
@@ -1234,7 +1239,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DISCOVER_SSH_HOSTS_CHANNEL`: constant "desktop:discover-ssh-hosts" in `apps/desktop/src/ipc/channels.ts`:22
 - `DISMISS_KEY_PREFIX`: constant "main-reload" in `apps/web/src/hooks/localMainReloadToast.logic.ts`:3
 - `DISMISS_STORAGE_KEY`: constant "t3code-local-main-reload-dismiss" in `apps/web/src/hooks/useLocalMainReloadToast.tsx`:21
-- `DISMISS_STORAGE_PREFIX`: constant "t3code-local-promotion-dismiss:" in `apps/web/src/hooks/useLocalPromotionToast.tsx`:20
+- `DISMISS_STORAGE_PREFIX`: constant "t3code-local-promotion-dismiss:" in `apps/web/src/hooks/useLocalPromotionToast.tsx`:21
 - `DISMISS_TRANSITION_MS`: constant 220 in `apps/web/src/components/chat/ComposerBannerStack.tsx`:8
 - `DRIVER_KIND`: constant ProviderDriverKind.make("claudeAgent") in `apps/server/src/provider/Drivers/ClaudeDriver.ts`:54
 - `DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `apps/server/src/provider/Drivers/CodexDriver.ts`:57
@@ -1310,7 +1315,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `EPHEMERAL_KIND_SET`: constant new Set<string>(EPHEMERAL_THREAD_ACTIVITY_KINDS) in `packages/convex/pruneRetention.ts`:24
 - `EPHEMERAL_THREAD_ACTIVITY_KINDS`: constant [ in `packages/convex/pruneRetention.ts`:15
 - `ERROR_CORRECTION_LEVELS`: constant { in `apps/web/src/components/ui/qr-code.tsx`:15
-- `ERROR_DESCRIPTION_CLAMP_MIN_CHARS`: constant 180 in `apps/web/src/components/ui/toast.tsx`:87
+- `ERROR_DESCRIPTION_CLAMP_MIN_CHARS`: constant 180 in `apps/web/src/components/ui/toast.tsx`:88
 - `EXISTING_SERVER_OPENCODE_SETTINGS`: constant Schema.decodeSync(OpenCodeSettings)({ in `apps/server/src/textGeneration/OpenCodeTextGeneration.test.ts`:138
 - `EXPO_PUSH_ENDPOINT`: constant "https://exp.host/--/api/v2/push/send" in `apps/server/src/orchestration/Layers/ConnectedDeviceNotifications.ts`:18
 - `EXTENDED_BACKEND_READINESS_TIMEOUT`: constant Duration.minutes(5) in `apps/desktop/src/backend/DesktopBackendManager.ts`:37
@@ -1361,7 +1366,9 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `GIT_FETCH_INTERVAL_STEP_SECONDS`: constant 5 in `apps/web/src/components/settings/SourceControlSettings.tsx`:72
 - `GIT_LIST_BRANCHES_DEFAULT_LIMIT`: constant 100 in `apps/server/src/vcs/GitVcsDriverCore.ts`:60
 - `GIT_LIST_BRANCHES_MAX_LIMIT`: constant 200 in `packages/contracts/src/git.ts`:7
+- `GIT_MAX_BUFFER`: constant 256 * 1024 in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:30
 - `GIT_STATUS_WINDOW_REFRESH_DEBOUNCE_MS`: constant 250 in `apps/web/src/components/GitActionsControl.tsx`:129
+- `GIT_TIMEOUT_MS`: constant 8_000 in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:29
 - `GITHUB_API_BASE`: constant "https://api.github.com/repos/openai/codex/contents/codex-rs/app-server-proto... in `packages/effect-codex-app-server/scripts/generate.ts`:22
 - `GITHUB_CLI_PR_CHECKOUT_PATTERN`: constant /^gh\s+pr\s+checkout\s+(.+)$/i in `apps/web/src/pullRequestReference.ts`:8
 - `GITHUB_PULL_REQUEST_URL_PATTERN`: constant /^https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/pull\/(\d+)(?:[/?#].*)?$/i in `apps/web/src/pullRequestReference.ts`:1
@@ -1437,7 +1444,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LINK_ICON_HTML_RE`: constant /<link\b(?=[^>]*\brel=["'](?:icon|shortcut icon)["'])(?=[^>]*\bhref=["']([^"'... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:48
 - `LINK_ICON_OBJ_RE`: constant /(?=[^}]*\brel\s*:\s*["'](?:icon|shortcut icon)["'])(?=[^}]*\bhref\s*:\s*["']... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:50
 - `LOCAL_BACKEND_SQLITE_RELATIVE_PATH`: constant NodePath.join( in `packages/convex/scripts/convex-shared-deployment.mjs`:245
-- `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/local/promotionApply.ts`:38
+- `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionApply.ts`:42
 - `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/local/promotionConvexRestart.ts`:6
 - `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/persistence/Layers/ConvexClient.ts`:10
 - `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `packages/convex/scripts/convex-backend-lifecycle.mjs`:10
@@ -1465,15 +1472,15 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/chat/TraitsPicker.test.tsx`:15
 - `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/lib/threadSort.test.ts`:12
 - `LOCAL_MAIN_BASE_NAME`: constant "T3code" in `apps/desktop/src/app/DesktopEnvironment.ts`:88
-- `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/promotionApply.ts`:34
+- `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/promotionApply.ts`:38
 - `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/stackAutoRepair.ts`:52
 - `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/stackRecover.ts`:40
 - `LOCAL_PRESENTATION`: constant { in `apps/server/src/provider/Layers/LocalProvider.ts`:23
-- `LOCAL_PROMOTION_LAUNCH_LOCK_PREFIX`: constant "t3code-local-promotion-launch" in `apps/server/src/local/promotionApply.ts`:36
-- `LOCAL_PROMOTION_LAUNCH_LOCK_TTL_MS`: constant 30_000 in `apps/server/src/local/promotionApply.ts`:37
+- `LOCAL_PROMOTION_LAUNCH_LOCK_PREFIX`: constant "t3code-local-promotion-launch" in `apps/server/src/local/promotionApply.ts`:40
+- `LOCAL_PROMOTION_LAUNCH_LOCK_TTL_MS`: constant 30_000 in `apps/server/src/local/promotionApply.ts`:41
 - `LOCAL_STACK_RECOVER_HTML`: constant `<!doctype html> in `apps/server/src/local/stackRecover.ts`:230
 - `LOCAL_STAGING_BASE_NAME`: constant "T3code Staging" in `apps/desktop/src/app/DesktopEnvironment.ts`:89
-- `LOCAL_STAGING_DESKTOP_ID`: constant "t3code-local-staging.desktop" in `apps/server/src/local/promotionApply.ts`:35
+- `LOCAL_STAGING_DESKTOP_ID`: constant "t3code-local-staging.desktop" in `apps/server/src/local/promotionApply.ts`:39
 - `LOCAL_STAGING_DESKTOP_ID`: constant "t3code-local-staging.desktop" in `apps/server/src/local/stackRecover.ts`:41
 - `LOCAL_STAGING_HOME_SUFFIX`: constant "/t3code-local/staging" in `apps/server/src/persistence/resolvePersistenceMode.ts`:1
 - `LOCAL_STAGING_PROVIDER_RUNTIME_BLOCKED_DETAIL`: constant "T3code Staging cannot run provider agents. Start agent turns and resumes on ... in `apps/server/src/config.ts`:51
@@ -1496,6 +1503,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `MARKDOWN_LINK_HREF_PATTERN`: constant /\[[^\]]*]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g in `apps/web/src/components/ChatMarkdown.tsx`:294
 - `MAX_BUFFERED_ASSISTANT_CHARS`: constant 24_000 in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:57
 - `MAX_CACHED_THREAD_DETAIL_SUBSCRIPTIONS`: constant 32 in `apps/web/src/environments/runtime/service.ts`:154
+- `MAX_CHANGED_FILES`: constant 500 in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:32
 - `MAX_COLLAPSED_USER_MESSAGE_LENGTH`: constant 600 in `apps/web/src/components/chat/MessagesTimeline.tsx`:835
 - `MAX_COLLAPSED_USER_MESSAGE_LINES`: constant 8 in `apps/web/src/components/chat/MessagesTimeline.tsx`:834
 - `MAX_CUSTOM_MODEL_COUNT`: constant 32 in `apps/web/src/modelSelection.ts`:32
@@ -1512,6 +1520,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `MAX_PROGRESS_TEXT_LENGTH`: constant 500 in `apps/server/src/git/GitManager.ts`:93
 - `MAX_RESTART_DELAY`: constant Duration.seconds(10) in `apps/desktop/src/backend/DesktopBackendManager.ts`:34
 - `MAX_RETAINED_SAMPLES`: constant 20_000 in `apps/server/src/diagnostics/ProcessResourceMonitor.ts`:24
+- `MAX_SCAN_DEPTH`: constant 4 in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:31
 - `MAX_SCRIPT_ID_LENGTH`: constant 24 in `packages/contracts/src/keybindings.ts`:7
 - `MAX_SIDEBAR_THREAD_PREVIEW_COUNT`: constant 15 in `packages/contracts/src/settings.ts`:32
 - `MAX_TCP_PORT`: constant 65_535 in `apps/desktop/src/app/DesktopApp.ts`:28
@@ -1627,7 +1636,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PIERRE_LIGHT_SHIKI_THEME`: constant { in `apps/mobile/src/features/diffs/nativeReviewDiffHighlighter.ts`:74
 - `POLL_INTERVAL_MS`: constant 15_000 in `apps/web/src/hooks/useLiveLocalPromotionStatus.ts`:7
 - `POLL_INTERVAL_MS`: constant 30_000 in `apps/web/src/hooks/useLocalMainReloadToast.tsx`:22
-- `POLL_INTERVAL_MS`: constant 60_000 in `apps/web/src/hooks/useLocalPromotionToast.tsx`:21
+- `POLL_INTERVAL_MS`: constant 60_000 in `apps/web/src/hooks/useLocalPromotionToast.tsx`:22
 - `POSITION_ONLY_PATTERN`: constant /^\d+(?::\d+)?$/ in `apps/web/src/markdown-links.ts`:11
 - `POSITION_SUFFIX_PATTERN`: constant /:\d+(?::\d+)?$/ in `apps/web/src/markdown-links.ts`:10
 - `POSITIVE_DETECTION_CACHE_TTL`: constant Duration.seconds(2) in `apps/server/src/vcs/VcsDriverRegistry.ts`:15
@@ -1692,7 +1701,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PROVIDER_SETTINGS`: constant DRIVER_OPTIONS.map((definition) => ({ in `apps/web/src/components/settings/SettingsPanels.tsx`:123
 - `PROVIDER_SLUG_MAX_CHARS`: constant 64 in `packages/contracts/src/providerInstance.ts`:40
 - `PROVIDER_SLUG_PATTERN`: constant /^[a-zA-Z][a-zA-Z0-9_-]*$/ in `packages/contracts/src/providerInstance.ts`:49
-- `PROVIDER_STATUS_DEBOUNCE_MS`: constant 200 in `apps/server/src/ws.ts`:126
+- `PROVIDER_STATUS_DEBOUNCE_MS`: constant 200 in `apps/server/src/ws.ts`:127
 - `PROVIDER_STATUS_STYLES`: constant { in `apps/web/src/components/settings/providerStatus.ts`:7
 - `PROVIDER_UPDATE_ACTION_TOAST_MESSAGE`: constant "Install the update now or review provider settings." in `apps/server/src/provider/providerMaintenance.ts`:17
 - `PROVIDER_UPDATE_DISMISSALS_STORAGE_KEY`: constant "t3code:provider-update-dismissals:v1" in `apps/web/src/providerUpdateDismissal.ts`:6
@@ -1792,6 +1801,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SAMPLE_INTERVAL_MS`: constant 5_000 in `apps/server/src/diagnostics/ProcessResourceMonitor.ts`:22
 - `SAVED_CONNECTION_BOOTSTRAP_TIMEOUT_MS`: constant 8_000 in `apps/mobile/src/state/use-remote-environment-registry.ts`:56
 - `SAVED_ENVIRONMENT_REGISTRY_STORAGE_KEY`: constant "t3code:saved-environment-registry:v1" in `apps/web/src/clientPersistenceStorage.ts`:16
+- `SCAN_EXCLUDED_DIRS`: constant new Set([ in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:18
 - `SCRIPT_RUN_COMMAND_PATTERN`: constant Schema.TemplateLiteral([ in `packages/contracts/src/keybindings.ts`:64
 - `SCRIPT_TERMINAL_COLS`: constant 120 in `apps/web/src/components/ChatView.tsx`:396
 - `SCRIPT_TERMINAL_ROWS`: constant 30 in `apps/web/src/components/ChatView.tsx`:397
@@ -1969,7 +1979,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `TIMELINE_LIST_HEADER`: constant <div className="h-3 sm:h-4" /> in `apps/web/src/components/chat/MessagesTimeline.tsx`:113
 - `TIMESTAMP_FORMAT_LABELS`: constant { in `apps/web/src/components/settings/SettingsPanels.tsx`:99
 - `TOAST_DESCRIPTION_MAX`: constant 72 in `apps/server/src/git/GitManager.ts`:95
-- `TOAST_ICONS`: constant { in `apps/web/src/components/ui/toast.tsx`:78
+- `TOAST_ICONS`: constant { in `apps/web/src/components/ui/toast.tsx`:79
 - `TOOL_LIFECYCLE_ITEM_TYPES`: constant [ in `packages/contracts/src/providerRuntime.ts`:105
 - `TOP_LIMIT`: constant 10 in `apps/server/src/diagnostics/TraceDiagnostics.ts`:66
 - `TRACE_DIAGNOSTICS_IDLE_TTL_MS`: constant 5 * 60_000 in `apps/web/src/lib/traceDiagnosticsState.ts`:13
@@ -2027,7 +2037,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `WCO_CLASS_NAME`: constant "wco" in `apps/web/src/lib/windowControlsOverlay.ts`:1
 - `WEB_ASSET_BRANDS`: constant [ in `scripts/apply-web-brand-assets.ts`:17
 - `WEB_ASSET_CHANNELS`: constant ["latest", "nightly"] as const in `scripts/lib/brand-assets.ts`:28
-- `WEB_DIST_RELATIVE_PATH`: constant NodePath.join("apps", "web", "dist") in `apps/server/src/local/promotionApply.ts`:48
+- `WEB_DIST_RELATIVE_PATH`: constant NodePath.join("apps", "web", "dist") in `apps/server/src/local/promotionApply.ts`:56
 - `WEB_ICON_SOURCE_PATHS_BY_BRAND`: constant { in `scripts/lib/brand-assets.ts`:48
 - `WEB_ICON_TARGET_FILENAMES`: constant { in `scripts/lib/brand-assets.ts`:41
 - `WEBSOCKET_TOKEN_QUERY_PARAM`: constant "wsToken" in `apps/server/src/auth/Layers/ServerAuth.ts`:39
@@ -2053,7 +2063,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `WORKTREE_CONVEX_CLOUD_BASE`: constant 3230 in `scripts/worktree-instance.ts`:17
 - `WORKTREE_REGISTRY_RELATIVE`: constant "worktrees.json" in `scripts/worktree-instance.ts`:19
 - `WORKTREE_SLUG_PATTERN`: constant /^[a-z0-9][a-z0-9-]*$/ in `scripts/worktree-instance.ts`:16
-- `WS_METHODS`: constant { in `packages/contracts/src/rpc.ts`:122
+- `WS_METHODS`: constant { in `packages/contracts/src/rpc.ts`:124
 - `WS_RECONNECT_BACKOFF_FACTOR`: constant DEFAULT_RECONNECT_BACKOFF.backoffFactor in `apps/web/src/rpc/wsConnectionState.ts`:11
 - `WS_RECONNECT_INITIAL_DELAY_MS`: constant DEFAULT_RECONNECT_BACKOFF.initialDelayMs in `apps/web/src/rpc/wsConnectionState.ts`:10
 - `WS_RECONNECT_MAX_ATTEMPTS`: constant WS_RECONNECT_MAX_RETRIES + 1 in `apps/web/src/rpc/wsConnectionState.ts`:14
