@@ -58,7 +58,7 @@ Worktrees ready:
 
 Next steps:
   cd "$STAGING_DIR" && bun install
-  cd "$STAGING_DIR" && bun run install:local-launchers
+  cd "$STAGING_DIR" && pnpm run install:local-launchers
   cd "$ROOT" && pnpm run start:dev
 
 EOF

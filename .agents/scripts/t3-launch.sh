@@ -82,7 +82,7 @@ fi
 
 LAUNCHER_BIN="$HOME/.local/bin/$DESKTOP_ID"
 if [[ ! -x "$LAUNCHER_BIN" ]]; then
-  echo "Launcher not found: $LAUNCHER_BIN (run: cd t3code-staging && bun run install:local-launchers)" >&2
+  echo "Launcher not found: $LAUNCHER_BIN (run: cd t3code-staging && pnpm run install:local-launchers)" >&2
   exit 1
 fi
 

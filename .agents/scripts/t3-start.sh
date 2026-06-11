@@ -12,12 +12,9 @@ free_local_desktop_ports() {
   if [[ ! -f "$script" ]]; then
     return 0
   fi
-  if command -v bun >/dev/null 2>&1; then
-    bun "$script" "$variant" "$@"
-    return $?
-  fi
   if command -v node >/dev/null 2>&1; then
     node "$script" "$variant" "$@"
+    return $?
   fi
 }
 
@@ -36,8 +33,8 @@ fi
 
 if [[ "${1:-}" == "--install-launchers" ]]; then
   cd "$T3CODE_LOCAL_WORKSPACE/t3code-staging"
-  if command -v bun >/dev/null 2>&1; then
-    exec bun run install:local-launchers
+  if command -v pnpm >/dev/null 2>&1; then
+    exec pnpm run install:local-launchers
   fi
   exec node scripts/install-local-desktop-launchers.ts
 fi
@@ -74,7 +71,7 @@ Usage: $0 main|staging|dev [--force-relaunch]
   --force-relaunch  Quit T3code Dev and relaunch solo main/staging without prompting
 
 Same behavior as the Omarchy Walker entries. Regenerate launchers with:
-  bun run install:launchers
+  pnpm run install:launchers
 EOF
     exit 1
     ;;
@@ -95,7 +92,7 @@ export T3CODE_DISABLE_STARTUP_TERMINAL=1
 LAUNCHER_BIN="$HOME/.local/bin/$DESKTOP_ID"
 if [[ ! -x "$LAUNCHER_BIN" ]]; then
   echo "Launcher not found: $LAUNCHER_BIN" >&2
-  echo "Run from workspace root: bun run install:launchers" >&2
+  echo "Run from workspace root: pnpm run install:launchers" >&2
   exit 1
 fi
 

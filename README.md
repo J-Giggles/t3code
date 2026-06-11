@@ -18,8 +18,8 @@ cd ~/code/t3code-local
 # Attach t3code + t3code-staging worktrees (clones J-Giggles/t3code)
 ./.agents/scripts/bootstrap-worktrees.sh
 
-cd t3code-staging && bun install
-cd t3code-staging && bun run install:local-launchers
+cd t3code-staging && pnpm install
+cd t3code-staging && pnpm run install:local-launchers
 
 cd ~/code/t3code-local
 pnpm run start:dev    # main + staging together

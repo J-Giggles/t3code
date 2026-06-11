@@ -22,9 +22,9 @@ if [[ ! -f "$CLI" ]]; then
   exit 1
 fi
 
-if ! command -v bun >/dev/null 2>&1; then
-  echo "bun is required" >&2
+if ! command -v node >/dev/null 2>&1; then
+  echo "node is required" >&2
   exit 1
 fi
 
-exec bun "$CLI" "$@"
+exec node "$CLI" "$@"

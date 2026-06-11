@@ -46,7 +46,7 @@ Use the three Walker entries above. One-time install/regenerate:
 
 ```bash
 cd ~/code/t3code-local && pnpm run install:launchers
-# or: cd t3code-staging && bun run install:local-launchers
+# or: cd t3code-staging && pnpm run install:local-launchers
 ```
 
 ### 2. Workspace root (`t3code-local/`)
@@ -74,7 +74,7 @@ cd ~/code/t3code-local/t3code-staging  && pnpm run start:staging
 cd ~/code/t3code-local/t3code-staging  && pnpm run start:dev
 ```
 
-`bun run start:*` works the same everywhere. When changing launcher behavior, keep all three entry points and all three modes working; regenerate launchers after edits to `local-desktop-launchers.ts`.
+`pnpm run start:*` works the same everywhere. When changing launcher behavior, keep all three entry points and all three modes working; regenerate launchers after edits to `local-desktop-launchers.ts`.
 
 **Agents** (non-interactive, no Ghostty startup terminal): `pnpm run launch` inside a worktree, or `./.agents/scripts/t3-launch.sh main|staging` from workspace root.
 
@@ -112,7 +112,7 @@ See **Launch contract** above for Walker/desktop IDs and the three modes. Runtim
 After changing launcher behavior in the repo, refresh from **staging**:
 
 ```bash
-cd t3code-staging && bun run install:local-launchers
+cd t3code-staging && pnpm run install:local-launchers
 ```
 
 ## Agent project context (CCS)

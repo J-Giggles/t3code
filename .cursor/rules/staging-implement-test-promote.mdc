@@ -18,7 +18,7 @@ Default workflow for **all** T3 Code product changes in this workspace.
 From `t3code-staging`, run in order:
 
 1. **Static checks** (must pass): `bun fmt`, `bun lint`, `bun typecheck`
-2. **Tests**: focused Vitest for touched paths, then `bun run test` when scope is broad
+2. **Tests**: focused Vitest for touched paths, then `pnpm run test` when scope is broad
 3. **Launch staging app** (agent-safe, no Ghostty prompt):
 
 ```bash
@@ -36,7 +36,7 @@ From `t3code-staging`, run in order:
 
 | Change type | Required verification |
 |-------------|----------------------|
-| `local-desktop-launchers.ts` / installed launchers | `bun run install:local-launchers` then `./.agents/scripts/t3-launch-restart-test.sh staging` |
+| `local-desktop-launchers.ts` / installed launchers | `pnpm run install:local-launchers` then `./.agents/scripts/t3-launch-restart-test.sh staging` |
 | `.agents/scripts/t3-launch.sh` / `t3-verify.sh` | `./.agents/scripts/t3-launch.sh staging --wait` and `./.agents/scripts/t3-verify.sh staging` |
 | User-visible UI | `./.agents/scripts/t3-verify.sh staging`, headed CDP interaction on port `9232` when interaction matters, and `--screenshot` when visual state matters |
 
@@ -44,7 +44,7 @@ If verification cannot run (missing display, app already broken, etc.), say so e
 
 Use the already-running, visible **T3code Staging** window for user-visible or interaction-dependent changes. Omarchy **T3code Dev** and promotion **Promote & Relaunch Dev** keep the Ghostty startup terminal path and force staging into agent automation mode with CDP port `9232` plus `~/.local/share/t3code-local/staging/agent-automation.json`. Run `./.agents/scripts/t3-verify.sh staging` first to detect the running instance; if it reports `vite_ready=yes` and CDP is reachable, attach to Electron CDP port `9232` and click through the workflow in the headed app. Launch with `./.agents/scripts/t3-launch.sh staging --wait` only when staging is not running or was not launched with agent automation. Keep the window visible so the user can watch the verification, and report the specific headed interactions performed.
 
-If launcher scripts changed: `cd t3code-staging && bun run install:local-launchers`
+If launcher scripts changed: `cd t3code-staging && pnpm run install:local-launchers`
 
 **Do not promote by default.** Stop after staging implementation and verification unless the user explicitly asks to promote in the current turn.
 

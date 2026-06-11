@@ -33,7 +33,7 @@ cd /path/to/t3code-local
 Or from the staging worktree via npm script:
 
 ```bash
-cd t3code-staging && bun run launch
+cd t3code-staging && pnpm run launch
 ```
 
 Or gtk-launch with agent env:
@@ -45,7 +45,7 @@ T3CODE_DISABLE_STARTUP_TERMINAL=1 gtk-launch t3code-local-staging.desktop
 Regenerate launchers after changing `t3code/scripts/local-desktop-launchers.ts`:
 
 ```bash
-cd t3code-staging && bun run install:local-launchers
+cd t3code-staging && pnpm run install:local-launchers
 ./.agents/scripts/t3-launch-restart-test.sh staging   # required when launcher behavior changes
 ```
 
