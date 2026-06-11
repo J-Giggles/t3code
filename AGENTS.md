@@ -9,11 +9,22 @@ This directory is the **workspace root** for dogfooding two T3 Code worktrees on
 | Live coding app | `t3code/` | `main` |
 | Product development | `t3code-staging/` | `staging` |
 
-### Do not edit or stop main during self-improvement
+### Detect and protect the running main instance
 
-When improving T3 Code itself (product code, launchers, agents, workflows), work **only** in `t3code-staging/` on branch `staging`. **Do not** edit `t3code/` (`main`), merge into `main`, promote, or change anything wired to the live main instance unless the user explicitly asks in the current turn.
+Before improving T3 Code itself (product code, launchers, agents, workflows), first identify which worktree is currently running the **main/live** app. The protected main instance is not always the `t3code/` checkout: it may be a considered-main worktree such as `t3code-main/`.
 
-**Dev mode (`T3code Dev`) runs main and staging together** — that does not make main fair game. The main half is still the live app (`t3code/` on branch `main`, `t3code-local-main`). Leave it running and unchanged: no file edits under `t3code/`, no restarts, no relaunch of Dev mode, and no `start:main` / `t3-launch.sh main` cycles to test your work. Verify and interact with the **staging half only** (`t3code-staging`, `t3code-local-staging`, `t3-launch.sh staging`).
+Detect the running main worktree from active processes and runtime files before editing:
+
+```bash
+ps -eo pid,ppid,etime,cmd | rg '/home/jgigg/code/t3code-local/[^ ]+/(apps/server|apps/desktop|node_modules|scripts/dev-runner)|--t3code-dev-root=/home/jgigg/code/t3code-local/[^ ]+'
+find ~/.local/share/t3code-local -maxdepth 3 -type f \( -name 'agent-automation.json' -o -name 'server-runtime.json' -o -name 'main-worktree-runtime-snapshot.json' \) -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort
+```
+
+Treat any worktree currently running as the main/live app (`T3CODE_DESKTOP_VARIANT=local-main`, `T3CODE_DEV_INSTANCE=t3code-local-main`, main ports, or the active `/t3code-main/` Tailscale route) as protected. **Do not edit, restart, relaunch, kill, merge into, promote, or change generated launchers/env for that detected running main worktree** unless the user explicitly asks in the current turn.
+
+When improving T3 Code itself and no alternate main worktree is explicitly requested, work **only** in `t3code-staging/` on branch `staging`. If the detected running main is `t3code-main/`, then `t3code-main/` is protected exactly like `t3code/` would be, and product edits must move to `t3code-staging/` or another non-running worktree.
+
+**Dev mode (`T3code Dev`) runs main and staging together** — that does not make main fair game. The main half is whichever worktree is detected as the live `t3code-local-main` app. Leave it running and unchanged: no file edits under the detected main worktree, no restarts, no relaunch of Dev mode, and no `start:main` / `t3-launch.sh main` cycles to test your work. Verify and interact with the **staging half only** (`t3code-staging`, `t3code-local-staging`, `t3-launch.sh staging`) unless the user explicitly redirects.
 
 The live main instance is the user's running session — often hosting active Cursor agent work. **Do not** stop, restart, relaunch, or kill main (including via Dev mode teardown) to verify or test staging changes. Killing or restarting main terminates in-flight agent processes even when staging keeps running.
 
