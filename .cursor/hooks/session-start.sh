@@ -28,7 +28,7 @@ if [[ -x "$REFRESH_SCRIPT" ]]; then
 fi
 
 summary="T3 Code Local workspace at $ROOT. "
-summary+="Main app: t3code/ (branch main). Staging dev: t3code-staging/ (branch staging). "
+summary+="Main app: t3code-main/ (branch main). Staging dev: t3code-staging/ (branch staging). "
 summary+="Launch for agents: .agents/scripts/t3-launch.sh main|staging --wait. "
 summary+="Verify UI: .agents/scripts/t3-verify.sh main|staging. "
 summary+="Electron CDP when T3CODE_AGENT_AUTOMATION=1: main port 9222, staging port 9232. "

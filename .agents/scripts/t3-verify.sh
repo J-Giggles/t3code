@@ -42,9 +42,9 @@ fi
 case "$VARIANT" in
   main)
     DEV_INSTANCE="t3code-local-main"
-    WM_CLASS="t3code-local-main"
-    T3_HOME="$HOME/.local/share/t3code-local/main"
-    WORKTREE="$T3CODE_LOCAL_WORKSPACE/t3code"
+    WM_CLASS="t3code-local-t3code-main"
+    T3_HOME="$HOME/.local/share/t3code-local/t3code-main"
+    WORKTREE="$T3CODE_LOCAL_WORKSPACE/t3code-main"
     CONVEX_DATA_DIR="$WORKTREE/.local/convex"
     CONVEX_URL="http://127.0.0.1:3210"
     ;;

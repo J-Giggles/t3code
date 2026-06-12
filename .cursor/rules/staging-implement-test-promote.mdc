@@ -10,7 +10,7 @@ Default workflow for **all** T3 Code product changes in this workspace.
 ## 1. Implement on staging only
 
 - Worktree: `/home/jgigg/code/t3code-local/t3code-staging` (branch `staging`)
-- Do **not** edit `/home/jgigg/code/t3code-local/t3code` (`main`) during implementation
+- Do **not** edit `/home/jgigg/code/t3code-local/t3code-main` (`main`) during implementation
 - Keep local-only behavior in launcher, desktop identity, chat-sync, and Hermes seams
 
 ## 2. Verify on staging
@@ -50,7 +50,7 @@ If launcher scripts changed: `cd t3code-staging && pnpm run install:local-launch
 
 ## 3. Main is protected
 
-`main` is the live coding app and is protected from routine agent edits. When staging is green, report the staging result and stop. Do not merge, port, or otherwise edit `/home/jgigg/code/t3code-local/t3code` unless the user explicitly asks for a main update in the current turn.
+`main` is the live coding app and is protected from routine agent edits. When staging is green, report the staging result and stop. Do not merge, port, or otherwise edit `/home/jgigg/code/t3code-local/t3code-main` unless the user explicitly asks for a main update in the current turn.
 
 Humans may promote via terminal (`git merge staging`), or via the in-app **Relaunch main with updates** toast when staging updates are merge-ready.
 
@@ -61,7 +61,7 @@ If the user explicitly asks to promote:
 3. Push `origin/staging` and `origin/main` only when the task includes publishing
 
 ```bash
-cd /home/jgigg/code/t3code-local/t3code
+cd /home/jgigg/code/t3code-local/t3code-main
 git merge staging -m "Merge branch 'staging' into main"
 git push origin main
 ```

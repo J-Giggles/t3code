@@ -25,7 +25,7 @@ if [[ -d "$CCS_SKILL/scripts" ]]; then
   run_python "$CCS_SKILL/scripts/generate-filesystem-map.py" "$ROOT" --max-depth 3 \
     >"$CONTEXT_DIR/filesystem-map.md" || echo "# filesystem-map generation failed" >"$CONTEXT_DIR/filesystem-map.md"
 
-  run_python "$CCS_SKILL/scripts/generate-inputs-and-state.py" "$ROOT/t3code" \
+  run_python "$CCS_SKILL/scripts/generate-inputs-and-state.py" "$ROOT/t3code-main" \
     >"$CONTEXT_DIR/inputs-and-state-t3code.md" 2>/dev/null || true
 
   run_python "$CCS_SKILL/scripts/generate-inputs-and-state.py" "$ROOT/t3code-staging" \

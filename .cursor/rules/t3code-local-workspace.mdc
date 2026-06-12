@@ -9,10 +9,10 @@ Workspace root: `/home/jgigg/code/t3code-local`
 
 ## Worktrees
 
-- **Main (live):** `t3code/` on branch `main` — user codes here.
+- **Main (live):** `t3code-main/` on branch `main` — user codes here.
 - **Staging (dev):** `t3code-staging/` on branch `staging` — default for T3 Code product changes.
 
-Follow `t3code/.agents/rules/t3code-local-workflow.md` when editing either worktree.
+Follow `t3code-main/.agents/rules/t3code-local-workflow.md` when editing either worktree.
 
 ## Launch T3 apps (Walker / agents)
 
@@ -42,7 +42,7 @@ Or gtk-launch with agent env:
 T3CODE_DISABLE_STARTUP_TERMINAL=1 gtk-launch t3code-local-staging.desktop
 ```
 
-Regenerate launchers after changing `t3code/scripts/local-desktop-launchers.ts`:
+Regenerate launchers after changing `t3code-staging/scripts/local-desktop-launchers.ts`:
 
 ```bash
 cd t3code-staging && pnpm run install:local-launchers
@@ -63,7 +63,7 @@ Agent launches set `T3CODE_AGENT_AUTOMATION=1`, which enables Electron CDP:
 
 | App | CDP port |
 |-----|----------|
-| main | 9222 |
+| main | 9224 |
 | staging | 9232 |
 
 ```bash

@@ -25,7 +25,7 @@ Could not find t3code-local workspace layout in:
 
 Run from one of:
   cd ~/code/t3code-local && pnpm run start:dev
-  cd ~/code/t3code-local/t3code && pnpm run start:main
+  cd ~/code/t3code-local/t3code-main && pnpm run start:main
   cd ~/code/t3code-local/t3code-staging && pnpm run start:staging
 EOF
   exit 1
