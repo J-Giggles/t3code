@@ -20,8 +20,7 @@ t3code-local/
 │       ├── t3-tailscale-remote-probe.sh
 │       ├── t3-tailscale-staging-env.sh
 │       ├── t3-verify.sh
-│       ├── t3-worktree.sh
-│       └── t3code-main-dev-run.ts
+│       └── t3-worktree.sh
 ├── .context/
 │   ├── diagrams/
 │   ├── docs.md
@@ -484,6 +483,7 @@ t3code-local/
 │   │   └── worktree-instance.ts
 │   ├── .env
 │   ├── .env.example
+│   ├── .env.local
 │   ├── .gitattributes
 │   ├── .gitignore
 │   ├── .mise.toml
@@ -893,6 +893,203 @@ t3code-local/
 │   │   ├── tailscale-pairing-e2e.ts
 │   │   ├── tsconfig.json
 │   │   ├── tsconfig.tsbuildinfo
+│   │   ├── update-release-package-versions.test.ts
+│   │   ├── update-release-package-versions.ts
+│   │   ├── worktree-cli.ts
+│   │   └── worktree-instance.ts
+│   ├── .env.example
+│   ├── .env.local
+│   ├── .gitattributes
+│   ├── .gitignore
+│   ├── .mise.toml
+│   ├── AGENTS.md
+│   ├── CLAUDE.md
+│   ├── CONTRIBUTING.md
+│   ├── LICENSE
+│   ├── package.json
+│   ├── pnpm-lock.yaml
+│   ├── pnpm-workspace.yaml
+│   ├── README.md
+│   ├── tsconfig.base.json
+│   └── vite.config.ts
+├── t3code-wt-premotion-main/
+│   ├── .agents/
+│   │   ├── plans/
+│   │   └── rules/
+│   ├── .cursor/
+│   │   ├── rules/
+│   │   └── .gitignore
+│   ├── .devcontainer/
+│   │   └── devcontainer.json
+│   ├── .github/
+│   │   ├── ISSUE_TEMPLATE/
+│   │   ├── workflows/
+│   │   ├── pull_request_template.md
+│   │   └── VOUCHED.td
+│   ├── .local/
+│   │   └── convex/
+│   ├── .plans/
+│   │   ├── 01-shared-model-normalization.md
+│   │   ├── 02-typed-ipc-boundaries.md
+│   │   ├── 03-split-codex-app-server-manager.md
+│   │   ├── 04-split-chatview-component.md
+│   │   ├── 05-zod-persisted-state-validation.md
+│   │   ├── 06-provider-logstream-lifecycle.md
+│   │   ├── 07-ci-quality-gates.md
+│   │   ├── 08-precommit-format-and-lint.md
+│   │   ├── 09-event-state-test-expansion.md
+│   │   ├── 10-unify-process-session-abstraction.md
+│   │   ├── 11-effect.md
+│   │   ├── 12-effect-new.md
+│   │   ├── 13-provider-service-integration-tests.md
+│   │   ├── 14-server-authoritative-event-sourcing-cleanup.md
+│   │   ├── 15-effect-server.md
+│   │   ├── 16-pr89-review-remediation-phases.md
+│   │   ├── 16c-pr89-remediation-checklist.md
+│   │   ├── 17-claude-agent.md
+│   │   ├── 17-provider-neutral-runtime-determinism.md
+│   │   ├── 18-server-auth-model.md
+│   │   ├── 19-remote-endpoints-hosted-static.md
+│   │   ├── 19-version-control-phase-1-vcs-driver-foundation.md
+│   │   ├── 20-version-control-phase-2-source-control-provider-foundation.md
+│   │   ├── branch-environment-picker-in-chatview-input.md
+│   │   ├── effect-atom.md
+│   │   ├── git-flows-integration-tests.md
+│   │   ├── git-flows-test-plan.md
+│   │   ├── git-integration-branch-picker-worktrees.md
+│   │   ├── README.md
+│   │   ├── spec-1-1-cutover-plan.md
+│   │   └── spec-contract-matrix.md
+│   ├── .repos/
+│   │   ├── alchemy-effect/
+│   │   └── effect-smol/
+│   ├── .t3code/
+│   │   └── dev-apps.json
+│   ├── .vite-hooks/
+│   │   └── pre-commit
+│   ├── .vscode/
+│   │   ├── extensions.json
+│   │   └── settings.json
+│   ├── apps/
+│   │   ├── desktop/
+│   │   ├── marketing/
+│   │   ├── mobile/
+│   │   ├── server/
+│   │   └── web/
+│   ├── assets/
+│   │   ├── dev/
+│   │   ├── nightly/
+│   │   └── prod/
+│   ├── docs/
+│   │   ├── architecture/
+│   │   ├── cloud/
+│   │   ├── getting-started/
+│   │   ├── integrations/
+│   │   ├── operations/
+│   │   ├── project/
+│   │   ├── providers/
+│   │   ├── reference/
+│   │   ├── superpowers/
+│   │   ├── user/
+│   │   ├── README.md
+│   │   ├── t3code-local.md
+│   │   └── upstream-import-log.md
+│   ├── infra/
+│   │   └── relay/
+│   ├── oxlint-plugin-t3code/
+│   │   ├── rules/
+│   │   ├── test/
+│   │   ├── index.ts
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── utils.ts
+│   ├── packages/
+│   │   ├── client-runtime/
+│   │   ├── contracts/
+│   │   ├── convex/
+│   │   ├── effect-acp/
+│   │   ├── effect-codex-app-server/
+│   │   ├── shared/
+│   │   ├── ssh/
+│   │   └── tailscale/
+│   ├── patches/
+│   │   ├── @effect__vitest@4.0.0-beta.78.patch
+│   │   ├── @expo%2Fmetro-config@56.0.13.patch
+│   │   ├── @pierre%2Fdiffs@1.1.20.patch
+│   │   ├── effect@4.0.0-beta.78.patch
+│   │   └── react-native-nitro-modules@0.35.9.patch
+│   ├── scripts/
+│   │   ├── lib/
+│   │   ├── local-desktop-worktree/
+│   │   ├── apply-web-brand-assets.ts
+│   │   ├── build-desktop-artifact.test.ts
+│   │   ├── build-desktop-artifact.ts
+│   │   ├── chat-store-locations.ts
+│   │   ├── dev-runner.test.ts
+│   │   ├── dev-runner.ts
+│   │   ├── free-local-desktop-ports.ts
+│   │   ├── install-local-desktop-launchers.ts
+│   │   ├── kill-local-desktop-stacks.test.ts
+│   │   ├── kill-local-desktop-stacks.ts
+│   │   ├── local-desktop-cli-dev-env.test.ts
+│   │   ├── local-desktop-cli-dev-env.ts
+│   │   ├── local-desktop-dev-bundle-attach.test.ts
+│   │   ├── local-desktop-dev-bundle-attach.ts
+│   │   ├── local-desktop-dev-bundle-env.test.ts
+│   │   ├── local-desktop-dev-bundle-env.ts
+│   │   ├── local-desktop-dev-bundle-lock.test.ts
+│   │   ├── local-desktop-dev-bundle-lock.ts
+│   │   ├── local-desktop-dev-bundle-run.ts
+│   │   ├── local-desktop-dev-run.ts
+│   │   ├── local-desktop-env.test.ts
+│   │   ├── local-desktop-env.ts
+│   │   ├── local-desktop-launcher-access.test.ts
+│   │   ├── local-desktop-launcher-access.ts
+│   │   ├── local-desktop-launcher-convex.test.ts
+│   │   ├── local-desktop-launcher-convex.ts
+│   │   ├── local-desktop-launcher-deps.test.ts
+│   │   ├── local-desktop-launcher-deps.ts
+│   │   ├── local-desktop-launcher-human-log.test.ts
+│   │   ├── local-desktop-launcher-human-log.ts
+│   │   ├── local-desktop-launcher-line-format.test.ts
+│   │   ├── local-desktop-launcher-line-format.ts
+│   │   ├── local-desktop-launcher-output.ts
+│   │   ├── local-desktop-launcher-run.test.ts
+│   │   ├── local-desktop-launcher-run.ts
+│   │   ├── local-desktop-launcher-sections.ts
+│   │   ├── local-desktop-launchers.test.ts
+│   │   ├── local-desktop-launchers.ts
+│   │   ├── local-desktop-promotion-apply.ts
+│   │   ├── local-desktop-promotion-status.test.ts
+│   │   ├── local-desktop-promotion-status.ts
+│   │   ├── local-desktop-worktree-env.test.ts
+│   │   ├── local-desktop-worktree-env.ts
+│   │   ├── local-dev-bundle-turbo.test.ts
+│   │   ├── local-dev-bundle-turbo.ts
+│   │   ├── local-promotion-preflight-check.ts
+│   │   ├── merge-update-manifests.test.ts
+│   │   ├── merge-update-manifests.ts
+│   │   ├── mobile-native-static-check.ts
+│   │   ├── mock-update-server.test.ts
+│   │   ├── mock-update-server.ts
+│   │   ├── notify-discord-release.test.ts
+│   │   ├── notify-discord-release.ts
+│   │   ├── package.json
+│   │   ├── parse-dotenv.test.ts
+│   │   ├── parse-dotenv.ts
+│   │   ├── release-smoke.ts
+│   │   ├── repair-convex-pending-turns-from-history.test.ts
+│   │   ├── repair-convex-pending-turns-from-history.ts
+│   │   ├── resolve-nightly-release.test.ts
+│   │   ├── resolve-nightly-release.ts
+│   │   ├── resolve-previous-release-tag.ts
+│   │   ├── sqlite-to-convex-migrate.test.ts
+│   │   ├── sqlite-to-convex-migrate.ts
+│   │   ├── sync-reference-repos.test.ts
+│   │   ├── sync-reference-repos.ts
+│   │   ├── sync-vscode-icons.mjs
+│   │   ├── tailscale-pairing-e2e.ts
+│   │   ├── tsconfig.json
 │   │   ├── update-release-package-versions.test.ts
 │   │   ├── update-release-package-versions.ts
 │   │   ├── worktree-cli.ts

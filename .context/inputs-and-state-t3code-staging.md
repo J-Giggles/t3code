@@ -4,12 +4,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 
 ## Summary
 
-- Files scanned: 3958
-- Environment inputs: 641
+- Files scanned: 3966
+- Environment inputs: 673
 - Route and request inputs: 359
 - Form inputs: 2
-- State and storage entries: 218
-- Hardcoded values: 2198
+- State and storage entries: 220
+- Hardcoded values: 2210
 
 ## Environment Inputs
 
@@ -55,14 +55,14 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `APP_VERSION`: import.meta.env access in `apps/web/vite.config.ts`:139
 - `AWS_DEFAULT_REGION`: process.env access in `.repos/alchemy-effect/packages/alchemy/scripts/clean-aws.ts`:49
 - `AWS_PROFILE`: process.env access in `.repos/alchemy-effect/packages/alchemy/scripts/clean-aws.ts`:57
-- `AWS_REGION`: env fallback "us-west-2" in `.repos/alchemy-effect/examples/aws-lambda-httpapi/alchemy.run.ts`:9
 - `AWS_REGION`: process.env access in `.repos/alchemy-effect/examples/aws-lambda-httpapi/alchemy.run.ts`:9
-- `AWS_REGION`: process.env access in `.repos/alchemy-effect/examples/aws-lambda-rpc/alchemy.run.ts`:9
+- `AWS_REGION`: env fallback "us-west-2" in `.repos/alchemy-effect/examples/aws-lambda-httpapi/alchemy.run.ts`:9
 - `AWS_REGION`: env fallback "us-west-2" in `.repos/alchemy-effect/examples/aws-lambda-rpc/alchemy.run.ts`:9
-- `AWS_REGION`: env fallback "us-west-2" in `.repos/alchemy-effect/examples/aws-lambda/alchemy.run.ts`:11
+- `AWS_REGION`: process.env access in `.repos/alchemy-effect/examples/aws-lambda-rpc/alchemy.run.ts`:9
 - `AWS_REGION`: process.env access in `.repos/alchemy-effect/examples/aws-lambda/alchemy.run.ts`:11
-- `AWS_REGION`: process.env access in `.repos/alchemy-effect/packages/alchemy/scripts/clean-aws.ts`:49
+- `AWS_REGION`: env fallback "us-west-2" in `.repos/alchemy-effect/examples/aws-lambda/alchemy.run.ts`:11
 - `AWS_REGION`: env fallback process.env.AWS_DEFAULT_REGION in `.repos/alchemy-effect/packages/alchemy/scripts/clean-aws.ts`:49
+- `AWS_REGION`: process.env access in `.repos/alchemy-effect/packages/alchemy/scripts/clean-aws.ts`:49
 - `AWS_REGION`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/AWS/Region.ts`:11
 - `AWS_REGION`: env fallback region) in `.repos/alchemy-effect/packages/alchemy/src/AWS/Region.ts`:11
 - `BASE_URL`: import.meta.env access in `.repos/alchemy-effect/examples/cloudflare-vue/src/router/index.ts`:5
@@ -71,27 +71,27 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CI`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/Telemetry/Attributes.ts`:124
 - `CLOUDFLARE_EMAIL_FROM`: process.env access in `.repos/alchemy-effect/examples/cloudflare-email/src/Email.ts`:14
 - `CLOUDFLARE_EMAIL_FROM`: env fallback `bot@${ZONE}` in `.repos/alchemy-effect/examples/cloudflare-email/src/Email.ts`:14
-- `CLOUDFLARE_EMAIL_TO`: process.env access in `.repos/alchemy-effect/examples/cloudflare-email/src/Email.ts`:21
 - `CLOUDFLARE_EMAIL_TO`: env fallback "sam@alchemy.run" in `.repos/alchemy-effect/examples/cloudflare-email/src/Email.ts`:21
+- `CLOUDFLARE_EMAIL_TO`: process.env access in `.repos/alchemy-effect/examples/cloudflare-email/src/Email.ts`:21
 - `CLOUDFLARE_TEST_DNS_ZONE_NAME`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Dns/Dns.test.ts`:23
 - `CLOUDFLARE_TEST_DNS_ZONE_NAME`: env fallback "alchemy-test-2.us" in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Dns/Dns.test.ts`:23
 - `CLOUDFLARE_TEST_EMAIL_FROM`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Email/SendEmail.test.ts`:20
 - `CLOUDFLARE_TEST_EMAIL_FROM`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Email/fixtures/sender.ts`:3
 - `CLOUDFLARE_TEST_EMAIL_TO`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Email/SendEmail.test.ts`:21
 - `CLOUDFLARE_TEST_EMAIL_TO`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Email/fixtures/sender.ts`:4
-- `CLOUDFLARE_TEST_R2_DOMAIN_ZONE_NAME`: env fallback "alchemy-test-2.us" in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/R2/CustomDomain.test.ts`:22
 - `CLOUDFLARE_TEST_R2_DOMAIN_ZONE_NAME`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/R2/CustomDomain.test.ts`:22
+- `CLOUDFLARE_TEST_R2_DOMAIN_ZONE_NAME`: env fallback "alchemy-test-2.us" in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/R2/CustomDomain.test.ts`:22
 - `CLOUDFLARE_TEST_WORKER_DOMAIN_ZONE_NAME`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Workers/Worker.test.ts`:814
 - `CLOUDFLARE_TEST_ZARAZ_ZONE_ID`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Zaraz/ZarazConfig.test.ts`:16
 - `CLOUDFLARE_TEST_ZARAZ_ZONE_NAME`: env fallback "alchemy-test-2.us" in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Zaraz/ZarazConfig.test.ts`:18
 - `CLOUDFLARE_TEST_ZARAZ_ZONE_NAME`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Zaraz/ZarazConfig.test.ts`:18
-- `CODEX_APP_SERVER_TEST_STDERR_BYTES`: process.env access in `packages/effect-codex-app-server/test/fixtures/codex-app-server-mock-peer.ts`:37
 - `CODEX_APP_SERVER_TEST_STDERR_BYTES`: env fallback 0) in `packages/effect-codex-app-server/test/fixtures/codex-app-server-mock-peer.ts`:37
+- `CODEX_APP_SERVER_TEST_STDERR_BYTES`: process.env access in `packages/effect-codex-app-server/test/fixtures/codex-app-server-mock-peer.ts`:37
 - `CODEX_BIN`: env fallback "codex", in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
 - `CODEX_BIN`: process.env access in `packages/effect-codex-app-server/test/examples/codex-app-server-probe.ts`:11
 - `CODEX_BINARY_PATH`: process.env access in `apps/server/integration/orchestrationEngine.integration.test.ts`:269
-- `CONCURRENCY`: process.env access in `.repos/alchemy-effect/packages/alchemy/scripts/cleanup-neon-projects.ts`:27
 - `CONCURRENCY`: env fallback 4)) in `.repos/alchemy-effect/packages/alchemy/scripts/cleanup-neon-projects.ts`:27
+- `CONCURRENCY`: process.env access in `.repos/alchemy-effect/packages/alchemy/scripts/cleanup-neon-projects.ts`:27
 - `CONCURRENCY`: env fallback 8)) in `.repos/alchemy-effect/scripts/cleanup-cloudflare.ts`:72
 - `CONCURRENCY`: process.env access in `.repos/alchemy-effect/scripts/cleanup-cloudflare.ts`:72
 - `CONFIG_NUM`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Workers/WorkerEnv.test.ts`:12
@@ -99,12 +99,15 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CONFIG_REDACTED_INIT`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Workers/WorkerEnv.test.ts`:15
 - `CONFIG_SECRET`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Secret/Secret.test.ts`:23
 - `CONFIG_STR`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Workers/WorkerEnv.test.ts`:11
-- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:172
+- `CONVEX_AGENT_MODE`: process.env access in `packages/convex/scripts/convex-promotion-push.mjs`:173
 - `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:172
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:172
 - `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:298
 - `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:298
-- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:346
 - `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-dev.mjs`:346
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-dev.mjs`:346
+- `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-promotion-push.mjs`:196
+- `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-promotion-push.mjs`:196
 - `CONVEX_DEPLOYMENT`: env fallback null, in `packages/convex/scripts/convex-push-local.mjs`:160
 - `CONVEX_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-push-local.mjs`:160
 - `CONVEX_SITE_URL`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:186
@@ -129,8 +132,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CURSOR_PROMPT_WAIT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:64
 - `CURSOR_REASONING`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
 - `CURSOR_REASONING`: env fallback "" in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:60
-- `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
 - `CURSOR_REQUEST_TIMEOUT_MS`: env fallback "20000") in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
+- `CURSOR_REQUEST_TIMEOUT_MS`: process.env access in `apps/server/scripts/cursor-acp-model-mismatch-probe.ts`:65
 - `DEBUG`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/AWS/Lambda/Function.ts`:767
 - `DEBUG`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/Cloudflare/Container/ContainerApplication.ts`:573
 - `DEBUG`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/AWS/EC2/Subnet.test.ts`:15
@@ -184,8 +187,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEBUG`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Planetscale/Postgres/PostgresDatabase.test.ts`:17
 - `DEBUG`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Planetscale/Postgres/PostgresRole.test.ts`:18
 - `DEBUG_RAW_STREAM`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/AiGateway/LanguageModel.test.ts`:182
-- `DELETE_MATCH`: env fallback "") in `.repos/alchemy-effect/scripts/cleanup-cloudflare.ts`:67
 - `DELETE_MATCH`: process.env access in `.repos/alchemy-effect/scripts/cleanup-cloudflare.ts`:67
+- `DELETE_MATCH`: env fallback "") in `.repos/alchemy-effect/scripts/cleanup-cloudflare.ts`:67
 - `DEV`: import.meta.env access in `apps/web/src/branding.ts`:100
 - `DISCORD_WEBHOOK`: process.env access in `.repos/alchemy-effect/scripts/release/discord-notify.ts`:26
 - `DO_NOT_TRACK`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/Telemetry/Attributes.ts`:129
@@ -193,10 +196,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DRY_RUN`: process.env access in `.repos/alchemy-effect/scripts/cleanup-cloudflare.ts`:71
 - `EXPO_OS`: process.env access in `apps/mobile/src/app/settings/index.tsx`:85
 - `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_DISABLE_CACHE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:54
-- `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: env fallback (process.env.NODE_ENV === "test" ? "javascript" : "native") in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
 - `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: process.env access in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
-- `FILTER_QUERY`: env fallback "items[?contains(name, `Ag`)].id" in `.repos/alchemy-effect/scripts/cleanup-apigateway-rest-apis.ts`:35
+- `EXPO_PUBLIC_REVIEW_HIGHLIGHTER_ENGINE`: env fallback (process.env.NODE_ENV === "test" ? "javascript" : "native") in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:48
 - `FILTER_QUERY`: process.env access in `.repos/alchemy-effect/scripts/cleanup-apigateway-rest-apis.ts`:35
+- `FILTER_QUERY`: env fallback "items[?contains(name, `Ag`)].id" in `.repos/alchemy-effect/scripts/cleanup-apigateway-rest-apis.ts`:35
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:228
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:247
 - `GIT_SSH`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:258
@@ -206,6 +209,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `GITHUB_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:636
 - `GITHUB_TOKEN`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/GitHub/Comment.ts`:154
 - `HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:137
+- `HOME`: process.env access in `packages/convex/scripts/convex-promotion-push.mjs`:80
 - `HOME`: process.env access in `packages/convex/scripts/convex-push-local.mjs`:81
 - `HOME`: env fallback process.env.USERPROFILE ?? "" in `packages/ssh/src/config.ts`:211
 - `HOME`: process.env access in `packages/ssh/src/config.ts`:211
@@ -267,6 +271,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:99
 - `PATH`: process.env access in `apps/server/src/textGeneration/ClaudeTextGeneration.test.ts`:140
 - `PATH`: process.env access in `packages/convex/scripts/convex-dev.mjs`:136
+- `PATH`: process.env access in `packages/convex/scripts/convex-promotion-push.mjs`:79
 - `PATH`: process.env access in `packages/convex/scripts/convex-push-local.mjs`:80
 - `PATH`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:145
 - `PKGING_HOST`: process.env access in `.repos/alchemy-effect/test/smoke.test.ts`:72
@@ -279,8 +284,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PLANETSCALE_TEST`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/Planetscale/Postgres/PostgresRole.test.ts`:20
 - `PORT`: env fallback 4173), in `apps/marketing/astro.config.mjs`:5
 - `PORT`: process.env access in `apps/marketing/astro.config.mjs`:5
-- `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:16
 - `PORT`: process.env access in `apps/web/vite.config.ts`:16
+- `PORT`: env fallback 5733) in `apps/web/vite.config.ts`:16
 - `PR_PACKAGE_TOKEN`: process.env access in `.repos/alchemy-effect/test/smoke.test.ts`:183
 - `PULL_REQUEST`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/GitHub/Comment.ts`:136
 - `PULL_REQUEST`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/GitHub/Comment.ts`:140
@@ -295,12 +300,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SLACK_WEBHOOK_URL`: process.env access in `.repos/alchemy-effect/packages/alchemy/src/Axiom/Notifier.ts`:31
 - `SMOKE_CANARY`: process.env access in `.repos/alchemy-effect/test/smoke.test.ts`:71
 - `SMOKE_RUNTIME`: process.env access in `.repos/alchemy-effect/test/smoke.test.ts`:57
-- `SMOKE_STAGE`: process.env access in `.repos/alchemy-effect/test/smoke.test.ts`:556
 - `SMOKE_STAGE`: env fallback "smoke") in `.repos/alchemy-effect/test/smoke.test.ts`:556
+- `SMOKE_STAGE`: process.env access in `.repos/alchemy-effect/test/smoke.test.ts`:556
 - `SMOKE_STAGE`: process.env access in `.repos/alchemy-effect/test/smoke.test.ts`:626
 - `SMOKE_STAGE`: env fallback "smoke") in `.repos/alchemy-effect/test/smoke.test.ts`:626
-- `SPACING_MS`: env fallback 35_000) in `.repos/alchemy-effect/scripts/cleanup-apigateway-rest-apis.ts`:36
 - `SPACING_MS`: process.env access in `.repos/alchemy-effect/scripts/cleanup-apigateway-rest-apis.ts`:36
+- `SPACING_MS`: env fallback 35_000) in `.repos/alchemy-effect/scripts/cleanup-apigateway-rest-apis.ts`:36
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:229
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:248
 - `SSH_ASKPASS_REQUIRE`: process.env access in `apps/server/src/vcs/GitVcsDriverCore.test.ts`:263
@@ -308,8 +313,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SYNC_GITHUB_SECRETS`: process.env access in `.repos/alchemy-effect/stacks/otel.ts`:83
 - `T3_ACP_ALLOW_ALWAYS_OPTION_ID`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:28
 - `T3_ACP_ALLOW_ALWAYS_OPTION_ID`: env fallback "allow-always", in `apps/server/scripts/acp-mock-agent.ts`:28
-- `T3_ACP_ALLOW_ONCE_OPTION_ID`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:27
 - `T3_ACP_ALLOW_ONCE_OPTION_ID`: env fallback "allow-once", in `apps/server/scripts/acp-mock-agent.ts`:27
+- `T3_ACP_ALLOW_ONCE_OPTION_ID`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:27
 - `T3_ACP_EMIT_ASK_QUESTION`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:20
 - `T3_ACP_EMIT_GENERIC_TOOL_PLACEHOLDERS`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:19
 - `T3_ACP_EMIT_INTERLEAVED_ASSISTANT_TOOL_CALLS`: process.env access in `apps/server/scripts/acp-mock-agent.ts`:18
@@ -379,9 +384,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:288
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:337
 - `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:235
-- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:338
-- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:682
-- `T3CODE_APP_ROOT`: process.env access in `apps/server/src/local/promotionApply.ts`:68
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:340
+- `T3CODE_AGENT_AUTOMATION`: process.env access in `scripts/local-desktop-launcher-run.ts`:685
+- `T3CODE_APP_ROOT`: process.env access in `apps/server/src/local/promotionApply.ts`:208
+- `T3CODE_APP_ROOT`: process.env access in `apps/server/src/local/promotionApply.ts`:230
 - `T3CODE_APP_ROOT`: process.env access in `apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`:109
 - `T3CODE_APP_ROOT`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:80
 - `T3CODE_APP_ROOT`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:84
@@ -411,31 +417,31 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_CONVEX_PRUNE_EVENT_MARGIN`: process.env access in `packages/convex/scripts/convex-prune-local.mjs`:243
 - `T3CODE_CONVEX_PRUNE_WAIT_MS`: process.env access in `packages/convex/scripts/convex-prune-local.mjs`:247
 - `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `packages/convex/scripts/convex-dev.mjs`:316
-- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `scripts/local-desktop-launcher-run.ts`:325
+- `T3CODE_CONVEX_SKIP_PUSH_ON_REUSE`: process.env access in `scripts/local-desktop-launcher-run.ts`:327
 - `T3CODE_CURSOR_ENABLED`: process.env access in `apps/server/src/provider/Layers/ProviderRegistry.test.ts`:62
 - `T3CODE_DESKTOP_DEV`: process.env access in `apps/desktop/vite.config.ts`:6
-- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:553
-- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:559
-- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:579
-- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:581
+- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:565
+- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:571
+- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:591
+- `T3CODE_DESKTOP_DEV`: process.env access in `apps/server/src/local/promotionApply.test.ts`:593
 - `T3CODE_DESKTOP_PROTOCOL_CALLBACK_URL`: process.env access in `apps/desktop/src/app/DesktopCloudAuth.ts`:133
-- `T3CODE_DESKTOP_PROTOCOL_CLIENT_ARGS`: process.env access in `apps/desktop/src/app/DesktopCloudAuth.ts`:121
 - `T3CODE_DESKTOP_PROTOCOL_CLIENT_ARGS`: env fallback "") in `apps/desktop/src/app/DesktopCloudAuth.ts`:121
+- `T3CODE_DESKTOP_PROTOCOL_CLIENT_ARGS`: process.env access in `apps/desktop/src/app/DesktopCloudAuth.ts`:121
 - `T3CODE_DESKTOP_PROTOCOL_CLIENT_PATH`: process.env access in `apps/desktop/src/app/DesktopCloudAuth.ts`:116
 - `T3CODE_DESKTOP_PROTOCOL_REGISTRATION_MANAGED`: process.env access in `apps/desktop/src/app/DesktopCloudAuth.ts`:129
 - `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/desktop/scripts/dev-electron.mjs`:31
-- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:555
-- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:561
-- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:589
-- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:591
+- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:567
+- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:573
+- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:601
+- `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:603
 - `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:18
 - `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:21
 - `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:59
 - `T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:61
 - `T3CODE_DESKTOP_UPDATE_REPOSITORY`: process.env access in `scripts/build-desktop-artifact.ts`:635
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/config.ts`:63
-- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/http.ts`:197
-- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/http.ts`:444
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/http.ts`:202
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/http.ts`:460
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/local/promotionStatus.ts`:356
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:52
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:83
@@ -447,8 +453,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:42
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:53
 - `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`:55
-- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/server.ts`:403
-- `T3CODE_DEV_INSTANCE`: process.env access in `scripts/local-desktop-launcher-run.ts`:83
+- `T3CODE_DESKTOP_VARIANT`: process.env access in `apps/server/src/server.ts`:405
+- `T3CODE_DEV_INSTANCE`: process.env access in `scripts/local-desktop-launcher-run.ts`:84
 - `T3CODE_DEV_REMOTE_T3_SERVER_ENTRY_PATH`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:82
 - `T3CODE_DEV_REMOTE_T3_SERVER_ENTRY_PATH`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:86
 - `T3CODE_DEV_REMOTE_T3_SERVER_ENTRY_PATH`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:132
@@ -462,23 +468,23 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:76
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:123
 - `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:54
-- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/worktree-cli.ts`:217
+- `T3CODE_FORCE_SOLO_LAUNCH`: process.env access in `scripts/worktree-cli.ts`:235
 - `T3CODE_HOME`: process.env access in `apps/desktop/scripts/electron-launcher.mjs`:104
-- `T3CODE_HOME`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:299
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/http.ts`:270
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:80
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:93
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:95
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:101
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:199
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:229
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:261
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:283
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:324
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:722
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:723
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:747
-- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:749
+- `T3CODE_HOME`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:312
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/http.ts`:286
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:84
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:97
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:99
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:105
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:203
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:233
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:265
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:287
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:328
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:780
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:781
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:805
+- `T3CODE_HOME`: process.env access in `apps/server/src/local/promotionApply.test.ts`:807
 - `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-dev.mjs`:47
 - `T3CODE_HOME`: process.env access in `packages/convex/scripts/convex-ready.mjs`:99
 - `T3CODE_LAUNCH_FAST`: process.env access in `packages/convex/scripts/convex-dev.mjs`:317
@@ -486,32 +492,39 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:23
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:33
 - `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:35
-- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:74
-- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:324
-- `T3CODE_LAUNCH_REQUIRE_IDLE`: process.env access in `scripts/worktree-cli.ts`:218
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:75
+- `T3CODE_LAUNCH_FAST`: process.env access in `scripts/local-desktop-launcher-run.ts`:326
+- `T3CODE_LAUNCH_REQUIRE_IDLE`: process.env access in `scripts/worktree-cli.ts`:236
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:19
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:22
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:28
 - `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:30
-- `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.ts`:69
+- `T3CODE_LAUNCH_SKIP_UPSTREAM`: process.env access in `scripts/local-desktop-launcher-run.ts`:70
 - `T3CODE_LAUNCH_VERBOSE`: process.env access in `scripts/local-desktop-launcher-output.ts`:53
 - `T3CODE_LAUNCHED_FROM_DEV`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:24
 - `T3CODE_LAUNCHED_FROM_DEV`: process.env access in `scripts/local-desktop-dev-bundle-lock.test.ts`:66
 - `T3CODE_LAUNCHED_FROM_DEV`: process.env access in `scripts/local-desktop-dev-bundle-lock.ts`:59
-- `T3CODE_LAUNCHER_PID_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:623
+- `T3CODE_LAUNCHER_PID_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:626
 - `T3CODE_LOCAL_MAIN_CONVEX_DATA_DIR`: process.env access in `apps/server/src/local/promotionStatus.ts`:348
 - `T3CODE_LOCAL_MAIN_CONVEX_DATA_DIR`: process.env access in `apps/server/src/orchestration/Layers/LocalConvexReplicationFollower.ts`:24
 - `T3CODE_LOCAL_MAIN_CONVEX_DATA_DIR`: process.env access in `scripts/local-desktop-dev-bundle-run.ts`:183
 - `T3CODE_LOCAL_MAIN_CONVEX_DATA_DIR`: process.env access in `scripts/local-desktop-launcher-deps.ts`:200
 - `T3CODE_LOCAL_MAIN_CONVEX_SITE_URL`: process.env access in `apps/server/src/local/promotionStatus.ts`:351
 - `T3CODE_LOCAL_MAIN_CONVEX_URL`: process.env access in `apps/server/src/local/promotionStatus.ts`:350
-- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionApply.ts`:67
+- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionApply.ts`:207
+- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionApply.ts`:229
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:346
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `packages/convex/scripts/convex-clean-storage-artifacts.mjs`:30
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `packages/convex/scripts/convex-prune-local.mjs`:36
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `packages/convex/scripts/convex-vacuum-local.mjs`:35
 - `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `packages/convex/scripts/migrate-convex-data-to-worktree.mjs`:33
+- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `scripts/worktree-cli.ts`:225
+- `T3CODE_LOCAL_MAIN_WORKTREE`: process.env access in `scripts/worktree-instance.ts`:307
 - `T3CODE_LOCAL_STAGING_CONVEX_DATA_DIR`: process.env access in `apps/server/src/local/promotionStatus.ts`:349
+- `T3CODE_LOCAL_STAGING_CONVEX_SITE_URL`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:100
+- `T3CODE_LOCAL_STAGING_CONVEX_SITE_URL`: process.env access in `apps/server/src/local/http.ts`:252
+- `T3CODE_LOCAL_STAGING_CONVEX_URL`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:99
+- `T3CODE_LOCAL_STAGING_CONVEX_URL`: process.env access in `apps/server/src/local/http.ts`:251
 - `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `apps/server/src/local/promotionStatus.ts`:347
 - `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `apps/server/src/local/stackRecover.ts`:45
 - `T3CODE_LOCAL_STAGING_WORKTREE`: process.env access in `packages/convex/scripts/convex-clean-storage-artifacts.mjs`:33
@@ -532,13 +545,32 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_PORT`: env fallback "", 10) in `apps/desktop/scripts/electron-launcher.mjs`:38
 - `T3CODE_PORT`: process.env access in `apps/desktop/scripts/electron-launcher.mjs`:103
 - `T3CODE_PORT_OFFSET`: process.env access in `scripts/local-desktop-launcher-access.ts`:114
-- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:79
+- `T3CODE_PROMOTION_CONVEX_RESTART`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:92
+- `T3CODE_PROMOTION_CONVEX_RESTART`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:105
+- `T3CODE_PROMOTION_CONVEX_RESTART`: process.env access in `apps/server/src/convex/ConvexBackendHealth.ts`:446
+- `T3CODE_PROMOTION_CONVEX_RESTART`: process.env access in `apps/server/src/local/http.ts`:249
+- `T3CODE_PROMOTION_CONVEX_RESTART`: process.env access in `apps/server/src/local/http.ts`:264
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:454
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:455
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:502
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:504
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:629
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:630
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:647
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:649
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:656
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:657
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:674
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.test.ts`:676
+- `T3CODE_PROMOTION_COPY_CONVEX_DB`: process.env access in `apps/server/src/local/promotionApply.ts`:190
+- `T3CODE_PROMOTION_MAIN_CONVEX_URL`: process.env access in `packages/convex/scripts/convex-promotion-push.mjs`:143
 - `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:83
-- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:88
-- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:90
-- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:100
-- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.ts`:254
-- `T3CODE_PROMOTION_SKIP_CONVEX_SYNC`: process.env access in `apps/server/src/local/promotionApply.ts`:480
+- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:87
+- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:92
+- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:94
+- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:104
+- `T3CODE_PROMOTION_REQUIRE_PREFLIGHT`: process.env access in `apps/server/src/local/promotionApply.ts`:416
+- `T3CODE_PROMOTION_SKIP_CONVEX_SYNC`: process.env access in `apps/server/src/local/promotionApply.ts`:642
 - `T3CODE_PROMOTION_TEST_BACKUP_DIR`: process.env access in `packages/convex/scripts/convex-copy-main-to-test.mjs`:56
 - `T3CODE_PROMOTION_TEST_DEPLOYMENT`: process.env access in `packages/convex/scripts/convex-copy-main-to-test.mjs`:55
 - `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.protectedWriteRoots.test.ts`:35
@@ -548,17 +580,17 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_PROTECTED_WRITE_ROOTS`: process.env access in `apps/server/src/config.ts`:44
 - `T3CODE_RELAY_URL`: env fallback "") ?? buildTimeRelayUrl) && in `apps/server/src/cloud/publicConfig.ts`:107
 - `T3CODE_RELAY_URL`: process.env access in `apps/server/src/cloud/publicConfig.ts`:107
-- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:556
-- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:562
-- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:594
-- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:596
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:568
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:574
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:606
+- `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `apps/server/src/local/promotionApply.test.ts`:608
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:17
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:20
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:54
 - `T3CODE_REMOTE_DEBUGGING_PORT`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:56
-- `T3CODE_RUNTIME_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:137
-- `T3CODE_RUNTIME_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", "runtime.log") in `scripts/local-desktop-launcher-run.ts`:137
-- `T3CODE_SERVER_URL`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:31
+- `T3CODE_RUNTIME_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", "runtime.log") in `scripts/local-desktop-launcher-run.ts`:138
+- `T3CODE_RUNTIME_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:138
+- `T3CODE_SERVER_URL`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:32
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/config.ts`:64
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:86
 - `T3CODE_STAGING_ALLOW_DISPATCH`: process.env access in `apps/server/src/provider/Layers/ProviderService.test.ts`:87
@@ -577,25 +609,25 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `T3CODE_STAGING_CONVEX_COPY_MAIN`: process.env access in `packages/convex/scripts/convex-seed-staging-from-main.test.mjs`:73
 - `T3CODE_STAGING_CONVEX_COPY_MAIN`: process.env access in `packages/convex/scripts/convex-seed-staging-from-main.test.mjs`:97
 - `T3CODE_STAGING_CONVEX_RESEED`: process.env access in `packages/convex/scripts/convex-seed-staging-from-main.mjs`:99
-- `T3CODE_STARTUP_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:139
-- `T3CODE_STARTUP_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", `startup-${formatTimestamp(new Date())}.... in `scripts/local-desktop-launcher-run.ts`:139
+- `T3CODE_STARTUP_LOG_FILE`: process.env access in `scripts/local-desktop-launcher-run.ts`:140
+- `T3CODE_STARTUP_LOG_FILE`: env fallback NodePath.join(target.t3Home, "logs", `startup-${formatTimestamp(new Date())}.... in `scripts/local-desktop-launcher-run.ts`:140
 - `T3CODE_STRICT_PROVIDER_LIFECYCLE_GUARD`: process.env access in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:60
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:69
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:70
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:104
 - `T3CODE_TAILSCALE_SERVE_PATH`: process.env access in `scripts/local-desktop-dev-bundle-env.test.ts`:106
-- `T3CODE_TURBO_UI`: process.env access in `apps/server/src/local/promotionPreflight.ts`:410
-- `T3CODE_TURBO_UI`: env fallback "stream", in `apps/server/src/local/promotionPreflight.ts`:410
+- `T3CODE_TURBO_UI`: process.env access in `apps/server/src/local/promotionPreflight.ts`:425
+- `T3CODE_TURBO_UI`: env fallback "stream", in `apps/server/src/local/promotionPreflight.ts`:425
 - `T3CODE_TURBO_UI`: process.env access in `scripts/local-desktop-dev-run.ts`:115
-- `T3CODE_TURBO_UI`: process.env access in `scripts/worktree-cli.ts`:235
-- `T3CODE_TURBO_UI`: env fallback "stream", in `scripts/worktree-cli.ts`:235
+- `T3CODE_TURBO_UI`: process.env access in `scripts/worktree-cli.ts`:252
+- `T3CODE_TURBO_UI`: env fallback "stream", in `scripts/worktree-cli.ts`:252
 - `T3CODE_WEB_SOURCEMAP`: process.env access in `apps/web/vite.config.ts`:37
 - `T3CODE_WORKTREE_ISOLATED`: process.env access in `apps/server/src/orchestration/Layers/OrchestrationEngine.ts`:80
 - `T3CODE_WORKTREE_ROLE`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:81
 - `T3CODE_WORKTREE_ROLE`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:85
 - `T3CODE_WORKTREE_ROLE`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:127
 - `T3CODE_WORKTREE_ROLE`: process.env access in `scripts/local-desktop-launcher-run.test.ts`:129
-- `T3CODE_WORKTREE_SLUG`: process.env access in `scripts/local-desktop-launcher-run.ts`:78
+- `T3CODE_WORKTREE_SLUG`: process.env access in `scripts/local-desktop-launcher-run.ts`:79
 - `TEMP`: process.env access in `apps/server/src/git/GitManager.ts`:703
 - `TEST_ASG_ARN`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/AWS/ECS/CapacityProvider.smoke.test.ts`:20
 - `TEST_ASG_ARN`: process.env access in `.repos/alchemy-effect/packages/alchemy/test/AWS/ECS/CapacityProvider.smoke.test.ts`:24
@@ -626,10 +658,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `VITE_DEV_SERVER_URL`: process.env access in `apps/desktop/scripts/dev-electron.mjs`:8
 - `VITE_DEV_SERVER_URL`: process.env access in `apps/desktop/scripts/electron-launcher.mjs`:21
 - `VITE_DEV_SERVER_URL`: process.env access in `apps/desktop/scripts/electron-launcher.mjs`:102
-- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:554
-- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:560
-- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:584
-- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:586
+- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:566
+- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:572
+- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:596
+- `VITE_DEV_SERVER_URL`: process.env access in `apps/server/src/local/promotionApply.test.ts`:598
 - `VITE_DEV_SERVER_URL`: import.meta.env access in `apps/web/src/environments/primary/target.ts`:43
 - `VITE_HOSTED_APP_CHANNEL`: import.meta.env access in `apps/web/src/branding.ts`:83
 - `VITE_HOSTED_APP_CHANNEL`: import.meta.env access in `apps/web/src/hostedPairing.ts`:24
@@ -638,7 +670,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `VITE_HOSTED_APP_URL`: import.meta.env access in `apps/web/src/hostedPairing.ts`:16
 - `VITE_HOSTED_APP_URL`: process.env access in `apps/web/vite.config.ts`:25
 - `VITE_HOSTED_APP_URL`: import.meta.env access in `apps/web/vite.config.ts`:137
-- `VITE_HTTP_URL`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:32
+- `VITE_HTTP_URL`: process.env access in `apps/desktop/src/ipc/methods/promotion.ts`:33
 - `VITE_HTTP_URL`: import.meta.env access in `apps/web/src/environments/primary/target.ts`:69
 - `VITE_HTTP_URL`: import.meta.env access in `apps/web/src/hostedPairing.ts`:20
 - `VITE_T3CODE_LOCAL_DESKTOP_VARIANT`: import.meta.env access in `apps/web/src/branding.ts`:85
@@ -1040,7 +1072,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `browseGeneration`: useState initial 0 in `apps/web/src/components/CommandPalette.tsx`:412
 - `busy`: useState initial false in `.repos/alchemy-effect/website/src/components/marketing-islands/BrowserHotReload.tsx`:308
 - `busy`: useState initial false in `.repos/alchemy-effect/website/src/components/marketing-islands/DevTerminal.tsx`:48
-- `canRetry`: useState initial false in `apps/web/src/components/auth/PairingRouteSurface.tsx`:175
+- `canRetry`: useState initial false in `apps/web/src/components/auth/PairingRouteSurface.tsx`:201
 - `canScrollTurnStripLeft`: useState initial false in `apps/web/src/components/DiffPanel.tsx`:167
 - `canScrollTurnStripRight`: useState initial false in `apps/web/src/components/DiffPanel.tsx`:168
 - `caret`: useState initial false in `.repos/alchemy-effect/website/src/components/marketing-islands/DeployTerminal.tsx`:57
@@ -1068,8 +1100,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `copied`: useState initial false in `.repos/alchemy-effect/website/src/components/marketing-islands/HeroCta.tsx`:56
 - `copied`: useState initial false in `apps/web/src/components/ChatMarkdown.tsx`:258
 - `copied`: useState initial false in `apps/web/src/components/ChatMarkdown.tsx`:497
-- `copied`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:242
-- `credential`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:50
+- `copied`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:243
+- `credential`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:51
 - `cursorPosition`: useState initial 0 in `apps/mobile/src/features/threads/ThreadComposer.tsx`:228
 - `data`: useState initial initialData in `.repos/alchemy-effect/examples/cloudflare-tanstack/src/routes/index.tsx`:19
 - `deleteConfirmOpen`: useState initial false in `apps/web/src/components/ProjectScriptsControl.tsx`:119
@@ -1092,12 +1124,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `drawerVisible`: useState initial false in `apps/mobile/src/features/threads/ThreadRouteScreen.tsx`:82
 - `emailAddress`: useState initial "" in `apps/mobile/src/features/cloud/CloudWaitlistEnrollment.tsx`:10
 - `emailAddress`: useState initial "" in `apps/web/src/components/clerk/DesktopClerkWaitlist.tsx`:31
-- `errorMessage`: useState initial initialErrorMessage ?? "" in `apps/web/src/components/auth/PairingRouteSurface.tsx`:51
+- `errorMessage`: useState initial initialErrorMessage ?? "" in `apps/web/src/components/auth/PairingRouteSurface.tsx`:52
 - `expanded`: useState initial false in `apps/web/src/components/ChatMarkdown.tsx`:257
 - `expanded`: useState initial false in `apps/web/src/components/chat/MessagesTimeline.tsx`:871
 - `expanded`: useState initial false in `apps/web/src/components/chat/MessagesTimeline.tsx`:1311
 - `expanded`: useState initial false in `apps/web/src/components/chat/ProposedPlanCard.tsx`:42
-- `expanded`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:166
+- `expanded`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:167
 - `expressionDraft`: useState initial expression in `apps/web/src/components/settings/KeybindingsSettings.tsx`:587
 - `fastMode`: useState initial false in `apps/mobile/src/features/threads/new-task-flow-provider.tsx`:170
 - `foldToggleSettling`: useState initial false in `apps/web/src/components/chat/MessagesTimeline.tsx`:191
@@ -1143,10 +1175,12 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `isLoadingDiscoveredSshHosts`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1950
 - `isMenuOpen`: useState initial false in `apps/web/src/components/chat/TraitsPicker.tsx`:361
 - `isOpen`: useState initial open in `apps/web/src/components/ChatMarkdown.tsx`:391
-- `isOpeningLogsDirectory`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:828
+- `isOpeningLogsDirectory`: useState initial false in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:829
 - `isPickingProjectFolder`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:416
 - `isPublishDialogOpen`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:977
 - `isRefreshingProviders`: useState initial false in `apps/web/src/components/settings/SettingsPanels.tsx`:924
+- `isRelaunching`: useState initial false in `apps/web/src/components/auth/PairingRouteSurface.tsx`:80
+- `isRelaunching`: useState initial false in `apps/web/src/components/settings/LocalDesktopRelaunchSettings.tsx`:14
 - `isRemoteProjectCloning`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:419
 - `isRemoteProjectLookingUp`: useState initial false in `apps/web/src/components/CommandPalette.tsx`:418
 - `isResponding`: useState initial false in `apps/web/src/components/desktop/SshPasswordPromptDialog.tsx`:34
@@ -1162,7 +1196,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `isSubmitting`: useState initial false in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:503
 - `isSubmitting`: useState initial false in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:667
 - `isSubmitting`: useState initial false in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:740
-- `isSubmitting`: useState initial false in `apps/web/src/components/auth/PairingRouteSurface.tsx`:52
+- `isSubmitting`: useState initial false in `apps/web/src/components/auth/PairingRouteSurface.tsx`:53
 - `isSubmitting`: useState initial false in `apps/web/src/components/clerk/DesktopClerkWaitlist.tsx`:33
 - `isUpdating`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:1622
 - `isUpdatingDesktopServerExposure`: useState initial false in `apps/web/src/components/settings/ConnectionsSettings.tsx`:2005
@@ -1177,7 +1211,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `loading`: useState initial false in `apps/web/src/components/workspace-git/WorkspaceGitDashboard.tsx`:482
 - `localFocusRequestId`: useState initial 0 in `apps/web/src/components/ChatView.tsx`:624
 - `measuredOverlayHeight`: useState initial 0 in `apps/mobile/src/features/threads/ThreadDetailScreen.tsx`:210
-- `message`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:170
+- `message`: useState initial ( in `apps/web/src/components/auth/PairingRouteSurface.tsx`:196
 - `metrics`: useState initial { contentWidth: 0, offsetX: 0, viewportWidth: 0, } in `apps/mobile/src/components/ComposerToolbarTrigger.tsx`:57
 - `mounted`: useState initial props.visible in `apps/mobile/src/features/threads/ThreadNavigationDrawer.tsx`:50
 - `name`: useState initial "" in `apps/web/src/components/ProjectScriptsControl.tsx`:112
@@ -1197,7 +1231,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `pinned`: useState initial false in `.repos/alchemy-effect/website/src/components/marketing-islands/EffectPilledShowcase.tsx`:190
 - `planSidebarOpen`: useState initial false in `apps/web/src/components/ChatView.tsx`:917
 - `preview`: useState initial initialPreview in `apps/web/src/components/chat/ExpandedImageDialog.tsx`:15
-- `projectRenameTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1081
+- `projectRenameTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1086
 - `proposedPlanExpanded`: useState initial false in `apps/web/src/components/PlanSidebar.tsx`:77
 - `publishAdvancedOpen`: useState initial false in `apps/web/src/components/GitActionsControl.tsx`:359
 - `publishRemoteName`: useState initial "origin" in `apps/web/src/components/GitActionsControl.tsx`:356
@@ -1207,10 +1241,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `query`: useState initial "" in `apps/web/src/components/settings/KeybindingsSettings.tsx`:1074
 - `reference`: useState initial initialReference ?? "" in `apps/web/src/components/PullRequestThreadDialog.tsx`:47
 - `referenceDirty`: useState initial false in `apps/web/src/components/PullRequestThreadDialog.tsx`:48
-- `renamingTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1076
+- `renamingTitle`: useState initial "" in `apps/web/src/components/Sidebar.tsx`:1081
 - `repositoryInput`: useState initial "" in `apps/mobile/src/features/projects/AddProjectScreen.tsx`:502
 - `resizeEpoch`: useState initial 0 in `apps/web/src/components/ThreadTerminalDrawer.tsx`:862
-- `resourceWindowMs`: useState initial 15 * 60_000 in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:808
+- `resourceWindowMs`: useState initial 15 * 60_000 in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:809
 - `restoreSignal`: useState initial 0 in `apps/web/src/routes/settings.tsx`:37
 - `revealed`: useState initial false in `apps/web/src/components/settings/RedactedSensitiveText.tsx`:34
 - `runOnWorktreeCreate`: useState initial false in `apps/web/src/components/ProjectScriptsControl.tsx`:116
@@ -1293,15 +1327,15 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `1337`: localhost port in `.repos/alchemy-effect/website/src/components/marketing-islands/BrowserHotReload.tsx`:81
 - `1337`: localhost port in `.repos/alchemy-effect/website/src/components/marketing-islands/DevTerminal.tsx`:98
 - `1337`: localhost port in `.repos/alchemy-effect/website/src/components/marketing-islands/DevTestTerminal.tsx`:181
-- `13773`: localhost port in `scripts/dev-runner.test.ts`:389
-- `13773`: localhost port in `scripts/dev-runner.test.ts`:432
-- `13773`: localhost port in `scripts/dev-runner.test.ts`:433
+- `13773`: localhost port in `scripts/dev-runner.test.ts`:410
+- `13773`: localhost port in `scripts/dev-runner.test.ts`:453
+- `13773`: localhost port in `scripts/dev-runner.test.ts`:454
 - `14697`: port literal in `scripts/local-desktop-launcher-human-log.test.ts`:22
 - `150`: timer duration (ms) in `apps/mobile/src/features/threads/NewTaskDraftScreen.tsx`:335
 - `1600`: timer duration (ms) in `.repos/alchemy-effect/website/src/components/marketing-islands/CopyForAgent.tsx`:24
 - `1600`: timer duration (ms) in `.repos/alchemy-effect/website/src/components/marketing-islands/HeroCta.tsx`:81
 - `16247`: port literal in `scripts/local-desktop-launcher-access.test.ts`:22
-- `180`: timer duration (ms) in `apps/web/src/components/Sidebar.tsx`:1352
+- `180`: timer duration (ms) in `apps/web/src/components/Sidebar.tsx`:1357
 - `200`: timer duration (ms) in `apps/web/src/components/chat/ComposerPendingUserInputPanel.tsx`:113
 - `22`: port literal in `apps/desktop/src/settings/DesktopSavedEnvironments.test.ts`:29
 - `22`: port literal in `apps/web/src/clientPersistenceStorage.test.ts`:17
@@ -1335,7 +1369,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `25`: timer duration (ms) in `apps/web/src/components/KeybindingsToast.browser.tsx`:461
 - `250`: timer duration (ms) in `.repos/effect-smol/packages/sql/libsql/test/util.ts`:15
 - `250`: timer duration (ms) in `apps/web/src/components/KeybindingsToast.browser.tsx`:595
-- `250`: timer duration (ms) in `packages/convex/scripts/convex-backend-lifecycle.mjs`:202
+- `250`: timer duration (ms) in `packages/convex/scripts/convex-backend-lifecycle.mjs`:261
 - `300`: timer duration (ms) in `apps/server/src/local/stackRecover.ts`:89
 - `3000`: port literal in `.repos/alchemy-effect/examples/aws-ec2/src/Server.ts`:23
 - `3000`: port literal in `.repos/alchemy-effect/examples/aws-ecs/src/Task.ts`:14
@@ -1489,10 +1523,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:248
 - `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:265
 - `4173`: port literal in `apps/desktop/src/backend/DesktopServerExposure.test.ts`:286
-- `4222`: port literal in `scripts/dev-runner.test.ts`:273
-- `4222`: localhost port in `scripts/dev-runner.test.ts`:279
-- `4222`: localhost port in `scripts/dev-runner.test.ts`:280
-- `4222`: port literal in `scripts/dev-runner.test.ts`:398
+- `4222`: port literal in `scripts/dev-runner.test.ts`:294
+- `4222`: localhost port in `scripts/dev-runner.test.ts`:300
+- `4222`: localhost port in `scripts/dev-runner.test.ts`:301
+- `4222`: port literal in `scripts/dev-runner.test.ts`:419
 - `4318`: localhost port in `.repos/effect-smol/ai-docs/src/08_observability/20_otlp-tracing.ts`:13
 - `4318`: localhost port in `.repos/effect-smol/ai-docs/src/08_observability/20_otlp-tracing.ts`:25
 - `4318`: localhost port in `.repos/effect-smol/packages/effect/src/unstable/observability/Otlp.ts`:12
@@ -1586,8 +1620,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `5735`: localhost port in `apps/web/src/environments/primary/bootstrap.test.ts`:151
 - `587`: port literal in `.repos/effect-smol/ai-docs/src/01_effect/04_resources/10_acquire-release.ts`:38
 - `600`: timer duration (ms) in `apps/mobile/src/app/connections/new.tsx`:103
-- `7331`: localhost port in `scripts/dev-runner.test.ts`:274
-- `7331`: localhost port in `scripts/dev-runner.test.ts`:285
+- `7331`: localhost port in `scripts/dev-runner.test.ts`:295
+- `7331`: localhost port in `scripts/dev-runner.test.ts`:306
 - `80`: port literal in `.repos/alchemy-effect/examples/aws-eks/alchemy.run.ts`:157
 - `80`: port literal in `.repos/alchemy-effect/packages/alchemy/src/AWS/EKS/LoadBalancedWorkload.ts`:54
 - `80`: port literal in `.repos/alchemy-effect/packages/alchemy/src/AWS/EKS/Workload.ts`:98
@@ -1703,6 +1737,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `APP_VARIANT`: constant resolveAppVariant(repoEnv.APP_VARIANT) in `apps/mobile/app.config.ts`:10
 - `APP_VARIANT_LABEL`: constant variantFromBaseName ?? resolveLocalVariantLabelFromEnvSlug(resolvedEnvSlug) in `apps/web/src/branding.ts`:105
 - `APP_VERSION`: constant import.meta.env.APP_VERSION || "0.0.0" in `apps/web/src/branding.ts`:124
+- `APP_WORKTREE_SLUG`: constant APP_ENV_SLUG ? `t3code-${APP_ENV_SLUG}` : null in `apps/web/src/components/Sidebar.tsx`:226
 - `APPROVAL_REQUEST_ID`: constant asApprovalRequestId("req-approval-1") in `apps/server/integration/orchestrationEngine.integration.test.ts`:48
 - `ARCHIVED_SECONDARY_THREAD_ID`: constant "thread-secondary-project-archived" as ThreadId in `apps/web/src/components/ChatView.browser.tsx`:112
 - `ARCHIVED_THREADS_ENVIRONMENT_KEY_SEPARATOR`: constant "\u001f" in `packages/client-runtime/src/archivedThreadsState.ts`:26
@@ -1803,7 +1838,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `BUFFERED_PROPOSED_PLAN_BY_ID_CACHE_CAPACITY`: constant 10_000 in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:57
 - `BUFFERED_PROPOSED_PLAN_BY_ID_TTL`: constant Duration.minutes(120) in `apps/server/src/orchestration/Layers/ProviderRuntimeIngestion.ts`:58
 - `BUILD_DEV_LAUNCH_COLLISION_PROMPT_CHANNEL`: constant "desktop:build-dev-launch-collision-prompt" in `apps/desktop/dist-electron/preload.cjs`:60
-- `BUILD_DEV_LAUNCH_COLLISION_PROMPT_CHANNEL`: constant "desktop:build-dev-launch-collision-prompt" in `apps/desktop/src/ipc/channels.ts`:59
+- `BUILD_DEV_LAUNCH_COLLISION_PROMPT_CHANNEL`: constant "desktop:build-dev-launch-collision-prompt" in `apps/desktop/src/ipc/channels.ts`:60
 - `CACHE_KEY`: constant "t3code-latest-release" in `apps/marketing/src/lib/releases.ts`:6
 - `CANCEL_LOCAL_PROMOTION_PREFLIGHT_CHANNEL`: constant "desktop:cancel-local-promotion-preflight" in `apps/desktop/dist-electron/preload.cjs`:44
 - `CANCEL_LOCAL_PROMOTION_PREFLIGHT_CHANNEL`: constant "desktop:cancel-local-promotion-preflight" in `apps/desktop/src/ipc/channels.ts`:43
@@ -1984,16 +2019,19 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `CONFIRM_CHANNEL`: constant "desktop:confirm" in `apps/desktop/src/ipc/channels.ts`:2
 - `CONFIRM_MESSAGE`: constant "The selected directory contains files. Would you like to traverse the select... in `.repos/effect-smol/packages/effect/src/unstable/cli/Prompt.ts`:2050
 - `CONNECTIONS_KEY`: constant "t3code.connections" in `apps/mobile/src/lib/storage.ts`:14
+- `CONSIDERED_MAIN_WORKTREE_DIRNAME`: constant DEFAULT_MAIN_WORKTREE_DIRNAME in `scripts/local-desktop-launchers.ts`:106
 - `CONTAINER_CODE`: constant `export class Sandbox extends Cloudflare.Container<Sandbox, { in `.repos/alchemy-effect/website/src/components/marketing-islands/EffectPilledShowcase.tsx`:85
 - `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/dist-electron/preload.cjs`:6
 - `CONTEXT_MENU_CHANNEL`: constant "desktop:context-menu" in `apps/desktop/src/ipc/channels.ts`:4
 - `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-dev.mjs`:114
+- `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-promotion-push.mjs`:34
 - `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/convex-push-local.mjs`:38
 - `CONVEX_CHILD_STDIO`: constant ["ignore", "inherit", "inherit"] in `packages/convex/scripts/setup-local.mjs`:22
 - `CONVEX_DOCUMENT_JSON_BYTE_BUDGET`: constant 450_000 in `apps/server/src/persistence/Layers/convexDocumentJson.ts`:2
-- `CONVEX_GENERATED_PATH_PREFIX`: constant "packages/convex/convex/_generated/" in `apps/server/src/local/promotionApply.ts`:43
+- `CONVEX_GENERATED_PATH_PREFIX`: constant "packages/convex/convex/_generated/" in `apps/server/src/local/promotionApply.ts`:45
 - `CONVEX_MUTATION_BYTE_BUDGET`: constant 900_000 in `scripts/sqlite-to-convex-migrate.ts`:85
-- `CONVEX_PROMOTION_SYNC_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionApply.ts`:46
+- `CONVEX_PROMOTION_PUSH_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionApply.ts`:54
+- `CONVEX_PROMOTION_SYNC_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionApply.ts`:48
 - `CONVEX_REACHABILITY_TIMEOUT_MS`: constant 3_000 in `apps/server/src/orchestration/Layers/ConvexOrchestrationEventFollower.ts`:55
 - `CONVEX_READY_FILENAME`: constant "convex-ready.json" in `apps/server/src/convex/ConvexBackendHealth.ts`:23
 - `CONVEX_READY_FILENAME`: constant "convex-ready.json" in `apps/server/src/local/promotionConvexRestart.ts`:12
@@ -2071,9 +2109,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_LIMIT`: constant 20 in `packages/client-runtime/src/composerPathSearchState.ts`:57
 - `DEFAULT_LOCAL_MODEL`: constant "ollama/llama3" in `packages/contracts/src/model.ts`:140
 - `DEFAULT_LOOKBACK_MS`: constant 1 * 60 * 60 * 1000 in `.repos/alchemy-effect/packages/alchemy/src/Cloudflare/Logs.ts`:10
-- `DEFAULT_MAIN_CONVEX_SITE_URL`: constant "http://127.0.0.1:3211" in `apps/server/src/local/promotionApply.ts`:45
-- `DEFAULT_MAIN_CONVEX_URL`: constant "http://127.0.0.1:3210" in `apps/server/src/local/promotionApply.ts`:44
-- `DEFAULT_MAIN_WORKTREE`: constant NodePath.resolve(import.meta.dirname, "../../t3code") in `scripts/repair-convex-pending-turns-from-history.ts`:123
+- `DEFAULT_MAIN_CONVEX_SITE_URL`: constant "http://127.0.0.1:3211" in `apps/server/src/local/promotionApply.ts`:47
+- `DEFAULT_MAIN_CONVEX_URL`: constant "http://127.0.0.1:3210" in `apps/server/src/local/promotionApply.ts`:46
+- `DEFAULT_MAIN_WORKTREE`: constant NodePath.resolve(import.meta.dirname, "../../t3code-main") in `scripts/repair-convex-pending-turns-from-history.ts`:123
+- `DEFAULT_MAIN_WORKTREE_DIRNAME`: constant "t3code-main" in `scripts/local-desktop-launchers.ts`:103
 - `DEFAULT_MAX_AGE_SECONDS`: constant 300 in `packages/shared/src/dpop.ts`:11
 - `DEFAULT_MAX_BUFFER_BYTES`: constant 512 * 1024 in `packages/client-runtime/src/terminalSessionState.ts`:111
 - `DEFAULT_MAX_BYTES`: constant 10 * 1024 * 1024 in `apps/server/src/provider/Layers/EventNdjsonLogger.ts`:23
@@ -2101,7 +2140,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DEFAULT_POSITIVE_CACHE_TTL`: constant Duration.minutes(1) in `apps/server/src/project/Layers/RepositoryIdentityResolver.ts`:77
 - `DEFAULT_PRECISION`: constant 100 in `.repos/effect-smol/packages/effect/src/BigDecimal.ts`:72
 - `DEFAULT_PROCESS_KILL_GRACE_MS`: constant 1_000 in `apps/server/src/terminal/Layers/Manager.ts`:55
-- `DEFAULT_PROMOTION_CHECK_COMMAND`: constant ["bun", "run", "build"] as const in `apps/server/src/local/promotionApply.ts`:37
+- `DEFAULT_PROMOTION_CHECK_COMMAND`: constant ["bun", "run", "build"] as const in `apps/server/src/local/promotionApply.ts`:39
 - `DEFAULT_PROVIDER_CONNECTION_STALE_AFTER_MS`: constant 30 * 1000 in `apps/server/src/provider/providerConnection.ts`:84
 - `DEFAULT_PROVIDER_DRIVER_KIND`: constant ProviderDriverKind.make("codex") in `packages/shared/src/model.ts`:13
 - `DEFAULT_READ_FROM_SEQUENCE_LIMIT`: constant 1_000 in `apps/server/src/persistence/Layers/ConvexOrchestrationEventStore.ts`:21
@@ -2186,7 +2225,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DETACHED_IGNORE_STDIO_OPTIONS`: constant { in `apps/server/src/process/externalLauncher.ts`:57
 - `DETECTION_CACHE_CAPACITY`: constant 2_048 in `apps/server/src/vcs/VcsDriverRegistry.ts`:14
 - `DEV_ACCENT`: constant "var(--alc-accent-bright)" in `.repos/alchemy-effect/website/src/components/marketing-islands/DevTestTerminal.tsx`:107
-- `DEV_LAUNCH_MANIFEST_RELATIVE_PATH`: constant ".t3code/dev-apps.json" in `packages/shared/src/devLaunch.ts`:10
+- `DEV_LAUNCH_MANIFEST_RELATIVE_PATH`: constant ".t3code/dev-apps.json" in `packages/shared/src/devLaunch.ts`:11
 - `DEV_PORT_PROBE_HOSTS`: constant ["127.0.0.1", "0.0.0.0", "::1", "::"] as const in `scripts/dev-runner.ts`:37
 - `DEV_RUNNER_MODES`: constant Object.keys(MODE_ARGS) as Array<DevMode> in `scripts/dev-runner.ts`:88
 - `DEV_RUNNER_SCRIPT`: constant "scripts/dev-runner.ts" in `scripts/local-desktop-launcher-deps.ts`:18
@@ -2204,7 +2243,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `DIRTY_WORKTREE_SUBTITLE`: constant "Tracked, staged, and untracked worktree changes" in `apps/mobile/src/features/review/reviewModel.ts`:12
 - `DIRTY_WORKTREE_TITLE`: constant "Dirty worktree" in `apps/mobile/src/features/review/reviewModel.ts`:11
 - `DISABLE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:disable-tailscale-access" in `apps/desktop/dist-electron/preload.cjs`:52
-- `DISABLE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:disable-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:51
+- `DISABLE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:disable-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:52
 - `DISABLED_PATH`: constant nodePath.join(ALCHEMY_DIR, "telemetry-disabled") in `.repos/alchemy-effect/packages/alchemy/src/Telemetry/Attributes.ts`:13
 - `DISCONNECT_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:disconnect-ssh-environment" in `apps/desktop/dist-electron/preload.cjs`:32
 - `DISCONNECT_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:disconnect-ssh-environment" in `apps/desktop/src/ipc/channels.ts`:30
@@ -2301,7 +2340,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `EMPTY_THREAD_DETAIL_ATOM`: constant Atom.make(EMPTY_THREAD_DETAIL_STATE).pipe( in `packages/client-runtime/src/threadDetailState.ts`:92
 - `EMPTY_THREAD_DETAIL_STATE`: constant Object.freeze<ThreadDetailState>({ in `packages/client-runtime/src/threadDetailState.ts`:68
 - `EMPTY_THREAD_DRAFT`: constant Object.freeze<ComposerThreadDraftState>({ in `apps/web/src/composerDraftStore.ts`:485
-- `EMPTY_THREAD_JUMP_LABELS`: constant new Map<string, string>() in `apps/web/src/components/Sidebar.tsx`:214
+- `EMPTY_THREAD_JUMP_LABELS`: constant new Map<string, string>() in `apps/web/src/components/Sidebar.tsx`:217
 - `EMPTY_VCS_ACTION_ATOM`: constant Atom.make(EMPTY_VCS_ACTION_STATE).pipe( in `packages/client-runtime/src/vcsActionState.ts`:84
 - `EMPTY_VCS_ACTION_STATE`: constant Object.freeze<VcsActionState>({ in `packages/client-runtime/src/vcsActionState.ts`:58
 - `EMPTY_VCS_REF_ATOM`: constant Atom.make(EMPTY_VCS_REF_STATE).pipe( in `packages/client-runtime/src/vcsRefState.ts`:52
@@ -2309,7 +2348,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `EMPTY_VCS_STATUS_ATOM`: constant Atom.make(EMPTY_VCS_STATUS_STATE).pipe( in `packages/client-runtime/src/vcsStatusState.ts`:58
 - `EMPTY_VCS_STATUS_STATE`: constant Object.freeze<VcsStatusState>({ in `packages/client-runtime/src/vcsStatusState.ts`:32
 - `ENABLE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:enable-tailscale-access" in `apps/desktop/dist-electron/preload.cjs`:51
-- `ENABLE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:enable-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:50
+- `ENABLE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:enable-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:51
 - `ENDPOINT_ROW_CLASSNAME`: constant "border-t border-border/60 px-4 py-2.5 first:border-t-0 sm:px-5" in `apps/web/src/components/settings/ConnectionsSettings.tsx`:474
 - `ENSURE_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:ensure-ssh-environment" in `apps/desktop/dist-electron/preload.cjs`:31
 - `ENSURE_SSH_ENVIRONMENT_CHANNEL`: constant "desktop:ensure-ssh-environment" in `apps/desktop/src/ipc/channels.ts`:29
@@ -2386,7 +2425,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `GENERATED_PREFIX`: constant "packages/convex/convex/_generated/" in `apps/server/src/local/mainReloadStatus.ts`:20
 - `GENERIC_LOCAL_ENVIRONMENT_LABELS`: constant new Set(["local", "local environment"]) in `apps/web/src/components/BranchToolbar.logic.ts`:18
 - `GET_ADVERTISED_ENDPOINTS_CHANNEL`: constant "desktop:get-advertised-endpoints" in `apps/desktop/dist-electron/preload.cjs`:49
-- `GET_ADVERTISED_ENDPOINTS_CHANNEL`: constant "desktop:get-advertised-endpoints" in `apps/desktop/src/ipc/channels.ts`:48
+- `GET_ADVERTISED_ENDPOINTS_CHANNEL`: constant "desktop:get-advertised-endpoints" in `apps/desktop/src/ipc/channels.ts`:49
 - `GET_APP_BRANDING_CHANNEL`: constant "desktop:get-app-branding" in `apps/desktop/dist-electron/preload.cjs`:21
 - `GET_APP_BRANDING_CHANNEL`: constant "desktop:get-app-branding" in `apps/desktop/src/ipc/channels.ts`:19
 - `GET_CLIENT_SETTINGS_CHANNEL`: constant "desktop:get-client-settings" in `apps/desktop/dist-electron/preload.cjs`:23
@@ -2394,7 +2433,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `GET_CLOUD_AUTH_TOKEN_CHANNEL`: constant "desktop:get-cloud-auth-token" in `apps/desktop/dist-electron/preload.cjs`:9
 - `GET_CLOUD_AUTH_TOKEN_CHANNEL`: constant "desktop:get-cloud-auth-token" in `apps/desktop/src/ipc/channels.ts`:7
 - `GET_DEV_LAUNCH_STATE_CHANNEL`: constant "desktop:get-dev-launch-state" in `apps/desktop/dist-electron/preload.cjs`:56
-- `GET_DEV_LAUNCH_STATE_CHANNEL`: constant "desktop:get-dev-launch-state" in `apps/desktop/src/ipc/channels.ts`:55
+- `GET_DEV_LAUNCH_STATE_CHANNEL`: constant "desktop:get-dev-launch-state" in `apps/desktop/src/ipc/channels.ts`:56
 - `GET_LOCAL_ENVIRONMENT_BOOTSTRAP_CHANNEL`: constant "desktop:get-local-environment-bootstrap" in `apps/desktop/dist-electron/preload.cjs`:22
 - `GET_LOCAL_ENVIRONMENT_BOOTSTRAP_CHANNEL`: constant "desktop:get-local-environment-bootstrap" in `apps/desktop/src/ipc/channels.ts`:20
 - `GET_LOCAL_PROMOTION_PREFLIGHT_STATUS_CHANNEL`: constant "desktop:get-local-promotion-preflight-status" in `apps/desktop/dist-electron/preload.cjs`:43
@@ -2406,7 +2445,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `GET_SERVER_EXPOSURE_STATE_CHANNEL`: constant "desktop:get-server-exposure-state" in `apps/desktop/dist-electron/preload.cjs`:39
 - `GET_SERVER_EXPOSURE_STATE_CHANNEL`: constant "desktop:get-server-exposure-state" in `apps/desktop/src/ipc/channels.ts`:37
 - `GET_TAILSCALE_ACCESS_STATE_CHANNEL`: constant "desktop:get-tailscale-access-state" in `apps/desktop/dist-electron/preload.cjs`:50
-- `GET_TAILSCALE_ACCESS_STATE_CHANNEL`: constant "desktop:get-tailscale-access-state" in `apps/desktop/src/ipc/channels.ts`:49
+- `GET_TAILSCALE_ACCESS_STATE_CHANNEL`: constant "desktop:get-tailscale-access-state" in `apps/desktop/src/ipc/channels.ts`:50
 - `GH_COLOR`: constant "#8B949E" in `.repos/alchemy-effect/website/src/components/marketing/diagrams/_colors.ts`:8
 - `GIT_CHECK_IGNORE_MAX_STDIN_BYTES`: constant 256 * 1024 in `apps/server/src/vcs/GitVcsDriver.ts`:243
 - `GIT_CWD`: constant "/repo/project" in `apps/web/src/components/GitActionsControl.browser.tsx`:10
@@ -2520,7 +2559,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LATEST_VERSION_CACHE_TTL_MS`: constant 60 * 60 * 1_000 in `apps/server/src/provider/providerMaintenance.ts`:15
 - `LATEST_VERSION_TIMEOUT_MS`: constant 4_000 in `apps/server/src/provider/providerMaintenance.ts`:16
 - `LAUNCH_DEV_APP_CHANNEL`: constant "desktop:launch-dev-app" in `apps/desktop/dist-electron/preload.cjs`:57
-- `LAUNCH_DEV_APP_CHANNEL`: constant "desktop:launch-dev-app" in `apps/desktop/src/ipc/channels.ts`:56
+- `LAUNCH_DEV_APP_CHANNEL`: constant "desktop:launch-dev-app" in `apps/desktop/src/ipc/channels.ts`:57
 - `LAUNCHCTL_TIMEOUT`: constant Duration.seconds(2) in `apps/desktop/src/shell/DesktopShellEnvironment.ts`:43
 - `LAUNCHER_RUN_MARKER`: constant "local-desktop-launcher-run.ts" in `apps/server/src/local/launcherOrphans.ts`:7
 - `LAUNCHER_VERSION`: constant 10 in `apps/desktop/scripts/electron-launcher.mjs`:33
@@ -2541,13 +2580,13 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LINK_ICON_OBJ_RE`: constant /(?=[^}]*\brel\s*:\s*["'](?:icon|shortcut icon)["'])(?=[^}]*\bhref\s*:\s*["']... in `apps/server/src/project/Layers/ProjectFaviconResolver.ts`:50
 - `LINUX_ICON_SIZES`: constant [16, 22, 24, 32, 48, 64, 128, 256, 512] as const in `scripts/build-desktop-artifact.ts`:27
 - `LIST_ACTIVE_DEV_LAUNCHES_CHANNEL`: constant "desktop:list-active-dev-launches" in `apps/desktop/dist-electron/preload.cjs`:59
-- `LIST_ACTIVE_DEV_LAUNCHES_CHANNEL`: constant "desktop:list-active-dev-launches" in `apps/desktop/src/ipc/channels.ts`:58
+- `LIST_ACTIVE_DEV_LAUNCHES_CHANNEL`: constant "desktop:list-active-dev-launches" in `apps/desktop/src/ipc/channels.ts`:59
 - `LITERAL_SECRET_VALUE`: constant "sk-aws-literal-secret-abc" in `.repos/alchemy-effect/packages/alchemy/test/AWS/Secret/fixtures/handler.ts`:15
 - `LITERAL_SECRET_VALUE`: constant "sk-literal-secret-abc" in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Secret/fixtures/worker.ts`:12
 - `LIVE_ACTIVITY_NAME`: constant "AgentActivity" in `infra/relay/src/agentActivity/ApnsClient.ts`:15
 - `LOCAL_BACKEND_SQLITE_RELATIVE_PATH`: constant NodePath.join( in `packages/convex/scripts/convex-shared-deployment.mjs`:245
 - `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/convex/ConvexBackendHealth.ts`:24
-- `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/local/promotionApply.ts`:42
+- `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/local/promotionApply.ts`:44
 - `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/local/promotionConvexRestart.ts`:6
 - `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `apps/server/src/persistence/Layers/ConvexClient.ts`:11
 - `LOCAL_CONVEX_CONFIG_RELATIVE_PATH`: constant NodePath.join("local", "default", "config.json") in `packages/convex/scripts/convex-backend-lifecycle.mjs`:10
@@ -2558,10 +2597,11 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LOCAL_CONVEX_SQLITE_RELATIVE_PATH`: constant NodePath.join( in `packages/convex/scripts/convex-backend-lifecycle.mjs`:5
 - `LOCAL_DESKTOP_CDP_PORTS`: constant { in `scripts/local-desktop-launchers.ts`:44
 - `LOCAL_DESKTOP_CONVEX_PORTS`: constant { in `scripts/local-desktop-launchers.ts`:4
-- `LOCAL_DESKTOP_DEV_BUNDLE`: constant { in `scripts/local-desktop-launchers.ts`:608
+- `LOCAL_DESKTOP_DEV_BUNDLE`: constant { in `scripts/local-desktop-launchers.ts`:659
 - `LOCAL_DESKTOP_DEV_BUNDLE_ID`: constant "t3code-local-dev" in `scripts/local-desktop-dev-bundle-lock.ts`:15
 - `LOCAL_DESKTOP_DEV_INSTANCES`: constant { in `scripts/local-desktop-launchers.ts`:49
 - `LOCAL_DESKTOP_LOOPBACK_HOST`: constant "127.0.0.1" in `scripts/local-desktop-env.ts`:16
+- `LOCAL_DESKTOP_VARIANTS`: constant new Set(["local-main", "local-staging"]) in `scripts/dev-runner.ts`:170
 - `LOCAL_DESKTOP_WORKTREE_ENV_KEYS`: constant [ in `scripts/local-desktop-worktree/env.ts`:7
 - `LOCAL_DESKTOP_WORKTREE_ENV_NAMES`: constant [ in `apps/desktop/src/backend/DesktopBackendConfiguration.ts`:63
 - `LOCAL_DESKTOP_WORKTREE_ENV_ROLES`: constant ["main", "staging", "test"] as const in `scripts/local-desktop-worktree/env.ts`:4
@@ -2578,15 +2618,15 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/components/chat/TraitsPicker.test.tsx`:15
 - `LOCAL_ENVIRONMENT_ID`: constant EnvironmentId.make("environment-local") in `apps/web/src/lib/threadSort.test.ts`:12
 - `LOCAL_MAIN_BASE_NAME`: constant "T3code" in `apps/desktop/src/app/DesktopEnvironment.ts`:88
-- `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/promotionApply.ts`:38
+- `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/promotionApply.ts`:40
 - `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/stackAutoRepair.ts`:52
 - `LOCAL_MAIN_DESKTOP_ID`: constant "t3code-local-main.desktop" in `apps/server/src/local/stackRecover.ts`:40
 - `LOCAL_PRESENTATION`: constant { in `apps/server/src/provider/Layers/LocalProvider.ts`:23
-- `LOCAL_PROMOTION_LAUNCH_LOCK_PREFIX`: constant "t3code-local-promotion-launch" in `apps/server/src/local/promotionApply.ts`:40
-- `LOCAL_PROMOTION_LAUNCH_LOCK_TTL_MS`: constant 30_000 in `apps/server/src/local/promotionApply.ts`:41
+- `LOCAL_PROMOTION_LAUNCH_LOCK_PREFIX`: constant "t3code-local-promotion-launch" in `apps/server/src/local/promotionApply.ts`:42
+- `LOCAL_PROMOTION_LAUNCH_LOCK_TTL_MS`: constant 30_000 in `apps/server/src/local/promotionApply.ts`:43
 - `LOCAL_STACK_RECOVER_HTML`: constant `<!doctype html> in `apps/server/src/local/stackRecover.ts`:230
 - `LOCAL_STAGING_BASE_NAME`: constant "T3code Staging" in `apps/desktop/src/app/DesktopEnvironment.ts`:89
-- `LOCAL_STAGING_DESKTOP_ID`: constant "t3code-local-staging.desktop" in `apps/server/src/local/promotionApply.ts`:39
+- `LOCAL_STAGING_DESKTOP_ID`: constant "t3code-local-staging.desktop" in `apps/server/src/local/promotionApply.ts`:41
 - `LOCAL_STAGING_DESKTOP_ID`: constant "t3code-local-staging.desktop" in `apps/server/src/local/stackRecover.ts`:41
 - `LOCAL_STAGING_HOME_SUFFIX`: constant "/t3code-local/staging" in `apps/server/src/persistence/resolvePersistenceMode.ts`:1
 - `LOCAL_STAGING_PROVIDER_RUNTIME_BLOCKED_DETAIL`: constant "T3code Staging cannot run provider agents. Start agent turns and resumes on ... in `apps/server/src/config.ts`:51
@@ -2605,7 +2645,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `LOOPBACK_HOSTNAMES`: constant new Set(["127.0.0.1", "::1", "localhost"]) in `apps/server/src/http.ts`:50
 - `LOOPBACK_HOSTNAMES`: constant new Set(["127.0.0.1", "::1", "localhost"]) in `apps/web/src/environments/primary/target.ts`:12
 - `MAIN_CONVEX_DEPLOYMENT_NAME`: constant "anonymous-convex" in `apps/server/src/local/promotionConvexRestart.ts`:13
-- `MAIN_WORKTREE`: constant NodePath.join(WORKSPACE_ROOT, "t3code") in `scripts/worktree-cli.ts`:28
+- `MAIN_WORKTREE`: constant resolveDefaultMainWorktreePath(WORKSPACE_ROOT) in `scripts/worktree-cli.ts`:30
 - `MALFORMED_INLINE_CODE_FENCE_PATTERN`: constant /```([^`\n][\s\S]*?)```/g in `apps/web/src/components/ChatMarkdown.tsx`:682
 - `MANAGED_ALL_VIEWER_EXCEPT_HOST_HEADER_POLICY_ID`: constant "b689b0a8-53d0-40ab-baf2-68738e2966ac" as const in `.repos/alchemy-effect/packages/alchemy/src/AWS/CloudFront/ManagedPolicies.ts`:19
 - `MANAGED_CACHING_DISABLED_POLICY_ID`: constant "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" as const in `.repos/alchemy-effect/packages/alchemy/src/AWS/CloudFront/ManagedPolicies.ts`:5
@@ -2738,7 +2778,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `NOW_ISO`: constant "2026-03-04T12:00:00.000Z" in `apps/web/src/components/ChatView.browser.tsx`:133
 - `NOW_ISO`: constant "2026-03-04T12:00:00.000Z" in `apps/web/src/components/KeybindingsToast.browser.tsx`:81
 - `NPM_DIST_TAGS_URL`: constant "https://registry.npmjs.org/-/package/alchemy/dist-tags" in `.repos/alchemy-effect/packages/alchemy/src/Cli/checkVersion.ts`:7
-- `NUMBER_FORMAT`: constant new Intl.NumberFormat() in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:35
+- `NUMBER_FORMAT`: constant new Intl.NumberFormat() in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:36
 - `NUMBER_VAR_VALUE`: constant 9090 in `.repos/alchemy-effect/packages/alchemy/test/AWS/Secret/fixtures/handler.ts`:17
 - `NUMBER_VAR_VALUE`: constant 4242 in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Secret/fixtures/worker.ts`:14
 - `NUMERIC_INDEX`: constant /^(0|[1-9][0-9]*)$/ in `.repos/effect-smol/packages/effect/src/ConfigProvider.ts`:910
@@ -2824,18 +2864,18 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `POWERSHELL_ARGUMENTS_PREFIX`: constant [ in `apps/server/src/process/externalLauncher.ts`:49
 - `PR_NUMBER`: constant 147 in `.repos/alchemy-effect/website/src/components/marketing-islands/PRLifecycle.tsx`:20
 - `PREFERENCES_KEY`: constant "t3code.preferences" in `apps/mobile/src/lib/storage.ts`:15
-- `PREFLIGHT_CHECK_SCRIPT`: constant NodePath.resolve( in `apps/server/src/local/promotionPreflight.ts`:37
-- `PREFLIGHT_STATUS_FILENAME`: constant "promotion-preflight-status.json" in `apps/server/src/local/promotionPreflight.ts`:31
-- `PREFLIGHT_TOKEN_FILENAME`: constant "promotion-preflight-passed.json" in `apps/server/src/local/promotionApply.ts`:53
-- `PREFLIGHT_TOKEN_FILENAME`: constant "promotion-preflight-passed.json" in `apps/server/src/local/promotionPreflight.ts`:32
-- `PREFLIGHT_TOKEN_TTL_MS`: constant 30 * 60 * 1_000 in `apps/server/src/local/promotionApply.ts`:54
+- `PREFLIGHT_CHECK_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionPreflight.ts`:36
+- `PREFLIGHT_STATUS_FILENAME`: constant "promotion-preflight-status.json" in `apps/server/src/local/promotionPreflight.ts`:34
+- `PREFLIGHT_TOKEN_FILENAME`: constant "promotion-preflight-passed.json" in `apps/server/src/local/promotionApply.ts`:193
+- `PREFLIGHT_TOKEN_FILENAME`: constant "promotion-preflight-passed.json" in `apps/server/src/local/promotionPreflight.ts`:35
+- `PREFLIGHT_TOKEN_TTL_MS`: constant 30 * 60 * 1_000 in `apps/server/src/local/promotionApply.ts`:194
 - `PREPARED_COMMIT_PATCH_MAX_OUTPUT_BYTES`: constant 49_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:44
 - `PRESENTATION`: constant { in `apps/server/src/provider/Layers/HermesProvider.ts`:42
 - `PREVIEW_URL`: constant `https://${STAGE}.api.example.workers.dev` in `.repos/alchemy-effect/website/src/components/marketing-islands/PRLifecycle.tsx`:22
 - `PRIMARY_PUBLIC_KEY`: constant `-----BEGIN PUBLIC KEY----- in `.repos/alchemy-effect/packages/alchemy/test/AWS/CloudFront/KeyGroup.test.ts`:13
 - `PRIVATE_ENTRY_NAMES`: constant new Set(["auth.json", "models_cache.json"]) in `apps/server/src/provider/Drivers/CodexHomeLayout.ts`:31
 - `PROBE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:probe-tailscale-access" in `apps/desktop/dist-electron/preload.cjs`:54
-- `PROBE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:probe-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:53
+- `PROBE_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:probe-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:54
 - `PROCESS_DIAGNOSTICS_IDLE_TTL_MS`: constant 5 * 60_000 in `apps/web/src/lib/processDiagnosticsState.ts`:16
 - `PROCESS_DIAGNOSTICS_STALE_TIME_MS`: constant 2_000 in `apps/web/src/lib/processDiagnosticsState.ts`:15
 - `PROCESS_QUERY_MAX_OUTPUT_BYTES`: constant 2 * 1024 * 1024 in `apps/server/src/diagnostics/ProcessDiagnostics.ts`:31
@@ -2858,7 +2898,8 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PROJECT_WRITE_FILE_PATH_MAX_LENGTH`: constant 512 in `packages/contracts/src/project.ts`:5
 - `PROMOTE_STAGING_AND_RELAUNCH_DEV_CHANNEL`: constant "desktop:promote-staging-and-relaunch-dev" in `apps/desktop/dist-electron/preload.cjs`:46
 - `PROMOTE_STAGING_AND_RELAUNCH_DEV_CHANNEL`: constant "desktop:promote-staging-and-relaunch-dev" in `apps/desktop/src/ipc/channels.ts`:45
-- `PROMOTION_CHECK_DEV_ENV_KEYS`: constant [ in `apps/server/src/local/promotionApply.ts`:55
+- `PROMOTION_CHECK_DEV_ENV_KEYS`: constant [ in `apps/server/src/local/promotionApply.ts`:195
+- `PROMOTION_E2E_MARKER_RUN_1`: constant "promotion-e2e-run-1" in `apps/web/src/promotionE2eMarker.ts`:2
 - `PROMOTION_REPAIR_SKILL`: constant "promotion-stack-repair" in `apps/server/src/local/promotionRepairAgent.ts`:10
 - `PROMPT_LINE`: constant mkLine( in `.repos/alchemy-effect/website/src/components/marketing-islands/BrowserHotReload.tsx`:145
 - `PROTECTED_CONVEX_TABLES`: constant [ in `packages/convex/pruneRetention.ts`:42
@@ -2891,7 +2932,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `PROVIDER_SETTINGS`: constant DRIVER_OPTIONS.map((definition) => ({ in `apps/web/src/components/settings/SettingsPanels.tsx`:123
 - `PROVIDER_SLUG_MAX_CHARS`: constant 64 in `packages/contracts/src/providerInstance.ts`:40
 - `PROVIDER_SLUG_PATTERN`: constant /^[a-zA-Z][a-zA-Z0-9_-]*$/ in `packages/contracts/src/providerInstance.ts`:49
-- `PROVIDER_STATUS_DEBOUNCE_MS`: constant 200 in `apps/server/src/ws.ts`:135
+- `PROVIDER_STATUS_DEBOUNCE_MS`: constant 200 in `apps/server/src/ws.ts`:136
 - `PROVIDER_STATUS_STYLES`: constant { in `apps/web/src/components/settings/providerStatus.ts`:7
 - `PROVIDER_UPDATE_ACTION_TOAST_MESSAGE`: constant "Install the update now or review provider settings." in `apps/server/src/provider/providerMaintenance.ts`:17
 - `PROVIDER_UPDATE_DISMISSALS_STORAGE_KEY`: constant "t3code:provider-update-dismissals:v1" in `apps/web/src/providerUpdateDismissal.ts`:6
@@ -2943,6 +2984,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `RELATIVE_FILE_PATH_PATTERN`: constant /^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)+(?::\d+){0,2}$/ in `apps/web/src/markdown-links.ts`:8
 - `RELATIVE_PATH_PREFIX_PATTERN`: constant /^(~\/|\.{1,2}\/)/ in `apps/web/src/markdown-links.ts`:7
 - `RELAUNCH_DELAY_MS`: constant 2_500 in `apps/server/src/local/stackAutoRepair.ts`:53
+- `RELAUNCH_LOCAL_DESKTOP_INSTANCE_CHANNEL`: constant "desktop:relaunch-local-desktop-instance" in `apps/desktop/src/ipc/channels.ts`:47
 - `RELAUNCH_QUIESCE_FILENAME`: constant "relaunch-quiesce.json" in `apps/server/src/local/relaunchQuiesce.ts`:6
 - `RELAY_ACTIVITY_PUBLISH_TYP`: constant "t3-env-activity+jwt" in `packages/shared/src/relayJwt.ts`:11
 - `RELAY_AGENT_ACTIVITY_DETAIL_MAX_LENGTH`: constant 160 in `apps/server/src/relay/AgentAwarenessRelay.ts`:102
@@ -2976,7 +3018,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `REMOVE_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:remove-saved-environment-secret" in `apps/desktop/dist-electron/preload.cjs`:29
 - `REMOVE_SAVED_ENVIRONMENT_SECRET_CHANNEL`: constant "desktop:remove-saved-environment-secret" in `apps/desktop/src/ipc/channels.ts`:27
 - `REPAIR_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:repair-tailscale-access" in `apps/desktop/dist-electron/preload.cjs`:53
-- `REPAIR_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:repair-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:52
+- `REPAIR_TAILSCALE_ACCESS_CHANNEL`: constant "desktop:repair-tailscale-access" in `apps/desktop/src/ipc/channels.ts`:53
 - `REPO`: constant "alchemy-run/alchemy-effect" in `.repos/alchemy-effect/scripts/release/discord-notify.ts`:15
 - `REPO`: constant { owner: "alchemy-run", repository: "alchemy-effect" } as const in `.repos/alchemy-effect/stacks/github.ts`:12
 - `REPO`: constant "pingdotgg/t3code" in `apps/marketing/src/lib/releases.ts`:1
@@ -2987,7 +3029,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `RESET`: constant `${ESC}0m` in `.repos/alchemy-effect/packages/alchemy/src/Cli/LoggingCli.ts`:9
 - `RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:resolve-ssh-password-prompt" in `apps/desktop/dist-electron/preload.cjs`:38
 - `RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:resolve-ssh-password-prompt" in `apps/desktop/src/ipc/channels.ts`:36
-- `RESOURCE_HISTORY_WINDOWS`: constant [ in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:522
+- `RESOURCE_HISTORY_WINDOWS`: constant [ in `apps/web/src/components/settings/DiagnosticsSettings.tsx`:523
 - `RESOURCE_LIFECYCLE_PATTERNS`: constant [ in `.repos/alchemy-effect/scripts/audit-service.ts`:96
 - `RESOURCE_PREFIX`: constant `r${SEP}` in `.repos/alchemy-effect/packages/alchemy/src/Cloudflare/StateStore/Store.ts`:273
 - `RESOURCES`: constant [ in `.repos/alchemy-effect/website/src/components/marketing-islands/PRLifecycle.tsx`:14
@@ -3032,7 +3074,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `ROOT_PKG_PATH`: constant path.join(ROOT, "package.json") in `.repos/alchemy-effect/test/smoke.test.ts`:126
 - `ROUTER_HOST`: constant "app.t3.codes" in `apps/web/vercel.ts`:3
 - `RPC_ADDRESS_REGEX`: constant /(<ALCHEMY_RPC_ADDRESS>)(.+)(<\/ALCHEMY_RPC_ADDRESS>)/ in `.repos/alchemy-effect/packages/alchemy/src/Local/RpcSpawner.ts`:159
-- `RPC_REQUIRED_SCOPE`: constant new Map<string, AuthEnvironmentScope>([ in `apps/server/src/ws.ts`:137
+- `RPC_REQUIRED_SCOPE`: constant new Map<string, AuthEnvironmentScope>([ in `apps/server/src/ws.ts`:138
 - `RPC_SERVER_ENVIRONMENT_KEY`: constant "ALCHEMY_RPC_SERVER_ENVIRONMENT" as const in `.repos/alchemy-effect/packages/alchemy/src/Local/RpcServerEnvironment.ts`:47
 - `RPC_SPAN_PREFIX`: constant "ws.rpc" in `apps/server/src/observability/RpcInstrumentation.ts`:13
 - `RUNNER_PORT`: constant 50_123 in `.repos/effect-smol/packages/platform-node/test/cluster/SocketRunner.test.ts`:41
@@ -3091,7 +3133,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SET_SERVER_EXPOSURE_MODE_CHANNEL`: constant "desktop:set-server-exposure-mode" in `apps/desktop/dist-electron/preload.cjs`:40
 - `SET_SERVER_EXPOSURE_MODE_CHANNEL`: constant "desktop:set-server-exposure-mode" in `apps/desktop/src/ipc/channels.ts`:38
 - `SET_TAILSCALE_SERVE_ENABLED_CHANNEL`: constant "desktop:set-tailscale-serve-enabled" in `apps/desktop/dist-electron/preload.cjs`:48
-- `SET_TAILSCALE_SERVE_ENABLED_CHANNEL`: constant "desktop:set-tailscale-serve-enabled" in `apps/desktop/src/ipc/channels.ts`:47
+- `SET_TAILSCALE_SERVE_ENABLED_CHANNEL`: constant "desktop:set-tailscale-serve-enabled" in `apps/desktop/src/ipc/channels.ts`:48
 - `SET_THEME_CHANNEL`: constant "desktop:set-theme" in `apps/desktop/dist-electron/preload.cjs`:5
 - `SET_THEME_CHANNEL`: constant "desktop:set-theme" in `apps/desktop/src/ipc/channels.ts`:3
 - `SHADOW_LOCAL_ENTRY_NAMES`: constant new Set(["log", "memories", "tmp"]) in `apps/server/src/provider/Drivers/CodexHomeLayout.ts`:32
@@ -3110,10 +3152,11 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SHIFT`: constant 5 in `.repos/effect-smol/packages/effect/src/internal/hashMap.ts`:37
 - `SHIKI_THEME_NAME_BY_SCHEME`: constant { in `apps/mobile/src/features/review/shikiReviewHighlighter.ts`:43
 - `SHORT_SHA_LENGTH`: constant 7 in `apps/server/src/git/GitManager.ts`:94
+- `SHOW_LOCAL_PROMOTION_TOAST_EVENT`: constant "t3code:show-local-promotion-toast" in `apps/web/src/hooks/useLocalPromotionToast.tsx`:29
 - `SIDEBAR_COOKIE_MAX_AGE`: constant 60 * 60 * 24 * 7 in `apps/web/src/components/ui/sidebar.tsx`:25
 - `SIDEBAR_COOKIE_NAME`: constant "sidebar_state" in `apps/web/src/components/ui/sidebar.tsx`:24
-- `SIDEBAR_ICON_ACTION_BUTTON_CLASS`: constant "inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-m... in `apps/web/src/components/Sidebar.tsx`:220
-- `SIDEBAR_LIST_ANIMATION_OPTIONS`: constant { in `apps/web/src/components/Sidebar.tsx`:210
+- `SIDEBAR_ICON_ACTION_BUTTON_CLASS`: constant "inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-m... in `apps/web/src/components/Sidebar.tsx`:223
+- `SIDEBAR_LIST_ANIMATION_OPTIONS`: constant { in `apps/web/src/components/Sidebar.tsx`:213
 - `SIDEBAR_RESIZE_DEFAULT_MIN_WIDTH`: constant 16 * 16 in `apps/web/src/components/ui/sidebar.tsx`:29
 - `SIDEBAR_THREAD_PREWARM_LIMIT`: constant 10 in `apps/web/src/components/Sidebar.logic.ts`:23
 - `SIDEBAR_WIDTH`: constant "16rem" in `apps/web/src/components/ui/sidebar.tsx`:26
@@ -3163,7 +3206,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `SSH_ASKPASS_DIR_NAME`: constant "t3code-ssh-askpass" in `packages/ssh/src/auth.ts`:61
 - `SSH_COMMAND`: constant process.platform === "win32" ? "ssh.exe" : "ssh" in `packages/ssh/src/command.ts`:19
 - `SSH_HTTP_STATUS_RE`: constant /^\[ssh_http:(\d+)\]\s/u in `apps/web/src/environments/runtime/service.ts`:169
-- `SSH_PASSWORD_PROMPT_CANCELLED_RESULT`: constant "ssh-password-prompt-cancelled" in `apps/desktop/src/ipc/channels.ts`:61
+- `SSH_PASSWORD_PROMPT_CANCELLED_RESULT`: constant "ssh-password-prompt-cancelled" in `apps/desktop/src/ipc/channels.ts`:62
 - `SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:ssh-password-prompt" in `apps/desktop/dist-electron/preload.cjs`:37
 - `SSH_PASSWORD_PROMPT_CHANNEL`: constant "desktop:ssh-password-prompt" in `apps/desktop/src/ipc/channels.ts`:35
 - `SSH_READY_PROBE_TIMEOUT_MS`: constant 1_000 in `packages/ssh/src/tunnel.ts`:55
@@ -3179,10 +3222,10 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `STAGING_CONVEX_SITE_URL`: constant "http://127.0.0.1:3221" in `apps/server/src/local/promotionConvexRestart.ts`:15
 - `STAGING_DEPLOYMENT_NAME`: constant "anonymous-convex-staging" in `packages/convex/scripts/convex-seed-staging-from-main.mjs`:17
 - `STAGING_MIRROR_SUMMARY`: constant "Read-only mirror of Main. Run agents on T3code (main) in `apps/web/src/components/localDesktopChrome.tsx`:7
-- `STAGING_OVERRIDE_PATHS`: constant [ in `scripts/worktree-cli.ts`:31
-- `STAGING_WORKTREE`: constant NodePath.resolve(import.meta.dirname, "..") in `scripts/worktree-cli.ts`:26
+- `STAGING_OVERRIDE_PATHS`: constant [ in `scripts/worktree-cli.ts`:33
+- `STAGING_WORKTREE`: constant NodePath.resolve(import.meta.dirname, "..") in `scripts/worktree-cli.ts`:28
 - `STALE_AFTER_SECONDS`: constant 2 * 60 in `infra/relay/src/agentActivity/ApnsClient.ts`:16
-- `STALE_CALLER_ENV_KEYS`: constant [ in `scripts/local-desktop-launcher-run.ts`:257
+- `STALE_CALLER_ENV_KEYS`: constant [ in `scripts/local-desktop-launcher-run.ts`:258
 - `START_LOCAL_PROMOTION_PREFLIGHT_CHANNEL`: constant "desktop:start-local-promotion-preflight" in `apps/desktop/dist-electron/preload.cjs`:42
 - `START_LOCAL_PROMOTION_PREFLIGHT_CHANNEL`: constant "desktop:start-local-promotion-preflight" in `apps/desktop/src/ipc/channels.ts`:40
 - `STARTUP_POLL_INTERVAL_MS`: constant 750 in `apps/web/src/StartupGate.tsx`:7
@@ -3204,7 +3247,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `STEP_DWELL`: constant [2400, 2800, 2800, 3200] in `.repos/alchemy-effect/website/src/components/marketing-islands/OutputGraphAnim.tsx`:67
 - `STEPS`: constant [ in `.repos/alchemy-effect/website/src/components/marketing-islands/EffectPilledShowcase.tsx`:497
 - `STOP_DEV_APP_CHANNEL`: constant "desktop:stop-dev-app" in `apps/desktop/dist-electron/preload.cjs`:58
-- `STOP_DEV_APP_CHANNEL`: constant "desktop:stop-dev-app" in `apps/desktop/src/ipc/channels.ts`:57
+- `STOP_DEV_APP_CHANNEL`: constant "desktop:stop-dev-app" in `apps/desktop/src/ipc/channels.ts`:58
 - `STORAGE_KEY`: constant "axiom-stored" in `.repos/alchemy-effect/packages/alchemy/src/Axiom/AuthProvider.ts`:15
 - `STORAGE_KEY`: constant "t3code:theme" in `apps/web/src/hooks/useTheme.ts`:9
 - `STREAM_CODE`: constant `export default AWS.Lambda.Function( in `.repos/alchemy-effect/website/src/components/marketing-islands/EffectPilledShowcase.tsx`:54
@@ -3267,7 +3310,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `TEST_NODE_ENGINE_RANGE`: constant "^22.16 || ^23.11 || >=24.10" in `packages/ssh/src/tunnel.test.ts`:29
 - `TEST_PUBLIC_KEY`: constant `-----BEGIN PUBLIC KEY----- in `.repos/alchemy-effect/packages/alchemy/test/AWS/CloudFront/PublicKey.test.ts`:13
 - `TEST_SESSION_EXPIRES_AT`: constant DateTime.makeUnsafe("2026-05-01T12:00:00.000Z") in `apps/web/test/authHttpHandlers.ts`:24
-- `TEST_SLUG`: constant "test" in `apps/server/src/local/promotionPreflight.ts`:29
+- `TEST_SLUG`: constant "test" in `apps/server/src/local/promotionPreflight.ts`:32
 - `TEST_STACK`: constant "task-test" in `.repos/alchemy-effect/packages/alchemy/test/action.test.ts`:21
 - `TEST_STACK`: constant "test" in `.repos/alchemy-effect/packages/alchemy/test/plan.test.ts`:39
 - `TEST_STAGE`: constant "test" in `.repos/alchemy-effect/packages/alchemy/test/action.test.ts`:22
@@ -3318,7 +3361,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `TO`: constant process.env.CLOUDFLARE_TEST_EMAIL_TO in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/Email/SendEmail.test.ts`:21
 - `TOAST_DESCRIPTION_MAX`: constant 72 in `apps/server/src/git/GitManager.ts`:95
 - `TOAST_ICONS`: constant { in `apps/web/src/components/ui/toast.tsx`:80
-- `TOKEN_TTL_MS`: constant 30 * 60 * 1_000 in `apps/server/src/local/promotionPreflight.ts`:30
+- `TOKEN_TTL_MS`: constant 30 * 60 * 1_000 in `apps/server/src/local/promotionPreflight.ts`:33
 - `TOOL_LIFECYCLE_ITEM_TYPES`: constant [ in `packages/contracts/src/providerRuntime.ts`:105
 - `TOOL_MODEL`: constant "@cf/moonshotai/kimi-k2.6" in `.repos/alchemy-effect/packages/alchemy/test/Cloudflare/AiGateway/fixtures/LanguageModelWorker.ts`:17
 - `TOP_LIMIT`: constant 10 in `apps/server/src/diagnostics/TraceDiagnostics.ts`:66
@@ -3366,9 +3409,9 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `UPDATE_STATE_CHANNEL`: constant "desktop:update-state" in `apps/desktop/dist-electron/preload.cjs`:15
 - `UPDATE_STATE_CHANNEL`: constant "desktop:update-state" in `apps/desktop/src/ipc/channels.ts`:13
 - `UPDATE_TAILSCALE_SERVE_PATH_CHANNEL`: constant "desktop:update-tailscale-serve-path" in `apps/desktop/dist-electron/preload.cjs`:55
-- `UPDATE_TAILSCALE_SERVE_PATH_CHANNEL`: constant "desktop:update-tailscale-serve-path" in `apps/desktop/src/ipc/channels.ts`:54
+- `UPDATE_TAILSCALE_SERVE_PATH_CHANNEL`: constant "desktop:update-tailscale-serve-path" in `apps/desktop/src/ipc/channels.ts`:55
 - `UPDATE_TIMEOUT_MS`: constant 5 * 60_000 in `apps/server/src/provider/providerMaintenanceRunner.ts`:30
-- `UPSTREAM_CACHE_FILE`: constant "launcher-upstream-cache.json" in `scripts/local-desktop-launcher-run.ts`:66
+- `UPSTREAM_CACHE_FILE`: constant "launcher-upstream-cache.json" in `scripts/local-desktop-launcher-run.ts`:67
 - `UPSTREAM_REF`: constant "b39f943a634a6e7ba86c3d6e8cf6d5f35e612566" in `packages/effect-codex-app-server/scripts/generate.ts`:20
 - `URI_SCHEME_REGEX`: constant /^[A-Za-z][A-Za-z0-9+.-]*:/ in `apps/web/src/composer-editor-mentions.ts`:28
 - `URL_PATTERN`: constant /https?:\/\/[^\s"'`<>]+/g in `apps/web/src/terminal-links.ts`:39
@@ -3404,7 +3447,7 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `WCO_CLASS_NAME`: constant "wco" in `apps/web/src/lib/windowControlsOverlay.ts`:1
 - `WEB_ASSET_BRANDS`: constant [ in `scripts/apply-web-brand-assets.ts`:17
 - `WEB_ASSET_CHANNELS`: constant ["latest", "nightly"] as const in `scripts/lib/brand-assets.ts`:28
-- `WEB_DIST_RELATIVE_PATH`: constant NodePath.join("apps", "web", "dist") in `apps/server/src/local/promotionApply.ts`:52
+- `WEB_DIST_RELATIVE_PATH`: constant NodePath.join("apps", "web", "dist") in `apps/server/src/local/promotionApply.ts`:192
 - `WEB_ICON_SOURCE_PATHS_BY_BRAND`: constant { in `scripts/lib/brand-assets.ts`:48
 - `WEB_ICON_TARGET_FILENAMES`: constant { in `scripts/lib/brand-assets.ts`:41
 - `WEBSITE_ALIASES`: constant Config.string("WEBSITE_ALIASES").pipe( in `.repos/alchemy-effect/examples/aws-vite/alchemy.run.ts`:22
@@ -3433,15 +3476,18 @@ Generated from framework-oriented code heuristics. Treat this as factual extract
 - `WORKSPACE_FILES_MAX_OUTPUT_BYTES`: constant 120_000 in `apps/server/src/vcs/GitVcsDriverCore.ts`:50
 - `WORKSPACE_GIT_HARDENED_CONFIG_ARGS`: constant [ in `apps/server/src/vcs/GitVcsDriver.ts`:245
 - `WORKSPACE_INDEX_MAX_ENTRIES`: constant 25_000 in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:34
-- `WORKSPACE_ROOT`: constant resolveWorkspaceRootFromStagingWorktree(STAGING_WORKTREE) in `scripts/worktree-cli.ts`:27
+- `WORKSPACE_ROOT`: constant resolveWorkspaceRootFromStagingWorktree(STAGING_WORKTREE) in `scripts/worktree-cli.ts`:29
 - `WORKSPACE_SCAN_READDIR_CONCURRENCY`: constant 32 in `apps/server/src/workspace/Layers/WorkspaceEntries.ts`:35
 - `WORKTREE_BRANCH_PREFIX`: constant "t3code" in `packages/shared/src/git.ts`:13
-- `WORKTREE_CDP_BASE`: constant 9242 in `scripts/worktree-instance.ts`:18
-- `WORKTREE_CLI_SCRIPT`: constant NodePath.resolve( in `apps/server/src/local/promotionPreflight.ts`:33
-- `WORKTREE_CONVEX_CLOUD_BASE`: constant 3230 in `scripts/worktree-instance.ts`:17
-- `WORKTREE_REGISTRY_RELATIVE`: constant "worktrees.json" in `scripts/worktree-instance.ts`:19
-- `WORKTREE_SLUG_PATTERN`: constant /^[a-z0-9][a-z0-9-]*$/ in `scripts/worktree-instance.ts`:16
-- `WS_METHODS`: constant { in `packages/contracts/src/rpc.ts`:129
+- `WORKTREE_CDP_BASE`: constant 9242 in `scripts/worktree-instance.ts`:21
+- `WORKTREE_CLI_RELATIVE_PATH`: constant NodePath.join("scripts", "worktree-cli.ts") in `apps/server/src/local/promotionApply.ts`:60
+- `WORKTREE_CONVEX_CLOUD_BASE`: constant 3230 in `scripts/worktree-instance.ts`:20
+- `WORKTREE_DEV_INSTANCE_PREFIX`: constant "t3code-local-worktree-" in `apps/server/src/local/promotionApply.ts`:61
+- `WORKTREE_INSTANCE_ROLES`: constant ["main", "staging"] as const in `scripts/worktree-instance.ts`:23
+- `WORKTREE_REGISTRY_RELATIVE`: constant "worktrees.json" in `scripts/worktree-instance.ts`:22
+- `WORKTREE_REGISTRY_RELATIVE_PATH`: constant NodePath.join( in `apps/server/src/local/promotionApply.ts`:62
+- `WORKTREE_SLUG_PATTERN`: constant /^[a-z0-9][a-z0-9-]*$/ in `scripts/worktree-instance.ts`:19
+- `WS_METHODS`: constant { in `packages/contracts/src/rpc.ts`:141
 - `WS_RECONNECT_BACKOFF_FACTOR`: constant DEFAULT_RECONNECT_BACKOFF.backoffFactor in `apps/web/src/rpc/wsConnectionState.ts`:11
 - `WS_RECONNECT_INITIAL_DELAY_MS`: constant DEFAULT_RECONNECT_BACKOFF.initialDelayMs in `apps/web/src/rpc/wsConnectionState.ts`:10
 - `WS_RECONNECT_MAX_ATTEMPTS`: constant WS_RECONNECT_MAX_RETRIES + 1 in `apps/web/src/rpc/wsConnectionState.ts`:14
