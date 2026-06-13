@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Run SQLite → Convex import for the staging T3CODE_HOME (orchestration_events).
-# Requires: staging app stopped, Convex local up with staging data dir.
+# Run SQLite → Convex import for staging orchestration_events.
+# Requires: staging app stopped, Convex local up with staging worktree data dir.
 set -euo pipefail
 
 WORKSPACE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-STAGING_HOME="${T3CODE_HOME:-$HOME/.local/share/t3code-local/staging}"
 STAGING_WORKTREE="$WORKSPACE/t3code-staging"
+STAGING_HOME="${T3CODE_HOME:-$HOME/.local/share/t3code-local/staging}"
 DB_PATH="$STAGING_HOME/dev/state.sqlite"
+STAGING_CONVEX_DATA_DIR="$STAGING_WORKTREE/.local/convex"
 
 export T3CODE_HOME="$STAGING_HOME"
-export T3CODE_CONVEX_DATA_DIR="$STAGING_HOME/convex"
+export T3CODE_CONVEX_DATA_DIR="$STAGING_CONVEX_DATA_DIR"
+export T3CODE_LOCAL_STAGING_WORKTREE="$STAGING_WORKTREE"
 
 cd "$STAGING_WORKTREE"
 

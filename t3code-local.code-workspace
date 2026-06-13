@@ -1,12 +1,19 @@
 {
   "folders": [
-    {
-      "name": "T3 Code Local",
-      "path": "."
-    }
+    { "name": "T3 Code Local (workspace)", "path": "." },
+    { "name": "T3 Code Main", "path": "t3code" },
+    { "name": "T3 Code Staging", "path": "t3code-staging" }
   ],
   "settings": {
-    "fallow.configPath": "${workspaceFolder}/.fallowrc.jsonc",
+    "git.enabled": true,
+    "git.autoRepositoryDetection": true,
+    "git.detectWorktrees": true,
+    "git.detectWorktreesLimit": 10,
+    "git.openRepositoryInParentFolders": "always",
+    "git.scanRepositories": [".", "t3code", "t3code-staging"],
+    "git.repositoryScanMaxDepth": 2,
+    "scm.repositories.visible": 10,
+    "fallow.configPath": "${workspaceFolder:T3 Code Local (workspace)}/.fallowrc.jsonc",
     "editor.formatOnSave": true
   },
   "extensions": {

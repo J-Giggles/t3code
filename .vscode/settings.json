@@ -1,3 +1,11 @@
 {
+  "git.enabled": true,
+  "git.autoRepositoryDetection": true,
+  "git.detectWorktrees": true,
+  "git.detectWorktreesLimit": 10,
+  "git.openRepositoryInParentFolders": "always",
+  "git.scanRepositories": [".", "t3code", "t3code-staging"],
+  "git.repositoryScanMaxDepth": 2,
+  "scm.repositories.visible": 10,
   "fallow.configPath": "${workspaceFolder}/.fallowrc.jsonc"
 }

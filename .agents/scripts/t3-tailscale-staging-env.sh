@@ -81,19 +81,26 @@ read_runtime_port() {
   fi
 }
 
-write_desktop_settings() {
-  local settings_file="$1"
-  mkdir -p "$(dirname "$settings_file")"
-  # Path-based dual routing is managed by this script; avoid each app overwriting Serve on startup.
-  printf '%s\n' '{"serverExposureMode":"network-accessible","tailscaleServeEnabled":false}' >"$settings_file"
-  echo "Wrote $settings_file (network-accessible; Tailscale Serve managed externally)"
-}
-
 normalize_serve_path() {
   local raw="$1"
   local path="${raw#/}"
   path="${path%/}"
   echo "/${path}"
+}
+
+write_desktop_settings() {
+  local settings_file="$1"
+  local serve_path="$2"
+  mkdir -p "$(dirname "$settings_file")"
+  # Path-based dual routing is managed by this script; avoid each app overwriting Serve on startup.
+  jq -n \
+    --arg servePath "$(normalize_serve_path "$serve_path")" \
+    '{
+      serverExposureMode: "network-accessible",
+      tailscaleServeEnabled: false,
+      tailscaleServePath: $servePath
+    }' >"$settings_file"
+  echo "Wrote $settings_file (network-accessible; path ${serve_path}; Tailscale Serve managed externally)"
 }
 
 https_base_url() {
@@ -198,11 +205,73 @@ probe_http_url() {
   return 1
 }
 
+probe_public_path_meta() {
+  local label="$1"
+  local base_url="$2"
+  local expected_prefix="$3"
+  local trimmed="${base_url%/}"
+  local body body_file
+  body_file="$(mktemp -t t3-tailscale-meta-probe.XXXXXX)"
+  local -a curl_args=(
+    -sS
+    --noproxy '*'
+    -o "$body_file"
+    --connect-timeout 3
+    --max-time 10
+  )
+  if command -v ip >/dev/null 2>&1 && ip link show tailscale0 >/dev/null 2>&1; then
+    curl_args+=(--interface tailscale0)
+  fi
+  if ! curl "${curl_args[@]}" "$trimmed/" >/dev/null 2>&1; then
+    rm -f "$body_file"
+    echo "FAIL $label $base_url (html fetch failed)"
+    return 1
+  fi
+  body="$(head -c 4000 "$body_file" 2>/dev/null || true)"
+  rm -f "$body_file"
+  local normalized
+  normalized="$(normalize_serve_path "$expected_prefix")"
+  if [[ "$body" == *"name=\"t3code-public-path-prefix\""* && "$body" == *"content=\"${normalized}\""* ]]; then
+    echo "OK  $label $base_url (public path meta ${normalized})"
+    return 0
+  fi
+  echo "FAIL $label $base_url (missing public path meta ${normalized})"
+  return 1
+}
+
+probe_local_stack_health() {
+  local label="$1"
+  local runtime_file="$2"
+  local port body body_file
+  port="$(read_runtime_port "$runtime_file")"
+  if [[ -z "$port" ]]; then
+    echo "SKIP $label stack-health (no server-runtime.json port)"
+    return 0
+  fi
+  body_file="$(mktemp -t t3-stack-health-probe.XXXXXX)"
+  body="$(curl -sS --connect-timeout 2 --max-time 8 -o "$body_file" "http://127.0.0.1:${port}/api/local/stack-health" 2>/dev/null || true)"
+  if [[ -s "$body_file" ]] && grep -q '"checkedAt"' "$body_file" 2>/dev/null; then
+    echo "OK  $label stack-health http://127.0.0.1:${port}/api/local/stack-health"
+    rm -f "$body_file"
+    return 0
+  fi
+  rm -f "$body_file"
+  echo "FAIL $label stack-health http://127.0.0.1:${port}/api/local/stack-health"
+  return 1
+}
+
 probe_dual_urls_once() {
   local dns="$1"
   local failures=0
-  probe_http_url "main" "$(https_base_url "$dns" "$MAIN_SERVE_PATH")" || failures=$((failures + 1))
-  probe_http_url "staging" "$(https_base_url "$dns" "$STAGING_SERVE_PATH")" || failures=$((failures + 1))
+  local main_url staging_url
+  main_url="$(https_base_url "$dns" "$MAIN_SERVE_PATH")"
+  staging_url="$(https_base_url "$dns" "$STAGING_SERVE_PATH")"
+  probe_http_url "main" "$main_url" || failures=$((failures + 1))
+  probe_http_url "staging" "$staging_url" || failures=$((failures + 1))
+  probe_public_path_meta "main-meta" "$main_url" "$MAIN_SERVE_PATH" || failures=$((failures + 1))
+  probe_public_path_meta "staging-meta" "$staging_url" "$STAGING_SERVE_PATH" || failures=$((failures + 1))
+  probe_local_stack_health "main" "$MAIN_RUNTIME" || failures=$((failures + 1))
+  probe_local_stack_health "staging" "$STAGING_RUNTIME" || failures=$((failures + 1))
   [[ "$failures" -eq 0 ]]
 }
 
@@ -277,8 +346,8 @@ print_pairing_help() {
 cmd_both() {
   require_cmds
 
-  write_desktop_settings "$MAIN_SETTINGS"
-  write_desktop_settings "$STAGING_SETTINGS"
+  write_desktop_settings "$MAIN_SETTINGS" "$MAIN_SERVE_PATH"
+  write_desktop_settings "$STAGING_SETTINGS" "$STAGING_SERVE_PATH"
 
   if [[ "$NO_LAUNCH" != "1" ]]; then
     echo "Relaunching main…"
@@ -327,7 +396,7 @@ cmd_both() {
 cmd_up() {
   require_cmds
 
-  write_desktop_settings "$STAGING_SETTINGS"
+  write_desktop_settings "$STAGING_SETTINGS" "${UP_SERVE_PATH:-$STAGING_SERVE_PATH}"
 
   if [[ "$NO_LAUNCH" != "1" ]]; then
     echo "Relaunching staging…"
@@ -379,11 +448,19 @@ cmd_probe() {
 
   while [[ "$attempt" -le "$repeat" ]]; do
     echo "--- probe attempt ${attempt}/${repeat} ---"
-    if [[ -z "${PROBE_VARIANT:-}" || "$PROBE_VARIANT" == "main" ]]; then
-      probe_http_url "main" "$(https_base_url "$dns" "$MAIN_SERVE_PATH")" || failures=$((failures + 1))
-    fi
-    if [[ -z "${PROBE_VARIANT:-}" || "$PROBE_VARIANT" == "staging" ]]; then
-      probe_http_url "staging" "$(https_base_url "$dns" "$STAGING_SERVE_PATH")" || failures=$((failures + 1))
+    if [[ -z "${PROBE_VARIANT:-}" ]]; then
+      probe_dual_urls_once "$dns" || failures=$((failures + 1))
+    else
+      local variant_url variant_path
+      if [[ "$PROBE_VARIANT" == "main" ]]; then
+        variant_path="$MAIN_SERVE_PATH"
+      else
+        variant_path="$STAGING_SERVE_PATH"
+      fi
+      variant_url="$(https_base_url "$dns" "$variant_path")"
+      probe_http_url "$PROBE_VARIANT" "$variant_url" || failures=$((failures + 1))
+      probe_public_path_meta "${PROBE_VARIANT}-meta" "$variant_url" "$variant_path" ||
+        failures=$((failures + 1))
     fi
     if [[ "$attempt" -ge "$repeat" ]]; then
       break

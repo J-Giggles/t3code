@@ -28,7 +28,7 @@ architecture:
 
 ## Layout
 
-- `t3code/` — **main** worktree (live coding app)
+- `t3code-main/` — **main** worktree (live coding app)
 - `t3code-staging/` — **staging** worktree (T3 Code product development)
 - `.agents/scripts/` — agent launch, verify, and context refresh
 - `.cursor/rules/` — workspace rules for Cursor agents

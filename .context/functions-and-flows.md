@@ -19,6 +19,17 @@ Generated from existing `.context` artifacts. Treat this as a reviewable draft t
 - Confirm which names are exact exported/runtime functions versus normalized summaries.
 - Add the high-signal end-to-end flows that connect inputs, state, actions, and side effects.
 
+## Config
+
+### Exact Names Found
+
+- `serverSettings` from `docs.md`
+
+### Review Notes
+
+- Confirm which names are exact exported/runtime functions versus normalized summaries.
+- Add the high-signal end-to-end flows that connect inputs, state, actions, and side effects.
+
 ## Fallow
 
 ### Normalized Actions
@@ -35,6 +46,29 @@ Generated from existing `.context` artifacts. Treat this as a reviewable draft t
 ### Normalized Actions
 
 - Seen: `latest.log` from `docs.md`
+
+### Review Notes
+
+- Confirm which names are exact exported/runtime functions versus normalized summaries.
+- Add the high-signal end-to-end flows that connect inputs, state, actions, and side effects.
+
+## State
+
+### Normalized Actions
+
+- Seen: `state.sqlite` from `docs.md`
+
+### Review Notes
+
+- Confirm which names are exact exported/runtime functions versus normalized summaries.
+- Add the high-signal end-to-end flows that connect inputs, state, actions, and side effects.
+
+## Tool
+
+### Normalized Actions
+
+- Seen: `tool.completed` from `docs.md`
+- Seen: `tool.updated` from `docs.md`
 
 ### Review Notes
 

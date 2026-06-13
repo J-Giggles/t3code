@@ -4,7 +4,7 @@ Omarchy workspace for dogfooding [T3 Code](https://github.com/pingdotgg/t3code) 
 
 | Path | Branch | Role |
 |------|--------|------|
-| `t3code/` | `main` | Live coding app (promotion target) |
+| `t3code-main/` | `main` | Live coding app (promotion target) |
 | `t3code-staging/` | `staging` | Product development |
 
 This repository holds the **workspace shell** — launch scripts, Cursor rules, agent automation, and CCS context — not the T3 Code product source. Product code lives in [J-Giggles/t3code](https://github.com/J-Giggles/t3code) and is checked out into the worktree directories below.
@@ -15,11 +15,11 @@ This repository holds the **workspace shell** — launch scripts, Cursor rules, 
 git clone git@github.com:J-Giggles/t3code-local.git ~/code/t3code-local
 cd ~/code/t3code-local
 
-# Attach t3code + t3code-staging worktrees (clones J-Giggles/t3code)
+# Attach t3code-main + t3code-staging worktrees (clones J-Giggles/t3code)
 ./.agents/scripts/bootstrap-worktrees.sh
 
-cd t3code-staging && bun install
-cd t3code-staging && bun run install:local-launchers
+cd t3code-staging && pnpm install
+cd t3code-staging && pnpm run install:local-launchers
 
 cd ~/code/t3code-local
 pnpm run start:dev    # main + staging together
@@ -36,11 +36,11 @@ t3code-local/          ← this repo
 ├── .cursor/rules/     ← agent workflow rules
 ├── .context/          ← Codebase Context Specification (CCS)
 ├── AGENTS.md
-├── t3code/            ← git worktree [main]   (ignored — bootstrap creates it)
+├── t3code-main/       ← git worktree [main]   (ignored — bootstrap creates it)
 └── t3code-staging/    ← git worktree [staging] (ignored — bootstrap creates it)
 ```
 
-## Git remotes (inside `t3code/`)
+## Git remotes (inside `t3code-main/`)
 
 After bootstrap, the product repo uses:
 
@@ -70,13 +70,13 @@ Agents (non-interactive, no Ghostty prompt):
 ./.agents/scripts/t3-verify.sh staging
 ```
 
-Electron CDP when `T3CODE_AGENT_AUTOMATION=1`: main **9222**, staging **9232**.
+Electron CDP when `T3CODE_AGENT_AUTOMATION=1`: main **9224**, staging **9232**.
 
 ## Staging → test → promote
 
 1. Implement on `t3code-staging/` (`staging` branch)
 2. Verify with `./.agents/scripts/t3-verify.sh staging`
-3. Merge `staging` → `main` in the `t3code/` worktree when ready (in-app toast or `git merge staging`)
+3. Merge `staging` → `main` in the `t3code-main/` worktree when ready (in-app toast or `git merge staging`)
 
 See `AGENTS.md` and `.cursor/rules/staging-implement-test-promote.mdc` for the full agent workflow.
 

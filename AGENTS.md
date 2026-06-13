@@ -6,8 +6,40 @@ This directory is the **workspace root** for dogfooding two T3 Code worktrees on
 
 | Role | Path | Branch |
 |------|------|--------|
-| Live coding app | `t3code/` | `main` |
+| Live coding app | `t3code-main/` | `main` |
 | Product development | `t3code-staging/` | `staging` |
+
+The `t3code/` directory is the legacy **primary git object store** for this repo (linked worktrees attach to it). Do not edit or launch from `t3code/` — use `t3code-main/` for the live app.
+
+### Detect and protect the running main instance
+
+Before improving T3 Code itself (product code, launchers, agents, workflows), first identify which worktree is currently running the **main/live** app. The live main worktree is **`t3code-main/`** on branch **`main`**.
+
+Detect the running main worktree from active processes and runtime files before editing:
+
+```bash
+ps -eo pid,ppid,etime,cmd | rg '/home/jgigg/code/t3code-local/[^ ]+/(apps/server|apps/desktop|node_modules|scripts/dev-runner)|--t3code-dev-root=/home/jgigg/code/t3code-local/[^ ]+'
+find ~/.local/share/t3code-local -maxdepth 3 -type f \( -name 'agent-automation.json' -o -name 'server-runtime.json' -o -name 'main-worktree-runtime-snapshot.json' \) -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort
+```
+
+Treat any worktree currently running as the main/live app (`T3CODE_DESKTOP_VARIANT=local-main`, `T3CODE_DEV_INSTANCE=t3code-local-main`, main ports, or the active `/t3code-main/` Tailscale route) as protected. **Do not edit, restart, relaunch, kill, merge into, promote, or change generated launchers/env for that detected running main worktree** unless the user explicitly asks in the current turn.
+
+When improving T3 Code itself and no alternate main worktree is explicitly requested, work **only** in `t3code-staging/` on branch `staging`. **`t3code-main/`** is the protected live main worktree; product edits must stay in staging unless the user explicitly redirects.
+
+**Dev mode (`T3code Dev`) runs main and staging together** — that does not make main fair game. The main half is whichever worktree is detected as the live `t3code-local-main` app. Leave it running and unchanged: no file edits under the detected main worktree, no restarts, no relaunch of Dev mode, and no `start:main` / `t3-launch.sh main` cycles to test your work. Verify and interact with the **staging half only** (`t3code-staging`, `t3code-local-staging`, `t3-launch.sh staging`) unless the user explicitly redirects.
+
+The live main instance is the user's running session — often hosting active Cursor agent work. **Do not** stop, restart, relaunch, or kill main (including via Dev mode teardown) to verify or test staging changes. Killing or restarting main terminates in-flight agent processes even when staging keeps running.
+
+### Agent session continuity (live main + staging dev)
+
+| Goal | Safe launcher | Notes |
+|------|----------------|-------|
+| Live agents on other projects | **T3code** (`start:main`) | Keep main running; never relaunch Dev while agents are active |
+| Edit staging product code | **T3code Staging** (`start:staging`) | Solo staging relaunch never tears down main |
+| Main + staging side by side | **T3code Dev** (`start:dev`) | **Dev attach:** if main is healthy, relaunch keeps main and starts staging only (`T3CODE_DEV_ATTACH_MAIN=1`, auto when `T3CODE_AGENT_AUTOMATION=1`) |
+| Force full Dev kill | `T3CODE_DEV_FORCE_FULL_RELAUNCH=1` | Stops both stacks before Turbo (old behavior) |
+
+On **main** (desktop or Tailscale mobile via `/t3code-main/`): promotion toast is **Promote & Relaunch Main** — merges staging, relaunches main with updates; Tailscale Serve stays up and mobile reconnects when the server is back. On **staging**: **Promote & Relaunch Staging** merges and relaunches staging only (main agents keep running).
 
 ## Launch contract
 
@@ -19,7 +51,7 @@ Launch must **always** work from **three entry points**, with the **same three m
 | **Dev** | Main + staging together, with logs | **T3code Dev** | `t3code-local-dev` / `t3code dev` |
 | **Staging** | Staging only (product dev) | **T3code Staging** | `t3code-local-staging` |
 
-Dev mode opens a startup terminal that shows log locations (`~/.local/share/t3code-local/{main|staging}/logs/latest.log`) and runs both instances side by side.
+Dev mode opens a startup terminal that shows log locations (`~/.local/share/t3code-local/{t3code-main|staging}/logs/latest.log`) and runs both instances side by side.
 
 ### 1. Omarchy apps launcher (Walker)
 
@@ -27,7 +59,7 @@ Use the three Walker entries above. One-time install/regenerate:
 
 ```bash
 cd ~/code/t3code-local && pnpm run install:launchers
-# or: cd t3code-staging && bun run install:local-launchers
+# or: cd t3code-staging && pnpm run install:local-launchers
 ```
 
 ### 2. Workspace root (`t3code-local/`)
@@ -41,25 +73,25 @@ pnpm run start:dev       # Dev — main + staging + logs
 # aliases: pnpm run t3code | t3code:staging | t3code:dev
 ```
 
-### 3. Either worktree (`t3code/` or `t3code-staging/`)
+### 3. Either worktree (`t3code-main/` or `t3code-staging/`)
 
 The same three scripts work from **both** worktree roots (they resolve back to the shared launcher):
 
 ```bash
-cd ~/code/t3code-local/t3code          && pnpm run start:main
-cd ~/code/t3code-local/t3code          && pnpm run start:staging
-cd ~/code/t3code-local/t3code          && pnpm run start:dev
+cd ~/code/t3code-local/t3code-main      && pnpm run start:main
+cd ~/code/t3code-local/t3code-main      && pnpm run start:staging
+cd ~/code/t3code-local/t3code-main      && pnpm run start:dev
 
-cd ~/code/t3code-local/t3code-staging  && pnpm run start:main
-cd ~/code/t3code-local/t3code-staging  && pnpm run start:staging
-cd ~/code/t3code-local/t3code-staging  && pnpm run start:dev
+cd ~/code/t3code-local/t3code-staging   && pnpm run start:main
+cd ~/code/t3code-local/t3code-staging   && pnpm run start:staging
+cd ~/code/t3code-local/t3code-staging   && pnpm run start:dev
 ```
 
-`bun run start:*` works the same everywhere. When changing launcher behavior, keep all three entry points and all three modes working; regenerate launchers after edits to `local-desktop-launchers.ts`.
+`pnpm run start:*` works the same everywhere. When changing launcher behavior, keep all three entry points and all three modes working; regenerate launchers after edits to `local-desktop-launchers.ts`.
 
 **Agents** (non-interactive, no Ghostty startup terminal): `pnpm run launch` inside a worktree, or `./.agents/scripts/t3-launch.sh main|staging` from workspace root.
 
-Product changes default to **`t3code-staging`**. See `t3code/.agents/rules/t3code-local-workflow.md` and `t3code/AGENTS.md` inside each worktree.
+Product changes default to **`t3code-staging`**. See `t3code-main/.agents/rules/t3code-local-workflow.md` and `t3code-main/AGENTS.md` inside each worktree.
 
 ### Before staging work
 
@@ -93,7 +125,7 @@ See **Launch contract** above for Walker/desktop IDs and the three modes. Runtim
 After changing launcher behavior in the repo, refresh from **staging**:
 
 ```bash
-cd t3code-staging && bun run install:local-launchers
+cd t3code-staging && pnpm run install:local-launchers
 ```
 
 ## Agent project context (CCS)
@@ -152,4 +184,4 @@ Cursor runs `.cursor/hooks/session-start.sh` when you open this workspace. It re
 | `t3code-local-workspace.mdc` | Worktrees, launch, verify, staging-first |
 | `t3code-local-project-context.mdc` | When/how to run context generators |
 
-Worktree-specific rules remain under `t3code/.cursor/rules/` and `t3code-staging/.cursor/rules/`.
+Worktree-specific rules remain under `t3code-main/.cursor/rules/` and `t3code-staging/.cursor/rules/`.

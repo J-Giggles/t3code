@@ -44,7 +44,7 @@ fi
 
 case "$VARIANT" in
   main)
-    WORKTREE="$ROOT/t3code"
+    WORKTREE="$ROOT/t3code-main"
     DEV_INSTANCE="t3code-local-main"
     ;;
   staging)

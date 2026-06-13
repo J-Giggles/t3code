@@ -8,7 +8,7 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 T3_REPO="${T3CODE_REPO:-git@github.com:J-Giggles/t3code.git}"
 T3_UPSTREAM="${T3CODE_UPSTREAM:-git@github.com:pingdotgg/t3code.git}"
 
-MAIN_DIR="$ROOT/t3code"
+MAIN_DIR="$ROOT/t3code-main"
 STAGING_DIR="$ROOT/t3code-staging"
 
 echo "Workspace root: $ROOT"
@@ -20,7 +20,7 @@ if [[ ! -d "$MAIN_DIR/.git" && -d "$MAIN_DIR" ]]; then
 fi
 
 if [[ ! -d "$MAIN_DIR/.git" ]]; then
-  echo "Cloning primary worktree into t3code/ ..."
+  echo "Cloning primary worktree into t3code-main/ ..."
   git clone "$T3_REPO" "$MAIN_DIR"
 fi
 
@@ -58,7 +58,7 @@ Worktrees ready:
 
 Next steps:
   cd "$STAGING_DIR" && bun install
-  cd "$STAGING_DIR" && bun run install:local-launchers
+  cd "$STAGING_DIR" && pnpm run install:local-launchers
   cd "$ROOT" && pnpm run start:dev
 
 EOF

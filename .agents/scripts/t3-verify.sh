@@ -8,7 +8,9 @@ T3CODE_LOCAL_WORKSPACE="${T3CODE_LOCAL_WORKSPACE:-$(cd "$SCRIPT_DIR/../.." && pw
 VARIANT="${1:-}"
 SCREENSHOT_PATH=""
 WAIT_ONLY=""
+CHECK_CONVEX=""
 MAX_WAIT_SEC=180
+CONVEX_MAX_WAIT_SEC=300
 
 shift || true
 while [[ $# -gt 0 ]]; do
@@ -21,6 +23,10 @@ while [[ $# -gt 0 ]]; do
       WAIT_ONLY=1
       shift
       ;;
+    --convex)
+      CHECK_CONVEX=1
+      shift
+      ;;
     *)
       echo "Unknown arg: $1" >&2
       exit 1
@@ -29,24 +35,48 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "$VARIANT" != "main" && "$VARIANT" != "staging" ]]; then
-  echo "Usage: $0 main|staging [--screenshot path] [--wait-only]" >&2
+  echo "Usage: $0 main|staging [--screenshot path] [--wait-only] [--convex]" >&2
   exit 1
 fi
 
 case "$VARIANT" in
   main)
     DEV_INSTANCE="t3code-local-main"
-    WM_CLASS="t3code-local-main"
-    T3_HOME="$HOME/.local/share/t3code-local/main"
-    WORKTREE="$T3CODE_LOCAL_WORKSPACE/t3code"
+    WM_CLASS="t3code-local-t3code-main"
+    T3_HOME="$HOME/.local/share/t3code-local/t3code-main"
+    WORKTREE="$T3CODE_LOCAL_WORKSPACE/t3code-main"
+    CONVEX_DATA_DIR="$WORKTREE/.local/convex"
+    CONVEX_URL="http://127.0.0.1:3210"
     ;;
   staging)
     DEV_INSTANCE="t3code-local-staging"
     WM_CLASS="t3code-local-staging"
     T3_HOME="$HOME/.local/share/t3code-local/staging"
     WORKTREE="$T3CODE_LOCAL_WORKSPACE/t3code-staging"
+    CONVEX_DATA_DIR="$WORKTREE/.local/convex"
+    CONVEX_URL="http://127.0.0.1:3220"
     ;;
 esac
+
+verify_convex_health() {
+  local status_script="$WORKTREE/packages/convex/scripts/convex-status.mjs"
+  if [[ ! -f "$status_script" ]]; then
+    echo "convex_status=missing_script" >&2
+    return 1
+  fi
+
+  echo "convex_data_dir=$CONVEX_DATA_DIR"
+  echo "convex_url=$CONVEX_URL"
+
+  local deadline=$((SECONDS + CONVEX_MAX_WAIT_SEC))
+  until node "$status_script" --data-dir "$CONVEX_DATA_DIR" --url "$CONVEX_URL"; do
+    if (( SECONDS >= deadline )); then
+      echo "Timed out waiting for Convex at $CONVEX_URL" >&2
+      return 1
+    fi
+    sleep 5
+  done
+}
 
 BASE_WEB_PORT=5733
 
@@ -131,6 +161,11 @@ until curl -sf -o /dev/null --max-time 2 "$VITE_URL" 2>/dev/null; do
 done
 
 echo "vite_ready=yes"
+
+if [[ -n "$CHECK_CONVEX" ]]; then
+  verify_convex_health
+  echo "convex_ready=yes"
+fi
 
 if [[ -n "$WAIT_ONLY" ]]; then
   exit 0

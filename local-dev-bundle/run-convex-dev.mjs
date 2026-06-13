@@ -14,7 +14,13 @@ const workspaceRoot = NodePath.resolve(NodePath.dirname(fileURLToPath(import.met
 const stagingWorktree = NodePath.join(workspaceRoot, "t3code-staging");
 const convexDevScript = NodePath.join(stagingWorktree, "packages/convex/scripts/convex-dev.mjs");
 
-const stackEnv = loadStackEnv("convex");
+const stackName = process.argv[2]?.trim();
+if (stackName !== "main-convex" && stackName !== "staging-convex") {
+  console.error("Usage: run-convex-dev.mjs main-convex|staging-convex");
+  process.exit(1);
+}
+
+const stackEnv = loadStackEnv(stackName);
 const convexDataDir = stackEnv.T3CODE_CONVEX_DATA_DIR?.trim();
 const sharedConvexEnv = convexDataDir ? loadSharedConvexDeploymentEnv(convexDataDir) : {};
 const childEnv = withLocalAnonymousConvexCliEnv({
