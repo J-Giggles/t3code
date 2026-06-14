@@ -19,6 +19,12 @@
     "kill": "node t3code-staging/scripts/kill-local-desktop-stacks.ts all",
     "kill:main": "node t3code-staging/scripts/kill-local-desktop-stacks.ts main",
     "kill:staging": "node t3code-staging/scripts/kill-local-desktop-stacks.ts staging",
-    "kill:dev": "node t3code-staging/scripts/kill-local-desktop-stacks.ts dev"
+    "kill:dev": "node t3code-staging/scripts/kill-local-desktop-stacks.ts dev",
+    "apps": "bash .agents/scripts/t3-convex-docker.sh open t3code-main",
+    "pod:up": "bash .agents/scripts/t3-convex-docker.sh start-all",
+    "pod:open": "bash .agents/scripts/t3-convex-docker.sh open all",
+    "pod:open:main": "bash .agents/scripts/t3-convex-docker.sh open t3code-main",
+    "pod:down": "bash .agents/scripts/t3-convex-docker.sh down all",
+    "pod:health": "bash .agents/scripts/t3-convex-docker.sh health all"
   }
 }

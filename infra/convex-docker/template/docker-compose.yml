@@ -1,0 +1,277 @@
+# Per-worktree T3 pod. Rendered by provision.mjs into .generated/{slug}/docker-compose.yml
+# LOCAL_ONLY=1 uses bridge network; otherwise tailscale owns the network namespace.
+
+x-pod-restart: &pod_restart
+  restart: unless-stopped
+
+services:
+  tailscale:
+    image: tailscale/tailscale:${TAILSCALE_REV:-latest}
+    hostname: ${TS_HOSTNAME}
+    profiles: ["tailscale"]
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+      - ./entrypoint-tailscale.sh:/entrypoint-tailscale.sh:ro
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:---ssh --accept-routes}
+      TS_HOSTNAME: ${TS_HOSTNAME}
+      CADDY_PORT: ${CADDY_PORT:-8080}
+      WEB_PORT: ${WEB_PORT:-6657}
+      SERVER_PORT: ${SERVER_PORT:-14697}
+      DASHBOARD_PORT: ${DASHBOARD_PORT:-6791}
+      CONVEX_PORT: ${PORT:-3210}
+      NOVNC_PORT: ${NOVNC_PORT:-6080}
+      TAILSCALE_SERVE: ${TAILSCALE_SERVE:-1}
+    entrypoint: ["/bin/sh", "/entrypoint-tailscale.sh"]
+    healthcheck:
+      test: ["CMD", "tailscale", "status", "--json"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  local-net:
+    image: alpine:3.21
+    profiles: ["local"]
+    command: ["sleep", "infinity"]
+    ports:
+      - "${PORT:-3210}:3210"
+      - "${SITE_PROXY_PORT:-3211}:3211"
+      - "${DASHBOARD_PORT:-6791}:6791"
+      - "${WEB_PORT:-6657}:${WEB_PORT:-6657}"
+      - "${SERVER_PORT:-14697}:${SERVER_PORT:-14697}"
+      - "${CADDY_PORT:-8080}:8080"
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 5s
+
+  postgres:
+    image: postgres:17
+    <<: *pod_restart
+    network_mode: ${POD_NETWORK_MODE:-service:tailscale}
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: false
+      local-net:
+        condition: service_healthy
+        required: false
+    environment:
+      POSTGRES_USER: convex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      CONVEX_DB_NAME: ${CONVEX_DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/01-init-convex-db.sh:ro
+    healthcheck:
+      # Default db name for user "convex" is "convex", but provision creates CONVEX_DB_NAME (e.g. t3code_main).
+      test: ["CMD-SHELL", "pg_isready -U convex -d \"${CONVEX_DB_NAME:-postgres}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    image: ghcr.io/get-convex/convex-backend:${CONVEX_REV:-latest}
+    <<: *pod_restart
+    network_mode: ${POD_NETWORK_MODE:-service:tailscale}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    environment:
+      POSTGRES_URL: postgresql://convex:${POSTGRES_PASSWORD}@127.0.0.1:5432
+      DO_NOT_REQUIRE_SSL: "1"
+      INSTANCE_NAME: ${INSTANCE_NAME}
+      INSTANCE_SECRET: ${INSTANCE_SECRET}
+      PORT: "3210"
+      SITE_PROXY_PORT: "3211"
+      CONVEX_CLOUD_ORIGIN: ${CONVEX_CLOUD_ORIGIN}
+      CONVEX_SITE_ORIGIN: ${CONVEX_SITE_ORIGIN}
+      NEXT_PUBLIC_DEPLOYMENT_URL: ${CONVEX_CLOUD_ORIGIN}
+      DISABLE_BEACON: "true"
+      DISABLE_METRICS_ENDPOINT: "true"
+      DOCUMENT_RETENTION_DELAY: "172800"
+      RUST_LOG: info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3210/version"]
+      interval: 5s
+      start_period: 20s
+      retries: 24
+
+  dashboard:
+    image: ghcr.io/get-convex/convex-dashboard:${CONVEX_REV:-latest}
+    <<: *pod_restart
+    network_mode: ${POD_NETWORK_MODE:-service:tailscale}
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_DEPLOYMENT_URL: ${CONVEX_CLOUD_ORIGIN}
+      PORT: "6791"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:6791"]
+      interval: 10s
+      start_period: 15s
+      retries: 12
+
+  caddy:
+    image: caddy:2.9-alpine
+    <<: *pod_restart
+    network_mode: ${POD_NETWORK_MODE:-service:tailscale}
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    environment:
+      WEB_PORT: ${WEB_PORT:-6657}
+      SERVER_PORT: ${SERVER_PORT:-14697}
+      DASHBOARD_PORT: ${DASHBOARD_PORT:-6791}
+      CONVEX_PORT: ${PORT:-3210}
+      NOVNC_PORT: ${NOVNC_PORT:-6080}
+      CDP_PORT: ${CDP_PORT:-9232}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      retries: 6
+
+  t3-stack:
+    build:
+      context: ${WORKTREE_PATH}
+      dockerfile: ${TEMPLATE_DIR}/Dockerfile.t3-pod
+      args:
+        BASE_IMAGE: ${POD_BASE_IMAGE:-node:24-bookworm-slim}
+    <<: *pod_restart
+    network_mode: ${POD_NETWORK_MODE:-service:tailscale}
+    depends_on:
+      backend:
+        condition: service_healthy
+    shm_size: "2gb"
+    working_dir: /workspace/t3code
+    volumes:
+      - ${WORKTREE_PATH}:/workspace/t3code:rw
+      - ${CODE_ROOT}:/workspace/code:rw
+      - ${MANIFEST_WORKTREE_PATH}/.local/convex-docker/admin.key:/pod-secrets/admin.key:ro
+      - t3code_home:/data/t3code-home
+      - provider_config:/data/provider-config
+      - provider_cache:/data/provider-cache
+      - ${TEMPLATE_DIR}/scripts:/opt/pod-scripts:ro
+    environment:
+      T3CODE_HOME: /data/t3code-home
+      T3CODE_CONTAINER_MODE: "1"
+      T3CODE_CONVEX_DOCKER: "1"
+      T3CODE_PERSISTENCE: convex
+      T3CODE_DESKTOP_VARIANT: ${T3CODE_DESKTOP_VARIANT:-local-staging}
+      CI: "true"
+      CODE_ROOT: /workspace/code
+      WORKTREE_PATH: /workspace/t3code
+      T3CODE_APP_ROOT: /workspace/t3code
+      CONVEX_INTERNAL_URL: ${CONVEX_INTERNAL_URL:-http://127.0.0.1:3210}
+      CONVEX_INTERNAL_SITE_URL: ${CONVEX_INTERNAL_SITE_URL:-http://127.0.0.1:3211}
+      CONVEX_URL: ${CONVEX_INTERNAL_URL:-http://127.0.0.1:3210}
+      CONVEX_SITE_URL: ${CONVEX_INTERNAL_SITE_URL:-http://127.0.0.1:3211}
+      CONVEX_SELF_HOSTED_URL: ${CONVEX_INTERNAL_URL:-http://127.0.0.1:3210}
+      VITE_CONVEX_URL: ${CONVEX_INTERNAL_URL:-http://127.0.0.1:3210}
+      WEB_PORT: ${WEB_PORT:-6657}
+      SERVER_PORT: ${SERVER_PORT:-14697}
+      CADDY_PORT: ${CADDY_PORT:-8080}
+      CADDY_LISTEN_PORT: ${CADDY_LISTEN_PORT:-8080}
+      POD_BROWSER_ORIGIN: ${POD_BROWSER_ORIGIN:-http://127.0.0.1:${CADDY_PORT:-8080}}
+      VITE_DEV_SERVER_URL: http://127.0.0.1:${CADDY_LISTEN_PORT:-8080}
+      CDP_PORT: ${CDP_PORT:-9232}
+      T3CODE_POD_WITH_DESKTOP: ${T3CODE_POD_WITH_DESKTOP:-0}
+      POD_SLUG: ${POD_SLUG}
+      POD_PUBLIC_BASE_URL: ${POD_PUBLIC_BASE_URL:-}
+    entrypoint: ["/bin/sh", "/opt/pod-scripts/entrypoint-t3-stack.sh"]
+
+  t3-desktop:
+    build:
+      context: ${WORKTREE_PATH}
+      dockerfile: ${TEMPLATE_DIR}/Dockerfile.t3-pod
+      args:
+        BASE_IMAGE: ${POD_BASE_IMAGE:-node:24-bookworm-slim}
+    profiles: ["desktop"]
+    network_mode: ${POD_NETWORK_MODE:-service:tailscale}
+    depends_on:
+      t3-stack:
+        condition: service_started
+    shm_size: "2gb"
+    working_dir: /workspace/t3code
+    volumes:
+      - ${WORKTREE_PATH}:/workspace/t3code:rw
+      - ${CODE_ROOT}:/workspace/code:rw
+      - ${MANIFEST_WORKTREE_PATH}/.local/convex-docker/admin.key:/pod-secrets/admin.key:ro
+      - t3code_home:/data/t3code-home
+      - provider_config:/data/provider-config
+      - ${TEMPLATE_DIR}/scripts:/opt/pod-scripts:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${DOCKER_XAUTH_FILE:-/dev/null}:/tmp/.docker.xauth:ro
+    environment:
+      T3CODE_HOME: /data/t3code-home
+      T3CODE_CONTAINER_MODE: "1"
+      T3CODE_CONVEX_DOCKER: "1"
+      T3CODE_PERSISTENCE: convex
+      CODE_ROOT: /workspace/code
+      WORKTREE_PATH: /workspace/t3code
+      T3CODE_APP_ROOT: /workspace/t3code
+      T3CODE_DESKTOP_VARIANT: ${T3CODE_DESKTOP_VARIANT:-local-staging}
+      T3CODE_DEV_INSTANCE: ${T3CODE_DEV_INSTANCE:-t3code-local-staging}
+      POD_SLUG: ${POD_SLUG}
+      CONVEX_INTERNAL_URL: ${CONVEX_INTERNAL_URL:-http://127.0.0.1:3210}
+      CONVEX_INTERNAL_SITE_URL: ${CONVEX_INTERNAL_SITE_URL:-http://127.0.0.1:3211}
+      CONVEX_URL: ${CONVEX_INTERNAL_URL:-http://127.0.0.1:3210}
+      CONVEX_SITE_URL: ${CONVEX_INTERNAL_SITE_URL:-http://127.0.0.1:3211}
+      CONVEX_SELF_HOSTED_URL: ${CONVEX_INTERNAL_URL:-http://127.0.0.1:3210}
+      VITE_HTTP_URL: http://127.0.0.1:${SERVER_PORT:-14697}
+      VITE_WS_URL: ws://127.0.0.1:${SERVER_PORT:-14697}
+      T3CODE_PORT: ${SERVER_PORT:-14697}
+      SERVER_PORT: ${SERVER_PORT:-14697}
+      WEB_PORT: ${WEB_PORT:-6657}
+      CADDY_PORT: ${CADDY_PORT:-8080}
+      CADDY_LISTEN_PORT: ${CADDY_LISTEN_PORT:-8080}
+      POD_BROWSER_ORIGIN: ${POD_BROWSER_ORIGIN:-http://127.0.0.1:${CADDY_PORT:-8080}}
+      VITE_DEV_SERVER_URL: http://127.0.0.1:${CADDY_LISTEN_PORT:-8080}
+      T3CODE_DESKTOP_DISPLAY: ${T3CODE_DESKTOP_DISPLAY:-novnc}
+      CDP_PORT: ${CDP_PORT:-9232}
+      DISPLAY: ${DISPLAY:-}
+      XAUTHORITY: /tmp/.docker.xauth
+    entrypoint: ["/bin/sh", "/opt/pod-scripts/entrypoint-desktop.sh"]
+
+  novnc:
+    image: theasp/novnc:latest
+    profiles: ["desktop"]
+    <<: *pod_restart
+    network_mode: ${POD_NETWORK_MODE:-service:tailscale}
+    depends_on:
+      t3-desktop:
+        condition: service_started
+    volumes:
+      - ${TEMPLATE_DIR}/novnc:/opt/pod-novnc:ro
+    entrypoint: ["/bin/sh", "/opt/pod-novnc/entrypoint-novnc.sh"]
+    environment:
+      DISPLAY_WIDTH: "1920"
+      DISPLAY_HEIGHT: "1080"
+      RUN_XTERM: "false"
+      RUN_FLUXBOX: "false"
+      NOVNC_PORT: ${NOVNC_PORT:-6080}
+    ports: []
+
+volumes:
+  postgres_data:
+  tailscale_state:
+  t3code_home:
+  provider_config:
+  provider_cache:
+  caddy_data:

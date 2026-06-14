@@ -1,0 +1,46 @@
+ARG BASE_IMAGE=node:24-bookworm-slim
+FROM ${BASE_IMAGE}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bubblewrap \
+    curl \
+    git \
+    ca-certificates \
+    unzip \
+    python3 \
+    make \
+    g++ \
+    build-essential \
+    xvfb \
+    x11vnc \
+    x11-utils \
+    autocutsel \
+    xclip \
+    libgtk-3-0 \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV BUN_INSTALL=/root/.bun
+ENV PATH="/root/.bun/bin:${PATH}"
+RUN curl -fsSL https://bun.sh/install | bash && bun --version
+
+RUN npm install -g pnpm@10.24.0
+
+# Default agent provider in T3 Code — required for thread messaging in pod mode.
+RUN npm install -g @openai/codex@latest && codex --version
+
+WORKDIR /workspace/t3code
+
+RUN node --version && pnpm --version && bun --version
