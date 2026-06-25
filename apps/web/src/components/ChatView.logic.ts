@@ -169,6 +169,32 @@ export interface PullRequestDialogState {
   key: number;
 }
 
+export type DevLaunchHelperKind = "setup" | "collision";
+
+export function resolveDevLaunchHelperDraftTarget(input: {
+  kind: DevLaunchHelperKind;
+  activeBranch: string | null;
+  activeWorktreePath: string | null;
+}): {
+  branch: string | null;
+  worktreePath: string | null;
+  envMode: DraftThreadEnvMode;
+} {
+  if (input.kind === "collision") {
+    return {
+      branch: input.activeBranch,
+      worktreePath: null,
+      envMode: "worktree",
+    };
+  }
+
+  return {
+    branch: input.activeBranch,
+    worktreePath: input.activeWorktreePath,
+    envMode: input.activeWorktreePath ? "worktree" : "local",
+  };
+}
+
 export function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

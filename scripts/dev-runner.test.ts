@@ -1,13 +1,18 @@
+// @effect-diagnostics nodeBuiltinImport:off - Test setup needs temporary repo env files.
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as NodeOS from "node:os";
 import * as NetService from "@t3tools/shared/Net";
-import { HostProcessPlatform } from "@t3tools/shared/hostProcess";
+import { HostProcessEnvironment, HostProcessPlatform } from "@t3tools/shared/hostProcess";
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
+import * as NodeOS from "node:os";
+import * as NodePath from "node:path";
 import { assert, describe, it } from "@effect/vitest";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as PlatformError from "effect/PlatformError";
+import * as Schema from "effect/Schema";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import { ChildProcessSpawner } from "effect/unstable/process";
@@ -16,19 +21,55 @@ import {
   checkPortAvailabilityOnHosts,
   createDevRunnerEnv,
   findFirstAvailableOffset,
+  createWorktreeIdentityEnvPatch,
   getDevRunnerModeArgs,
+  inferT3WorktreeRole,
+  loadDevRunnerBootstrapEnv,
   resolveModePortOffsets,
   resolveOffset,
   runDevRunnerWithInput,
 } from "./dev-runner.ts";
+import { LOCAL_OBSERVABILITY_URLS } from "./local-observability.ts";
+import {
+  DEV_CHANGE_POLICY_ENV,
+  DESKTOP_DISABLE_RESTART_ON_CHANGE_ENV,
+  RESTART_CONTROL_TOKEN_ENV,
+} from "./lib/dev-change-policy.ts";
 
 const emptyConfigLayer = ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} }));
+const DesktopSettingsJson = Schema.fromJsonString(
+  Schema.Struct({
+    tailscaleServePath: Schema.String,
+  }),
+);
+const encodeDesktopSettingsJson = Schema.encodeSync(DesktopSettingsJson);
 const netServiceLayer = Layer.succeed(NetService.NetService, {
   canListenOnHost: () => Effect.succeed(true),
   isPortAvailableOnLoopback: () => Effect.succeed(true),
   reserveLoopbackPort: () => Effect.succeed(49_152),
   findAvailablePort: (port) => Effect.succeed(port),
 });
+
+function createGitCheckout(input: { readonly appRoot: string; readonly branch: string }) {
+  NodeFS.mkdirSync(input.appRoot, { recursive: true });
+  NodeChildProcess.execFileSync("git", ["init", "-b", input.branch], {
+    cwd: input.appRoot,
+    stdio: "ignore",
+  });
+  NodeFS.writeFileSync(NodePath.join(input.appRoot, "README.md"), "test\n");
+  NodeChildProcess.execFileSync("git", ["add", "README.md"], {
+    cwd: input.appRoot,
+    stdio: "ignore",
+  });
+  NodeChildProcess.execFileSync(
+    "git",
+    ["-c", "user.name=T3 Test", "-c", "user.email=t3@example.test", "commit", "-m", "init"],
+    {
+      cwd: input.appRoot,
+      stdio: "ignore",
+    },
+  );
+}
 
 function mockProcess(exit: number | PlatformError.PlatformError) {
   return ChildProcessSpawner.makeHandle({
@@ -60,6 +101,13 @@ const devServerInput = {
   devUrl: undefined,
   dryRun: false,
   runArgs: ["--inspect", "secret-token-value"],
+  startLocalObservability: () => ({
+    ok: true,
+    disabled: false,
+    dockerAvailable: false,
+    warnings: [],
+    urls: LOCAL_OBSERVABILITY_URLS,
+  }),
 } as const;
 
 it.layer(NodeServices.layer)("dev-runner", (it) => {
@@ -126,7 +174,167 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
     );
   });
 
+  describe("loadDevRunnerBootstrapEnv", () => {
+    it.effect("lets the worktree env identity override inherited app launch env", () =>
+      Effect.sync(() => {
+        const repoRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-"));
+        NodeFS.writeFileSync(
+          NodePath.join(repoRoot, ".env.local"),
+          [
+            "T3CODE_HOME=/tmp/t3-main",
+            "T3CODE_DEV_INSTANCE=t3code-local-main",
+            "T3CODE_REMOTE_DEBUGGING_PORT=9224",
+          ].join("\n"),
+        );
+
+        try {
+          const env = loadDevRunnerBootstrapEnv({
+            repoRoot,
+            baseEnv: {
+              T3CODE_HOME: "/tmp/t3-staging",
+              T3CODE_PORT_OFFSET: "60",
+              PORT: "5793",
+              HOST: "127.0.0.1",
+            },
+          });
+
+          assert.equal(env.T3CODE_HOME, "/tmp/t3-main");
+          assert.equal(env.T3CODE_DEV_INSTANCE, "t3code-local-main");
+          assert.equal(env.T3CODE_PORT_OFFSET, undefined);
+          assert.equal(env.PORT, "5793");
+          assert.equal(env.HOST, "127.0.0.1");
+        } finally {
+          NodeFS.rmSync(repoRoot, { recursive: true, force: true });
+        }
+      }),
+    );
+
+    it.effect("clears inherited web launch ports when a port offset owns selection", () =>
+      Effect.sync(() => {
+        const env = loadDevRunnerBootstrapEnv({
+          baseEnv: {
+            T3CODE_PORT_OFFSET: "3000",
+            PORT: "5753",
+            VITE_DEV_SERVER_URL: "http://127.0.0.1:5753/main/",
+          },
+        });
+
+        assert.equal(env.T3CODE_PORT_OFFSET, "3000");
+        assert.equal(env.PORT, undefined);
+        assert.equal(env.VITE_DEV_SERVER_URL, undefined);
+      }),
+    );
+  });
+
   describe("createDevRunnerEnv", () => {
+    it.effect("injects local observability endpoints and worktree identity", () =>
+      Effect.gen(function* () {
+        const env = yield* createDevRunnerEnv({
+          mode: "dev",
+          baseEnv: {
+            T3CODE_DEV_INSTANCE: "local-observability-test",
+            T3CODE_WORKTREE_ROLE: "dev",
+            T3CODE_WORKTREE_PATH: "/repo/t3code/.worktrees/dev-local-observability",
+          },
+          cwd: "/repo/t3code/.worktrees/dev-local-observability",
+          serverOffset: 0,
+          webOffset: 0,
+          t3Home: undefined,
+          noBrowser: undefined,
+          autoBootstrapProjectFromCwd: undefined,
+          logWebSocketEvents: undefined,
+          host: undefined,
+          port: undefined,
+          devUrl: undefined,
+        });
+
+        assert.equal(env.T3CODE_OTLP_TRACES_URL, LOCAL_OBSERVABILITY_URLS.tracesUrl);
+        assert.equal(env.T3CODE_OTLP_METRICS_URL, LOCAL_OBSERVABILITY_URLS.metricsUrl);
+        assert.equal(env.T3CODE_OTLP_LOGS_URL, LOCAL_OBSERVABILITY_URLS.logsUrl);
+        assert.equal(env.T3CODE_OBSERVABILITY_GRAFANA_URL, LOCAL_OBSERVABILITY_URLS.grafanaUrl);
+        assert.equal(env.T3CODE_DEV_INSTANCE, "local-observability-test");
+        assert.equal(env.T3CODE_WORKTREE_ROLE, "dev");
+        assert.equal(env.T3CODE_WORKTREE_PATH, "/repo/t3code/.worktrees/dev-local-observability");
+      }),
+    );
+
+    it.effect("does not inject local observability endpoints when opted out", () =>
+      Effect.gen(function* () {
+        const env = yield* createDevRunnerEnv({
+          mode: "dev",
+          baseEnv: {
+            T3CODE_LOCAL_OBSERVABILITY: "0",
+          },
+          serverOffset: 0,
+          webOffset: 0,
+          t3Home: undefined,
+          noBrowser: undefined,
+          autoBootstrapProjectFromCwd: undefined,
+          logWebSocketEvents: undefined,
+          host: undefined,
+          port: undefined,
+          devUrl: undefined,
+        });
+
+        assert.equal(env.T3CODE_OTLP_LOGS_URL, undefined);
+      }),
+    );
+
+    it("infers stable worktree roles from path before inherited env", () => {
+      assert.equal(
+        inferT3WorktreeRole({
+          cwd: "/repo/t3code/.worktrees/staging",
+          branch: "feature",
+          envRole: undefined,
+        }),
+        "staging",
+      );
+      assert.equal(
+        inferT3WorktreeRole({
+          cwd: "/repo/t3code/.worktrees/dev-observability",
+          branch: "feature",
+          envRole: undefined,
+        }),
+        "dev",
+      );
+      assert.equal(
+        inferT3WorktreeRole({
+          cwd: "/repo/t3code/.worktrees/staging",
+          branch: "staging",
+          envRole: "main",
+        }),
+        "staging",
+      );
+      assert.equal(
+        inferT3WorktreeRole({
+          cwd: "/repo/custom",
+          branch: "main",
+          envRole: " original ",
+        }),
+        "original",
+      );
+    });
+
+    it("preserves explicit worktree identity env", () => {
+      assert.deepStrictEqual(
+        createWorktreeIdentityEnvPatch({
+          cwd: "/repo/custom",
+          baseEnv: {
+            T3CODE_WORKTREE_ROLE: "staging",
+            T3CODE_WORKTREE_PATH: "/repo/custom",
+            T3CODE_GIT_BRANCH: "branch-a",
+            T3CODE_GIT_COMMIT: "abc123",
+          },
+        }),
+        {
+          T3CODE_WORKTREE_ROLE: "staging",
+          T3CODE_WORKTREE_PATH: "/repo/custom",
+          T3CODE_GIT_BRANCH: "branch-a",
+          T3CODE_GIT_COMMIT: "abc123",
+        },
+      );
+    });
+
     it.effect("defaults T3CODE_HOME to ~/.t3 when not provided", () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
@@ -269,7 +477,8 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
 
         assert.equal(env.T3CODE_HOME, path.resolve("/tmp/my-t3"));
         assert.equal(env.PORT, "5733");
-        assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5733");
+        assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5733/t3code/");
+        assert.equal(env.VITE_T3CODE_PUBLIC_BASE_PATH, "/t3code");
         assert.equal(env.HOST, "127.0.0.1");
         assert.equal(env.T3CODE_PORT, "4222");
         assert.equal(env.VITE_HTTP_URL, "http://127.0.0.1:4222");
@@ -277,6 +486,195 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
         assert.equal(env.T3CODE_NO_BROWSER, undefined);
         assert.equal(env.T3CODE_HOST, undefined);
         assert.equal(env.VITE_WS_URL, "ws://127.0.0.1:4222");
+      }),
+    );
+
+    it.effect("uses an explicit dev-url port as the Vite web port", () =>
+      Effect.gen(function* () {
+        const repoParent = NodeFS.mkdtempSync(
+          NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-repo-"),
+        );
+        const appRoot = NodePath.join(repoParent, "t3code");
+        createGitCheckout({ appRoot, branch: "main" });
+
+        try {
+          const env = yield* createDevRunnerEnv({
+            mode: "dev:desktop",
+            cwd: appRoot,
+            baseEnv: {
+              T3CODE_WORKSPACE_SLUG: "main",
+            },
+            serverOffset: 20,
+            webOffset: 2474,
+            t3Home: "/tmp/my-t3",
+            noBrowser: undefined,
+            autoBootstrapProjectFromCwd: undefined,
+            logWebSocketEvents: undefined,
+            host: undefined,
+            port: 13793,
+            devUrl: new URL("http://127.0.0.1:5753"),
+          });
+
+          assert.equal(env.PORT, "5753");
+          assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5753/main/");
+          assert.equal(env.VITE_T3CODE_PUBLIC_BASE_PATH, "/main");
+          assert.equal(env.T3CODE_PORT, "13793");
+          assert.equal(env.VITE_HTTP_URL, "http://127.0.0.1:13793");
+        } finally {
+          NodeFS.rmSync(repoParent, { recursive: true, force: true });
+        }
+      }),
+    );
+
+    it.effect("prefers the persisted desktop Tailscale path for Vite base routing", () =>
+      Effect.gen(function* () {
+        const path = yield* Path.Path;
+        const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-home-"));
+        try {
+          NodeFS.mkdirSync(path.join(baseDir, "dev"), { recursive: true });
+          NodeFS.writeFileSync(
+            path.join(baseDir, "dev", "desktop-settings.json"),
+            encodeDesktopSettingsJson({ tailscaleServePath: "/custom-dev/" }),
+          );
+
+          const env = yield* createDevRunnerEnv({
+            mode: "dev:desktop",
+            baseEnv: {
+              T3CODE_WORKSPACE_SLUG: "staging",
+            },
+            serverOffset: 80,
+            webOffset: 80,
+            t3Home: baseDir,
+            noBrowser: undefined,
+            autoBootstrapProjectFromCwd: undefined,
+            logWebSocketEvents: undefined,
+            host: undefined,
+            port: 13853,
+            devUrl: undefined,
+          });
+
+          assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5813/custom-dev/");
+          assert.equal(env.VITE_T3CODE_PUBLIC_BASE_PATH, "/custom-dev");
+        } finally {
+          NodeFS.rmSync(baseDir, { recursive: true, force: true });
+        }
+      }),
+    );
+
+    it.effect("prefers the launcher Tailscale path over stale persisted desktop settings", () =>
+      Effect.gen(function* () {
+        const path = yield* Path.Path;
+        const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-home-"));
+        const repoRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-repo-"));
+        const appRoot = NodePath.join(repoRoot, ".worktrees", "staging");
+        createGitCheckout({ appRoot, branch: "staging" });
+        try {
+          NodeFS.mkdirSync(path.join(baseDir, "dev"), { recursive: true });
+          NodeFS.writeFileSync(
+            path.join(baseDir, "dev", "desktop-settings.json"),
+            encodeDesktopSettingsJson({ tailscaleServePath: "/t3code-staging/" }),
+          );
+
+          const env = yield* createDevRunnerEnv({
+            mode: "dev:desktop",
+            cwd: appRoot,
+            baseEnv: {
+              T3CODE_TAILSCALE_SERVE_PATH: "/staging",
+              T3CODE_WORKSPACE_SLUG: "staging",
+            },
+            serverOffset: 60,
+            webOffset: 60,
+            t3Home: baseDir,
+            noBrowser: undefined,
+            autoBootstrapProjectFromCwd: undefined,
+            logWebSocketEvents: undefined,
+            host: undefined,
+            port: 13833,
+            devUrl: undefined,
+          });
+
+          assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5793/staging/");
+          assert.equal(env.VITE_T3CODE_PUBLIC_BASE_PATH, "/staging");
+          assert.equal(env.VITE_T3CODE_PUBLIC_BASE_URL, "http://127.0.0.1:5793/staging/");
+        } finally {
+          NodeFS.rmSync(baseDir, { recursive: true, force: true });
+          NodeFS.rmSync(repoRoot, { recursive: true, force: true });
+        }
+      }),
+    );
+
+    it.effect("rejects /staging for a non-staging worktree", () =>
+      Effect.gen(function* () {
+        const repoRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-repo-"));
+        const appRoot = NodePath.join(repoRoot, ".worktrees", "nightly-local");
+        createGitCheckout({
+          appRoot,
+          branch: "dev/nightly-topic-stack-20260626",
+        });
+
+        try {
+          const error = yield* createDevRunnerEnv({
+            mode: "dev:desktop",
+            cwd: appRoot,
+            baseEnv: {
+              T3CODE_TAILSCALE_SERVE_PATH: "/staging",
+              T3CODE_WORKTREE_ROLE: "staging",
+            },
+            serverOffset: 60,
+            webOffset: 60,
+            t3Home: "/tmp/t3-dev-runner",
+            noBrowser: undefined,
+            autoBootstrapProjectFromCwd: undefined,
+            logWebSocketEvents: undefined,
+            host: undefined,
+            port: 13833,
+            devUrl: undefined,
+          }).pipe(Effect.flip);
+
+          assert.equal(error._tag, "DevRunnerReservedServeRouteError");
+          assert.equal(error.servePath, "/staging");
+          assert.include(error.message, ".worktrees/nightly-local");
+          assert.include(error.message, "dev/nightly-topic-stack-20260626");
+          assert.equal(error.suggestedServePath, "/nightly-local");
+        } finally {
+          NodeFS.rmSync(repoRoot, { recursive: true, force: true });
+        }
+      }),
+    );
+
+    it.effect("allows /staging for the staging branch/worktree", () =>
+      Effect.gen(function* () {
+        const repoRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-repo-"));
+        const appRoot = NodePath.join(repoRoot, ".worktrees", "staging");
+        createGitCheckout({
+          appRoot,
+          branch: "staging",
+        });
+
+        try {
+          const env = yield* createDevRunnerEnv({
+            mode: "dev:desktop",
+            cwd: appRoot,
+            baseEnv: {
+              T3CODE_TAILSCALE_SERVE_PATH: "/staging",
+              T3CODE_WORKTREE_ROLE: "nightly",
+            },
+            serverOffset: 60,
+            webOffset: 60,
+            t3Home: "/tmp/t3-dev-runner",
+            noBrowser: undefined,
+            autoBootstrapProjectFromCwd: undefined,
+            logWebSocketEvents: undefined,
+            host: undefined,
+            port: 13833,
+            devUrl: undefined,
+          });
+
+          assert.equal(env.VITE_T3CODE_PUBLIC_BASE_PATH, "/staging");
+          assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5793/staging/");
+        } finally {
+          NodeFS.rmSync(repoRoot, { recursive: true, force: true });
+        }
       }),
     );
 
@@ -299,6 +697,94 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
         assert.equal(env.T3CODE_PORT, "13773");
         assert.equal(env.VITE_HTTP_URL, "http://localhost:13773");
         assert.equal(env.VITE_WS_URL, "ws://localhost:13773");
+      }),
+    );
+
+    it.effect("defaults dev-runner environments to manual restart policy", () =>
+      Effect.gen(function* () {
+        const env = yield* createDevRunnerEnv({
+          mode: "dev",
+          baseEnv: {},
+          serverOffset: 0,
+          webOffset: 0,
+          t3Home: undefined,
+          noBrowser: undefined,
+          autoBootstrapProjectFromCwd: undefined,
+          logWebSocketEvents: undefined,
+          host: undefined,
+          port: undefined,
+          devUrl: undefined,
+        });
+
+        assert.equal(env[DEV_CHANGE_POLICY_ENV], "manual");
+        assert.match(env[RESTART_CONTROL_TOKEN_ENV] ?? "", /^[a-f0-9]{64}$/);
+      }),
+    );
+
+    it.effect("preserves explicit auto restart policy opt-outs", () =>
+      Effect.gen(function* () {
+        const env = yield* createDevRunnerEnv({
+          mode: "dev",
+          baseEnv: {
+            [DEV_CHANGE_POLICY_ENV]: "auto",
+            [DESKTOP_DISABLE_RESTART_ON_CHANGE_ENV]: "1",
+          },
+          serverOffset: 0,
+          webOffset: 0,
+          t3Home: undefined,
+          noBrowser: undefined,
+          autoBootstrapProjectFromCwd: undefined,
+          logWebSocketEvents: undefined,
+          host: undefined,
+          port: undefined,
+          devUrl: undefined,
+        });
+
+        assert.equal(env[DEV_CHANGE_POLICY_ENV], "auto");
+      }),
+    );
+
+    it.effect("keeps the legacy desktop no-restart flag as a manual policy alias", () =>
+      Effect.gen(function* () {
+        const env = yield* createDevRunnerEnv({
+          mode: "dev:desktop",
+          baseEnv: {
+            [DESKTOP_DISABLE_RESTART_ON_CHANGE_ENV]: "1",
+          },
+          serverOffset: 0,
+          webOffset: 0,
+          t3Home: undefined,
+          noBrowser: undefined,
+          autoBootstrapProjectFromCwd: undefined,
+          logWebSocketEvents: undefined,
+          host: undefined,
+          port: undefined,
+          devUrl: undefined,
+        });
+
+        assert.equal(env[DEV_CHANGE_POLICY_ENV], "manual");
+      }),
+    );
+
+    it.effect("preserves an existing restart control token", () =>
+      Effect.gen(function* () {
+        const env = yield* createDevRunnerEnv({
+          mode: "dev",
+          baseEnv: {
+            [RESTART_CONTROL_TOKEN_ENV]: "existing-token",
+          },
+          serverOffset: 0,
+          webOffset: 0,
+          t3Home: undefined,
+          noBrowser: undefined,
+          autoBootstrapProjectFromCwd: undefined,
+          logWebSocketEvents: undefined,
+          host: undefined,
+          port: undefined,
+          devUrl: undefined,
+        });
+
+        assert.equal(env[RESTART_CONTROL_TOKEN_ENV], "existing-token");
       }),
     );
   });
@@ -511,6 +997,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       return Effect.gen(function* () {
         const error = yield* runDevRunnerWithInput(devServerInput).pipe(
           Effect.provide(Layer.mergeAll(emptyConfigLayer, netServiceLayer, spawnerLayer)),
+          Effect.provideService(HostProcessEnvironment, {}),
           Effect.provideService(HostProcessPlatform, "linux"),
           Effect.flip,
         );
@@ -539,6 +1026,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       return Effect.gen(function* () {
         const error = yield* runDevRunnerWithInput(devServerInput).pipe(
           Effect.provide(Layer.mergeAll(emptyConfigLayer, netServiceLayer, spawnerLayer)),
+          Effect.provideService(HostProcessEnvironment, {}),
           Effect.provideService(HostProcessPlatform, "linux"),
           Effect.flip,
         );
@@ -572,6 +1060,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       return Effect.gen(function* () {
         const error = yield* runDevRunnerWithInput(devServerInput).pipe(
           Effect.provide(Layer.mergeAll(emptyConfigLayer, netServiceLayer, spawnerLayer)),
+          Effect.provideService(HostProcessEnvironment, {}),
           Effect.provideService(HostProcessPlatform, "linux"),
           Effect.flip,
         );

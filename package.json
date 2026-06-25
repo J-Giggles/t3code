@@ -7,6 +7,9 @@
     "dev": "node scripts/dev-runner.ts dev",
     "dev:server": "node scripts/dev-runner.ts dev:server",
     "dev:web": "node scripts/dev-runner.ts dev:web",
+    "observability:local": "node scripts/local-observability.ts start",
+    "observability:status": "node scripts/local-observability.ts status",
+    "observability:digest": "node scripts/observability-digest.ts",
     "dev:marketing": "vp run --filter @t3tools/marketing dev",
     "dev:desktop": "node scripts/dev-runner.ts dev:desktop",
     "start": "vp run --filter t3 start",
@@ -22,6 +25,8 @@
     "lint:mobile": "node scripts/mobile-native-static-check.ts",
     "test": "vp run -r test",
     "test:desktop-smoke": "vp run --filter @t3tools/desktop smoke-test",
+    "test:desktop-e2e:smoke": "vp run --filter @t3tools/desktop e2e:smoke",
+    "test:desktop-e2e:headed": "vp run --filter @t3tools/desktop e2e:headed",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "build:contracts": "vp run --filter @t3tools/contracts build",
@@ -35,6 +40,7 @@
     "dist:desktop:win:x64": "node scripts/build-desktop-artifact.ts --platform win --target nsis --arch x64",
     "release:smoke": "node scripts/release-smoke.ts",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist apps/*/dist-electron packages/*/dist .vite-plus apps/*/.vite-plus packages/*/.vite-plus",
+    "omarchy:install-dev-launchers": "node scripts/install-omarchy-dev-launchers.ts",
     "sync:repos": "node scripts/sync-reference-repos.ts"
   },
   "devDependencies": {
@@ -43,7 +49,9 @@
     "@oxlint/plugins": "^1.63.0",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
-    "vite-plus": "catalog:"
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   },
   "engines": {
     "node": "^24.13.1"

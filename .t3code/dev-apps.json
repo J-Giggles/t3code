@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "id": "web",
+      "name": "T3 Code Web",
+      "cwd": "apps/web",
+      "command": "pnpm dev",
+      "host": "127.0.0.1",
+      "port": 5733,
+      "healthCheckPath": "/",
+      "envBindings": [
+        {
+          "file": "apps/web/.env.local",
+          "key": "HOST",
+          "value": "{{host}}"
+        },
+        {
+          "file": "apps/web/.env.local",
+          "key": "PORT",
+          "value": "{{port}}"
+        },
+        {
+          "file": "apps/web/.env.local",
+          "key": "VITE_T3CODE_PUBLIC_ORIGIN",
+          "value": "{{publicOrigin}}"
+        },
+        {
+          "file": "apps/web/.env.local",
+          "key": "VITE_T3CODE_PUBLIC_BASE_PATH",
+          "value": "{{publicBasePath}}"
+        },
+        {
+          "file": "apps/web/.env.local",
+          "key": "VITE_T3CODE_PUBLIC_BASE_URL",
+          "value": "{{publicBaseUrl}}"
+        },
+        {
+          "file": "apps/web/.env.local",
+          "key": "VITE_HTTP_URL",
+          "value": "{{serverPublicBaseUrl}}/"
+        }
+      ]
+    }
+  ]
+}

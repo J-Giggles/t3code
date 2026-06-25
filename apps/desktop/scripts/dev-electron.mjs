@@ -1,5 +1,8 @@
 import * as NodeChildProcess from "node:child_process";
+import * as NodeCrypto from "node:crypto";
 import * as NodeFS from "node:fs";
+import * as NodeHttp from "node:http";
+import * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
@@ -33,7 +36,21 @@ const watchedDirectories = [
 const forcedShutdownTimeoutMs = 1_500;
 const restartDebounceMs = 120;
 const childTreeGracePeriodMs = 1_200;
+const remoteDebuggingPortReleaseTimeoutMs = 5_000;
+const restartControlToken =
+  process.env.T3CODE_RESTART_CONTROL_TOKEN?.trim() || NodeCrypto.randomBytes(32).toString("hex");
 const remoteDebuggingPort = process.env.T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT?.trim();
+const parseDevChangePolicy = (value) => {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "manual" || normalized === "auto" ? normalized : undefined;
+};
+const parseBooleanEnvFlag = (value) =>
+  ["1", "true", "yes", "on"].includes((value ?? "").trim().toLowerCase());
+const resolveDevChangePolicy = (env, defaultPolicy = "auto") =>
+  parseDevChangePolicy(env.T3CODE_DEV_CHANGE_POLICY) ??
+  (parseBooleanEnvFlag(env.T3CODE_DESKTOP_DISABLE_RESTART_ON_CHANGE) ? "manual" : defaultPolicy);
+const disableRestartOnChange = resolveDevChangePolicy(process.env) === "manual";
+const restartOnExit = parseBooleanEnvFlag(process.env.T3CODE_DESKTOP_RESTART_ON_EXIT);
 // oxlint-disable-next-line t3code/no-global-process-runtime -- Standalone dev script has no Effect runtime.
 const hostPlatform = NodeOS.platform();
 
@@ -54,8 +71,10 @@ if (devProtocolClient) {
 
 let shuttingDown = false;
 let restartTimer = null;
+let codeUpdateNotificationTimer = null;
 let currentApp = null;
 let restartQueue = Promise.resolve();
+let restartControlServer = null;
 const expectedExits = new WeakSet();
 const watchers = [];
 
@@ -72,9 +91,170 @@ function cleanupStaleDevApps() {
     return;
   }
 
+  const devRootArg = `--t3code-dev-root=${desktopDir}`;
+  const scopedEnvEntries = [
+    childEnv.XDG_CONFIG_HOME ? `XDG_CONFIG_HOME=${childEnv.XDG_CONFIG_HOME}` : null,
+    childEnv.T3CODE_HOME ? `T3CODE_HOME=${childEnv.T3CODE_HOME}` : null,
+  ].filter(Boolean);
+
+  if (hostPlatform === "linux" && scopedEnvEntries.length > 0) {
+    for (const entry of NodeFS.readdirSync("/proc", { withFileTypes: true })) {
+      if (!entry.isDirectory() || !/^\d+$/u.test(entry.name)) continue;
+      const pid = Number.parseInt(entry.name, 10);
+      if (pid === process.pid) continue;
+
+      try {
+        const cmdline = NodeFS.readFileSync(NodePath.join("/proc", entry.name, "cmdline"));
+        if (!cmdline.includes(devRootArg)) continue;
+
+        const environment = NodeFS.readFileSync(NodePath.join("/proc", entry.name, "environ"));
+        if (!scopedEnvEntries.some((value) => environment.includes(value))) continue;
+
+        process.kill(pid, "SIGTERM");
+      } catch {
+        // Processes can exit or deny access while procfs is being scanned.
+      }
+    }
+    return;
+  }
+
   NodeChildProcess.spawnSync("pkill", ["-f", "--", `--t3code-dev-root=${desktopDir}`], {
     stdio: "ignore",
   });
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function canListenOnLoopback(port) {
+  return new Promise((resolve) => {
+    const server = NodeNet.createServer();
+    server.once("error", () => {
+      resolve(false);
+    });
+    server.listen(port, "127.0.0.1", () => {
+      server.close(() => {
+        resolve(true);
+      });
+    });
+  });
+}
+
+function readRequestBody(request) {
+  return new Promise((resolve) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 4096) {
+        request.destroy();
+      }
+    });
+    request.on("end", () => {
+      resolve(body);
+    });
+    request.on("error", () => {
+      resolve("");
+    });
+  });
+}
+
+function writeJsonResponse(response, statusCode, body) {
+  response.writeHead(statusCode, {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store",
+  });
+  response.end(JSON.stringify(body));
+}
+
+async function startRestartControlServer() {
+  restartControlServer = NodeHttp.createServer(async (request, response) => {
+    if (request.method !== "POST" || request.url !== "/restart") {
+      writeJsonResponse(response, 404, { error: "not_found" });
+      return;
+    }
+
+    const authorization = request.headers.authorization;
+    if (authorization !== `Bearer ${restartControlToken}`) {
+      writeJsonResponse(response, 401, { error: "unauthorized" });
+      return;
+    }
+
+    const rawBody = await readRequestBody(request);
+    let mode = "full-setup";
+    try {
+      const parsed = rawBody ? JSON.parse(rawBody) : {};
+      if (parsed && typeof parsed === "object" && parsed.mode === "full-setup") {
+        mode = parsed.mode;
+      }
+    } catch {
+      // Invalid JSON still requests the only supported restart mode.
+    }
+
+    if (mode !== "full-setup") {
+      writeJsonResponse(response, 400, { error: "unsupported_mode" });
+      return;
+    }
+
+    writeJsonResponse(response, 202, { accepted: true });
+    scheduleRestart();
+  });
+
+  await new Promise((resolve, reject) => {
+    restartControlServer.once("error", reject);
+    restartControlServer.listen(0, "127.0.0.1", () => {
+      restartControlServer.off("error", reject);
+      resolve();
+    });
+  });
+
+  const address = restartControlServer.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Failed to resolve restart control server address.");
+  }
+
+  childEnv.T3CODE_RESTART_CONTROL_URL = `http://127.0.0.1:${address.port}`;
+  childEnv.T3CODE_RESTART_CONTROL_TOKEN = restartControlToken;
+  childEnv.T3CODE_RESTART_CONTROL_KIND = "desktop-dev-supervisor";
+}
+
+async function stopRestartControlServer() {
+  const server = restartControlServer;
+  if (!server) {
+    return;
+  }
+  restartControlServer = null;
+  await new Promise((resolve) => {
+    server.close(() => resolve());
+  });
+}
+
+async function waitForRemoteDebuggingPortRelease() {
+  if (!remoteDebuggingPort) {
+    return;
+  }
+
+  const port = Number.parseInt(remoteDebuggingPort, 10);
+  if (!Number.isInteger(port) || port <= 0) {
+    return;
+  }
+
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < remoteDebuggingPortReleaseTimeoutMs) {
+    if (await canListenOnLoopback(port)) {
+      return;
+    }
+
+    cleanupStaleDevApps();
+    await delay(100);
+  }
+
+  console.warn(
+    `[desktop-dev] Remote debugging port ${port} is still in use; restarting Electron anyway.`,
+  );
 }
 
 function startApp() {
@@ -113,7 +293,7 @@ function startApp() {
     }
 
     const exitedAbnormally = signal !== null || code !== 0;
-    if (!shuttingDown && !expectedExits.has(app) && exitedAbnormally) {
+    if (!shuttingDown && !expectedExits.has(app) && (restartOnExit || exitedAbnormally)) {
       scheduleRestart();
     }
   });
@@ -173,10 +353,35 @@ function scheduleRestart() {
       .catch(() => undefined)
       .then(async () => {
         await stopApp();
+        cleanupStaleDevApps();
+        await waitForRemoteDebuggingPortRelease();
         if (!shuttingDown) {
           startApp();
         }
       });
+  }, restartDebounceMs);
+}
+
+function notifyRunningCodeChanged() {
+  if (shuttingDown || currentApp === null) {
+    return;
+  }
+
+  currentApp.kill("SIGUSR2");
+}
+
+function scheduleRunningCodeChangedNotification() {
+  if (shuttingDown) {
+    return;
+  }
+
+  if (codeUpdateNotificationTimer) {
+    clearTimeout(codeUpdateNotificationTimer);
+  }
+
+  codeUpdateNotificationTimer = setTimeout(() => {
+    codeUpdateNotificationTimer = null;
+    notifyRunningCodeChanged();
   }, restartDebounceMs);
 }
 
@@ -190,7 +395,11 @@ function startWatchers() {
           return;
         }
 
-        scheduleRestart();
+        if (disableRestartOnChange) {
+          scheduleRunningCodeChangedNotification();
+        } else {
+          scheduleRestart();
+        }
       },
     );
 
@@ -217,11 +426,16 @@ async function shutdown(exitCode) {
     clearTimeout(restartTimer);
     restartTimer = null;
   }
+  if (codeUpdateNotificationTimer) {
+    clearTimeout(codeUpdateNotificationTimer);
+    codeUpdateNotificationTimer = null;
+  }
 
   for (const watcher of watchers) {
     watcher.close();
   }
 
+  await stopRestartControlServer();
   await stopApp();
   killChildTree("TERM");
   await new Promise((resolve) => {
@@ -232,6 +446,7 @@ async function shutdown(exitCode) {
   process.exit(exitCode);
 }
 
+await startRestartControlServer();
 startWatchers();
 cleanupStaleDevApps();
 startApp();

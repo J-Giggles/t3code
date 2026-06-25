@@ -1,11 +1,22 @@
 #!/usr/bin/env node
+// @effect-diagnostics nodeBuiltinImport:off - Dev runner reads bootstrap settings before an Effect FileSystem context exists.
+// @effect-diagnostics nodeBuiltinImport:off - Dev runner must inspect git before the Effect process layer is available.
 
+import * as NodeChildProcess from "node:child_process";
+import * as NodeCrypto from "node:crypto";
+import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NetService from "@t3tools/shared/Net";
 import { HostProcessEnvironment } from "@t3tools/shared/hostProcess";
+import {
+  checkTailscaleReservedServeRouteOwner,
+  normalizePublicPathSegment,
+  normalizePublicPathPrefix,
+  resolveWorkspacePublicPathPrefix,
+} from "@t3tools/shared/publicPath";
 import { resolveSpawnCommand } from "@t3tools/shared/shell";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -19,8 +30,56 @@ import { Argument, Command, Flag } from "effect/unstable/cli";
 import { ChildProcess } from "effect/unstable/process";
 
 import { loadRepoEnv } from "./lib/public-config.ts";
+import {
+  createLocalObservabilityEnvPatch,
+  isLocalObservabilityDisabled,
+  startLocalObservability,
+  type LocalObservabilityStartResult,
+} from "./local-observability.ts";
+import {
+  DEV_CHANGE_POLICY_ENV,
+  readNonEmptyEnvValue,
+  RESTART_CONTROL_TOKEN_ENV,
+  resolveDevChangePolicy,
+} from "./lib/dev-change-policy.ts";
 
-Object.assign(process.env, loadRepoEnv());
+export function loadDevRunnerBootstrapEnv({
+  baseEnv = process.env,
+  repoRoot,
+}: {
+  readonly baseEnv?: NodeJS.ProcessEnv;
+  readonly repoRoot?: string;
+} = {}): NodeJS.ProcessEnv {
+  const inheritedEnv = loadRepoEnv(repoRoot === undefined ? { baseEnv } : { baseEnv, repoRoot });
+  const repoLocalEnv = loadRepoEnv(
+    repoRoot === undefined ? { baseEnv: {} } : { baseEnv: {}, repoRoot },
+  );
+  const env = {
+    ...inheritedEnv,
+    ...repoLocalEnv,
+  };
+
+  if (
+    repoLocalEnv.T3CODE_DEV_INSTANCE !== undefined &&
+    repoLocalEnv.T3CODE_PORT_OFFSET === undefined
+  ) {
+    delete env.T3CODE_PORT_OFFSET;
+  }
+  if (env.T3CODE_PORT_OFFSET !== undefined) {
+    delete env.PORT;
+    delete env.VITE_DEV_SERVER_URL;
+  }
+
+  return env;
+}
+
+const devRunnerBootstrapEnv = loadDevRunnerBootstrapEnv();
+for (const key of ["T3CODE_PORT_OFFSET", "PORT", "VITE_DEV_SERVER_URL"] as const) {
+  if (devRunnerBootstrapEnv[key] === undefined) {
+    delete process.env[key];
+  }
+}
+Object.assign(process.env, devRunnerBootstrapEnv);
 
 const BASE_SERVER_PORT = 13773;
 const BASE_WEB_PORT = 5733;
@@ -54,6 +113,69 @@ const DEV_RUNNER_MODES = Object.keys(MODE_ARGS) as Array<DevMode>;
 
 export function getDevRunnerModeArgs(mode: DevMode): ReadonlyArray<string> {
   return MODE_ARGS[mode];
+}
+
+function readGitOutput(cwd: string, args: ReadonlyArray<string>): string | undefined {
+  const result = NodeChildProcess.spawnSync("git", ["-C", cwd, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  if (result.status !== 0) {
+    return undefined;
+  }
+  const output = result.stdout.trim();
+  return output.length > 0 ? output : undefined;
+}
+
+function normalizeEnvValue(value: string | undefined): string | undefined {
+  const normalized = value?.trim();
+  return normalized && normalized.length > 0 ? normalized : undefined;
+}
+
+export function inferT3WorktreeRole(input: {
+  readonly cwd: string;
+  readonly branch: string | undefined;
+  readonly envRole: string | undefined;
+}): string {
+  const normalizedPath = input.cwd.replaceAll("\\", "/");
+  if (/\/\.worktrees\/staging(?:\/|$)/u.test(normalizedPath)) return "staging";
+  if (/\/\.worktrees\/original(?:\/|$)/u.test(normalizedPath)) return "original";
+  if (/\/\.worktrees\/dev-[^/]+(?:\/|$)/u.test(normalizedPath)) return "dev";
+  if (normalizedPath.endsWith("/t3code")) return "main";
+
+  const configured = normalizeEnvValue(input.envRole);
+  if (configured !== undefined) {
+    return configured;
+  }
+
+  const branch = input.branch?.trim();
+  if (branch === "main") return "main";
+  if (branch === "staging") return "staging";
+  if (branch === "original") return "original";
+  return "dev";
+}
+
+export function createWorktreeIdentityEnvPatch(input: {
+  readonly baseEnv: NodeJS.ProcessEnv;
+  readonly cwd?: string;
+}): Record<string, string> {
+  const cwd = input.cwd ?? process.cwd();
+  const branch =
+    normalizeEnvValue(input.baseEnv.T3CODE_GIT_BRANCH) ??
+    readGitOutput(cwd, ["branch", "--show-current"]);
+  const commit =
+    normalizeEnvValue(input.baseEnv.T3CODE_GIT_COMMIT) ?? readGitOutput(cwd, ["rev-parse", "HEAD"]);
+
+  return {
+    T3CODE_WORKTREE_ROLE: inferT3WorktreeRole({
+      cwd,
+      branch,
+      envRole: input.baseEnv.T3CODE_WORKTREE_ROLE,
+    }),
+    T3CODE_WORKTREE_PATH: normalizeEnvValue(input.baseEnv.T3CODE_WORKTREE_PATH) ?? cwd,
+    ...(branch === undefined ? {} : { T3CODE_GIT_BRANCH: branch }),
+    ...(commit === undefined ? {} : { T3CODE_GIT_COMMIT: commit }),
+  };
 }
 
 export class DevRunnerConfigurationError extends Schema.TaggedErrorClass<DevRunnerConfigurationError>()(
@@ -128,12 +250,29 @@ export class DevRunnerProcessExitError extends Schema.TaggedErrorClass<DevRunner
   }
 }
 
+export class DevRunnerReservedServeRouteError extends Schema.TaggedErrorClass<DevRunnerReservedServeRouteError>()(
+  "DevRunnerReservedServeRouteError",
+  {
+    servePath: Schema.String,
+    expectedDescription: Schema.String,
+    actualBranch: Schema.NullOr(Schema.String),
+    actualWorktreePath: Schema.String,
+    suggestedServePath: Schema.String,
+  },
+) {
+  override get message(): string {
+    const actualBranch = this.actualBranch ?? "detached HEAD";
+    return `Route ${this.servePath} is reserved for ${this.expectedDescription}. This app is running from ${this.actualWorktreePath} on ${actualBranch}. Use a different single-segment route such as ${this.suggestedServePath}.`;
+  }
+}
+
 export const DevRunnerError = Schema.Union([
   DevRunnerConfigurationError,
   DevRunnerInvalidPortOffsetError,
   DevRunnerPortExhaustedError,
   DevRunnerProcessError,
   DevRunnerProcessExitError,
+  DevRunnerReservedServeRouteError,
 ]);
 export type DevRunnerError = typeof DevRunnerError.Type;
 export const isDevRunnerError = Schema.is(DevRunnerError);
@@ -215,9 +354,111 @@ function resolveBaseDir(baseDir: string | undefined): Effect.Effect<string, neve
   });
 }
 
+function readPersistedDesktopTailscaleServePath(
+  path: Path.Path,
+  baseDir: string,
+): string | undefined {
+  const settingsPath = path.join(baseDir, "dev", "desktop-settings.json");
+  try {
+    const raw = NodeFS.readFileSync(settingsPath, "utf8");
+    const parsed = JSON.parse(raw) as { tailscaleServePath?: unknown };
+    return typeof parsed.tailscaleServePath === "string"
+      ? normalizePublicPathPrefix(parsed.tailscaleServePath)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveDevPublicBasePath(input: {
+  readonly path: Path.Path;
+  readonly baseDir: string;
+  readonly baseEnv: NodeJS.ProcessEnv;
+  readonly mode: DevMode;
+}): string | undefined {
+  const configured =
+    normalizePublicPathPrefix(input.baseEnv.VITE_T3CODE_PUBLIC_BASE_PATH) ??
+    readPersistedDesktopTailscaleServePath(input.path, input.baseDir) ??
+    normalizePublicPathPrefix(input.baseEnv.T3CODE_TAILSCALE_SERVE_PATH);
+  if (configured !== undefined) {
+    return configured;
+  }
+
+  const hasWorkspaceRouteSeed =
+    input.baseEnv.T3CODE_WORKSPACE_SLUG !== undefined ||
+    input.baseEnv.T3CODE_WORKTREE_ROLE !== undefined ||
+    input.baseEnv.T3CODE_DEV_INSTANCE !== undefined;
+  if (hasWorkspaceRouteSeed || input.mode === "dev:desktop") {
+    return resolveWorkspacePublicPathPrefix({
+      workspaceSlug: input.baseEnv.T3CODE_WORKSPACE_SLUG,
+      worktreeRole: input.baseEnv.T3CODE_WORKTREE_ROLE,
+      devInstance: input.baseEnv.T3CODE_DEV_INSTANCE,
+    });
+  }
+
+  return undefined;
+}
+
+function withDevPublicBasePath(url: URL, publicBasePath: string | undefined): URL {
+  const next = new URL(url.toString());
+  if (publicBasePath === undefined) {
+    return next;
+  }
+  const normalized = normalizePublicPathPrefix(next.pathname);
+  if (normalized === undefined) {
+    next.pathname = `${publicBasePath}/`;
+  }
+  return next;
+}
+
+function readDevRunnerRouteOwnerIdentity(cwd: string) {
+  const topLevelPath = readGitOutput(cwd, ["rev-parse", "--show-toplevel"]) ?? cwd;
+  const branch = readGitOutput(cwd, ["branch", "--show-current"]) ?? null;
+  const normalizedTopLevelPath = topLevelPath.replaceAll("\\", "/").replace(/\/+$/u, "");
+  const worktreeBasename =
+    normalizedTopLevelPath.split("/").findLast((segment) => segment.length > 0) ??
+    normalizedTopLevelPath;
+  return {
+    branch,
+    topLevelPath,
+    worktreeBasename,
+  };
+}
+
+function suggestDevRunnerServePath(input: { readonly worktreeBasename: string }): string {
+  return `/${normalizePublicPathSegment(input.worktreeBasename) ?? "dev"}`;
+}
+
+function assertDevRunnerReservedServeRouteOwner(input: {
+  readonly cwd: string;
+  readonly publicBasePath: string | undefined;
+}): Effect.Effect<void, DevRunnerReservedServeRouteError> {
+  if (input.publicBasePath === undefined) {
+    return Effect.void;
+  }
+  const identity = readDevRunnerRouteOwnerIdentity(input.cwd);
+  const conflict = checkTailscaleReservedServeRouteOwner({
+    route: input.publicBasePath,
+    identity,
+  });
+  if (conflict === null) {
+    return Effect.void;
+  }
+  return Effect.fail(
+    new DevRunnerReservedServeRouteError({
+      servePath: conflict.route,
+      expectedDescription: conflict.expectedDescription,
+      actualBranch: conflict.actualBranch,
+      actualWorktreePath: conflict.actualWorktreePath,
+      suggestedServePath: suggestDevRunnerServePath(identity),
+    }),
+  );
+}
+
 interface CreateDevRunnerEnvInput {
   readonly mode: DevMode;
   readonly baseEnv: NodeJS.ProcessEnv;
+  readonly cwd?: string | undefined;
   readonly serverOffset: number;
   readonly webOffset: number;
   readonly t3Home: string | undefined;
@@ -232,6 +473,7 @@ interface CreateDevRunnerEnvInput {
 export function createDevRunnerEnv({
   mode,
   baseEnv,
+  cwd,
   serverOffset,
   webOffset,
   t3Home,
@@ -241,21 +483,72 @@ export function createDevRunnerEnv({
   host,
   port,
   devUrl,
-}: CreateDevRunnerEnvInput): Effect.Effect<NodeJS.ProcessEnv, never, Path.Path> {
+}: CreateDevRunnerEnvInput): Effect.Effect<
+  NodeJS.ProcessEnv,
+  DevRunnerReservedServeRouteError,
+  Path.Path
+> {
   return Effect.gen(function* () {
+    const path = yield* Path.Path;
     const serverPort = port ?? BASE_SERVER_PORT + serverOffset;
-    const webPort = BASE_WEB_PORT + webOffset;
+    const explicitDevUrlPort = devUrl?.port ? Number.parseInt(devUrl.port, 10) : undefined;
+    const webPort =
+      explicitDevUrlPort !== undefined &&
+      Number.isInteger(explicitDevUrlPort) &&
+      explicitDevUrlPort > 0
+        ? explicitDevUrlPort
+        : BASE_WEB_PORT + webOffset;
     const resolvedBaseDir = yield* resolveBaseDir(t3Home);
     const isDesktopMode = mode === "dev:desktop";
+    const devChangePolicy = resolveDevChangePolicy(baseEnv, { defaultPolicy: "manual" });
+    const publicBasePath = resolveDevPublicBasePath({
+      path,
+      baseDir: resolvedBaseDir,
+      baseEnv,
+      mode,
+    });
+    yield* assertDevRunnerReservedServeRouteOwner({
+      cwd: cwd ?? process.cwd(),
+      publicBasePath,
+    });
+    const defaultDevUrl = new URL(
+      `http://${isDesktopMode ? DESKTOP_DEV_LOOPBACK_HOST : "localhost"}:${webPort}`,
+    );
+    const resolvedDevUrl = withDevPublicBasePath(devUrl ?? defaultDevUrl, publicBasePath);
 
     const output: NodeJS.ProcessEnv = {
       ...baseEnv,
+      ...createLocalObservabilityEnvPatch(baseEnv),
+      ...createWorktreeIdentityEnvPatch({
+        baseEnv,
+        ...(cwd === undefined ? {} : { cwd }),
+      }),
       PORT: String(webPort),
-      VITE_DEV_SERVER_URL:
-        devUrl?.toString() ??
-        `http://${isDesktopMode ? DESKTOP_DEV_LOOPBACK_HOST : "localhost"}:${webPort}`,
+      [DEV_CHANGE_POLICY_ENV]: devChangePolicy,
+      VITE_DEV_SERVER_URL: resolvedDevUrl.toString(),
       T3CODE_HOME: resolvedBaseDir,
     };
+
+    if (publicBasePath !== undefined) {
+      const publicOrigin =
+        baseEnv.VITE_T3CODE_PUBLIC_ORIGIN?.trim() ||
+        `${resolvedDevUrl.protocol}//${resolvedDevUrl.host}`;
+      const publicBaseUrl = new URL(resolvedDevUrl.toString());
+      publicBaseUrl.pathname = `${publicBasePath}/`;
+      publicBaseUrl.search = "";
+      publicBaseUrl.hash = "";
+      output.VITE_T3CODE_PUBLIC_ORIGIN = publicOrigin;
+      output.VITE_T3CODE_PUBLIC_BASE_PATH = publicBasePath;
+      output.VITE_T3CODE_PUBLIC_BASE_URL = publicBaseUrl.toString();
+    } else {
+      delete output.VITE_T3CODE_PUBLIC_ORIGIN;
+      delete output.VITE_T3CODE_PUBLIC_BASE_PATH;
+      delete output.VITE_T3CODE_PUBLIC_BASE_URL;
+    }
+
+    if (!readNonEmptyEnvValue(output[RESTART_CONTROL_TOKEN_ENV])) {
+      output[RESTART_CONTROL_TOKEN_ENV] = NodeCrypto.randomBytes(32).toString("hex");
+    }
 
     if (!isDesktopMode) {
       output.T3CODE_PORT = String(serverPort);
@@ -477,6 +770,9 @@ interface DevRunnerCliInput {
   readonly devUrl: URL | undefined;
   readonly dryRun: boolean;
   readonly runArgs: ReadonlyArray<string>;
+  readonly startLocalObservability?: (options: {
+    readonly env?: Readonly<Record<string, string | undefined>>;
+  }) => LocalObservabilityStartResult;
 }
 
 export function runDevRunnerWithInput(input: DevRunnerCliInput) {
@@ -526,6 +822,20 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
 
     if (input.dryRun) {
       return;
+    }
+
+    if (!isLocalObservabilityDisabled(env)) {
+      const observabilityResult = (input.startLocalObservability ?? startLocalObservability)({
+        env,
+      });
+      for (const warning of observabilityResult.warnings) {
+        yield* Effect.logWarning(`[dev-runner] ${warning}`);
+      }
+      if (observabilityResult.dockerAvailable && !observabilityResult.disabled) {
+        yield* Effect.logInfo(
+          `[dev-runner] local observability grafana=${observabilityResult.urls.grafanaUrl} otlp=${observabilityResult.urls.otlpHttpUrl}`,
+        );
+      }
     }
 
     const spawnCommand = yield* resolveSpawnCommand(

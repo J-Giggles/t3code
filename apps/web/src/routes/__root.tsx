@@ -35,6 +35,7 @@ import {
 } from "../logicalProject";
 import { useUiStateStore } from "../uiStateStore";
 import { syncBrowserChromeTheme } from "../hooks/useTheme";
+import { configureClientLogging } from "../observability/clientLogs";
 import { configureClientTracing } from "../observability/clientTracing";
 import { resolveInitialServerAuthGateState } from "../environments/primary";
 import { hasHostedPairingRequest, isHostedStaticApp } from "../hostedPairing";
@@ -260,6 +261,7 @@ function errorDetails(error: unknown): string {
 function AuthenticatedTracingBootstrap() {
   useEffect(() => {
     void configureClientTracing();
+    configureClientLogging();
   }, []);
 
   return null;

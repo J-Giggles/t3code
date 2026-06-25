@@ -49,6 +49,7 @@ catalog:
   typescript: ~6.0.3
   vite: npm:@voidzero-dev/vite-plus-core@0.2.2
   vite-plus: 0.2.2
+  vitest: 4.1.9
   yaml: ^2.9.0
 
 minimumReleaseAgeExclude:
@@ -87,6 +88,7 @@ overrides:
   effect: "catalog:"
   expo-modules-jsi: 56.0.10
   vite: "catalog:"
+  vitest: "catalog:"
   yaml: "catalog:"
 
 packageExtensions:
@@ -118,8 +120,10 @@ patchedDependencies:
 peerDependencyRules:
   allowAny:
     - vite
+    - vitest
   allowedVersions:
     vite: "*"
+    vitest: "*"
 
 supportedArchitectures:
   cpu: [current, x64]

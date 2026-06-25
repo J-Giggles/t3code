@@ -22,6 +22,19 @@ import type { ReviewDiffPreviewInput, ReviewDiffPreviewResult } from "./review.t
 import type { FilesystemBrowseInput, FilesystemBrowseResult } from "./filesystem.ts";
 import type { AssetCreateUrlInput, AssetCreateUrlResult } from "./assets.ts";
 import type {
+  ProjectAgentFileDeleteInput,
+  ProjectAgentFileDeleteResult,
+  ProjectAgentFileReadInput,
+  ProjectAgentFileReadResult,
+  ProjectAgentFilesListInput,
+  ProjectAgentFilesListResult,
+  ProjectAgentFileWriteInput,
+  ProjectAgentFileWriteResult,
+  ProjectAgentHarnessScaffoldInput,
+  ProjectAgentHarnessScaffoldResult,
+  ProjectAgentSecretDeleteInput,
+  ProjectAgentSecretStatus,
+  ProjectAgentSecretWriteInput,
   ProjectListEntriesInput,
   ProjectListEntriesResult,
   ProjectReadFileInput,
@@ -37,9 +50,15 @@ import type {
   ServerProcessDiagnosticsResult,
   ServerProcessResourceHistoryInput,
   ServerProcessResourceHistoryResult,
+  ServerProviderResetInput,
+  ServerProviderResetResult,
+  ServerProviderSkillConfigWriteInput,
+  ServerProviderSkillConfigWriteResult,
   ServerProviderUpdateInput,
   ServerProviderUpdatedPayload,
   ServerRemoveKeybindingResult,
+  ServerRestartRuntimeInput,
+  ServerRestartRuntimeResult,
   ServerSignalProcessInput,
   ServerSignalProcessResult,
   ServerTraceDiagnosticsResult,
@@ -50,6 +69,7 @@ import type {
   TerminalAttachStreamEvent,
   TerminalClearInput,
   TerminalCloseInput,
+  TerminalKillInput,
   TerminalMetadataStreamEvent,
   TerminalOpenInput,
   TerminalResizeInput,
@@ -86,6 +106,21 @@ import {
   PreviewAutomationTypeInput,
   PreviewAutomationWaitForInput,
 } from "./previewAutomation.ts";
+import {
+  AppAutomationClickInput,
+  AppAutomationEvaluateInput,
+  AppAutomationPressInput,
+  AppAutomationScrollInput,
+  AppAutomationSnapshot,
+  AppAutomationStatus,
+  AppAutomationTypeInput,
+  AppAutomationWaitForInput,
+} from "./appAutomation.ts";
+import type {
+  AppAutomationOwner,
+  AppAutomationRequest,
+  AppAutomationResponse,
+} from "./appAutomation.ts";
 import type {
   ClientOrchestrationCommand,
   OrchestrationGetFullThreadDiffInput,
@@ -102,6 +137,14 @@ import { AuthAccessTokenResult, AuthSessionState, AuthWebSocketTicketResult } fr
 import { AdvertisedEndpoint } from "./remoteAccess.ts";
 import { EditorId } from "./editor.ts";
 import { ExecutionEnvironmentDescriptor } from "./environment.ts";
+import type {
+  DesktopDevLaunchCollisionPromptInput,
+  DesktopDevLaunchCollisionPromptResult,
+  DesktopDevLaunchLaunchInput,
+  DesktopDevLaunchState,
+  DesktopDevLaunchStopInput,
+  DesktopDevLaunchThreadRef,
+} from "./devLaunch.ts";
 import type { ClientSettings, ServerSettings, ServerSettingsPatch } from "./settings.ts";
 import type {
   SourceControlCloneRepositoryInput,
@@ -415,6 +458,7 @@ export interface DesktopServerExposureState {
   advertisedHost: string | null;
   tailscaleServeEnabled: boolean;
   tailscaleServePort: number;
+  tailscaleServePath: string;
 }
 
 export const DesktopServerExposureStateSchema = Schema.Struct({
@@ -1044,6 +1088,30 @@ export const DesktopPreviewAutomationWaitForInputSchema = Schema.Struct({
   input: PreviewAutomationWaitForInput,
 });
 
+export const DesktopAppAutomationClickInputSchema = Schema.Struct({
+  input: AppAutomationClickInput,
+});
+
+export const DesktopAppAutomationTypeInputSchema = Schema.Struct({
+  input: AppAutomationTypeInput,
+});
+
+export const DesktopAppAutomationPressInputSchema = Schema.Struct({
+  input: AppAutomationPressInput,
+});
+
+export const DesktopAppAutomationScrollInputSchema = Schema.Struct({
+  input: AppAutomationScrollInput,
+});
+
+export const DesktopAppAutomationEvaluateInputSchema = Schema.Struct({
+  input: AppAutomationEvaluateInput,
+});
+
+export const DesktopAppAutomationWaitForInputSchema = Schema.Struct({
+  input: AppAutomationWaitForInput,
+});
+
 export interface DesktopBridge {
   getAppBranding: () => DesktopAppBranding | null;
   // One bootstrap per pool instance currently registered with bootstrap
@@ -1079,6 +1147,7 @@ export interface DesktopBridge {
   setTailscaleServeEnabled: (input: {
     readonly enabled: boolean;
     readonly port?: number;
+    readonly servePath?: string;
   }) => Promise<DesktopServerExposureState>;
   getAdvertisedEndpoints: () => Promise<readonly AdvertisedEndpoint[]>;
   getWslState: () => Promise<DesktopWslState>;
@@ -1098,6 +1167,13 @@ export interface DesktopBridge {
   updateTailscaleServePath: (
     input: DesktopTailscaleServePathUpdateInput,
   ) => Promise<DesktopTailscaleAccessState>;
+  getDevLaunchState: (threadRef: DesktopDevLaunchThreadRef) => Promise<DesktopDevLaunchState>;
+  launchDevApp: (input: DesktopDevLaunchLaunchInput) => Promise<DesktopDevLaunchState>;
+  stopDevApp: (input: DesktopDevLaunchStopInput) => Promise<DesktopDevLaunchState>;
+  listActiveDevLaunches: () => Promise<DesktopDevLaunchState>;
+  buildDevLaunchCollisionPrompt: (
+    input: DesktopDevLaunchCollisionPromptInput,
+  ) => Promise<DesktopDevLaunchCollisionPromptResult>;
   pickFolder: (options?: PickFolderOptions) => Promise<string | null>;
   confirm: (message: string) => Promise<boolean>;
   setTheme: (theme: DesktopTheme) => Promise<void>;
@@ -1107,6 +1183,8 @@ export interface DesktopBridge {
   ) => Promise<T | null>;
   openExternal: (url: string) => Promise<boolean>;
   onMenuAction: (listener: (action: string) => void) => () => void;
+  onRunningCodeUpdated: (listener: () => void) => () => void;
+  restartToApplyCodeUpdate: () => Promise<void>;
   getUpdateState: () => Promise<DesktopUpdateState>;
   setUpdateChannel: (channel: DesktopUpdateChannel) => Promise<DesktopUpdateState>;
   checkForUpdate: () => Promise<DesktopUpdateCheckResult>;
@@ -1118,6 +1196,12 @@ export interface DesktopBridge {
    * Electron desktop build; web builds have `preview === undefined`.
    */
   preview?: DesktopPreviewBridge;
+  /**
+   * Local-only automation surface for the T3 Code Electron shell itself.
+   * Agents should use `preview.automation` for controlled websites and this
+   * surface only when operating the host app UI.
+   */
+  appAutomation?: DesktopAppAutomationBridge;
 }
 
 export interface DesktopPreviewBridge {
@@ -1182,6 +1266,18 @@ export interface DesktopPreviewBridge {
   onPointerEvent: (listener: (event: DesktopPreviewPointerEvent) => void) => () => void;
 }
 
+export interface DesktopAppAutomationBridge {
+  status: () => Promise<AppAutomationStatus>;
+  show: () => Promise<AppAutomationStatus>;
+  snapshot: () => Promise<AppAutomationSnapshot>;
+  click: (input: AppAutomationClickInput) => Promise<void>;
+  type: (input: AppAutomationTypeInput) => Promise<void>;
+  press: (input: AppAutomationPressInput) => Promise<void>;
+  scroll: (input: AppAutomationScrollInput) => Promise<void>;
+  evaluate: (input: AppAutomationEvaluateInput) => Promise<unknown>;
+  waitFor: (input: AppAutomationWaitForInput) => Promise<void>;
+}
+
 /**
  * APIs bound to the local app shell, not to any particular backend environment.
  *
@@ -1222,6 +1318,10 @@ export interface LocalApi {
       readonly instanceId?: ProviderInstanceId;
     }) => Promise<ServerProviderUpdatedPayload>;
     updateProvider: (input: ServerProviderUpdateInput) => Promise<ServerProviderUpdatedPayload>;
+    resetProvider: (input: ServerProviderResetInput) => Promise<ServerProviderResetResult>;
+    writeProviderSkillConfig: (
+      input: ServerProviderSkillConfigWriteInput,
+    ) => Promise<ServerProviderSkillConfigWriteResult>;
     upsertKeybinding: (input: ServerUpsertKeybindingInput) => Promise<ServerUpsertKeybindingResult>;
     removeKeybinding: (input: ServerRemoveKeybindingInput) => Promise<ServerRemoveKeybindingResult>;
     getSettings: () => Promise<ServerSettings>;
@@ -1233,6 +1333,23 @@ export interface LocalApi {
       input: ServerProcessResourceHistoryInput,
     ) => Promise<ServerProcessResourceHistoryResult>;
     signalProcess: (input: ServerSignalProcessInput) => Promise<ServerSignalProcessResult>;
+    restartRuntime: (input: ServerRestartRuntimeInput) => Promise<ServerRestartRuntimeResult>;
+    getDevLaunchState: (threadRef: DesktopDevLaunchThreadRef) => Promise<DesktopDevLaunchState>;
+    launchDevApp: (input: DesktopDevLaunchLaunchInput) => Promise<DesktopDevLaunchState>;
+    stopDevApp: (input: DesktopDevLaunchStopInput) => Promise<DesktopDevLaunchState>;
+    listActiveDevLaunches: () => Promise<DesktopDevLaunchState>;
+    buildDevLaunchCollisionPrompt: (
+      input: DesktopDevLaunchCollisionPromptInput,
+    ) => Promise<DesktopDevLaunchCollisionPromptResult>;
+  };
+  desktop?: {
+    getDevLaunchState: (threadRef: DesktopDevLaunchThreadRef) => Promise<DesktopDevLaunchState>;
+    launchDevApp: (input: DesktopDevLaunchLaunchInput) => Promise<DesktopDevLaunchState>;
+    stopDevApp: (input: DesktopDevLaunchStopInput) => Promise<DesktopDevLaunchState>;
+    listActiveDevLaunches: () => Promise<DesktopDevLaunchState>;
+    buildDevLaunchCollisionPrompt: (
+      input: DesktopDevLaunchCollisionPromptInput,
+    ) => Promise<DesktopDevLaunchCollisionPromptResult>;
   };
 }
 
@@ -1258,6 +1375,7 @@ export interface EnvironmentApi {
     write: (input: typeof TerminalWriteInput.Encoded) => Promise<void>;
     resize: (input: typeof TerminalResizeInput.Encoded) => Promise<void>;
     clear: (input: typeof TerminalClearInput.Encoded) => Promise<void>;
+    kill: (input: typeof TerminalKillInput.Encoded) => Promise<void>;
     restart: (input: typeof TerminalRestartInput.Encoded) => Promise<TerminalSessionSnapshot>;
     close: (input: typeof TerminalCloseInput.Encoded) => Promise<void>;
     onMetadata: (
@@ -1272,6 +1390,15 @@ export interface EnvironmentApi {
     readFile: (input: ProjectReadFileInput) => Promise<ProjectReadFileResult>;
     searchEntries: (input: ProjectSearchEntriesInput) => Promise<ProjectSearchEntriesResult>;
     writeFile: (input: ProjectWriteFileInput) => Promise<ProjectWriteFileResult>;
+    listAgentFiles: (input: ProjectAgentFilesListInput) => Promise<ProjectAgentFilesListResult>;
+    readAgentFile: (input: ProjectAgentFileReadInput) => Promise<ProjectAgentFileReadResult>;
+    writeAgentFile: (input: ProjectAgentFileWriteInput) => Promise<ProjectAgentFileWriteResult>;
+    deleteAgentFile: (input: ProjectAgentFileDeleteInput) => Promise<ProjectAgentFileDeleteResult>;
+    scaffoldAgentHarness: (
+      input: ProjectAgentHarnessScaffoldInput,
+    ) => Promise<ProjectAgentHarnessScaffoldResult>;
+    writeAgentSecret: (input: ProjectAgentSecretWriteInput) => Promise<ProjectAgentSecretStatus>;
+    deleteAgentSecret: (input: ProjectAgentSecretDeleteInput) => Promise<ProjectAgentSecretStatus>;
   };
   filesystem: {
     browse: (input: FilesystemBrowseInput) => Promise<FilesystemBrowseResult>;
@@ -1362,5 +1489,18 @@ export interface EnvironmentApi {
       callback: (servers: DiscoveredLocalServerList) => void,
       options?: { onResubscribe?: () => void },
     ) => () => void;
+  };
+  appAutomation: {
+    connect: (
+      input: { clientId: string },
+      callback: (request: AppAutomationRequest) => void,
+      options?: { onResubscribe?: () => void },
+    ) => () => void;
+    respond: (response: AppAutomationResponse) => Promise<void>;
+    reportOwner: (owner: AppAutomationOwner) => Promise<void>;
+    clearOwner: (input: { clientId: string }) => Promise<void>;
+  };
+  server: {
+    restartRuntime: (input: ServerRestartRuntimeInput) => Promise<ServerRestartRuntimeResult>;
   };
 }

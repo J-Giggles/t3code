@@ -15,7 +15,7 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/bin.ts",
+    "dev": "node scripts/dev-supervisor.mjs",
     "build:bundle": "vp pack",
     "start": "node dist/bin.mjs",
     "typecheck": "tsgo --noEmit",

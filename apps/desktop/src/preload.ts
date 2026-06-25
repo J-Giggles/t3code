@@ -106,6 +106,13 @@ contextBridge.exposeInMainWorld("desktopBridge", {
     ipcRenderer.invoke(IpcChannels.CHECK_TAILSCALE_SERVE_ROUTE_CHANNEL, input),
   updateTailscaleServePath: (input) =>
     ipcRenderer.invoke(IpcChannels.UPDATE_TAILSCALE_SERVE_PATH_CHANNEL, input),
+  getDevLaunchState: (threadRef) =>
+    ipcRenderer.invoke(IpcChannels.GET_DEV_LAUNCH_STATE_CHANNEL, threadRef),
+  launchDevApp: (input) => ipcRenderer.invoke(IpcChannels.LAUNCH_DEV_APP_CHANNEL, input),
+  stopDevApp: (input) => ipcRenderer.invoke(IpcChannels.STOP_DEV_APP_CHANNEL, input),
+  listActiveDevLaunches: () => ipcRenderer.invoke(IpcChannels.LIST_ACTIVE_DEV_LAUNCHES_CHANNEL),
+  buildDevLaunchCollisionPrompt: (input) =>
+    ipcRenderer.invoke(IpcChannels.BUILD_DEV_LAUNCH_COLLISION_PROMPT_CHANNEL, input),
   pickFolder: (options) => ipcRenderer.invoke(IpcChannels.PICK_FOLDER_CHANNEL, options),
   confirm: (message) => ipcRenderer.invoke(IpcChannels.CONFIRM_CHANNEL, message),
   setTheme: (theme) => ipcRenderer.invoke(IpcChannels.SET_THEME_CHANNEL, theme),
@@ -126,6 +133,18 @@ contextBridge.exposeInMainWorld("desktopBridge", {
       ipcRenderer.removeListener(IpcChannels.MENU_ACTION_CHANNEL, wrappedListener);
     };
   },
+  onRunningCodeUpdated: (listener) => {
+    const wrappedListener = () => {
+      listener();
+    };
+
+    ipcRenderer.on(IpcChannels.RUNNING_CODE_UPDATED_CHANNEL, wrappedListener);
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.RUNNING_CODE_UPDATED_CHANNEL, wrappedListener);
+    };
+  },
+  restartToApplyCodeUpdate: () =>
+    ipcRenderer.invoke(IpcChannels.RESTART_TO_APPLY_CODE_UPDATE_CHANNEL),
   getUpdateState: () => ipcRenderer.invoke(IpcChannels.UPDATE_GET_STATE_CHANNEL),
   setUpdateChannel: (channel) =>
     ipcRenderer.invoke(IpcChannels.UPDATE_SET_CHANNEL_CHANNEL, channel),
@@ -235,5 +254,16 @@ contextBridge.exposeInMainWorld("desktopBridge", {
       return () =>
         ipcRenderer.removeListener(IpcChannels.PREVIEW_POINTER_EVENT_CHANNEL, wrappedListener);
     },
+  },
+  appAutomation: {
+    status: () => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_STATUS_CHANNEL),
+    show: () => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_SHOW_CHANNEL),
+    snapshot: () => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_SNAPSHOT_CHANNEL),
+    click: (input) => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_CLICK_CHANNEL, { input }),
+    type: (input) => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_TYPE_CHANNEL, { input }),
+    press: (input) => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_PRESS_CHANNEL, { input }),
+    scroll: (input) => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_SCROLL_CHANNEL, { input }),
+    evaluate: (input) => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_EVALUATE_CHANNEL, { input }),
+    waitFor: (input) => ipcRenderer.invoke(IpcChannels.APP_AUTOMATION_WAIT_FOR_CHANNEL, { input }),
   },
 } satisfies DesktopBridge);

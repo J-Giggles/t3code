@@ -8,6 +8,13 @@ import {
   setConnectionCatalog,
 } from "./methods/connectionCatalog.ts";
 import {
+  buildDevLaunchCollisionPrompt,
+  getDevLaunchState,
+  launchDevApp,
+  listActiveDevLaunches,
+  stopDevApp,
+} from "./methods/devLaunch.ts";
+import {
   checkTailscaleServeRoute,
   disableTailscaleAccess,
   enableTailscaleAccess,
@@ -44,9 +51,11 @@ import {
   getLocalEnvironmentBearerToken,
   openExternal,
   pickFolder,
+  restartToApplyCodeUpdate,
   setTheme,
   showContextMenu,
 } from "./methods/window.ts";
+import * as AppAutomationIpc from "./methods/appAutomation.ts";
 import * as PreviewIpc from "./methods/preview.ts";
 import { getWslState, setWslBackendEnabled, setWslDistro, setWslOnly } from "./methods/wsl.ts";
 
@@ -84,6 +93,11 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
   yield* ipc.handle(probeTailscaleAccess);
   yield* ipc.handle(checkTailscaleServeRoute);
   yield* ipc.handle(updateTailscaleServePath);
+  yield* ipc.handle(getDevLaunchState);
+  yield* ipc.handle(launchDevApp);
+  yield* ipc.handle(stopDevApp);
+  yield* ipc.handle(listActiveDevLaunches);
+  yield* ipc.handle(buildDevLaunchCollisionPrompt);
 
   yield* ipc.handle(getWslState);
   yield* ipc.handle(setWslBackendEnabled);
@@ -95,6 +109,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
   yield* ipc.handle(setTheme);
   yield* ipc.handle(showContextMenu);
   yield* ipc.handle(openExternal);
+  yield* ipc.handle(restartToApplyCodeUpdate);
   yield* ipc.handle(getUpdateState);
   yield* ipc.handle(setUpdateChannel);
   yield* ipc.handle(downloadUpdate);
@@ -102,5 +117,8 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
   yield* ipc.handle(checkForUpdate);
   for (const previewMethod of PreviewIpc.methods) {
     yield* ipc.handle(previewMethod);
+  }
+  for (const appAutomationMethod of AppAutomationIpc.methods) {
+    yield* ipc.handle(appAutomationMethod);
   }
 });
