@@ -61,6 +61,76 @@ jobs:
       - name: Test
         run: vp run test
 
+  desktop_e2e_smoke:
+    name: Desktop E2E Smoke
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: true
+
+      - name: Install headed Electron runtime
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Ensure Electron runtime is installed
+        run: vp run --filter @t3tools/desktop ensure:electron
+
+      - name: Desktop E2E smoke
+        run: vp run test:desktop-e2e:smoke
+
+  test_browser:
+    name: Test Browser
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: true
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install browser test runtime
+        run: vp run --filter @t3tools/web test:browser:install
+
+      - name: Browser test / Chat view
+        working-directory: apps/web
+        run: vp test run --mode browser --browser=chromium src/components/ChatView.browser.tsx
+
+      - name: Browser test / Chat markdown
+        working-directory: apps/web
+        run: vp test run --mode browser --browser=chromium src/components/ChatMarkdown.browser.tsx
+
+      - name: Browser test / Components
+        working-directory: apps/web
+        run: |
+          vp test run --mode browser --browser=chromium \
+            src/components/GitActionsControl.browser.tsx \
+            src/components/KeybindingsToast.browser.tsx \
+            src/components/ThreadTerminalDrawer.browser.tsx \
+            src/components/chat/MessagesTimeline.browser.tsx \
+            src/components/chat/ProviderModelPicker.browser.tsx \
+            src/components/chat/CompactComposerControlsMenu.browser.tsx \
+            src/components/settings/SettingsPanels.browser.tsx
+
   mobile_native_static_analysis:
     name: Mobile Native Static Analysis
     runs-on: blacksmith-12vcpu-macos-26

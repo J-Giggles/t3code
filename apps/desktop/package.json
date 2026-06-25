@@ -6,6 +6,10 @@
   "main": "dist-electron/main.cjs",
   "scripts": {
     "ensure:electron": "node scripts/ensure-electron-runtime.mjs",
+    "e2e:smoke": "node scripts/run-e2e.mjs smoke",
+    "e2e:headed": "node scripts/run-e2e.mjs headed",
+    "verify:staging-public": "node scripts/verify-staging-public.mjs",
+    "verify:nightly-public": "T3CODE_PUBLIC_VERIFY_TARGET=nightly node scripts/verify-staging-public.mjs",
     "start": "node scripts/start-electron.mjs",
     "typecheck": "tsgo --noEmit",
     "test": "vp test run --passWithNoTests",
@@ -31,7 +35,8 @@
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "cross-env": "^10.1.0",
-    "electron-builder": "26.15.6",
+    "electron-builder": "26.8.1",
+    "playwright": "1.60.0",
     "tailwindcss": "^4.0.0",
     "vite-plus": "catalog:"
   },

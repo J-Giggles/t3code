@@ -11,6 +11,9 @@ const publicConfigDefine = {
 };
 
 export default defineConfig({
+  test: {
+    include: ["src/**/*.test.ts"],
+  },
   run: {
     tasks: {
       build: {

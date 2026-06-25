@@ -15,6 +15,23 @@ const desktopDir = NodePath.resolve(
 const repoRoot = NodePath.resolve(desktopDir, "../..");
 const BASE_SERVER_PORT = 13_773;
 const BASE_WEB_PORT = 5_733;
+const OUTER_LAUNCH_ENV_KEYS = [
+  "T3CODE_APP_ROOT",
+  "T3CODE_DESKTOP_VARIANT",
+  "T3CODE_DEV_INSTANCE",
+  "T3CODE_EXPECTED_BRANCH",
+  "T3CODE_RESTART_CONTROL_KIND",
+  "T3CODE_RESTART_CONTROL_TOKEN",
+  "T3CODE_RESTART_CONTROL_URL",
+  "T3CODE_TAILSCALE_SERVE_PATH",
+  "T3CODE_WORKSPACE_SLUG",
+  "T3CODE_WORKTREE_ROLE",
+  "VITE_DEV_SERVER_URL",
+  "VITE_HTTP_URL",
+  "VITE_T3CODE_PUBLIC_BASE_PATH",
+  "VITE_T3CODE_PUBLIC_ORIGIN",
+  "VITE_WS_URL",
+] as const;
 
 export interface ElectronHarnessRuntime {
   readonly repoRoot: string;
@@ -353,13 +370,18 @@ async function startElectronHarness(
 
   await seed?.run(runtime);
 
+  const childEnv: NodeJS.ProcessEnv = { ...process.env };
+  for (const key of OUTER_LAUNCH_ENV_KEYS) {
+    delete childEnv[key];
+  }
+
   const child = NodeChildProcess.spawn(process.execPath, ["scripts/dev-runner.ts", "dev:desktop"], {
     cwd: repoRoot,
     // oxlint-disable-next-line t3code/no-global-process-runtime -- The harness uses Node process groups to own the dev-runner tree.
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
     env: {
-      ...process.env,
+      ...childEnv,
       HOME: homeDir,
       XDG_CONFIG_HOME: xdgConfigDir,
       T3CODE_HOME: t3Home,

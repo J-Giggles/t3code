@@ -130,6 +130,14 @@
     "./state/vcs": {
       "types": "./src/state/vcs.ts",
       "default": "./src/state/vcs.ts"
+    },
+    "./wsRpcClient": {
+      "types": "./src/wsRpcClient.ts",
+      "default": "./src/wsRpcClient.ts"
+    },
+    "./wsTransport": {
+      "types": "./src/wsTransport.ts",
+      "default": "./src/wsTransport.ts"
     }
   },
   "scripts": {

@@ -7,6 +7,7 @@ import {
   PRIMARY_LOCAL_ENVIRONMENT_ID,
   type DesktopEnvironmentBootstrap,
 } from "@t3tools/contracts";
+import * as Electron from "electron";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -256,5 +257,21 @@ export const openExternal = DesktopIpc.makeIpcMethod({
   handler: Effect.fn("desktop.ipc.window.openExternal")(function* (url) {
     const shell = yield* ElectronShell.ElectronShell;
     return yield* shell.openExternal(url);
+  }),
+});
+
+export const restartToApplyCodeUpdate = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.RESTART_TO_APPLY_CODE_UPDATE_CHANNEL,
+  payload: Schema.Undefined,
+  result: Schema.Void,
+  handler: Effect.fn("desktop.ipc.window.restartToApplyCodeUpdate")(function* () {
+    const environment = yield* DesktopEnvironment.DesktopEnvironment;
+    if (!environment.isDevelopment) {
+      return;
+    }
+
+    setImmediate(() => {
+      Electron.app.exit(42);
+    });
   }),
 });
