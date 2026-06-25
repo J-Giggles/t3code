@@ -1,13 +1,18 @@
 import { httpHeaderRedactionLayer } from "@t3tools/shared/httpObservability";
 import { makeLocalFileTracer, makeTraceSink } from "@t3tools/shared/observability";
+import { makeT3ObservabilityResourceAttributesFromEnv } from "@t3tools/shared/observabilityResource";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as References from "effect/References";
 import * as Tracer from "effect/Tracer";
-import * as OtlpMetrics from "effect/unstable/observability/OtlpMetrics";
-import * as OtlpSerialization from "effect/unstable/observability/OtlpSerialization";
-import * as OtlpTracer from "effect/unstable/observability/OtlpTracer";
+import {
+  OtlpLogger,
+  OtlpMetrics,
+  OtlpSerialization,
+  OtlpTracer,
+} from "effect/unstable/observability";
 
+import packageJson from "../../../package.json" with { type: "json" };
 import * as ServerConfig from "../../config.ts";
 import { ServerLoggerLive } from "../../serverLogger.ts";
 import * as BrowserTraceCollector from "../BrowserTraceCollector.ts";
@@ -17,6 +22,17 @@ const otlpSerializationLayer = OtlpSerialization.layerJson;
 export const ObservabilityLive = Layer.unwrap(
   Effect.gen(function* () {
     const config = yield* ServerConfig.ServerConfig;
+    const otlpResource = {
+      serviceName: config.otlpServiceName,
+      serviceVersion: packageJson.version,
+      attributes: {
+        ...makeT3ObservabilityResourceAttributesFromEnv(process.env, {
+          serviceVersion: packageJson.version,
+          runtimeMode: config.mode,
+        }),
+        "service.mode": config.mode,
+      },
+    };
 
     const traceReferencesLayer = Layer.mergeAll(
       Layer.succeed(Tracer.MinimumTraceLevel, config.traceMinLevel),
@@ -38,13 +54,7 @@ export const ObservabilityLive = Layer.unwrap(
             : yield* OtlpTracer.make({
                 url: config.otlpTracesUrl,
                 exportInterval: `${config.otlpExportIntervalMs} millis`,
-                resource: {
-                  serviceName: config.otlpServiceName,
-                  attributes: {
-                    "service.runtime": "t3-server",
-                    "service.mode": config.mode,
-                  },
-                },
+                resource: otlpResource,
               });
 
         const tracer = yield* makeLocalFileTracer({
@@ -69,15 +79,25 @@ export const ObservabilityLive = Layer.unwrap(
         : OtlpMetrics.layer({
             url: config.otlpMetricsUrl,
             exportInterval: `${config.otlpExportIntervalMs} millis`,
-            resource: {
-              serviceName: config.otlpServiceName,
-              attributes: {
-                "service.runtime": "t3-server",
-                "service.mode": config.mode,
-              },
-            },
+            resource: otlpResource,
           }).pipe(Layer.provideMerge(otlpSerializationLayer));
 
-    return Layer.mergeAll(ServerLoggerLive, traceReferencesLayer, tracerLayer, metricsLayer);
+    const logsLayer =
+      config.otlpLogsUrl === undefined
+        ? Layer.empty
+        : OtlpLogger.layer({
+            url: config.otlpLogsUrl,
+            exportInterval: `${config.otlpExportIntervalMs} millis`,
+            resource: otlpResource,
+            mergeWithExisting: true,
+          }).pipe(Layer.provideMerge(otlpSerializationLayer));
+
+    return Layer.mergeAll(
+      ServerLoggerLive,
+      traceReferencesLayer,
+      tracerLayer,
+      metricsLayer,
+      logsLayer,
+    );
   }),
 );

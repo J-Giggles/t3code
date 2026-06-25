@@ -128,6 +128,7 @@ const SERVER_CONFIG: ServerConfigType = {
     localTracingEnabled: false,
     otlpTracesEnabled: false,
     otlpMetricsEnabled: false,
+    otlpLogsEnabled: false,
   },
   settings: DEFAULT_SERVER_SETTINGS,
 };
@@ -215,7 +216,10 @@ describe("RpcSessionFactory", () => {
       yield* Fiber.join(readyFiber);
 
       const config = yield* session.initialConfig;
-      expect(config).toEqual(SERVER_CONFIG);
+      expect(config).toEqual({
+        ...SERVER_CONFIG,
+        t3ProviderAccessCatalog: { mcps: [] },
+      });
       expect(socket.sent).toHaveLength(1);
 
       socket.close(1012, "service restart");

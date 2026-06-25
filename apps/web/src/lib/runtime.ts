@@ -4,6 +4,7 @@ import * as Layer from "effect/Layer";
 import * as Socket from "effect/unstable/socket/Socket";
 
 import { remoteHttpClientLayer } from "@t3tools/client-runtime/rpc";
+import { makeT3ObservabilityResourceAttributes } from "@t3tools/shared/observabilityResource";
 import { makeRelayClientTracingLayer } from "@t3tools/shared/relayTracing";
 import * as PrimaryEnvironmentHttpClient from "../environments/primary/httpClient";
 import { primaryEnvironmentHttpLayer } from "../environments/primary/httpLayer";
@@ -22,6 +23,16 @@ const relayTracingLayer = makeRelayClientTracingLayer(resolveRelayTracingConfig(
   serviceVersion: import.meta.env.APP_VERSION,
   runtime: "browser",
   client: typeof window !== "undefined" && window.desktopBridge ? "desktop" : "web",
+  attributes: makeT3ObservabilityResourceAttributes({
+    serviceVersion: import.meta.env.APP_VERSION,
+    runtimeMode: "relay-client",
+    worktreeRole: import.meta.env.VITE_T3_WORKTREE_ROLE,
+    worktreePath: import.meta.env.VITE_T3_WORKTREE_PATH,
+    gitBranch: import.meta.env.VITE_T3_GIT_BRANCH,
+    gitCommit: import.meta.env.VITE_T3_GIT_COMMIT,
+    devInstance: import.meta.env.VITE_T3_DEV_INSTANCE,
+    t3Home: import.meta.env.VITE_T3_HOME,
+  }),
 }).pipe(Layer.provide(httpClientLayer));
 
 type RuntimeLayerSource =

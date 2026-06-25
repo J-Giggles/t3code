@@ -1,5 +1,6 @@
 import { PRIMARY_LOCAL_ENVIRONMENT_ID } from "@t3tools/contracts";
 import { makeLocalFileTracer, makeTraceSink } from "@t3tools/shared/observability";
+import { makeT3ObservabilityResourceAttributesFromEnv } from "@t3tools/shared/observabilityResource";
 import { parsePersistedServerObservabilitySettings } from "@t3tools/shared/serverSettings";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -17,7 +18,7 @@ import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
 import * as SynchronizedRef from "effect/SynchronizedRef";
 import * as Tracer from "effect/Tracer";
-import { OtlpSerialization, OtlpTracer } from "effect/unstable/observability";
+import { OtlpLogger, OtlpSerialization, OtlpTracer } from "effect/unstable/observability";
 
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
 
@@ -266,6 +267,18 @@ const readPersistedOtlpTracesUrl: Effect.Effect<
   return Option.fromNullishOr(parsed.otlpTracesUrl);
 });
 
+const readPersistedOtlpLogsUrl = Effect.gen(function* () {
+  const fileSystem = yield* FileSystem.FileSystem;
+  const environment = yield* DesktopEnvironment.DesktopEnvironment;
+  const raw = yield* fileSystem.readFileString(environment.serverSettingsPath).pipe(Effect.option);
+  if (Option.isNone(raw)) {
+    return Option.none();
+  }
+
+  const parsed = parsePersistedServerObservabilitySettings(raw.value);
+  return Option.fromNullishOr(parsed.otlpLogsUrl);
+});
+
 const resolveOtlpTracesUrl = Effect.gen(function* () {
   const environment = yield* DesktopEnvironment.DesktopEnvironment;
   if (Option.isSome(environment.otlpTracesUrl)) {
@@ -438,6 +451,14 @@ const backendOutputLogFactoryLayer = Layer.effect(
   }),
 );
 
+const resolveOtlpLogsUrl = Effect.gen(function* () {
+  const environment = yield* DesktopEnvironment.DesktopEnvironment;
+  if (Option.isSome(environment.otlpLogsUrl)) {
+    return environment.otlpLogsUrl;
+  }
+  return yield* readPersistedOtlpLogsUrl;
+});
+
 const desktopLoggerLayer = Layer.mergeAll(
   Logger.layer([Logger.consolePretty(), Logger.tracerLogger], { mergeWithExisting: false }),
   Layer.succeed(References.MinimumLogLevel, "Info"),
@@ -448,6 +469,17 @@ const tracerLayer = Layer.unwrap(
     const environment = yield* DesktopEnvironment.DesktopEnvironment;
     const otlpTracesUrl = yield* resolveOtlpTracesUrl;
     const tracePath = environment.path.join(environment.logDir, "desktop.trace.ndjson");
+    const otlpResource = {
+      serviceName: "t3-desktop",
+      serviceVersion: environment.appVersion,
+      attributes: {
+        ...makeT3ObservabilityResourceAttributesFromEnv(process.env, {
+          serviceVersion: environment.appVersion,
+          runtimeMode: "desktop",
+        }),
+        "service.mode": environment.isDevelopment ? "development" : "packaged",
+      },
+    };
     const sink = yield* makeTraceSink({
       filePath: tracePath,
       maxBytes: DESKTOP_LOG_FILE_MAX_BYTES,
@@ -459,13 +491,7 @@ const tracerLayer = Layer.unwrap(
       : yield* OtlpTracer.make({
           url: otlpTracesUrl.value,
           exportInterval: `${environment.otlpExportIntervalMs} millis`,
-          resource: {
-            serviceName: "desktop",
-            attributes: {
-              "service.runtime": "desktop",
-              "service.mode": environment.isDevelopment ? "development" : "packaged",
-            },
-          },
+          resource: otlpResource,
         });
     const tracer = yield* makeLocalFileTracer({
       filePath: tracePath,
@@ -480,10 +506,38 @@ const tracerLayer = Layer.unwrap(
   }),
 ).pipe(Layer.provideMerge(OtlpSerialization.layerJson));
 
+const otlpLoggerLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const environment = yield* DesktopEnvironment.DesktopEnvironment;
+    const otlpLogsUrl = yield* resolveOtlpLogsUrl;
+    if (Option.isNone(otlpLogsUrl)) {
+      return Layer.empty;
+    }
+
+    return OtlpLogger.layer({
+      url: otlpLogsUrl.value,
+      exportInterval: `${environment.otlpExportIntervalMs} millis`,
+      resource: {
+        serviceName: "t3-desktop",
+        serviceVersion: environment.appVersion,
+        attributes: {
+          ...makeT3ObservabilityResourceAttributesFromEnv(process.env, {
+            serviceVersion: environment.appVersion,
+            runtimeMode: "desktop",
+          }),
+          "service.mode": environment.isDevelopment ? "development" : "packaged",
+        },
+      },
+      mergeWithExisting: true,
+    });
+  }),
+).pipe(Layer.provideMerge(OtlpSerialization.layerJson));
+
 export const layer = Layer.mergeAll(
   backendOutputLogFactoryLayer,
   desktopLoggerLayer,
   tracerLayer,
+  otlpLoggerLayer,
   Layer.succeed(Tracer.MinimumTraceLevel, "Info"),
   Layer.succeed(References.TracerTimingEnabled, true),
 );

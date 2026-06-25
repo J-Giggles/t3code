@@ -88,7 +88,18 @@ describe("resolveCloudPublicConfig", () => {
     });
   });
 
-  it("rejects an insecure traces URL", () => {
+  it("accepts local loopback traces URLs and rejects non-local insecure traces URLs", () => {
+    expect(
+      resolveCloudPublicConfig({
+        observability: {
+          tracesUrl: "http://127.0.0.1:4318/v1/traces",
+        },
+      }).observability,
+    ).toEqual({
+      tracesUrl: "http://127.0.0.1:4318/v1/traces",
+      tracesDataset: null,
+      tracesToken: null,
+    });
     expect(
       resolveCloudPublicConfig({
         observability: {
@@ -104,18 +115,17 @@ describe("resolveCloudPublicConfig", () => {
     });
   });
 
-  it("keeps tracing disabled unless every public tracing value is configured", () => {
+  it("enables tracing when a public traces URL is configured", () => {
     expect(hasTracingPublicConfig(resolveCloudPublicConfig({}))).toBe(false);
     expect(
       hasTracingPublicConfig(
         resolveCloudPublicConfig({
           observability: {
             tracesUrl: "https://api.axiom.co/v1/traces",
-            tracesDataset: "mobile-traces",
           },
         }),
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       hasTracingPublicConfig(
         resolveCloudPublicConfig({

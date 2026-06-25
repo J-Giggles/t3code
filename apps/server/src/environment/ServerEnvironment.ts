@@ -150,3 +150,5 @@ export const make = Effect.gen(function* () {
  * provide the external platform services and a ServerConfig.
  */
 export const layer = Layer.effect(ServerEnvironment, make).pipe(Layer.provide(ProcessRunner.layer));
+
+export type ServerEnvironmentShape = ServerEnvironment["Service"];

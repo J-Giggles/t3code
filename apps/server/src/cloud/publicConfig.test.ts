@@ -133,6 +133,21 @@ it("resolves relay client tracing from runtime config with build-time fallback",
       tracesToken: "runtime-token",
     },
   );
+  assert.deepEqual(
+    resolveRelayClientTracingConfig(
+      {
+        T3CODE_RELAY_CLIENT_OTLP_TRACES_URL: "http://127.0.0.1:4318/v1/traces",
+      },
+      {
+        tracesUrl: "",
+        tracesDataset: "",
+        tracesToken: "",
+      },
+    ),
+    {
+      tracesUrl: "http://127.0.0.1:4318/v1/traces",
+    },
+  );
   assert.equal(
     resolveRelayClientTracingConfig(
       {

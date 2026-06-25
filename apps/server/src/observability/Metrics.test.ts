@@ -6,7 +6,11 @@ import * as Fiber from "effect/Fiber";
 import * as Metric from "effect/Metric";
 import * as TestClock from "effect/testing/TestClock";
 
-import { withMetrics } from "./Metrics.ts";
+import {
+  metricAttributesFromEnv,
+  metricResourceAttributesFromEnv,
+  withMetrics,
+} from "./Metrics.ts";
 
 const hasMetricSnapshot = (
   snapshots: ReadonlyArray<Metric.Metric.Snapshot>,
@@ -30,6 +34,54 @@ const findHistogramSnapshot = (
       snapshot.id === id &&
       Object.entries(attributes).every(([key, value]) => snapshot.attributes?.[key] === value),
   );
+
+describe("metricAttributes", () => {
+  it("maps local worktree resource env to Prometheus-safe metric labels", () => {
+    assert.deepEqual(
+      metricResourceAttributesFromEnv({
+        T3CODE_WORKTREE_ROLE: "staging",
+        T3CODE_WORKTREE_PATH: "/repo/t3code/.worktrees/staging",
+        T3CODE_GIT_BRANCH: "staging",
+        T3CODE_GIT_COMMIT: "abc123",
+        T3CODE_DEV_INSTANCE: "staging",
+        T3CODE_HOME: "/tmp/t3code-staging",
+      }),
+      {
+        t3_worktree_role: "staging",
+        t3_worktree_path: "/repo/t3code/.worktrees/staging",
+        t3_git_branch: "staging",
+        t3_git_commit: "abc123",
+        t3_dev_instance: "staging",
+        t3_home: "/tmp/t3code-staging",
+      },
+    );
+  });
+
+  it("adds local worktree labels to metric-specific attributes", () => {
+    assert.deepEqual(
+      Object.fromEntries(
+        metricAttributesFromEnv(
+          {
+            T3CODE_WORKTREE_ROLE: "dev",
+            T3CODE_GIT_BRANCH: "dev/observability",
+            T3CODE_DEV_INSTANCE: "observability",
+          },
+          {
+            method: "server.listThreads",
+            outcome: "success",
+          },
+        ),
+      ),
+      {
+        t3_worktree_role: "dev",
+        t3_git_branch: "dev/observability",
+        t3_dev_instance: "observability",
+        method: "server.listThreads",
+        outcome: "success",
+      },
+    );
+  });
+});
 
 describe("withMetrics", () => {
   it.effect("supports pipe-style usage", () =>

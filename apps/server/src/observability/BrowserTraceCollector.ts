@@ -21,3 +21,5 @@ export const make = (sink: TraceSink): BrowserTraceCollector["Service"] =>
   });
 
 export const layer = (sink: TraceSink) => Layer.succeed(BrowserTraceCollector, make(sink));
+
+export type BrowserTraceCollectorShape = BrowserTraceCollector["Service"];

@@ -258,6 +258,15 @@ export const makeEventNdjsonLogger = Effect.fn("makeEventNdjsonLogger")(function
     }
 
     yield* writer.writeMessage(message);
+    yield* Effect.logInfo("provider event log record").pipe(
+      Effect.annotateLogs({
+        component: "provider-event-log",
+        stream: options.stream,
+        threadId: threadId ?? undefined,
+        "t3.thread.id": threadId ?? undefined,
+        payload: message,
+      }),
+    );
   });
 
   const close = Effect.fn("close")(function* () {

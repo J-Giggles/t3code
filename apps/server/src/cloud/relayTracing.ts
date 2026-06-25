@@ -1,3 +1,4 @@
+import { makeT3ObservabilityResourceAttributesFromEnv } from "@t3tools/shared/observabilityResource";
 import { makeRelayClientTracingLayer } from "@t3tools/shared/relayTracing";
 
 import { resolveRelayClientTracingConfig } from "./publicConfig.ts";
@@ -10,6 +11,9 @@ export const headlessRelayClientTracingLayer = makeRelayClientTracingLayer(
     serviceName: "t3-headless-relay-client",
     runtime: "node",
     client: "headless-cli",
+    attributes: makeT3ObservabilityResourceAttributesFromEnv(process.env, {
+      runtimeMode: "relay-client",
+    }),
   },
 );
 
@@ -18,4 +22,7 @@ export const serverRelayBrokerTracingLayer = makeRelayClientTracingLayer(relayCl
   runtime: "node",
   client: "environment-server",
   component: "relay-broker",
+  attributes: makeT3ObservabilityResourceAttributesFromEnv(process.env, {
+    runtimeMode: "relay-client",
+  }),
 });

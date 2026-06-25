@@ -1,3 +1,4 @@
+import { makeT3ObservabilityResourceAttributesFromEnv } from "@t3tools/shared/observabilityResource";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -10,6 +11,30 @@ import {
   normalizeModelMetricLabel,
   outcomeFromExit,
 } from "./Attributes.ts";
+
+type MetricEnv = Parameters<typeof makeT3ObservabilityResourceAttributesFromEnv>[0];
+
+const METRIC_RESOURCE_ATTRIBUTE_LABELS: Readonly<Record<string, string>> = {
+  "t3.runtime.mode": "t3_runtime_mode",
+  "t3.worktree.role": "t3_worktree_role",
+  "t3.worktree.path": "t3_worktree_path",
+  "t3.git.branch": "t3_git_branch",
+  "t3.git.commit": "t3_git_commit",
+  "t3.dev.instance": "t3_dev_instance",
+  "t3.home": "t3_home",
+};
+
+export function metricResourceAttributesFromEnv(
+  env: MetricEnv = process.env,
+): Readonly<Record<string, string>> {
+  const resourceAttributes = makeT3ObservabilityResourceAttributesFromEnv(env);
+  return Object.fromEntries(
+    Object.entries(METRIC_RESOURCE_ATTRIBUTE_LABELS).flatMap(([resourceKey, metricKey]) => {
+      const value = resourceAttributes[resourceKey];
+      return value === undefined ? [] : [[metricKey, value]];
+    }),
+  );
+}
 
 export const rpcRequestsTotal = Metric.counter("t3_rpc_requests_total", {
   description: "Total RPC requests handled by the websocket RPC server.",
@@ -74,9 +99,18 @@ export const terminalRestartsTotal = Metric.counter("t3_terminal_restarts_total"
   description: "Total terminal restart requests handled.",
 });
 
+export const metricAttributesFromEnv = (
+  env: MetricEnv,
+  attributes: Readonly<Record<string, unknown>>,
+): ReadonlyArray<[string, string]> =>
+  Object.entries({
+    ...metricResourceAttributesFromEnv(env),
+    ...compactMetricAttributes(attributes),
+  });
+
 export const metricAttributes = (
   attributes: Readonly<Record<string, unknown>>,
-): ReadonlyArray<[string, string]> => Object.entries(compactMetricAttributes(attributes));
+): ReadonlyArray<[string, string]> => metricAttributesFromEnv(process.env, attributes);
 
 export const increment = (
   metric: Metric.Metric<number, unknown>,

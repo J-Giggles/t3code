@@ -1,0 +1,105 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: loki
+    orgId: 1
+  - name: Loki
+    orgId: 1
+  - name: prometheus
+    orgId: 1
+  - name: Prometheus
+    orgId: 1
+  - name: tempo
+    orgId: 1
+  - name: Tempo
+    orgId: 1
+
+datasources:
+  - name: Loki
+    uid: t3code-loki
+    type: loki
+    access: proxy
+    orgId: 1
+    url: http://127.0.0.1:3100
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 2000
+      timeout: 60
+      derivedFields:
+        - name: trace_id
+          matcherRegex: '(?:trace_id|traceId|traceID)[=:" ]+([A-Fa-f0-9]{32})'
+          datasourceUid: t3code-tempo
+          url: "$${__value.raw}"
+          urlDisplayLabel: View trace
+        - name: span_id
+          matcherRegex: '(?:span_id|spanId|spanID)[=:" ]+([A-Fa-f0-9]{16})'
+          url: "$${__value.raw}"
+          urlDisplayLabel: Span ID
+
+  - name: Tempo
+    uid: t3code-tempo
+    type: tempo
+    access: proxy
+    orgId: 1
+    url: http://127.0.0.1:3200
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: GET
+      nodeGraph:
+        enabled: true
+      serviceMap:
+        datasourceUid: t3code-prometheus
+      spanBar:
+        type: Tag
+        tag: service.name
+      tracesToLogsV2:
+        datasourceUid: t3code-loki
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: false
+        tags:
+          - key: service.name
+            value: service_name
+          - key: t3.worktree.role
+            value: t3_worktree_role
+          - key: t3.dev.instance
+            value: t3_dev_instance
+          - key: t3.provider
+            value: t3_provider
+          - key: t3.thread.id
+            value: t3_thread_id
+      tracesToMetrics:
+        datasourceUid: t3code-prometheus
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        tags:
+          - key: service.name
+            value: service_name
+          - key: t3.worktree.role
+            value: t3_worktree_role
+        queries:
+          - name: RPC p95 latency
+            query: "histogram_quantile(0.95, sum by (le, service_name, t3_worktree_role, method) (rate(t3_rpc_request_duration_bucket{$$__tags}[5m])))"
+          - name: Provider turn rate
+            query: "sum by (service_name, t3_worktree_role, provider, outcome) (rate(t3_provider_turns_total{$$__tags}[5m]))"
+
+  - name: Prometheus
+    uid: t3code-prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://127.0.0.1:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: 5s
+      exemplarTraceIdDestinations:
+        - datasourceUid: t3code-tempo
+          name: trace_id
+        - datasourceUid: t3code-tempo
+          name: traceID

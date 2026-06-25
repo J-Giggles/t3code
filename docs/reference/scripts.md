@@ -4,12 +4,29 @@
 - `bun run dev:server` — Starts just the WebSocket server (uses Bun TypeScript execution).
 - `bun run dev:web` — Starts just the Vite dev server for the web app.
 - Dev commands default `T3CODE_STATE_DIR` to `~/.t3/dev` to keep dev state isolated from desktop/prod state.
+- Dev commands start the local cross-app observability hub by default and inject
+  OTLP logs, traces, and metrics URLs for `http://127.0.0.1:4318`. Set
+  `T3CODE_LOCAL_OBSERVABILITY=0` to skip hub startup and OTLP env injection.
+  Open Grafana at `http://127.0.0.1:3030`.
+- T3 Code dev-runner modes default `T3CODE_DEV_CHANGE_POLICY=manual`: source
+  changes show a persistent Restart toast instead of hot reload or automatic
+  process restart. Set `T3CODE_DEV_CHANGE_POLICY=auto` to restore immediate
+  restart/hot-reload behavior. `T3CODE_DESKTOP_DISABLE_RESTART_ON_CHANGE=1`
+  remains a backwards-compatible alias for manual mode.
 - Override server CLI-equivalent flags from root dev commands with `--`, for example:
   `bun run dev -- --base-dir ~/.t3-2`
 - `bun run start` — Runs the production server (serves built web app as static files).
 - `bun run build` — Builds contracts, web app, and server through Turbo.
 - `bun run typecheck` — Strict TypeScript checks for all packages.
 - `bun run test` — Runs workspace tests.
+- `bun run observability:local` — Starts or reuses the local OpenTelemetry
+  Collector and Grafana LGTM containers used by all local T3 Code worktrees.
+- `bun run observability:status` — Prints local observability container status
+  and the Grafana/OTLP URLs.
+- `bun run observability:digest` — Queries local Loki, Tempo, and Prometheus
+  and prints an agent-readable summary of recent issues, traces, metrics, and
+  worktree identity mismatches. RPC and git metric summaries preserve worktree
+  labels so agents can compare main, staging, and dev streams.
 - `bun run dist:desktop:artifact -- --platform <mac|linux|win> --target <target> --arch <arch>` — Builds a desktop artifact for a specific platform/target/arch.
 - `bun run dist:desktop:dmg` — Builds a shareable macOS `.dmg` into `./release`.
 - `bun run dist:desktop:dmg:x64` — Builds an Intel macOS `.dmg`.

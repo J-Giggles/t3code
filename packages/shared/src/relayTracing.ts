@@ -10,8 +10,8 @@ import { OtlpSerialization, OtlpTracer } from "effect/unstable/observability";
 
 export interface RelayClientTracingConfig {
   readonly tracesUrl: string;
-  readonly tracesDataset: string;
-  readonly tracesToken: string;
+  readonly tracesDataset?: string | undefined;
+  readonly tracesToken?: string | undefined;
 }
 
 export interface RelayClientTracingResource {
@@ -20,6 +20,7 @@ export interface RelayClientTracingResource {
   readonly runtime: string;
   readonly client: string;
   readonly component?: string;
+  readonly attributes?: Readonly<Record<string, string>>;
 }
 
 export class RelayClientTracer extends Context.Reference(
@@ -132,16 +133,19 @@ export function makeRelayClientTracingLayer(
     return Layer.succeed(RelayClientTracer, Option.none());
   }
 
+  const headers = {
+    ...(config.tracesToken ? { Authorization: `Bearer ${config.tracesToken}` } : {}),
+    ...(config.tracesDataset ? { "X-Axiom-Dataset": config.tracesDataset } : {}),
+  };
+
   const tracerLayer = OtlpTracer.layer({
     url: config.tracesUrl,
-    headers: {
-      Authorization: `Bearer ${config.tracesToken}`,
-      "X-Axiom-Dataset": config.tracesDataset,
-    },
+    ...(Object.keys(headers).length > 0 ? { headers } : {}),
     resource: {
       serviceName: resource.serviceName,
       serviceVersion: resource.serviceVersion,
       attributes: {
+        ...resource.attributes,
         "service.runtime": resource.runtime,
         "service.component": resource.component ?? "relay-client",
         "t3.client.surface": resource.client,

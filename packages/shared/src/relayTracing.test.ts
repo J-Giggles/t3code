@@ -101,4 +101,39 @@ describe("withRelayClientTracing", () => {
       ),
     );
   });
+
+  it.effect("exports local relay spans without hosted-provider headers", () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => new Response(null, { status: 202 }));
+    const httpClientLayer = FetchHttpClient.layer.pipe(
+      Layer.provide(Layer.succeed(FetchHttpClient.Fetch, fetchFn)),
+    );
+    const tracingLayer = makeRelayClientTracingLayer(
+      {
+        tracesUrl: "http://127.0.0.1:4318/v1/traces",
+      },
+      {
+        serviceName: "relay-test",
+        runtime: "test",
+        client: "test",
+      },
+    ).pipe(Layer.provide(httpClientLayer));
+    const tracedApplication = Layer.effectDiscard(
+      Effect.void.pipe(Effect.withSpan("relay.local-operation"), withRelayClientTracing),
+    ).pipe(Layer.provide(tracingLayer));
+
+    return Layer.build(tracedApplication).pipe(
+      Effect.scoped,
+      Effect.andThen(
+        Effect.sync(() => {
+          expect(fetchFn).toHaveBeenCalledOnce();
+          const headers = new Headers(fetchFn.mock.calls[0]?.[1]?.headers);
+          expect(headers.get("authorization")).toBeNull();
+          expect(headers.get("x-axiom-dataset")).toBeNull();
+          expect(
+            new TextDecoder().decode(fetchFn.mock.calls[0]?.[1]?.body as Uint8Array),
+          ).toContain("relay.local-operation");
+        }),
+      ),
+    );
+  });
 });

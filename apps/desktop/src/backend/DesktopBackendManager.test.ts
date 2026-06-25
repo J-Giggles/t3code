@@ -53,6 +53,7 @@ const configWithObservability: DesktopBackendBootstrapValue = {
   ...baseConfig.bootstrap,
   tailscaleServeEnabled: true,
   otlpTracesUrl: "http://127.0.0.1:4318/v1/traces",
+  otlpLogsUrl: "http://127.0.0.1:4318/v1/logs",
 };
 
 function makeProcess(options?: {

@@ -43,14 +43,17 @@ function trimNonEmpty(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function normalizeSecureUrl(value: unknown): string | null {
+function normalizeOtlpUrl(value: unknown): string | null {
   const raw = trimNonEmpty(value);
   if (raw === null) {
     return null;
   }
   try {
     const url = new URL(raw);
-    return url.protocol === "https:" ? url.toString() : null;
+    const isLoopbackHttp =
+      url.protocol === "http:" &&
+      (url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1");
+    return url.protocol === "https:" || isLoopbackHttp ? url.toString() : null;
   } catch {
     return null;
   }
@@ -66,7 +69,7 @@ export function resolveCloudPublicConfig(extra: ExpoExtra = Constants.expoConfig
       url: normalizeSecureRelayUrl(trimNonEmpty(extra?.relay?.url) ?? ""),
     },
     observability: {
-      tracesUrl: normalizeSecureUrl(extra?.observability?.tracesUrl),
+      tracesUrl: normalizeOtlpUrl(extra?.observability?.tracesUrl),
       tracesDataset: trimNonEmpty(extra?.observability?.tracesDataset),
       tracesToken: trimNonEmpty(extra?.observability?.tracesToken),
     },
@@ -79,21 +82,19 @@ export function hasCloudPublicConfig(): boolean {
 }
 
 type Configured<T> = {
-  readonly [Key in keyof T]: NonNullable<T[Key]>;
+  readonly [Key in keyof T]: T[Key];
 };
 
 type TracingPublicConfig = Omit<CloudPublicConfig, "observability"> & {
-  readonly observability: Configured<CloudPublicConfig["observability"]>;
+  readonly observability: Configured<CloudPublicConfig["observability"]> & {
+    readonly tracesUrl: string;
+  };
 };
 
 export function hasTracingPublicConfig(
   config: CloudPublicConfig = resolveCloudPublicConfig(),
 ): config is TracingPublicConfig {
-  return Boolean(
-    config.observability.tracesUrl &&
-    config.observability.tracesDataset &&
-    config.observability.tracesToken,
-  );
+  return Boolean(config.observability.tracesUrl);
 }
 
 export function resolveRelayClerkTokenOptions() {

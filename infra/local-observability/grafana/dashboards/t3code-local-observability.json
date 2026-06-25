@@ -1,0 +1,526 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Explore",
+      "tooltip": "Open preconfigured local observability datasources in Explore",
+      "type": "link",
+      "url": "/explore"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "t3code-loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "t3code-loki"
+          },
+          "expr": "{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"} |= ``",
+          "refId": "A"
+        }
+      ],
+      "title": "Live Logs By Worktree",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "t3code-loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "t3code-loki"
+          },
+          "expr": "{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"} |~ `(?i)(error|warn|failed|failure|exception|rejected|crash)`",
+          "refId": "A"
+        }
+      ],
+      "title": "Main / Staging / Dev Errors",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "t3code-loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "t3code-loki"
+          },
+          "expr": "{t3_worktree_role=~\"${worktree_role:regex}\", component=\"provider-event-log\"} |~ `(?i)(error|failed|failure|exception|rejected)`",
+          "refId": "A"
+        }
+      ],
+      "title": "Provider Turn Failures",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "t3code-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "t3code-prometheus"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, t3_worktree_role, service_name, method) (rate(t3_rpc_request_duration_bucket{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"}[5m])))",
+          "legendFormat": "{{t3_worktree_role}}/{{service_name}} {{method}} p95"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "t3code-prometheus"
+          },
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le, t3_worktree_role, service_name, commandType) (rate(t3_orchestration_command_ack_duration_bucket{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"}[5m])))",
+          "legendFormat": "{{t3_worktree_role}}/{{service_name}} {{commandType}} ack p95"
+        }
+      ],
+      "title": "RPC / Reconnect Latency P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "t3code-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "t3code-prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (t3_worktree_role, service_name) (process_resident_memory_bytes{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"})",
+          "legendFormat": "{{t3_worktree_role}}/{{service_name}} RSS"
+        }
+      ],
+      "title": "Process Memory By Worktree",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "t3code-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "t3code-prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (t3_worktree_role, service_name) (rate(process_cpu_seconds_total{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"}[5m]))",
+          "legendFormat": "{{t3_worktree_role}}/{{service_name}} CPU cores"
+        }
+      ],
+      "title": "Process CPU By Worktree",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "t3code-loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 7,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "t3code-loki"
+          },
+          "expr": "{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"} |~ `(?i)(error|warn|failed|failure|exception|rejected|crash)`",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Errors By Worktree Role",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "t3code-loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "t3code-loki"
+          },
+          "refId": "A",
+          "expr": "sum by (t3_worktree_role, service_name) (count_over_time({t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"} |~ `(?i)(error|warn|failed|failure|exception|rejected|crash)` [5m]))",
+          "legendFormat": "{{t3_worktree_role}}/{{service_name}} errors"
+        }
+      ],
+      "title": "Error Rate By Worktree",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "t3code-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "t3code-prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (t3_worktree_role, provider, outcome) (rate(t3_provider_turns_total{t3_worktree_role=~\"${worktree_role:regex}\", provider=~\"${provider:regex}\"}[5m]))",
+          "legendFormat": "{{t3_worktree_role}}/{{provider}} {{outcome}}"
+        }
+      ],
+      "title": "Provider Turn Rate By Provider",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "t3code-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "t3code-prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (t3_worktree_role, service_name) (rate(t3_terminal_restarts_total{t3_worktree_role=~\"${worktree_role:regex}\", service_name=~\"${service_name:regex}\"}[5m]))",
+          "legendFormat": "{{t3_worktree_role}}/{{service_name}} restarts"
+        }
+      ],
+      "title": "Terminal Restarts By Worktree",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["t3-code", "local-observability"],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "t3code-loki"
+        },
+        "definition": "label_values(t3_worktree_role)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Worktree",
+        "multi": true,
+        "name": "worktree_role",
+        "options": [],
+        "query": "label_values(t3_worktree_role)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "t3code-loki"
+        },
+        "definition": "label_values({t3_worktree_role=~\"${worktree_role:regex}\"}, service_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Service",
+        "multi": true,
+        "name": "service_name",
+        "options": [],
+        "query": "label_values({t3_worktree_role=~\"${worktree_role:regex}\"}, service_name)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "t3code-loki"
+        },
+        "definition": "label_values({t3_worktree_role=~\"${worktree_role:regex}\"}, t3_provider)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Provider",
+        "multi": true,
+        "name": "provider",
+        "options": [],
+        "query": "label_values({t3_worktree_role=~\"${worktree_role:regex}\"}, t3_provider)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "T3 Code Local Observability",
+  "uid": "t3code-local-observability",
+  "version": 2,
+  "weekStart": ""
+}

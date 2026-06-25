@@ -36,10 +36,13 @@ function readBuildTimeValue(value: string | undefined): string {
   return typeof value === "undefined" ? "" : value.trim();
 }
 
-function normalizeSecureUrl(value: string): string | null {
+function normalizeOtlpUrl(value: string): string | null {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : null;
+    const isLoopbackHttp =
+      url.protocol === "http:" &&
+      (url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1");
+    return url.protocol === "https:" || isLoopbackHttp ? url.toString() : null;
   } catch {
     return null;
   }
@@ -85,9 +88,13 @@ export function resolveRelayClientTracingConfig(
   const tracesDataset =
     env.T3CODE_RELAY_CLIENT_OTLP_TRACES_DATASET?.trim() || fallback.tracesDataset;
   const tracesToken = env.T3CODE_RELAY_CLIENT_OTLP_TRACES_TOKEN?.trim() || fallback.tracesToken;
-  const normalizedTracesUrl = normalizeSecureUrl(tracesUrl);
-  return normalizedTracesUrl && tracesDataset && tracesToken
-    ? { tracesUrl: normalizedTracesUrl, tracesDataset, tracesToken }
+  const normalizedTracesUrl = normalizeOtlpUrl(tracesUrl);
+  return normalizedTracesUrl
+    ? {
+        tracesUrl: normalizedTracesUrl,
+        ...(tracesDataset ? { tracesDataset } : {}),
+        ...(tracesToken ? { tracesToken } : {}),
+      }
     : null;
 }
 

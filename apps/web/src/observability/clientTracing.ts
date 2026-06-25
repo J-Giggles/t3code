@@ -20,6 +20,23 @@ const CLIENT_TRACING_RESOURCE = {
     "service.runtime": "t3-web",
     "service.mode": isElectron ? "electron" : "browser",
     "service.version": APP_VERSION,
+    "t3.runtime.mode": "web",
+    ...(import.meta.env.VITE_T3_WORKTREE_ROLE
+      ? { "t3.worktree.role": import.meta.env.VITE_T3_WORKTREE_ROLE }
+      : {}),
+    ...(import.meta.env.VITE_T3_WORKTREE_PATH
+      ? { "t3.worktree.path": import.meta.env.VITE_T3_WORKTREE_PATH }
+      : {}),
+    ...(import.meta.env.VITE_T3_GIT_BRANCH
+      ? { "t3.git.branch": import.meta.env.VITE_T3_GIT_BRANCH }
+      : {}),
+    ...(import.meta.env.VITE_T3_GIT_COMMIT
+      ? { "t3.git.commit": import.meta.env.VITE_T3_GIT_COMMIT }
+      : {}),
+    ...(import.meta.env.VITE_T3_DEV_INSTANCE
+      ? { "t3.dev.instance": import.meta.env.VITE_T3_DEV_INSTANCE }
+      : {}),
+    ...(import.meta.env.VITE_T3_HOME ? { "t3.home": import.meta.env.VITE_T3_HOME } : {}),
   },
 } as const;
 
