@@ -1644,6 +1644,34 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
+  it.effect("serves static assets when cached URLs include a stale reserved prefix", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const assetsDir = path.join(staticDir, "assets");
+      yield* fileSystem.makeDirectory(assetsDir);
+      yield* fileSystem.writeFileString(
+        path.join(staticDir, "index.html"),
+        '<html><head></head><body><script type="module" src="/main/assets/app.js"></script></body></html>',
+      );
+      yield* fileSystem.writeFileString(path.join(assetsDir, "app.js"), "console.log('ok');");
+
+      yield* buildAppUnderTest({ config: { staticDir, tailscaleServePath: "/staging" } });
+
+      const shellResponse = yield* HttpClient.get("/staging/");
+      const html = yield* shellResponse.text;
+      assert.equal(shellResponse.status, 200);
+      assert.include(html, 'src="/staging/assets/app.js"');
+      assert.notInclude(html, "/staging/main/");
+
+      const staleAssetResponse = yield* HttpClient.get("/staging/main/assets/app.js");
+      assert.equal(staleAssetResponse.status, 200);
+      assert.match(staleAssetResponse.headers["content-type"] ?? "", /javascript/u);
+      assert.equal(yield* staleAssetResponse.text, "console.log('ok');");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
   it.effect("redirects to dev URL when configured", () =>
     Effect.gen(function* () {
       yield* buildAppUnderTest({

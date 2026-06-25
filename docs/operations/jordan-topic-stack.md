@@ -115,7 +115,7 @@ For the remote-access topic, also verify the live reserved route:
 
 - `https://<machine>.<tailnet>.ts.net/staging/` boots the app, not a blank shell.
 - Generated JavaScript and CSS assets use `/staging/...` exactly once; paths such
-  as `/staging/t3code-staging/...` are regressions.
+  as `/staging/t3code-staging/...` or `/staging/main/...` are regressions.
 - Module script responses have JavaScript MIME types, not `text/html` fallback
   responses.
 - Public metadata and auth/API requests under `/staging/...` reach the same

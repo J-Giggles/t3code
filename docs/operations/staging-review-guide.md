@@ -133,7 +133,8 @@ Reviewers should check:
 - Public origins are cleaned without losing the required Serve path.
 - Reserved worktree routes such as `/main`, `/staging`, and `/original` come from
   launcher env before persisted desktop settings, so stale saved routes cannot
-  create doubled asset paths like `/staging/t3code-staging/...`.
+  create doubled or cross-worktree asset paths like `/staging/t3code-staging/...`
+  or `/staging/main/...`.
 - Pairing links do not accidentally include local-only origins when hosted
   access is available.
 - Web assets, HTTP API calls, and WebSocket connections use the same base path.
@@ -157,6 +158,9 @@ Reviewers should check:
   connection all load under the path prefix.
 - Inspect the first generated module script and confirm it returns JavaScript
   with a JavaScript MIME type, not the app HTML fallback.
+- Confirm the shell HTML rewrites stale reserved prefixes to the active route;
+  `/main/assets/...` in static HTML must become `/staging/assets/...`, not
+  `/staging/main/assets/...`.
 - Fetch a prefixed metadata/API route such as
   `/staging/.well-known/t3/environment` and confirm it returns JSON, not the app
   HTML fallback.

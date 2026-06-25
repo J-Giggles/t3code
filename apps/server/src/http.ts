@@ -5,7 +5,10 @@ import {
   EnvironmentHttpApi,
 } from "@t3tools/contracts";
 import { decodeOtlpTraceRecords } from "@t3tools/shared/observability";
-import { normalizePublicPathPrefix } from "@t3tools/shared/publicPath";
+import {
+  normalizePublicPathPrefix,
+  readLocalPublicPathPrefixFromPathname,
+} from "@t3tools/shared/publicPath";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -94,6 +97,16 @@ function prefixRootRelativeHtmlAttribute(
       if (rootPath === publicPathPrefix || rootPath.startsWith(`${publicPathPrefix}/`)) {
         return match;
       }
+
+      const stalePublicPathPrefix = readLocalPublicPathPrefixFromPathname(rootPath);
+      if (stalePublicPathPrefix) {
+        const suffix =
+          rootPath === stalePublicPathPrefix ? "/" : rootPath.slice(stalePublicPathPrefix.length);
+        return `${attribute}=${quote}${
+          suffix === "/" ? publicPathPrefix : `${publicPathPrefix}${suffix}`
+        }${quote}`;
+      }
+
       return `${attribute}=${quote}${publicPathPrefix}/${path}${quote}`;
     },
   );
@@ -140,6 +153,13 @@ function stripPublicPathPrefixFromUrl(url: URL, publicPathPrefix: string | undef
   const nextUrl = new URL(url.toString());
   nextUrl.pathname =
     url.pathname === publicPathPrefix ? "/" : url.pathname.slice(publicPathPrefix.length);
+  const stalePublicPathPrefix = readLocalPublicPathPrefixFromPathname(nextUrl.pathname);
+  if (stalePublicPathPrefix) {
+    nextUrl.pathname =
+      nextUrl.pathname === stalePublicPathPrefix
+        ? "/"
+        : nextUrl.pathname.slice(stalePublicPathPrefix.length);
+  }
   return nextUrl;
 }
 
