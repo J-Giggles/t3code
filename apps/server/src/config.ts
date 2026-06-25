@@ -48,35 +48,39 @@ export interface ServerDerivedPaths {
 /**
  * ServerConfig - Service tag for server runtime configuration.
  */
-export class ServerConfig extends Context.Service<
-  ServerConfig,
-  ServerDerivedPaths & {
-    readonly logLevel: LogLevel.LogLevel;
-    readonly traceMinLevel: LogLevel.LogLevel;
-    readonly traceTimingEnabled: boolean;
-    readonly traceBatchWindowMs: number;
-    readonly traceMaxBytes: number;
-    readonly traceMaxFiles: number;
-    readonly otlpTracesUrl: string | undefined;
-    readonly otlpMetricsUrl: string | undefined;
-    readonly otlpExportIntervalMs: number;
-    readonly otlpServiceName: string;
-    readonly mode: RuntimeMode;
-    readonly port: number;
-    readonly host: string | undefined;
-    readonly cwd: string;
-    readonly baseDir: string;
-    readonly staticDir: string | undefined;
-    readonly devUrl: URL | undefined;
-    readonly noBrowser: boolean;
-    readonly startupPresentation: StartupPresentation;
-    readonly desktopBootstrapToken: string | undefined;
-    readonly autoBootstrapProjectFromCwd: boolean;
-    readonly logWebSocketEvents: boolean;
-    readonly tailscaleServeEnabled: boolean;
-    readonly tailscaleServePort: number;
-  }
->()("t3/config/ServerConfig") {
+export interface ServerConfigShape extends ServerDerivedPaths {
+  readonly logLevel: LogLevel.LogLevel;
+  readonly traceMinLevel: LogLevel.LogLevel;
+  readonly traceTimingEnabled: boolean;
+  readonly traceBatchWindowMs: number;
+  readonly traceMaxBytes: number;
+  readonly traceMaxFiles: number;
+  readonly otlpTracesUrl: string | undefined;
+  readonly otlpMetricsUrl: string | undefined;
+  readonly otlpLogsUrl: string | undefined;
+  readonly observabilityGrafanaUrl: string | undefined;
+  readonly otlpExportIntervalMs: number;
+  readonly otlpServiceName: string;
+  readonly mode: RuntimeMode;
+  readonly port: number;
+  readonly host: string | undefined;
+  readonly cwd: string;
+  readonly baseDir: string;
+  readonly staticDir: string | undefined;
+  readonly devUrl: URL | undefined;
+  readonly noBrowser: boolean;
+  readonly startupPresentation: StartupPresentation;
+  readonly desktopBootstrapToken: string | undefined;
+  readonly autoBootstrapProjectFromCwd: boolean;
+  readonly logWebSocketEvents: boolean;
+  readonly tailscaleServeEnabled: boolean;
+  readonly tailscaleServePort: number;
+  readonly tailscaleServePath: string | undefined;
+}
+
+export class ServerConfig extends Context.Service<ServerConfig, ServerConfigShape>()(
+  "t3/config/ServerConfig",
+) {
   /** @deprecated Import and use `layerTest` from this module. */
   static readonly layerTest = (
     cwd: string,
@@ -164,6 +168,8 @@ const makeTest = Effect.fn("ServerConfig.makeTest")(function* (
     traceMaxFiles: 10,
     otlpTracesUrl: undefined,
     otlpMetricsUrl: undefined,
+    otlpLogsUrl: undefined,
+    observabilityGrafanaUrl: undefined,
     otlpExportIntervalMs: 10_000,
     otlpServiceName: "t3-server",
     cwd,
@@ -174,6 +180,7 @@ const makeTest = Effect.fn("ServerConfig.makeTest")(function* (
     logWebSocketEvents: false,
     tailscaleServeEnabled: false,
     tailscaleServePort: 443,
+    tailscaleServePath: undefined,
     port: 0,
     host: undefined,
     desktopBootstrapToken: undefined,

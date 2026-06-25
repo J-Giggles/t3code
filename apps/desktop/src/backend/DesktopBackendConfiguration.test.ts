@@ -22,6 +22,7 @@ const PersistedServerObservabilitySettingsDocument = Schema.Struct({
   observability: Schema.Struct({
     otlpTracesUrl: Schema.String,
     otlpMetricsUrl: Schema.String,
+    otlpLogsUrl: Schema.String,
   }),
 });
 
@@ -34,17 +35,33 @@ const isDesktopBackendObservabilitySettingsReadError = Schema.is(
 );
 
 const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExposure, {
-  getState: Effect.die("unexpected getState"),
+  getState: Effect.succeed({
+    mode: "local-only",
+    endpointUrl: null,
+    advertisedHost: null,
+    tailscaleServeEnabled: true,
+    tailscaleServePort: 8443,
+    tailscaleServePath: "/t3code",
+  }),
   backendConfig: Effect.succeed({
     port: 4888,
     bindHost: "0.0.0.0",
     httpBaseUrl: new URL("http://127.0.0.1:4888"),
     tailscaleServeEnabled: true,
     tailscaleServePort: 8443,
+    tailscaleServePath: "/t3code",
   }),
   configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
   setMode: () => Effect.die("unexpected setMode"),
   setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
+  getTailscaleAccessState: () => Effect.die("unexpected getTailscaleAccessState"),
+  enableTailscaleAccess: () => Effect.die("unexpected enableTailscaleAccess"),
+  updateTailscaleServePath: () => Effect.die("unexpected updateTailscaleServePath"),
+  disableTailscaleAccess: Effect.die("unexpected disableTailscaleAccess"),
+  repairTailscaleAccess: Effect.die("unexpected repairTailscaleAccess"),
+  probeTailscaleAccess: Effect.die("unexpected probeTailscaleAccess"),
+  checkTailscaleServeRoute: () => Effect.die("unexpected checkTailscaleServeRoute"),
+  syncTailscaleServeRouteOnBackendReady: Effect.void,
   getAdvertisedEndpoints: Effect.succeed([]),
 } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 
@@ -146,6 +163,7 @@ describe("DesktopBackendConfiguration", () => {
         assert.equal(first.bootstrap.t3Home, environment.baseDir);
         assert.equal(first.bootstrap.tailscaleServeEnabled, true);
         assert.equal(first.bootstrap.tailscaleServePort, 8443);
+        assert.equal(first.bootstrap.tailscaleServePath, "/t3code");
         assert.match(first.bootstrap.desktopBootstrapToken, /^[0-9a-f]{48}$/i);
         assert.equal(second.bootstrap.desktopBootstrapToken, first.bootstrap.desktopBootstrapToken);
       }),
@@ -328,6 +346,7 @@ describe("DesktopBackendConfiguration", () => {
             observability: {
               otlpTracesUrl: " http://127.0.0.1:4318/v1/traces ",
               otlpMetricsUrl: " http://127.0.0.1:4318/v1/metrics ",
+              otlpLogsUrl: " http://127.0.0.1:4318/v1/logs ",
             },
           }),
         );
@@ -335,6 +354,7 @@ describe("DesktopBackendConfiguration", () => {
         const config = yield* configuration.resolvePrimary;
         assert.equal(config.bootstrap.otlpTracesUrl, "http://127.0.0.1:4318/v1/traces");
         assert.equal(config.bootstrap.otlpMetricsUrl, "http://127.0.0.1:4318/v1/metrics");
+        assert.equal(config.bootstrap.otlpLogsUrl, "http://127.0.0.1:4318/v1/logs");
       }),
     ),
   );
@@ -347,6 +367,7 @@ describe("DesktopBackendConfiguration", () => {
 
         assert.isUndefined(config.bootstrap.otlpTracesUrl);
         assert.isUndefined(config.bootstrap.otlpMetricsUrl);
+        assert.isUndefined(config.bootstrap.otlpLogsUrl);
       }),
     ),
   );
@@ -396,6 +417,7 @@ describe("DesktopBackendConfiguration", () => {
 
       assert.isUndefined(config.bootstrap.otlpTracesUrl);
       assert.isUndefined(config.bootstrap.otlpMetricsUrl);
+      assert.isUndefined(config.bootstrap.otlpLogsUrl);
 
       const error = messages
         .flatMap((message) => (Array.isArray(message) ? message : [message]))

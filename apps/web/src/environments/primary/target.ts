@@ -1,5 +1,6 @@
 import { PRIMARY_LOCAL_ENVIRONMENT_ID, type DesktopEnvironmentBootstrap } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
+import { readBrowserPublicPathPrefix, resolveBrowserPublicBaseUrl } from "../../publicPath";
 
 const PrimaryEnvironmentTargetSource = Schema.Literals([
   "configured",
@@ -181,6 +182,29 @@ function resolveHttpRequestBaseUrl(primaryTarget: PrimaryEnvironmentTarget): str
   return currentUrl.origin;
 }
 
+function joinHttpRequestPath(
+  rawBaseUrl: string,
+  pathname: string,
+  source: PrimaryEnvironmentTargetSource,
+): URL {
+  const url = parseTargetUrl({
+    rawValue: rawBaseUrl,
+    source,
+    urlKind: "http-base-url",
+  });
+  const basePath =
+    url.pathname === "/"
+      ? ""
+      : url.pathname.endsWith("/")
+        ? url.pathname.slice(0, -1)
+        : url.pathname;
+  const suffix = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  url.pathname = basePath.length === 0 ? suffix : `${basePath}${suffix}`;
+  url.search = "";
+  url.hash = "";
+  return url;
+}
+
 function resolveConfiguredPrimaryTarget(): PrimaryEnvironmentTarget | null {
   const configuredHttpBaseUrl = import.meta.env.VITE_HTTP_URL?.trim() || undefined;
   const configuredWsBaseUrl = import.meta.env.VITE_WS_URL?.trim() || undefined;
@@ -211,7 +235,7 @@ function resolveConfiguredPrimaryTarget(): PrimaryEnvironmentTarget | null {
 
 function resolveWindowOriginPrimaryTarget(): PrimaryEnvironmentTarget {
   const url = parseTargetUrl({
-    rawValue: window.location.origin,
+    rawValue: resolveBrowserPublicBaseUrl(),
     source: "window-origin",
     urlKind: "http-base-url",
   });
@@ -233,6 +257,25 @@ function resolveWindowOriginPrimaryTarget(): PrimaryEnvironmentTarget {
       wsBaseUrl: url.toString(),
     },
   };
+}
+
+function shouldPreferPathServedBrowserTarget(configuredTarget: PrimaryEnvironmentTarget): boolean {
+  if (readBrowserPublicPathPrefix() === undefined) {
+    return false;
+  }
+  const configuredHttpUrl = parseTargetUrl({
+    rawValue: configuredTarget.target.httpBaseUrl,
+    source: configuredTarget.source,
+    urlKind: "http-base-url",
+  });
+  const configuredWsUrl = parseTargetUrl({
+    rawValue: configuredTarget.target.wsBaseUrl,
+    source: configuredTarget.source,
+    urlKind: "websocket-base-url",
+  });
+  return (
+    isLoopbackHostname(configuredHttpUrl.hostname) && isLoopbackHostname(configuredWsUrl.hostname)
+  );
 }
 
 function resolveDesktopPrimaryTarget(): PrimaryEnvironmentTarget | null {
@@ -273,12 +316,11 @@ export function resolvePrimaryEnvironmentHttpUrl(
 ): string {
   const primaryTarget = readPrimaryEnvironmentTarget();
 
-  const url = parseTargetUrl({
-    rawValue: resolveHttpRequestBaseUrl(primaryTarget),
-    source: primaryTarget.source,
-    urlKind: "http-base-url",
-  });
-  url.pathname = pathname;
+  const url = joinHttpRequestPath(
+    resolveHttpRequestBaseUrl(primaryTarget),
+    pathname,
+    primaryTarget.source,
+  );
   if (searchParams) {
     url.search = new URLSearchParams(searchParams).toString();
   }
@@ -286,9 +328,15 @@ export function resolvePrimaryEnvironmentHttpUrl(
 }
 
 export function readPrimaryEnvironmentTarget(): PrimaryEnvironmentTarget {
-  return (
-    resolveDesktopPrimaryTarget() ??
-    resolveConfiguredPrimaryTarget() ??
-    resolveWindowOriginPrimaryTarget()
-  );
+  const desktopTarget = resolveDesktopPrimaryTarget();
+  if (desktopTarget) {
+    return desktopTarget;
+  }
+
+  const configuredTarget = resolveConfiguredPrimaryTarget();
+  if (configuredTarget && !shouldPreferPathServedBrowserTarget(configuredTarget)) {
+    return configuredTarget;
+  }
+
+  return resolveWindowOriginPrimaryTarget();
 }

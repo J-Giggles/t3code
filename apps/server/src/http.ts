@@ -5,6 +5,7 @@ import {
   EnvironmentHttpApi,
 } from "@t3tools/contracts";
 import { decodeOtlpTraceRecords } from "@t3tools/shared/observability";
+import { normalizePublicPathPrefix } from "@t3tools/shared/publicPath";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -43,8 +44,10 @@ import * as ServerEnvironment from "./environment/ServerEnvironment.ts";
 import { browserApiCorsAllowedHeaders, browserApiCorsAllowedMethods } from "./httpCors.ts";
 
 const OTLP_TRACES_PROXY_PATH = "/api/observability/v1/traces";
+const OTLP_LOGS_PROXY_PATH = "/api/observability/v1/logs";
 const LOOPBACK_HOSTNAMES = new Set(["127.0.0.1", "::1", "localhost"]);
 const DESKTOP_RENDERER_ORIGINS = ["t3code://app", "t3code-dev://app"];
+const PUBLIC_PATH_PREFIX_META_NAME = "t3code-public-path-prefix";
 
 export const browserApiCorsLayer = Layer.unwrap(
   Effect.gen(function* () {
@@ -77,6 +80,46 @@ export function resolveDevRedirectUrl(devUrl: URL, requestUrl: URL): string {
   redirectUrl.search = requestUrl.search;
   redirectUrl.hash = requestUrl.hash;
   return redirectUrl.toString();
+}
+
+function prefixRootRelativeHtmlAttribute(
+  html: string,
+  attribute: "href" | "src",
+  publicPathPrefix: string,
+): string {
+  return html.replace(
+    new RegExp(`\\b${attribute}=("|')/(?!/)`, "gi"),
+    (_match, quote: string) => `${attribute}=${quote}${publicPathPrefix}/`,
+  );
+}
+
+export function rewriteHtmlForPublicPathPrefix(html: string, publicPathPrefix: string): string {
+  const normalizedPrefix = normalizePublicPathPrefix(publicPathPrefix);
+  if (!normalizedPrefix) {
+    return html;
+  }
+
+  const metaTag = `<meta name="${PUBLIC_PATH_PREFIX_META_NAME}" content="${normalizedPrefix}" />`;
+  let rewritten = html.includes(`name="${PUBLIC_PATH_PREFIX_META_NAME}"`)
+    ? html
+    : html.replace(/<head(\s[^>]*)?>/i, (match) => `${match}\n    ${metaTag}`);
+
+  rewritten = prefixRootRelativeHtmlAttribute(rewritten, "href", normalizedPrefix);
+  rewritten = prefixRootRelativeHtmlAttribute(rewritten, "src", normalizedPrefix);
+
+  return rewritten;
+}
+
+function maybeRewriteIndexHtml(html: Uint8Array, publicPathPrefix: string | undefined): Uint8Array {
+  if (!publicPathPrefix) {
+    return html;
+  }
+
+  const rewritten = rewriteHtmlForPublicPathPrefix(
+    new TextDecoder().decode(html),
+    publicPathPrefix,
+  );
+  return new TextEncoder().encode(rewritten);
 }
 
 const authenticateRawRouteWithScope = (
@@ -163,6 +206,45 @@ export const otlpTracesProxyRouteLayer = HttpRouter.add(
         Effect.orElseSucceed(() =>
           HttpServerResponse.text("Trace export failed.", { status: 502 }),
         ),
+      );
+  }).pipe(
+    Effect.catchTags({
+      EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
+      EnvironmentInternalError: HttpServerRespondable.toResponse,
+      EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
+    }),
+  ),
+);
+
+export const otlpLogsProxyRouteLayer = HttpRouter.add(
+  "POST",
+  OTLP_LOGS_PROXY_PATH,
+  Effect.gen(function* () {
+    yield* authenticateRawRouteWithScope(AuthOrchestrationOperateScope);
+    const request = yield* HttpServerRequest.HttpServerRequest;
+    const config = yield* ServerConfig.ServerConfig;
+    const otlpLogsUrl = config.otlpLogsUrl;
+    const httpClient = yield* HttpClient.HttpClient;
+    const bodyJson = yield* request.json;
+
+    if (otlpLogsUrl === undefined) {
+      return HttpServerResponse.empty({ status: 204 });
+    }
+
+    return yield* httpClient
+      .post(otlpLogsUrl, {
+        body: HttpBody.jsonUnsafe(bodyJson),
+      })
+      .pipe(
+        Effect.flatMap(HttpClientResponse.filterStatusOk),
+        Effect.as(HttpServerResponse.empty({ status: 204 })),
+        Effect.tapError((cause) =>
+          Effect.logWarning("Failed to export browser OTLP logs", {
+            cause,
+            otlpLogsUrl,
+          }),
+        ),
+        Effect.orElseSucceed(() => HttpServerResponse.text("Log export failed.", { status: 502 })),
       );
   }).pipe(
     Effect.catchTags({
@@ -279,6 +361,7 @@ export const staticAndDevRouteLayer = HttpRouter.add(
       }
     }
 
+    const publicPathPrefix = config.tailscaleServePath;
     const fileInfo = yield* fileSystem.stat(filePath).pipe(Effect.orElseSucceed(() => null));
     if (!fileInfo || fileInfo.type !== "File") {
       const indexPath = path.resolve(staticRoot, "index.html");
@@ -288,7 +371,7 @@ export const staticAndDevRouteLayer = HttpRouter.add(
       if (!indexData) {
         return HttpServerResponse.text("Not Found", { status: 404 });
       }
-      return HttpServerResponse.uint8Array(indexData, {
+      return HttpServerResponse.uint8Array(maybeRewriteIndexHtml(indexData, publicPathPrefix), {
         status: 200,
         contentType: "text/html; charset=utf-8",
       });
@@ -300,7 +383,12 @@ export const staticAndDevRouteLayer = HttpRouter.add(
       return HttpServerResponse.text("Internal Server Error", { status: 500 });
     }
 
-    return HttpServerResponse.uint8Array(data, {
+    const responseBody =
+      contentType.startsWith("text/html") && publicPathPrefix
+        ? maybeRewriteIndexHtml(data, publicPathPrefix)
+        : data;
+
+    return HttpServerResponse.uint8Array(responseBody, {
       status: 200,
       contentType,
     });

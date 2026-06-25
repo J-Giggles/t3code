@@ -7,6 +7,8 @@ import type {
   AdvertisedEndpointStatus,
 } from "@t3tools/contracts";
 
+import { setPairingTokenOnUrl } from "./remote.ts";
+
 export interface CreateAdvertisedEndpointInput {
   readonly id: string;
   readonly label: string;
@@ -21,6 +23,8 @@ export interface CreateAdvertisedEndpointInput {
   readonly description?: string;
 }
 
+const PAIRING_PAGE_PATH = "/pair";
+
 export function normalizeHttpBaseUrl(rawValue: string): string {
   const url = new URL(rawValue);
   if (url.protocol === "ws:") {
@@ -33,10 +37,52 @@ export function normalizeHttpBaseUrl(rawValue: string): string {
     throw new Error(`Endpoint must use HTTP or HTTPS. Received ${url.protocol}`);
   }
 
-  url.pathname = "/";
+  if (url.pathname === PAIRING_PAGE_PATH || url.pathname.endsWith(`${PAIRING_PAGE_PATH}/`)) {
+    url.pathname = url.pathname.slice(0, -PAIRING_PAGE_PATH.length) || "/";
+  } else if (url.pathname.endsWith(PAIRING_PAGE_PATH)) {
+    url.pathname = url.pathname.slice(0, -PAIRING_PAGE_PATH.length) || "/";
+  }
+
+  if (url.pathname !== "/" && !url.pathname.endsWith("/")) {
+    url.pathname = `${url.pathname}/`;
+  }
+
   url.search = "";
   url.hash = "";
   return url.toString();
+}
+
+export function joinHttpBasePath(httpBaseUrl: string, pathname: string): string {
+  const base = new URL(normalizeHttpBaseUrl(httpBaseUrl));
+  const basePath =
+    base.pathname === "/"
+      ? ""
+      : base.pathname.endsWith("/")
+        ? base.pathname.slice(0, -1)
+        : base.pathname;
+  const suffix = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  base.pathname = basePath.length === 0 ? suffix : `${basePath}${suffix}`;
+  base.search = "";
+  base.hash = "";
+  return base.toString();
+}
+
+export function resolveWsConnectionPath(httpBaseUrl: string): string {
+  const base = new URL(normalizeHttpBaseUrl(httpBaseUrl));
+  const basePath =
+    base.pathname === "/"
+      ? ""
+      : base.pathname.endsWith("/")
+        ? base.pathname.slice(0, -1)
+        : base.pathname;
+  return basePath.length === 0 ? "/ws" : `${basePath}/ws`;
+}
+
+export function buildPairingPageUrl(httpBaseUrl: string, token: string): string {
+  return setPairingTokenOnUrl(
+    new URL(joinHttpBasePath(httpBaseUrl, PAIRING_PAGE_PATH)),
+    token,
+  ).toString();
 }
 
 export function deriveWsBaseUrl(httpBaseUrl: string): string {

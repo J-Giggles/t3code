@@ -338,6 +338,85 @@ describe("remote environment authorization", () => {
     }),
   );
 
+  it.effect("joins remote auth and websocket ticket paths under path-prefixed bases", () =>
+    Effect.gen(function* () {
+      const fetch = recordedFetch(
+        Response.json(
+          {
+            environmentId: "environment-remote",
+            label: "Remote environment",
+            platform: {
+              os: "linux",
+              arch: "x64",
+            },
+            serverVersion: "0.0.0-test",
+            capabilities: {
+              repositoryIdentity: true,
+            },
+          },
+          { status: 200 },
+        ),
+        Response.json(
+          {
+            authenticated: true,
+            auth: {
+              policy: "remote-reachable",
+              bootstrapMethods: ["one-time-token"],
+              sessionMethods: ["bearer-access-token"],
+              sessionCookieName: "t3_session",
+            },
+            scopes: ["orchestration:read"],
+            sessionMethod: "bearer-access-token",
+            expiresAt: "2026-05-01T12:00:00.000Z",
+          },
+          { status: 200 },
+        ),
+        Response.json(
+          {
+            ticket: "ws-ticket",
+            expiresAt: "2026-05-01T12:05:00.000Z",
+          },
+          { status: 200 },
+        ),
+      );
+
+      yield* fetchRemoteEnvironmentDescriptor({
+        httpBaseUrl: "https://remote.example.com/t3code/",
+      }).pipe(provideRemoteHttp(fetch.fetchFn));
+
+      yield* fetchRemoteSessionState({
+        httpBaseUrl: "https://remote.example.com/t3code/",
+        bearerToken: "bearer-token",
+      }).pipe(provideRemoteHttp(fetch.fetchFn));
+
+      const url = yield* resolveRemoteWebSocketConnectionUrl({
+        wsBaseUrl: "wss://remote.example.com/t3code/",
+        httpBaseUrl: "https://remote.example.com/t3code/",
+        bearerToken: "bearer-token",
+      }).pipe(provideRemoteHttp(fetch.fetchFn));
+
+      expect(url).toBe("wss://remote.example.com/t3code/ws?wsTicket=ws-ticket");
+      expectFetchCall(fetch.calls, 1, {
+        url: "https://remote.example.com/t3code/.well-known/t3/environment",
+        method: "GET",
+      });
+      expectFetchCall(fetch.calls, 2, {
+        url: "https://remote.example.com/t3code/api/auth/session",
+        method: "GET",
+        headers: {
+          authorization: "Bearer bearer-token",
+        },
+      });
+      expectFetchCall(fetch.calls, 3, {
+        url: "https://remote.example.com/t3code/api/auth/websocket-ticket",
+        method: "POST",
+        headers: {
+          authorization: "Bearer bearer-token",
+        },
+      });
+    }),
+  );
+
   it.effect("loads remote session state with a DPoP-bound access token", () =>
     Effect.gen(function* () {
       const fetch = recordedFetch(

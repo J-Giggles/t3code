@@ -122,6 +122,9 @@ describe("resolveInitialServerAuthGateState", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
+    vi.stubEnv("VITE_HTTP_URL", "");
+    vi.stubEnv("VITE_WS_URL", "");
+    vi.stubEnv("VITE_DEV_SERVER_URL", "");
     installTestBrowser("http://localhost/");
   });
 
@@ -197,6 +200,22 @@ describe("resolveInitialServerAuthGateState", () => {
     });
     expect(resolvePrimaryEnvironmentHttpUrl("/api/auth/session")).toBe(
       "http://localhost:5735/api/auth/session",
+    );
+  });
+
+  it("uses the path-served browser origin as the auth proxy base", async () => {
+    await installAuthApi({ session: () => unauthenticatedSession(LOOPBACK_AUTH) });
+    installTestBrowser("https://desktop.tail.ts.net/t3code/");
+
+    const { resolveInitialServerAuthGateState, resolvePrimaryEnvironmentHttpUrl } =
+      await import("./environments/primary");
+
+    await expect(resolveInitialServerAuthGateState()).resolves.toEqual({
+      status: "requires-auth",
+      auth: LOOPBACK_AUTH,
+    });
+    expect(resolvePrimaryEnvironmentHttpUrl("/api/auth/session")).toBe(
+      "https://desktop.tail.ts.net/t3code/api/auth/session",
     );
   });
 

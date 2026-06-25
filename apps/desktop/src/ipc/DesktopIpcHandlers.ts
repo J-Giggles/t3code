@@ -8,10 +8,17 @@ import {
   setConnectionCatalog,
 } from "./methods/connectionCatalog.ts";
 import {
+  checkTailscaleServeRoute,
+  disableTailscaleAccess,
+  enableTailscaleAccess,
   getAdvertisedEndpoints,
   getServerExposureState,
+  getTailscaleAccessState,
+  probeTailscaleAccess,
+  repairTailscaleAccess,
   setServerExposureMode,
   setTailscaleServeEnabled,
+  updateTailscaleServePath,
 } from "./methods/serverExposure.ts";
 import {
   bootstrapSshBearerSession,
@@ -70,6 +77,13 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
   yield* ipc.handle(setServerExposureMode);
   yield* ipc.handle(setTailscaleServeEnabled);
   yield* ipc.handle(getAdvertisedEndpoints);
+  yield* ipc.handle(getTailscaleAccessState);
+  yield* ipc.handle(enableTailscaleAccess);
+  yield* ipc.handle(disableTailscaleAccess);
+  yield* ipc.handle(repairTailscaleAccess);
+  yield* ipc.handle(probeTailscaleAccess);
+  yield* ipc.handle(checkTailscaleServeRoute);
+  yield* ipc.handle(updateTailscaleServePath);
 
   yield* ipc.handle(getWslState);
   yield* ipc.handle(setWslBackendEnabled);

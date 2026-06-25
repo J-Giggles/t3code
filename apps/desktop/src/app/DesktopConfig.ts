@@ -13,6 +13,21 @@ const trimmedString = (name: string) =>
 const optionalBoolean = (name: string) =>
   Config.boolean(name).pipe(Config.option, Config.map(Option.getOrElse(() => false)));
 
+const optionalBooleanWithDefault = (name: string, fallback: boolean) =>
+  trimmedString(name).pipe(
+    Config.map(
+      Option.match({
+        onNone: () => fallback,
+        onSome: (value) => {
+          const normalized = value.toLowerCase();
+          if (["0", "false", "no", "off"].includes(normalized)) return false;
+          if (["1", "true", "yes", "on"].includes(normalized)) return true;
+          return fallback;
+        },
+      }),
+    ),
+  );
+
 const commaSeparatedStrings = (name: string) =>
   trimmedString(name).pipe(
     Config.map(
@@ -41,9 +56,15 @@ export const DesktopConfig = Config.all({
   devRemoteT3ServerEntryPath: trimmedString("T3CODE_DEV_REMOTE_T3_SERVER_ENTRY_PATH"),
   configuredBackendPort: Config.port("T3CODE_PORT").pipe(Config.option),
   commitHashOverride: trimmedString("T3CODE_COMMIT_HASH"),
+  openDevToolsOnStartup: optionalBooleanWithDefault("T3CODE_DESKTOP_OPEN_DEVTOOLS", true),
   desktopLanHostOverride: trimmedString("T3CODE_DESKTOP_LAN_HOST"),
   desktopHttpsEndpointUrls: commaSeparatedStrings("T3CODE_DESKTOP_HTTPS_ENDPOINTS"),
+  tailscaleServePath: trimmedString("T3CODE_TAILSCALE_SERVE_PATH"),
+  workspaceSlug: trimmedString("T3CODE_WORKSPACE_SLUG"),
+  worktreeRole: trimmedString("T3CODE_WORKTREE_ROLE"),
+  devInstance: trimmedString("T3CODE_DEV_INSTANCE"),
   otlpTracesUrl: trimmedString("T3CODE_OTLP_TRACES_URL"),
+  otlpLogsUrl: trimmedString("T3CODE_OTLP_LOGS_URL"),
   otlpExportIntervalMs: Config.int("T3CODE_OTLP_EXPORT_INTERVAL_MS").pipe(
     Config.withDefault(10_000),
   ),

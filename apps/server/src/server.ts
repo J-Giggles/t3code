@@ -91,13 +91,80 @@ import {
 import { orchestrationHttpApiLayer } from "./orchestration/http.ts";
 import * as NetService from "@t3tools/shared/Net";
 import * as RelayClient from "@t3tools/shared/relayClient";
-import { disableTailscaleServe, ensureTailscaleServe } from "@t3tools/tailscale";
+import {
+  disableTailscaleServe,
+  ensureTailscaleServe,
+  readTailscaleServeRouteAvailability,
+} from "@t3tools/tailscale";
 
 // Effect's default preemptive shutdown waits 20s before finalizing request scopes.
 // T3's primary transport is long-lived WebSocket RPC, whose Effect scope finalizer
 // already closes the websocket gracefully. Do not add an artificial drain before
 // those finalizers get a chance to run.
 const HTTP_PREEMPTIVE_SHUTDOWN_GRACE_MS = 0;
+
+export interface TailscaleServeBackendRoute {
+  readonly localPort: number;
+  readonly servePort: number;
+  readonly servePath: string | undefined;
+}
+
+export function configureTailscaleServeForBackend(input: TailscaleServeBackendRoute) {
+  return Effect.gen(function* () {
+    const routeAvailability = yield* readTailscaleServeRouteAvailability({
+      localPort: input.localPort,
+      servePort: input.servePort,
+      ...(input.servePath === undefined ? {} : { servePath: input.servePath }),
+      localHost: "127.0.0.1",
+    });
+
+    if (routeAvailability.conflict) {
+      yield* Effect.logWarning("Tailscale Serve route is already owned.", {
+        localPort: input.localPort,
+        servePort: input.servePort,
+        servePath: input.servePath,
+        existingProxyUrl: routeAvailability.existingProxyUrl,
+        expectedProxyUrl: routeAvailability.expectedProxyUrl,
+      });
+      return null;
+    }
+
+    const configured = {
+      localPort: input.localPort,
+      servePort: input.servePort,
+      servePath: input.servePath,
+    } as const;
+
+    if (routeAvailability.owned) {
+      yield* Effect.logInfo("Tailscale Serve already configured", configured);
+      return configured;
+    }
+
+    return yield* ensureTailscaleServe({
+      localPort: input.localPort,
+      servePort: input.servePort,
+      ...(input.servePath === undefined ? {} : { servePath: input.servePath }),
+      localHost: "127.0.0.1",
+    }).pipe(
+      Effect.as(configured),
+      Effect.tap(() =>
+        Effect.logInfo("Tailscale Serve configured", {
+          localPort: input.localPort,
+          servePort: input.servePort,
+          servePath: input.servePath,
+        }),
+      ),
+      Effect.catch((cause) =>
+        Effect.logWarning("Failed to configure Tailscale Serve", {
+          cause,
+          localPort: input.localPort,
+          servePort: input.servePort,
+          servePath: input.servePath,
+        }).pipe(Effect.as(null)),
+      ),
+    );
+  });
+}
 
 const PtyAdapterLive = Layer.unwrap(
   Effect.gen(function* () {
@@ -405,39 +472,31 @@ export const makeServerLayer = Layer.unwrap(
               }
 
               const localPort = address.port;
-              return yield* ensureTailscaleServe({
+              return yield* configureTailscaleServeForBackend({
                 localPort,
                 servePort: config.tailscaleServePort,
-                localHost: "127.0.0.1",
-              }).pipe(
-                Effect.as({ localPort, servePort: config.tailscaleServePort }),
-                Effect.tap(() =>
-                  Effect.logInfo("Tailscale Serve configured", {
-                    localPort,
-                    servePort: config.tailscaleServePort,
-                  }),
-                ),
-                Effect.catch((cause) =>
-                  Effect.logWarning("Failed to configure Tailscale Serve", {
-                    cause,
-                    localPort,
-                    servePort: config.tailscaleServePort,
-                  }).pipe(Effect.as(null)),
-                ),
-              );
+                servePath: config.tailscaleServePath,
+              });
             }),
             (configured) =>
               configured
-                ? disableTailscaleServe({ servePort: configured.servePort }).pipe(
+                ? disableTailscaleServe({
+                    servePort: configured.servePort,
+                    ...(configured.servePath === undefined
+                      ? {}
+                      : { servePath: configured.servePath }),
+                  }).pipe(
                     Effect.tap(() =>
                       Effect.logInfo("Tailscale Serve disabled", {
                         servePort: configured.servePort,
+                        servePath: configured.servePath,
                       }),
                     ),
                     Effect.catch((cause) =>
                       Effect.logWarning("Failed to disable Tailscale Serve", {
                         cause,
                         servePort: configured.servePort,
+                        servePath: configured.servePath,
                       }),
                     ),
                   )

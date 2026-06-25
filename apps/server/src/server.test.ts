@@ -51,6 +51,7 @@ import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as PubSub from "effect/PubSub";
+import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
 import { ChildProcessSpawner } from "effect/unstable/process";
@@ -69,9 +70,68 @@ import * as Socket from "effect/unstable/socket/Socket";
 import { vi } from "vite-plus/test";
 
 const TEST_EPOCH = DateTime.makeUnsafe("1970-01-01T00:00:00.000Z");
+const encoder = new TextEncoder();
+
+function tailscaleServeStatusJson(routes: Record<string, string>): string {
+  return JSON.stringify({
+    TCP: {
+      443: {
+        HTTPS: true,
+      },
+    },
+    Web: {
+      "desktop.tail.ts.net:443": {
+        Handlers: Object.fromEntries(
+          Object.entries(routes).map(([path, proxyUrl]) => [path, { Proxy: proxyUrl }]),
+        ),
+      },
+    },
+  });
+}
+
+function recordingTailscaleSpawnerLayer(
+  commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }>,
+  options: {
+    readonly serveStatusJson?: string;
+  } = {},
+) {
+  return Layer.succeed(
+    ChildProcessSpawner.ChildProcessSpawner,
+    ChildProcessSpawner.make((command) => {
+      const childProcess = command as unknown as {
+        readonly command: string;
+        readonly args: ReadonlyArray<string>;
+      };
+      commands.push({ command: childProcess.command, args: childProcess.args });
+
+      return Effect.succeed(
+        ChildProcessSpawner.makeHandle({
+          pid: ChildProcessSpawner.ProcessId(1),
+          exitCode: Effect.succeed(ChildProcessSpawner.ExitCode(0)),
+          isRunning: Effect.succeed(false),
+          kill: () => Effect.void,
+          unref: Effect.succeed(Effect.void),
+          stdin: Sink.drain,
+          stdout: Stream.make(
+            encoder.encode(
+              childProcess.args.join(" ") === "serve status --json"
+                ? (options.serveStatusJson ?? tailscaleServeStatusJson({}))
+                : "",
+            ),
+          ),
+          stderr: Stream.empty,
+          all: Stream.empty,
+          getInputFd: () => Sink.drain,
+          getOutputFd: () => Stream.empty,
+        }),
+      );
+    }),
+  );
+}
 
 import * as ServerConfig from "./config.ts";
-import { makeRoutesLayer } from "./server.ts";
+import { rewriteCssForPublicPathPrefix, rewriteHtmlForPublicPathPrefix } from "./http.ts";
+import { configureTailscaleServeForBackend, makeRoutesLayer } from "./server.ts";
 import * as CheckpointDiffQuery from "./checkpointing/CheckpointDiffQuery.ts";
 import * as GitManager from "./git/GitManager.ts";
 import * as Keybindings from "./keybindings.ts";
@@ -1248,6 +1308,171 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
+  it("rewrites root-relative shell assets under a public path prefix", () => {
+    const rewritten = rewriteHtmlForPublicPathPrefix(
+      '<html><head></head><body><script type="module" src="/assets/app.js"></script><link rel="stylesheet" href="/assets/app.css"></body></html>',
+      "/t3code",
+    );
+
+    assert.include(rewritten, '<meta name="t3code-public-path-prefix" content="/t3code" />');
+    assert.include(rewritten, 'src="/t3code/assets/app.js"');
+    assert.include(rewritten, 'href="/t3code/assets/app.css"');
+  });
+
+  it("does not double-prefix shell assets that already include the public path", () => {
+    const rewritten = rewriteHtmlForPublicPathPrefix(
+      '<html><head></head><body><script type="module" src="/t3code/assets/app.js"></script><link rel="stylesheet" href="/t3code/assets/app.css"></body></html>',
+      "/t3code",
+    );
+
+    assert.notInclude(rewritten, "/t3code/t3code/");
+    assert.include(rewritten, 'src="/t3code/assets/app.js"');
+    assert.include(rewritten, 'href="/t3code/assets/app.css"');
+  });
+
+  it("replaces stale reserved shell prefixes with the active public path", () => {
+    const rewritten = rewriteHtmlForPublicPathPrefix(
+      '<html><head></head><body><script type="module" src="/main/assets/app.js"></script><link rel="stylesheet" href="/main/assets/app.css"></body></html>',
+      "/staging",
+    );
+
+    assert.notInclude(rewritten, "/staging/main/");
+    assert.include(rewritten, 'src="/staging/assets/app.js"');
+    assert.include(rewritten, 'href="/staging/assets/app.css"');
+  });
+
+  it("replaces stale reserved CSS asset prefixes with the active public path", () => {
+    const rewritten = rewriteCssForPublicPathPrefix(
+      '@font-face{src:url(/main/assets/font.woff2)}.icon{background:url("/assets/icon.svg")}.ok{background:url(/staging/assets/ok.svg)}',
+      "/staging",
+    );
+
+    assert.include(rewritten, "url(/staging/assets/font.woff2)");
+    assert.include(rewritten, 'url("/staging/assets/icon.svg")');
+    assert.include(rewritten, "url(/staging/assets/ok.svg)");
+    assert.notInclude(rewritten, "/staging/staging/");
+  });
+
+  it.effect("does not overwrite a conflicting Tailscale Serve route during startup", () => {
+    const commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }> = [];
+
+    return Effect.gen(function* () {
+      const configured = yield* configureTailscaleServeForBackend({
+        localPort: 13_833,
+        servePort: 443,
+        servePath: "/qa-route",
+      }).pipe(
+        Effect.provide(
+          recordingTailscaleSpawnerLayer(commands, {
+            serveStatusJson: tailscaleServeStatusJson({
+              "/qa-route": "http://127.0.0.1:13793",
+            }),
+          }),
+        ),
+      );
+
+      assert.equal(configured, null);
+      assert.deepEqual(
+        commands.map((entry) => entry.args.join(" ")),
+        ["serve status --json"],
+      );
+      assert.equal(
+        commands.some((entry) => entry.args.includes("--bg")),
+        false,
+      );
+    });
+  });
+
+  it.effect("rewrites static index HTML when a Tailscale serve path is configured", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const indexPath = path.join(staticDir, "index.html");
+      yield* fileSystem.writeFileString(
+        indexPath,
+        '<html><head></head><body><script type="module" src="/assets/app.js"></script></body></html>',
+      );
+
+      yield* buildAppUnderTest({ config: { staticDir, tailscaleServePath: "/qa-route" } });
+
+      const response = yield* HttpClient.get("/");
+      const html = yield* response.text;
+      assert.equal(response.status, 200);
+      assert.include(html, '<meta name="t3code-public-path-prefix" content="/qa-route" />');
+      assert.include(html, 'src="/qa-route/assets/app.js"');
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("serves static assets under the configured Tailscale serve path", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const assetsDir = path.join(staticDir, "assets");
+      yield* fileSystem.makeDirectory(assetsDir);
+      yield* fileSystem.writeFileString(path.join(staticDir, "index.html"), "<html>shell</html>");
+      yield* fileSystem.writeFileString(path.join(assetsDir, "app.js"), "console.log('ok');");
+
+      yield* buildAppUnderTest({ config: { staticDir, tailscaleServePath: "/qa-route" } });
+
+      const response = yield* HttpClient.get("/qa-route/assets/app.js");
+      assert.equal(response.status, 200);
+      assert.match(response.headers["content-type"] ?? "", /javascript/u);
+      assert.equal(yield* response.text, "console.log('ok');");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("serves static assets when cached URLs include a stale reserved prefix", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const assetsDir = path.join(staticDir, "assets");
+      yield* fileSystem.makeDirectory(assetsDir);
+      yield* fileSystem.writeFileString(
+        path.join(staticDir, "index.html"),
+        '<html><head></head><body><script type="module" src="/main/assets/app.js"></script></body></html>',
+      );
+      yield* fileSystem.writeFileString(path.join(assetsDir, "app.js"), "console.log('ok');");
+
+      yield* buildAppUnderTest({ config: { staticDir, tailscaleServePath: "/staging" } });
+
+      const shellResponse = yield* HttpClient.get("/staging/");
+      const html = yield* shellResponse.text;
+      assert.equal(shellResponse.status, 200);
+      assert.include(html, 'src="/staging/assets/app.js"');
+      assert.notInclude(html, "/staging/main/");
+
+      const staleAssetResponse = yield* HttpClient.get("/staging/main/assets/app.js");
+      assert.equal(staleAssetResponse.status, 200);
+      assert.match(staleAssetResponse.headers["content-type"] ?? "", /javascript/u);
+      assert.equal(yield* staleAssetResponse.text, "console.log('ok');");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("rewrites static CSS URLs under the configured Tailscale serve path", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const assetsDir = path.join(staticDir, "assets");
+      yield* fileSystem.makeDirectory(assetsDir);
+      yield* fileSystem.writeFileString(path.join(staticDir, "index.html"), "<html>shell</html>");
+      yield* fileSystem.writeFileString(
+        path.join(assetsDir, "app.css"),
+        "@font-face{src:url(/main/assets/font.woff2)}",
+      );
+
+      yield* buildAppUnderTest({ config: { staticDir, tailscaleServePath: "/staging" } });
+
+      const response = yield* HttpClient.get("/staging/assets/app.css");
+      assert.equal(response.status, 200);
+      assert.match(response.headers["content-type"] ?? "", /text\/css/u);
+      assert.equal(yield* response.text, "@font-face{src:url(/staging/assets/font.woff2)}");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
   it.effect("redirects to dev URL when configured", () =>
     Effect.gen(function* () {
       yield* buildAppUnderTest({
@@ -1272,6 +1497,33 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
       assert.equal(response.status, 200);
       assert.deepEqual(body, testEnvironmentDescriptor);
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("serves the public environment descriptor under the Tailscale serve path", () =>
+    Effect.gen(function* () {
+      yield* buildAppUnderTest({ config: { tailscaleServePath: "/qa-route" } });
+
+      const url = yield* getHttpServerUrl("/qa-route/.well-known/t3/environment");
+      const response = yield* fetchEffect(url);
+      const body = yield* responseJsonEffect<typeof testEnvironmentDescriptor>(response);
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(body, testEnvironmentDescriptor);
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("routes WebSocket RPC under the Tailscale serve path", () =>
+    Effect.gen(function* () {
+      yield* buildAppUnderTest({ config: { tailscaleServePath: "/qa-route" } });
+
+      const wsUrl = yield* getWsServerUrl("/qa-route/ws");
+      const config = yield* Effect.scoped(
+        withWsRpcClient(wsUrl, (client) => client[WS_METHODS.serverGetConfig]({})),
+      );
+
+      assert.equal(config.environment.environmentId, testEnvironmentDescriptor.environmentId);
+      assert.equal(config.auth.policy, "desktop-managed-local");
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 

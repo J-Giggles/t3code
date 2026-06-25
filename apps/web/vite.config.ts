@@ -1,42 +1,90 @@
+// @effect-diagnostics nodeBuiltinImport:off - Vite config reads optional package-local env files before an Effect runtime exists.
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
+import * as NodePath from "node:path";
+import * as NodeURL from "node:url";
+import * as NodeUtil from "node:util";
 import { defineProject, type TestProjectInlineConfiguration } from "vite-plus/test/config";
 import "vite-plus/test/config";
-import { defineConfig } from "vite-plus";
+import { defineConfig, type Plugin } from "vite-plus";
+import { normalizePublicPathPrefix } from "@t3tools/shared/publicPath";
 import pkg from "./package.json" with { type: "json" };
 
+import {
+  readNonEmptyEnvValue,
+  RESTART_CONTROL_TOKEN_ENV,
+  resolveDevChangePolicy,
+} from "../../scripts/lib/dev-change-policy.ts";
 import { loadRepoEnv } from "../../scripts/lib/public-config";
+import {
+  createDevSourceChangePayload,
+  DEFAULT_DEV_SOURCE_CHANGE_REASON,
+  DEV_SOURCE_CHANGED_EVENT,
+  postRestartRequired,
+  resolveRestartNotificationEndpoint,
+  shouldNotifyForViteWatchEvent,
+} from "./src/lib/devRestartNotification";
 
 const repoEnv = loadRepoEnv();
-Object.assign(process.env, repoEnv);
+const webPackageRoot = NodePath.dirname(NodeURL.fileURLToPath(import.meta.url));
+const webLocalEnv = readOptionalEnvFile(NodePath.join(webPackageRoot, ".env.local"));
+const effectiveEnv = {
+  ...repoEnv,
+  ...webLocalEnv,
+  ...process.env,
+} satisfies Record<string, string | undefined>;
+Object.assign(process.env, effectiveEnv);
 
-const port = Number(process.env.PORT ?? 5733);
-const host = process.env.HOST?.trim() || "localhost";
-const configuredWsUrl = process.env.VITE_WS_URL?.trim();
-const configuredRelayUrl = repoEnv.VITE_T3CODE_RELAY_URL?.trim() || "";
-const configuredClerkPublishableKey = repoEnv.VITE_CLERK_PUBLISHABLE_KEY?.trim() || "";
-const configuredClerkJwtTemplate = repoEnv.VITE_CLERK_JWT_TEMPLATE?.trim() || "";
-const configuredRelayTracingUrl = repoEnv.VITE_RELAY_OTLP_TRACES_URL?.trim() || "";
-const configuredRelayTracingDataset = repoEnv.VITE_RELAY_OTLP_TRACES_DATASET?.trim() || "";
-const configuredRelayTracingToken = repoEnv.VITE_RELAY_OTLP_TRACES_TOKEN?.trim() || "";
-const configuredHostedAppChannel = process.env.VITE_HOSTED_APP_CHANNEL?.trim() || "";
-const configuredAppVersion = process.env.APP_VERSION?.trim() || pkg.version;
+const port = Number(effectiveEnv.PORT ?? 5733);
+const host = effectiveEnv.HOST?.trim() || "localhost";
+const configuredWsUrl = effectiveEnv.VITE_WS_URL?.trim();
+const configuredHttpUrl = effectiveEnv.VITE_HTTP_URL?.trim();
+const configuredRelayUrl = effectiveEnv.VITE_T3CODE_RELAY_URL?.trim() || "";
+const configuredClerkPublishableKey = effectiveEnv.VITE_CLERK_PUBLISHABLE_KEY?.trim() || "";
+const configuredClerkJwtTemplate = effectiveEnv.VITE_CLERK_JWT_TEMPLATE?.trim() || "";
+const configuredRelayTracingUrl = effectiveEnv.VITE_RELAY_OTLP_TRACES_URL?.trim() || "";
+const configuredRelayTracingDataset = effectiveEnv.VITE_RELAY_OTLP_TRACES_DATASET?.trim() || "";
+const configuredRelayTracingToken = effectiveEnv.VITE_RELAY_OTLP_TRACES_TOKEN?.trim() || "";
+const configuredHostedAppChannel = effectiveEnv.VITE_HOSTED_APP_CHANNEL?.trim() || "";
+const configuredAppVersion = effectiveEnv.APP_VERSION?.trim() || pkg.version;
+const configuredT3WorktreeRole = effectiveEnv.T3CODE_WORKTREE_ROLE?.trim() || "";
+const configuredT3WorktreePath = effectiveEnv.T3CODE_WORKTREE_PATH?.trim() || "";
+const configuredT3GitBranch = effectiveEnv.T3CODE_GIT_BRANCH?.trim() || "";
+const configuredT3GitCommit = effectiveEnv.T3CODE_GIT_COMMIT?.trim() || "";
+const configuredT3DevInstance = effectiveEnv.T3CODE_DEV_INSTANCE?.trim() || "";
+const configuredT3Home = effectiveEnv.T3CODE_HOME?.trim() || "";
+const configuredDevWorktreeName =
+  effectiveEnv.VITE_DEV_WORKTREE_NAME?.trim() || resolveGitWorktreeName();
+const configuredDevBranchName = effectiveEnv.VITE_DEV_BRANCH_NAME?.trim() || resolveGitBranchName();
+const configuredPublicOrigin =
+  effectiveEnv.VITE_T3CODE_PUBLIC_ORIGIN?.trim() || effectiveEnv.APP_ORIGIN?.trim() || "";
+const configuredPublicBasePath = normalizePublicPathPrefix(
+  effectiveEnv.VITE_T3CODE_PUBLIC_BASE_PATH ?? effectiveEnv.APP_BASE_PATH,
+);
+const configuredPublicBaseUrl =
+  effectiveEnv.VITE_T3CODE_PUBLIC_BASE_URL?.trim() || effectiveEnv.APP_BASE_URL?.trim() || "";
+const viteBase = configuredPublicBasePath ? `${configuredPublicBasePath}/` : "/";
 const configuredHostedAppUrl = (() => {
-  const explicitHostedAppUrl = process.env.VITE_HOSTED_APP_URL?.trim();
+  const explicitHostedAppUrl = effectiveEnv.VITE_HOSTED_APP_URL?.trim();
   if (explicitHostedAppUrl) {
     return explicitHostedAppUrl;
   }
-  if (process.env.VERCEL_ENV === "production" && process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (effectiveEnv.VERCEL_ENV === "production" && effectiveEnv.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${effectiveEnv.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+  if (effectiveEnv.VERCEL_URL) {
+    return `https://${effectiveEnv.VERCEL_URL}`;
   }
   return undefined;
 })();
-const sourcemapEnv = process.env.T3CODE_WEB_SOURCEMAP?.trim().toLowerCase();
+const sourcemapEnv = effectiveEnv.T3CODE_WEB_SOURCEMAP?.trim().toLowerCase();
+const manualDevChangePolicy =
+  resolveDevChangePolicy(effectiveEnv, { defaultPolicy: "manual" }) === "manual";
+const restartControlToken = readNonEmptyEnvValue(effectiveEnv[RESTART_CONTROL_TOKEN_ENV]);
 
 // Vite 8.1's experimental bundled dev mode: serves rolldown-bundled chunks in
 // dev for much faster startup/reload on large module graphs, with HMR served
@@ -87,8 +135,109 @@ function resolveDevProxyTarget(wsUrl: string | undefined): string | undefined {
 
 const devProxyTarget = resolveDevProxyTarget(configuredWsUrl);
 
+function resolveGitBranchName(): string {
+  try {
+    return NodeChildProcess.execFileSync("git", ["branch", "--show-current"], {
+      cwd: webPackageRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function resolveGitWorktreeName(): string {
+  try {
+    const worktreePath = NodeChildProcess.execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd: webPackageRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return NodePath.basename(worktreePath);
+  } catch {
+    return "";
+  }
+}
+
+function readOptionalEnvFile(path: string): Record<string, string | undefined> {
+  return NodeFS.existsSync(path) ? NodeUtil.parseEnv(NodeFS.readFileSync(path, "utf8")) : {};
+}
+
+function manualRestartNotificationPlugin({
+  enabled,
+  httpBaseUrl,
+  token,
+}: {
+  readonly enabled: boolean;
+  readonly httpBaseUrl: string | undefined;
+  readonly token: string | undefined;
+}): Plugin {
+  let notificationTimer: ReturnType<typeof setTimeout> | undefined;
+  let notificationSequence = Date.now();
+  const endpoint = resolveRestartNotificationEndpoint(httpBaseUrl);
+
+  return {
+    name: "t3code-manual-restart-notification",
+    apply: "serve",
+    configureServer(server) {
+      if (!enabled) {
+        return;
+      }
+
+      const notify = async () => {
+        const posted = await postRestartRequired({
+          endpoint,
+          token,
+          reason: DEFAULT_DEV_SOURCE_CHANGE_REASON,
+        });
+
+        if (posted) {
+          return;
+        }
+
+        server.ws.send({
+          type: "custom",
+          event: DEV_SOURCE_CHANGED_EVENT,
+          data: createDevSourceChangePayload({
+            reason: DEFAULT_DEV_SOURCE_CHANGE_REASON,
+            sequence: ++notificationSequence,
+          }),
+        });
+      };
+
+      const scheduleNotification = () => {
+        if (notificationTimer) {
+          clearTimeout(notificationTimer);
+        }
+
+        notificationTimer = setTimeout(() => {
+          notificationTimer = undefined;
+          void notify();
+        }, 120);
+      };
+
+      const handleWatchEvent = (event: string, path: string) => {
+        if (shouldNotifyForViteWatchEvent(event, path)) {
+          scheduleNotification();
+        }
+      };
+
+      server.watcher.on("all", handleWatchEvent);
+      server.httpServer?.once("close", () => {
+        if (notificationTimer) {
+          clearTimeout(notificationTimer);
+          notificationTimer = undefined;
+        }
+        server.watcher.off("all", handleWatchEvent);
+      });
+    },
+  };
+}
+
 export default defineConfig(() => {
   return {
+    base: viteBase,
     plugins: [
       tanstackRouter(),
       react(),
@@ -101,6 +250,11 @@ export default defineConfig(() => {
         presets: [reactCompilerPreset()],
       }),
       tailwindcss(),
+      manualRestartNotificationPlugin({
+        enabled: manualDevChangePolicy,
+        httpBaseUrl: configuredHttpUrl,
+        token: restartControlToken,
+      }),
     ],
     optimizeDeps: {
       include: [
@@ -126,8 +280,21 @@ export default defineConfig(() => {
         configuredRelayTracingDataset,
       ),
       "import.meta.env.VITE_RELAY_OTLP_TRACES_TOKEN": JSON.stringify(configuredRelayTracingToken),
+      "import.meta.env.VITE_T3_WORKTREE_ROLE": JSON.stringify(configuredT3WorktreeRole),
+      "import.meta.env.VITE_T3_WORKTREE_PATH": JSON.stringify(configuredT3WorktreePath),
+      "import.meta.env.VITE_T3_GIT_BRANCH": JSON.stringify(configuredT3GitBranch),
+      "import.meta.env.VITE_T3_GIT_COMMIT": JSON.stringify(configuredT3GitCommit),
+      "import.meta.env.VITE_T3_DEV_INSTANCE": JSON.stringify(configuredT3DevInstance),
+      "import.meta.env.VITE_T3_HOME": JSON.stringify(configuredT3Home),
       "import.meta.env.VITE_HOSTED_APP_URL": JSON.stringify(configuredHostedAppUrl ?? ""),
       "import.meta.env.VITE_HOSTED_APP_CHANNEL": JSON.stringify(configuredHostedAppChannel),
+      "import.meta.env.VITE_DEV_WORKTREE_NAME": JSON.stringify(configuredDevWorktreeName),
+      "import.meta.env.VITE_DEV_BRANCH_NAME": JSON.stringify(configuredDevBranchName),
+      "import.meta.env.VITE_T3CODE_PUBLIC_ORIGIN": JSON.stringify(configuredPublicOrigin),
+      "import.meta.env.VITE_T3CODE_PUBLIC_BASE_PATH": JSON.stringify(
+        configuredPublicBasePath ?? "",
+      ),
+      "import.meta.env.VITE_T3CODE_PUBLIC_BASE_URL": JSON.stringify(configuredPublicBaseUrl),
       "import.meta.env.APP_VERSION": JSON.stringify(configuredAppVersion),
     },
     resolve: {
@@ -167,6 +334,11 @@ export default defineConfig(() => {
         host,
         clientPort: port,
       },
+      ...(manualDevChangePolicy
+        ? {
+            hotUpdateEnvironments: async () => {},
+          }
+        : {}),
     },
     build: {
       outDir: "dist",

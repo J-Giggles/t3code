@@ -4,6 +4,10 @@ import type {
   DesktopRuntimeArch,
   DesktopRuntimeInfo,
 } from "@t3tools/contracts";
+import {
+  normalizePublicPathPrefix,
+  resolveWorkspacePublicPathPrefix,
+} from "@t3tools/shared/publicPath";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -25,6 +29,54 @@ export interface MakeDesktopEnvironmentInput {
   readonly isPackaged: boolean;
   readonly resourcesPath: string;
   readonly runningUnderArm64Translation: boolean;
+}
+
+export interface DesktopEnvironmentShape {
+  readonly path: Path.Path;
+  readonly dirname: string;
+  readonly platform: NodeJS.Platform;
+  readonly processArch: string;
+  readonly isPackaged: boolean;
+  readonly isDevelopment: boolean;
+  readonly appVersion: string;
+  readonly appPath: string;
+  readonly resourcesPath: string;
+  readonly homeDirectory: string;
+  readonly appDataDirectory: string;
+  readonly baseDir: string;
+  readonly stateDir: string;
+  readonly desktopSettingsPath: string;
+  readonly clientSettingsPath: string;
+  readonly savedEnvironmentRegistryPath: string;
+  readonly serverSettingsPath: string;
+  readonly logDir: string;
+  readonly browserArtifactsDir: string;
+  readonly rootDir: string;
+  readonly appRoot: string;
+  readonly backendEntryPath: string;
+  readonly backendCwd: string;
+  readonly preloadPath: string;
+  readonly appUpdateYmlPath: string;
+  readonly devServerUrl: Option.Option<URL>;
+  readonly devRemoteT3ServerEntryPath: Option.Option<string>;
+  readonly configuredBackendPort: Option.Option<number>;
+  readonly commitHashOverride: Option.Option<string>;
+  readonly openDevToolsOnStartup: boolean;
+  readonly otlpTracesUrl: Option.Option<string>;
+  readonly otlpLogsUrl: Option.Option<string>;
+  readonly otlpExportIntervalMs: number;
+  readonly branding: DesktopAppBranding;
+  readonly displayName: string;
+  readonly appUserModelId: string;
+  readonly linuxDesktopEntryName: string;
+  readonly linuxWmClass: string;
+  readonly userDataDirName: string;
+  readonly legacyUserDataDirName: string;
+  readonly defaultDesktopSettings: DesktopAppSettings.DesktopSettings;
+  readonly runtimeInfo: DesktopRuntimeInfo;
+  readonly resolvePickFolderDefaultPath: (rawOptions: unknown) => Option.Option<string>;
+  readonly resolveResourcePathCandidates: (fileName: string) => readonly string[];
+  readonly developmentDockIconPath: string;
 }
 
 export class DesktopEnvironment extends Context.Service<
@@ -59,7 +111,9 @@ export class DesktopEnvironment extends Context.Service<
     readonly devRemoteT3ServerEntryPath: Option.Option<string>;
     readonly configuredBackendPort: Option.Option<number>;
     readonly commitHashOverride: Option.Option<string>;
+    readonly openDevToolsOnStartup: boolean;
     readonly otlpTracesUrl: Option.Option<string>;
+    readonly otlpLogsUrl: Option.Option<string>;
     readonly otlpExportIntervalMs: number;
     readonly branding: DesktopAppBranding;
     readonly displayName: string;
@@ -77,6 +131,17 @@ export class DesktopEnvironment extends Context.Service<
 >()("@t3tools/desktop/app/DesktopEnvironment") {}
 
 const APP_BASE_NAME = "T3 Code";
+
+const normalizeDesktopIdentitySegment = (value: string): Option.Option<string> => {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "")
+    .replaceAll(/-{2,}/g, "-");
+
+  return normalized.length > 0 ? Option.some(normalized) : Option.none();
+};
 
 function resolveDesktopAppStageLabel(input: {
   readonly isDevelopment: boolean;
@@ -156,9 +221,29 @@ const make = Effect.fn("desktop.environment.make")(function* (
   });
   const displayName = branding.displayName;
   const stateDir = path.join(baseDir, isDevelopment ? "dev" : "userdata");
-  const userDataDirName = isDevelopment ? "t3code-dev" : "t3code";
-  const legacyUserDataDirName = isDevelopment ? "T3 Code (Dev)" : "T3 Code (Alpha)";
+  const developmentIdentitySegment = Option.flatMap(
+    config.devInstance.pipe(Option.orElse(() => config.worktreeRole)),
+    normalizeDesktopIdentitySegment,
+  );
+  const developmentIdentityName = Option.match(developmentIdentitySegment, {
+    onNone: () => "t3code-dev",
+    onSome: (segment) => `t3code-dev-${segment}`,
+  });
+  const userDataDirName = isDevelopment ? developmentIdentityName : "t3code";
+  const legacyUserDataDirName = isDevelopment
+    ? Option.match(developmentIdentitySegment, {
+        onNone: () => "T3 Code (Dev)",
+        onSome: () => developmentIdentityName,
+      })
+    : "T3 Code (Alpha)";
   const resourcesPath = input.resourcesPath;
+  const defaultTailscaleServePath =
+    normalizePublicPathPrefix(Option.getOrUndefined(config.tailscaleServePath)) ??
+    resolveWorkspacePublicPathPrefix({
+      workspaceSlug: Option.getOrUndefined(config.workspaceSlug),
+      worktreeRole: Option.getOrUndefined(config.worktreeRole),
+      devInstance: Option.getOrUndefined(config.devInstance),
+    });
 
   return DesktopEnvironment.of({
     path,
@@ -192,18 +277,27 @@ const make = Effect.fn("desktop.environment.make")(function* (
     devRemoteT3ServerEntryPath: config.devRemoteT3ServerEntryPath,
     configuredBackendPort: config.configuredBackendPort,
     commitHashOverride: config.commitHashOverride,
+    openDevToolsOnStartup: config.openDevToolsOnStartup,
     otlpTracesUrl: config.otlpTracesUrl,
+    otlpLogsUrl: config.otlpLogsUrl,
     otlpExportIntervalMs: config.otlpExportIntervalMs,
     branding,
     displayName,
     appUserModelId: Option.getOrElse(config.appUserModelIdOverride, () =>
-      isDevelopment ? "com.t3tools.t3code.dev" : "com.t3tools.t3code",
+      isDevelopment
+        ? Option.match(developmentIdentitySegment, {
+            onNone: () => "com.t3tools.t3code.dev",
+            onSome: (segment) => `com.t3tools.t3code.dev.${segment.replaceAll("-", ".")}`,
+          })
+        : "com.t3tools.t3code",
     ),
-    linuxDesktopEntryName: isDevelopment ? "t3code-dev.desktop" : "t3code.desktop",
-    linuxWmClass: isDevelopment ? "t3code-dev" : "t3code",
+    linuxDesktopEntryName: isDevelopment ? `${developmentIdentityName}.desktop` : "t3code.desktop",
+    linuxWmClass: isDevelopment ? developmentIdentityName : "t3code",
     userDataDirName,
     legacyUserDataDirName,
-    defaultDesktopSettings: DesktopAppSettings.resolveDefaultDesktopSettings(input.appVersion),
+    defaultDesktopSettings: DesktopAppSettings.resolveDefaultDesktopSettings(input.appVersion, {
+      tailscaleServePath: defaultTailscaleServePath,
+    }),
     runtimeInfo: resolveDesktopRuntimeInfo({
       platform: input.platform,
       processArch: input.processArch,

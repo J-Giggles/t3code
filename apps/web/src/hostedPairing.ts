@@ -1,3 +1,5 @@
+import { readLocalPublicPathPrefixFromPathname } from "@t3tools/shared/publicPath";
+
 import { getPairingTokenFromUrl, setPairingTokenOnUrl } from "./pairingUrl";
 
 const DEFAULT_HOSTED_APP_URL = "https://app.t3.codes";
@@ -31,8 +33,16 @@ function originFromUrl(value: string): string | null {
   }
 }
 
+function isPathServedLocalApp(url: URL): boolean {
+  return readLocalPublicPathPrefixFromPathname(url.pathname) !== undefined;
+}
+
 export function isHostedStaticApp(url: URL = new URL(window.location.href)): boolean {
   if (configuredBackendUrl()) {
+    return false;
+  }
+
+  if (isPathServedLocalApp(url)) {
     return false;
   }
 

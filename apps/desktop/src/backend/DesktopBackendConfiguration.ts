@@ -1,5 +1,6 @@
 import * as NodeOS from "node:os";
 
+import { normalizePublicPathPrefix } from "@t3tools/shared/publicPath";
 import { parsePersistedServerObservabilitySettings } from "@t3tools/shared/serverSettings";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
@@ -15,10 +16,12 @@ import * as SynchronizedRef from "effect/SynchronizedRef";
 import serverPackageJson from "../../../server/package.json" with { type: "json" };
 
 import * as DesktopBackendManager from "./DesktopBackendManager.ts";
+import * as DesktopConfig from "../app/DesktopConfig.ts";
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
 import * as DesktopServerExposure from "./DesktopServerExposure.ts";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopWslEnvironment from "../wsl/DesktopWslEnvironment.ts";
+import { checkDesktopTailscaleReservedServeRoute } from "./tailscaleRouteOwnership.ts";
 
 export class DesktopBackendObservabilitySettingsReadError extends Schema.TaggedErrorClass<DesktopBackendObservabilitySettingsReadError>()(
   "DesktopBackendObservabilitySettingsReadError",
@@ -66,11 +69,13 @@ export class DesktopBackendConfiguration extends Context.Service<
 interface BackendObservabilitySettings {
   readonly otlpTracesUrl: Option.Option<string>;
   readonly otlpMetricsUrl: Option.Option<string>;
+  readonly otlpLogsUrl: Option.Option<string>;
 }
 
 const emptyBackendObservabilitySettings: BackendObservabilitySettings = {
   otlpTracesUrl: Option.none(),
   otlpMetricsUrl: Option.none(),
+  otlpLogsUrl: Option.none(),
 };
 
 const DESKTOP_BACKEND_ENV_NAMES = [
@@ -84,6 +89,7 @@ const DESKTOP_BACKEND_ENV_NAMES = [
   "T3CODE_DESKTOP_HTTPS_ENDPOINTS",
   "T3CODE_TAILSCALE_SERVE",
   "T3CODE_TAILSCALE_SERVE_PORT",
+  "T3CODE_TAILSCALE_SERVE_PATH",
 ] as const;
 
 // Sensitive env vars that the WSL backend needs but Windows process.env won't
@@ -163,6 +169,7 @@ const readPersistedBackendObservabilitySettings = Effect.gen(function* () {
   return {
     otlpTracesUrl: Option.fromNullishOr(parsed.otlpTracesUrl),
     otlpMetricsUrl: Option.fromNullishOr(parsed.otlpMetricsUrl),
+    otlpLogsUrl: Option.fromNullishOr(parsed.otlpLogsUrl),
   };
 });
 
@@ -322,6 +329,10 @@ const buildObservabilityFragment = (observabilitySettings: BackendObservabilityS
     onNone: () => ({}),
     onSome: (otlpMetricsUrl) => ({ otlpMetricsUrl }),
   }),
+  ...Option.match(observabilitySettings.otlpLogsUrl, {
+    onNone: () => ({}),
+    onSome: (otlpLogsUrl) => ({ otlpLogsUrl }),
+  }),
 });
 
 const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolvePrimary")(
@@ -333,8 +344,35 @@ const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolv
     DesktopEnvironment.DesktopEnvironment | DesktopServerExposure.DesktopServerExposure
   > {
     const environment = yield* DesktopEnvironment.DesktopEnvironment;
+    const desktopConfig = yield* DesktopConfig.DesktopConfig.pipe(Effect.orDie);
     const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
-    const backendExposure = yield* serverExposure.backendConfig;
+    const [backendExposure, exposureState] = yield* Effect.all([
+      serverExposure.backendConfig,
+      serverExposure.getState,
+    ]);
+    const configuredTailscaleServePath = Option.getOrUndefined(desktopConfig.tailscaleServePath);
+    const tailscaleServePath = configuredTailscaleServePath ?? backendExposure.tailscaleServePath;
+    const normalizedTailscaleServePath = normalizePublicPathPrefix(tailscaleServePath);
+    const reservedRouteConflict =
+      normalizedTailscaleServePath === undefined
+        ? null
+        : checkDesktopTailscaleReservedServeRoute({
+            appRoot: environment.appRoot,
+            route: normalizedTailscaleServePath,
+          });
+    const allowedTailscaleServePath =
+      reservedRouteConflict === null ? normalizedTailscaleServePath : undefined;
+    const isTailscaleServeManagedExternally =
+      reservedRouteConflict === null &&
+      configuredTailscaleServePath !== undefined &&
+      !backendExposure.tailscaleServeEnabled;
+    const allowedTailscaleServeEnabled =
+      reservedRouteConflict === null && backendExposure.tailscaleServeEnabled;
+    const shouldUseTailscaleServePath =
+      allowedTailscaleServePath !== undefined &&
+      (allowedTailscaleServeEnabled ||
+        isTailscaleServeManagedExternally ||
+        exposureState.mode === "network-accessible");
 
     const bootstrap = {
       mode: "desktop" as const,
@@ -343,8 +381,13 @@ const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolv
       t3Home: environment.baseDir,
       host: backendExposure.bindHost,
       desktopBootstrapToken: input.bootstrapToken,
-      tailscaleServeEnabled: backendExposure.tailscaleServeEnabled,
+      tailscaleServeEnabled: isTailscaleServeManagedExternally
+        ? false
+        : allowedTailscaleServeEnabled,
       tailscaleServePort: backendExposure.tailscaleServePort,
+      ...(shouldUseTailscaleServePath && allowedTailscaleServePath !== undefined
+        ? { tailscaleServePath: allowedTailscaleServePath }
+        : {}),
       ...buildObservabilityFragment(input.observabilitySettings),
     };
 

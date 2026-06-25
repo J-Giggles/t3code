@@ -1,13 +1,16 @@
 import {
   ChevronDownIcon,
   ChevronsLeftRightEllipsisIcon,
+  CopyIcon,
+  ExternalLinkIcon,
   PlusIcon,
   QrCodeIcon,
   RefreshCwIcon,
   TerminalIcon,
   TriangleAlertIcon,
+  WrenchIcon,
 } from "lucide-react";
-import { type ReactNode, memo, useCallback, useMemo, useState } from "react";
+import { type ReactNode, memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AuthAccessReadScope,
   AuthAccessWriteScope,
@@ -27,6 +30,7 @@ import {
   type DesktopSshEnvironmentTarget,
   type DesktopServerExposureState,
   type DesktopWslState,
+  type DesktopTailscaleServeRouteProbeResult,
   type EnvironmentId,
 } from "@t3tools/contracts";
 import { connectionStatusText } from "@t3tools/client-runtime/connection";
@@ -34,6 +38,11 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import {
+  normalizeTailscaleServeUiRoute,
+  validateTailscaleServeUiRoute,
+} from "@t3tools/shared/publicPath";
+import type { RelayClientEnvironmentRecord } from "@t3tools/contracts/relay";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 
@@ -153,6 +162,67 @@ function formatAccessTimestamp(value: string): string {
     return value;
   }
   return accessTimestampFormatter.format(parsed);
+}
+
+function withTailscaleServeUrlOptions(input: {
+  readonly baseUrl: string;
+  readonly servePort: number;
+  readonly servePath: string;
+}): string {
+  try {
+    const url = new URL(input.baseUrl);
+    url.port = input.servePort === DEFAULT_TAILSCALE_SERVE_PORT ? "" : String(input.servePort);
+    url.pathname = `${input.servePath.replace(/\/+$/u, "")}/`;
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return input.baseUrl;
+  }
+}
+
+export function isTailscaleServeRouteApplyBlocked(input: {
+  readonly isPathValid: boolean;
+  readonly isChecking: boolean;
+  readonly routeProbe: DesktopTailscaleServeRouteProbeResult | null;
+}): boolean {
+  return (
+    input.isChecking ||
+    !input.isPathValid ||
+    input.routeProbe?.conflict === true ||
+    input.routeProbe?.status === "reserved-conflict" ||
+    input.routeProbe?.status === "invalid"
+  );
+}
+
+export function resolveTailscaleServeRouteStatusLabel(input: {
+  readonly isPathValid: boolean;
+  readonly validationMessage: string | null;
+  readonly isChecking: boolean;
+  readonly routeProbe: DesktopTailscaleServeRouteProbeResult | null;
+}): string | null {
+  if (!input.isPathValid) {
+    return input.validationMessage;
+  }
+  if (input.isChecking) {
+    return "Checking route...";
+  }
+  if (input.routeProbe?.status === "available") {
+    return "Available";
+  }
+  if (input.routeProbe?.status === "owned") {
+    return "Already configured for this backend";
+  }
+  if (input.routeProbe?.status === "conflict") {
+    return "Already taken";
+  }
+  if (input.routeProbe?.status === "reserved-conflict") {
+    return "Reserved for another worktree";
+  }
+  if (input.routeProbe?.status === "unavailable") {
+    return input.routeProbe.message ?? "Route status unavailable";
+  }
+  return null;
 }
 
 const PAIRING_SCOPE_OPTIONS: ReadonlyArray<{
@@ -1806,12 +1876,17 @@ export function ConnectionsSettings() {
     | { readonly kind: "wsl-only"; readonly nextValue: boolean };
   const [pendingWslChange, setPendingWslChange] = useState<PendingWslChange | null>(null);
   const isWslConfirmDialogOpen = pendingWslChange !== null;
+  const [isTestingTailscaleAccess, setIsTestingTailscaleAccess] = useState(false);
   const [pendingTailscaleServeEndpoint, setPendingTailscaleServeEndpoint] =
     useState<AdvertisedEndpoint | null>(null);
   const [disableTailscaleServeDialogOpen, setDisableTailscaleServeDialogOpen] = useState(false);
   const [tailscaleServePortInput, setTailscaleServePortInput] = useState(
     String(DEFAULT_TAILSCALE_SERVE_PORT),
   );
+  const [tailscaleServePathInput, setTailscaleServePathInput] = useState("");
+  const [tailscaleServeRouteProbe, setTailscaleServeRouteProbe] =
+    useState<DesktopTailscaleServeRouteProbeResult | null>(null);
+  const [isCheckingTailscaleServeRoute, setIsCheckingTailscaleServeRoute] = useState(false);
   const [pendingDesktopServerExposureMode, setPendingDesktopServerExposureMode] = useState<
     DesktopServerExposureState["mode"] | null
   >(null);
@@ -1824,6 +1899,26 @@ export function ConnectionsSettings() {
   const setDefaultAdvertisedEndpointKey = useUiStateStore(
     (state) => state.setDefaultAdvertisedEndpointKey,
   );
+  const { copyToClipboard: copyTailscaleBrowserUrlToClipboard } =
+    useCopyToClipboard<"tailscale-url">({
+      target: "Tailscale HTTPS URL",
+      onCopy: () => {
+        toastManager.add({
+          type: "success",
+          title: "Tailscale URL copied",
+          description: "Open it in a browser on a device connected to this tailnet.",
+        });
+      },
+      onError: (error) => {
+        toastManager.add(
+          stackedThreadToast({
+            type: "error",
+            title: "Could not copy Tailscale URL",
+            description: error.message,
+          }),
+        );
+      },
+    });
   const canManageLocalBackend = currentSessionScopes?.includes(AuthAccessWriteScope) ?? false;
   const canManageRelay = currentSessionScopes?.includes(AuthRelayWriteScope) ?? false;
   const authAccessChanges = useEnvironmentQuery(
@@ -1865,6 +1960,7 @@ export function ConnectionsSettings() {
   const isLoadingDiscoveredSshHosts = desktopSshHosts.isPending;
   const discoveredSshHostsError = sshConnectionError ?? desktopSshHosts.error;
   const desktopServerExposureState = desktopNetworkAccess.data?.serverExposureState ?? null;
+  const desktopTailscaleAccessState = desktopNetworkAccess.data?.tailscaleAccessState ?? null;
   const desktopAdvertisedEndpoints =
     desktopNetworkAccess.data?.advertisedEndpoints ?? EMPTY_ADVERTISED_ENDPOINTS;
   const desktopServerExposureError =
@@ -1901,21 +1997,144 @@ export function ConnectionsSettings() {
     Number.isInteger(parsedTailscaleServePort) &&
     parsedTailscaleServePort >= 1 &&
     parsedTailscaleServePort <= 65_535;
+  const tailscaleServePathValidation = useMemo(
+    () => validateTailscaleServeUiRoute(tailscaleServePathInput),
+    [tailscaleServePathInput],
+  );
+  const normalizedTailscaleServePathInput = tailscaleServePathValidation.valid
+    ? tailscaleServePathValidation.route
+    : null;
+  const isTailscaleServePathValid = tailscaleServePathValidation.valid;
+  const isTailscaleServeRouteConflict = isTailscaleServeRouteApplyBlocked({
+    isPathValid: isTailscaleServePathValid,
+    isChecking: false,
+    routeProbe: tailscaleServeRouteProbe,
+  });
+  const isTailscaleServePathDirty =
+    normalizedTailscaleServePathInput !== null &&
+    desktopTailscaleAccessState?.servePath !== normalizedTailscaleServePathInput;
+  const isTailscaleServeApplyNeeded =
+    normalizedTailscaleServePathInput !== null &&
+    (isTailscaleServePathDirty || desktopTailscaleAccessState?.enabled !== true);
+  const tailscaleServeRouteStatusLabel = resolveTailscaleServeRouteStatusLabel({
+    isPathValid: isTailscaleServePathValid,
+    validationMessage: tailscaleServePathValidation.valid
+      ? null
+      : tailscaleServePathValidation.message,
+    isChecking: isCheckingTailscaleServeRoute,
+    routeProbe: tailscaleServeRouteProbe,
+  });
+  const tailscaleServePathPreviewUrl = useMemo(() => {
+    if (!desktopTailscaleAccessState?.magicDnsName || !normalizedTailscaleServePathInput) {
+      return null;
+    }
+    return withTailscaleServeUrlOptions({
+      baseUrl:
+        desktopTailscaleAccessState.httpsUrl ??
+        `https://${desktopTailscaleAccessState.magicDnsName}/`,
+      servePort: desktopTailscaleAccessState.servePort,
+      servePath: normalizedTailscaleServePathInput,
+    });
+  }, [
+    desktopTailscaleAccessState?.httpsUrl,
+    desktopTailscaleAccessState?.magicDnsName,
+    desktopTailscaleAccessState?.servePort,
+    normalizedTailscaleServePathInput,
+  ]);
+  const tailscaleBrowserAccessUrl =
+    tailscaleServePathPreviewUrl ?? desktopTailscaleAccessState?.httpsUrl ?? null;
+  const tailscaleProbeStatusLabel =
+    desktopTailscaleAccessState?.probeStatus === "reachable"
+      ? "reachable"
+      : desktopTailscaleAccessState?.probeStatus === "configured"
+        ? "configured"
+        : desktopTailscaleAccessState?.probeStatus === "unreachable"
+          ? "unreachable"
+          : "unknown";
+  useEffect(() => {
+    if (!desktopTailscaleAccessState) return;
+    setTailscaleServePathInput((current) =>
+      current.trim().length > 0 ? current : desktopTailscaleAccessState.servePath,
+    );
+    setTailscaleServePortInput((current) =>
+      current.trim().length > 0 ? current : String(desktopTailscaleAccessState.servePort),
+    );
+  }, [desktopTailscaleAccessState]);
+
+  useEffect(() => {
+    if (!desktopBridge || !isTailscaleServePathValid || !isTailscaleServePortValid) {
+      setIsCheckingTailscaleServeRoute(false);
+      setTailscaleServeRouteProbe(null);
+      return;
+    }
+    if (!normalizedTailscaleServePathInput) {
+      setIsCheckingTailscaleServeRoute(false);
+      setTailscaleServeRouteProbe(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsCheckingTailscaleServeRoute(true);
+    const timeout = window.setTimeout(() => {
+      void desktopBridge
+        .checkTailscaleServeRoute({
+          servePath: normalizedTailscaleServePathInput,
+          servePort: parsedTailscaleServePort,
+        })
+        .then((result) => {
+          if (!cancelled) {
+            setTailscaleServeRouteProbe(result);
+          }
+        })
+        .catch((error) => {
+          if (!cancelled) {
+            setTailscaleServeRouteProbe({
+              status: "unavailable",
+              available: false,
+              owned: false,
+              conflict: false,
+              servePath: normalizedTailscaleServePathInput,
+              servePort: parsedTailscaleServePort,
+              expectedProxyUrl: null,
+              existingProxyUrl: null,
+              message: error instanceof Error ? error.message : "Route status unavailable",
+            });
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsCheckingTailscaleServeRoute(false);
+          }
+        });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [
+    desktopBridge,
+    isTailscaleServePathValid,
+    isTailscaleServePortValid,
+    normalizedTailscaleServePathInput,
+    parsedTailscaleServePort,
+  ]);
 
   const pendingTailscaleServeBaseUrl = useMemo(() => {
     if (!pendingTailscaleServeEndpoint) return null;
     if (!isTailscaleServePortValid) return pendingTailscaleServeEndpoint.httpBaseUrl;
-    if (parsedTailscaleServePort === DEFAULT_TAILSCALE_SERVE_PORT) {
-      return pendingTailscaleServeEndpoint.httpBaseUrl;
-    }
-    try {
-      const url = new URL(pendingTailscaleServeEndpoint.httpBaseUrl);
-      url.port = String(parsedTailscaleServePort);
-      return url.toString().replace(/\/$/u, "");
-    } catch {
-      return pendingTailscaleServeEndpoint.httpBaseUrl;
-    }
-  }, [isTailscaleServePortValid, parsedTailscaleServePort, pendingTailscaleServeEndpoint]);
+    if (!normalizedTailscaleServePathInput) return pendingTailscaleServeEndpoint.httpBaseUrl;
+    return withTailscaleServeUrlOptions({
+      baseUrl: pendingTailscaleServeEndpoint.httpBaseUrl,
+      servePort: parsedTailscaleServePort,
+      servePath: normalizedTailscaleServePathInput,
+    });
+  }, [
+    isTailscaleServePortValid,
+    normalizedTailscaleServePathInput,
+    parsedTailscaleServePort,
+    pendingTailscaleServeEndpoint,
+  ]);
 
   const handleDesktopServerExposureChange = useCallback(
     async (checked: boolean) => {
@@ -1954,12 +2173,30 @@ export function ConnectionsSettings() {
   const handleConfirmTailscaleServeSetup = useCallback(async () => {
     if (!desktopBridge) return;
     if (!isTailscaleServePortValid) return;
+    if (!normalizedTailscaleServePathInput) return;
     setIsUpdatingTailscaleServe(true);
     setDesktopServerExposureMutationError(null);
     try {
-      await desktopBridge.setTailscaleServeEnabled({
-        enabled: true,
-        port: parsedTailscaleServePort,
+      const routeProbe = await desktopBridge.checkTailscaleServeRoute({
+        servePath: normalizedTailscaleServePathInput,
+        servePort: parsedTailscaleServePort,
+      });
+      setTailscaleServeRouteProbe(routeProbe);
+      if (routeProbe.conflict) {
+        const message = routeProbe.message ?? "Tailscale HTTPS route is not available.";
+        setDesktopServerExposureMutationError(message);
+        toastManager.add(
+          stackedThreadToast({
+            type: "error",
+            title: "Tailscale HTTPS route unavailable",
+            description: message,
+          }),
+        );
+        return;
+      }
+      await desktopBridge.enableTailscaleAccess({
+        servePort: parsedTailscaleServePort,
+        servePath: normalizedTailscaleServePathInput,
       });
       refreshDesktopNetworkAccessState();
       setPendingTailscaleServeEndpoint(null);
@@ -1977,16 +2214,32 @@ export function ConnectionsSettings() {
     } finally {
       setIsUpdatingTailscaleServe(false);
     }
-  }, [desktopBridge, isTailscaleServePortValid, parsedTailscaleServePort]);
+  }, [
+    desktopBridge,
+    isTailscaleServePortValid,
+    normalizedTailscaleServePathInput,
+    parsedTailscaleServePort,
+  ]);
 
   const handleStartTailscaleServeSetup = useCallback(
     (endpoint: AdvertisedEndpoint) => {
       setTailscaleServePortInput(
         String(desktopServerExposureState?.tailscaleServePort ?? DEFAULT_TAILSCALE_SERVE_PORT),
       );
+      setTailscaleServePathInput(
+        desktopTailscaleAccessState?.servePath ??
+          desktopServerExposureState?.tailscaleServePath ??
+          desktopTailscaleAccessState?.defaultServePath ??
+          "/t3code",
+      );
       setPendingTailscaleServeEndpoint(endpoint);
     },
-    [desktopServerExposureState?.tailscaleServePort],
+    [
+      desktopServerExposureState?.tailscaleServePath,
+      desktopServerExposureState?.tailscaleServePort,
+      desktopTailscaleAccessState?.defaultServePath,
+      desktopTailscaleAccessState?.servePath,
+    ],
   );
 
   const handleConfirmTailscaleServeDisable = useCallback(async () => {
@@ -1994,10 +2247,7 @@ export function ConnectionsSettings() {
     setIsUpdatingTailscaleServe(true);
     setDesktopServerExposureMutationError(null);
     try {
-      await desktopBridge.setTailscaleServeEnabled({
-        enabled: false,
-        port: desktopServerExposureState?.tailscaleServePort ?? DEFAULT_TAILSCALE_SERVE_PORT,
-      });
+      await desktopBridge.disableTailscaleAccess();
       refreshDesktopNetworkAccessState();
       setDisableTailscaleServeDialogOpen(false);
     } catch (error) {
@@ -2013,11 +2263,145 @@ export function ConnectionsSettings() {
     } finally {
       setIsUpdatingTailscaleServe(false);
     }
-  }, [desktopBridge, desktopServerExposureState?.tailscaleServePort]);
+  }, [desktopBridge]);
 
   const handleStartTailscaleServeDisable = useCallback((_endpoint: AdvertisedEndpoint) => {
     setDisableTailscaleServeDialogOpen(true);
   }, []);
+
+  const handleApplyTailscaleServePath = useCallback(
+    async (servePath: string | null = normalizedTailscaleServePathInput) => {
+      if (!desktopBridge || !servePath) return;
+      const normalizedServePath = normalizeTailscaleServeUiRoute(servePath);
+      if (!normalizedServePath) return;
+      const servePort =
+        desktopTailscaleAccessState?.servePort ??
+        desktopServerExposureState?.tailscaleServePort ??
+        DEFAULT_TAILSCALE_SERVE_PORT;
+      setIsUpdatingTailscaleServe(true);
+      setDesktopServerExposureMutationError(null);
+      try {
+        const routeProbe = await desktopBridge.checkTailscaleServeRoute({
+          servePath: normalizedServePath,
+          servePort,
+        });
+        setTailscaleServeRouteProbe(routeProbe);
+        if (routeProbe.conflict) {
+          const message = routeProbe.message ?? "Tailscale HTTPS route is not available.";
+          setDesktopServerExposureMutationError(message);
+          toastManager.add(
+            stackedThreadToast({
+              type: "error",
+              title: "Tailscale HTTPS route unavailable",
+              description: message,
+            }),
+          );
+          return;
+        }
+        const accessState = await desktopBridge.enableTailscaleAccess({
+          servePath: normalizedServePath,
+          servePort,
+        });
+        setTailscaleServePathInput(accessState.servePath);
+        refreshDesktopNetworkAccessState();
+        toastManager.add(
+          stackedThreadToast({
+            type: "success",
+            title: "Tailscale HTTPS applied",
+            description: `T3 Code will use ${accessState.httpsUrl ?? accessState.servePath}.`,
+          }),
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to update Tailscale HTTPS path.";
+        setDesktopServerExposureMutationError(message);
+        toastManager.add(
+          stackedThreadToast({
+            type: "error",
+            title: "Could not update Tailscale HTTPS path",
+            description: message,
+          }),
+        );
+      } finally {
+        setIsUpdatingTailscaleServe(false);
+      }
+    },
+    [
+      desktopBridge,
+      desktopServerExposureState?.tailscaleServePort,
+      desktopTailscaleAccessState?.servePort,
+      normalizedTailscaleServePathInput,
+    ],
+  );
+
+  const handleProbeTailscaleAccess = useCallback(async () => {
+    if (!desktopBridge) return;
+    setIsTestingTailscaleAccess(true);
+    setDesktopServerExposureMutationError(null);
+    try {
+      const accessState = await desktopBridge.probeTailscaleAccess();
+      setTailscaleServePathInput(accessState.servePath);
+      refreshDesktopNetworkAccessState();
+      toastManager.add({
+        type: accessState.probeStatus === "reachable" ? "success" : "info",
+        title:
+          accessState.probeStatus === "reachable"
+            ? "Tailscale HTTPS reachable"
+            : "Tailscale HTTPS checked",
+        description: accessState.message ?? accessState.probeStatus,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to test Tailscale HTTPS.";
+      setDesktopServerExposureMutationError(message);
+      toastManager.add(
+        stackedThreadToast({
+          type: "error",
+          title: "Could not test Tailscale HTTPS",
+          description: message,
+        }),
+      );
+    } finally {
+      setIsTestingTailscaleAccess(false);
+    }
+  }, [desktopBridge]);
+
+  const handleRepairTailscaleAccess = useCallback(async () => {
+    if (!desktopBridge) return;
+    setIsUpdatingTailscaleServe(true);
+    setDesktopServerExposureMutationError(null);
+    try {
+      const accessState = await desktopBridge.repairTailscaleAccess();
+      setTailscaleServePathInput(accessState.servePath);
+      refreshDesktopNetworkAccessState();
+      toastManager.add({
+        type: accessState.probeStatus === "reachable" ? "success" : "info",
+        title: "Tailscale HTTPS repaired",
+        description: accessState.httpsUrl ?? accessState.message ?? accessState.probeStatus,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to repair Tailscale HTTPS.";
+      setDesktopServerExposureMutationError(message);
+      toastManager.add(
+        stackedThreadToast({
+          type: "error",
+          title: "Could not repair Tailscale HTTPS",
+          description: message,
+        }),
+      );
+    } finally {
+      setIsUpdatingTailscaleServe(false);
+    }
+  }, [desktopBridge]);
+
+  const handleCopyTailscaleBrowserUrl = useCallback(() => {
+    if (!tailscaleBrowserAccessUrl) return;
+    copyTailscaleBrowserUrlToClipboard(tailscaleBrowserAccessUrl, "tailscale-url");
+  }, [copyTailscaleBrowserUrlToClipboard, tailscaleBrowserAccessUrl]);
+
+  const handleOpenTailscaleBrowserUrl = useCallback(() => {
+    if (!tailscaleBrowserAccessUrl) return;
+    window.open(tailscaleBrowserAccessUrl, "_blank", "noopener,noreferrer");
+  }, [tailscaleBrowserAccessUrl]);
 
   const handleRevokeDesktopPairingLink = useCallback(async (id: string) => {
     setRevokingDesktopPairingLinkId(id);
@@ -2854,7 +3238,10 @@ export function ConnectionsSettings() {
           ? tailscaleHttpsEndpoint.status === "available"
             ? tailscaleHttpsEndpoint.httpBaseUrl
             : "Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL."
-          : "Start Tailscale to set up HTTPS access through MagicDNS."
+          : (desktopTailscaleAccessState?.message ??
+            (desktopTailscaleAccessState?.magicDnsName
+              ? `Set up HTTPS access at ${desktopTailscaleAccessState.magicDnsName}.`
+              : "Start Tailscale to set up HTTPS access through MagicDNS."))
       }
       control={
         tailscaleHttpsEndpoint ? (
@@ -2874,6 +3261,174 @@ export function ConnectionsSettings() {
       }
     />
   );
+  const renderTailscalePathRow = () => {
+    if (!desktopTailscaleAccessState?.magicDnsName) return null;
+    return (
+      <SettingsRow
+        title="HTTPS path"
+        description={
+          tailscaleServePathPreviewUrl
+            ? `Pairing and API requests use ${tailscaleServePathPreviewUrl}`
+            : "Path extension after your MagicDNS host for Tailscale HTTPS."
+        }
+        status={
+          tailscaleServeRouteStatusLabel ? (
+            <span
+              className={cn(
+                "block",
+                !isTailscaleServePathValid || isTailscaleServeRouteConflict
+                  ? "text-destructive"
+                  : "text-muted-foreground",
+              )}
+            >
+              {tailscaleServeRouteStatusLabel}
+              {tailscaleServeRouteProbe?.message &&
+              tailscaleServeRouteProbe.status !== "available" &&
+              tailscaleServeRouteProbe.status !== "owned"
+                ? `: ${tailscaleServeRouteProbe.message}`
+                : null}
+            </span>
+          ) : null
+        }
+        control={
+          <div className="flex min-w-0 items-center gap-2">
+            <Input
+              className="h-8 w-36"
+              value={tailscaleServePathInput}
+              onChange={(event) => setTailscaleServePathInput(event.target.value)}
+              disabled={isUpdatingTailscaleServe}
+              aria-label="Tailscale HTTPS path"
+            />
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={
+                isUpdatingTailscaleServe ||
+                isCheckingTailscaleServeRoute ||
+                !isTailscaleServePathValid ||
+                !isTailscaleServeApplyNeeded ||
+                isTailscaleServeRouteConflict
+              }
+              onClick={() => void handleApplyTailscaleServePath()}
+            >
+              Apply and restart
+            </Button>
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={
+                isUpdatingTailscaleServe ||
+                isCheckingTailscaleServeRoute ||
+                isTailscaleServeRouteConflict ||
+                !desktopTailscaleAccessState.defaultServePath ||
+                desktopTailscaleAccessState.servePath ===
+                  desktopTailscaleAccessState.defaultServePath
+              }
+              onClick={() => {
+                setTailscaleServePathInput(desktopTailscaleAccessState.defaultServePath);
+                void handleApplyTailscaleServePath(desktopTailscaleAccessState.defaultServePath);
+              }}
+            >
+              Reset
+            </Button>
+          </div>
+        }
+      />
+    );
+  };
+  const renderTailscaleBrowserAccessRow = () => {
+    if (!desktopTailscaleAccessState?.magicDnsName) return null;
+    const statusText = desktopTailscaleAccessState.message
+      ? `${tailscaleProbeStatusLabel}: ${desktopTailscaleAccessState.message}`
+      : tailscaleProbeStatusLabel;
+    return (
+      <SettingsRow
+        title="Browser access"
+        description={
+          tailscaleBrowserAccessUrl ? (
+            <span className="block max-w-full truncate" title={tailscaleBrowserAccessUrl}>
+              {tailscaleBrowserAccessUrl}
+            </span>
+          ) : (
+            "MagicDNS is available, but no HTTPS URL is configured."
+          )
+        }
+        status={<span className="block text-muted-foreground">{statusText}</span>}
+        control={
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!tailscaleBrowserAccessUrl}
+              onClick={handleCopyTailscaleBrowserUrl}
+            >
+              <CopyIcon className="size-3" />
+              Copy
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!tailscaleBrowserAccessUrl}
+              onClick={handleOpenTailscaleBrowserUrl}
+            >
+              <ExternalLinkIcon className="size-3" />
+              Open
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={isTestingTailscaleAccess}
+              onClick={() => void handleProbeTailscaleAccess()}
+            >
+              {isTestingTailscaleAccess ? (
+                <RefreshCwIcon className="size-3 animate-spin" />
+              ) : (
+                <RefreshCwIcon className="size-3" />
+              )}
+              Test
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={isUpdatingTailscaleServe}
+              onClick={() => void handleRepairTailscaleAccess()}
+            >
+              {isUpdatingTailscaleServe ? (
+                <RefreshCwIcon className="size-3 animate-spin" />
+              ) : (
+                <WrenchIcon className="size-3" />
+              )}
+              Repair
+            </Button>
+            {tailscaleBrowserAccessUrl ? (
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      size="icon-xs"
+                      variant="outline"
+                      aria-label="Show Tailscale browser URL QR code"
+                    />
+                  }
+                >
+                  <QrCodeIcon className="size-3.5" />
+                </PopoverTrigger>
+                <PopoverPopup side="top" align="end" tooltipStyle className="w-max">
+                  <QRCodeSvg
+                    value={tailscaleBrowserAccessUrl}
+                    size={132}
+                    level="M"
+                    marginSize={2}
+                    title="Tailscale browser URL"
+                  />
+                </PopoverPopup>
+              </Popover>
+            ) : null}
+          </div>
+        }
+      />
+    );
+  };
   const renderAuthorizedClients = (presentation: AccessSectionPresentation) => (
     <>
       {desktopAccessManagementError ? (
@@ -2982,6 +3537,8 @@ export function ConnectionsSettings() {
                 {renderEndpointRows("endpoint-rail")}
                 {renderTailscaleRow()}
                 {renderWslRow()}
+                {renderTailscalePathRow()}
+                {renderTailscaleBrowserAccessRow()}
                 <CloudLinkRow canManageRelay={canManageRelay} />
               </>
             ) : (
@@ -3244,6 +3801,21 @@ export function ConnectionsSettings() {
                 {!isTailscaleServePortValid ? (
                   <p className="mt-2 text-xs text-destructive">Enter a port from 1 to 65535.</p>
                 ) : null}
+                <label className="block">
+                  <span className="text-sm font-medium text-foreground">HTTPS path</span>
+                  <Input
+                    className="mt-2"
+                    value={tailscaleServePathInput}
+                    onChange={(event) => setTailscaleServePathInput(event.target.value)}
+                    disabled={isUpdatingTailscaleServe}
+                    placeholder="/staging"
+                  />
+                </label>
+                {!isTailscaleServePathValid ? (
+                  <p className="mt-2 text-xs text-destructive">
+                    {tailscaleServePathValidation.message}
+                  </p>
+                ) : null}
                 <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
                   <p className="text-xs font-medium text-muted-foreground">HTTPS endpoint</p>
                   <p
@@ -3252,6 +3824,23 @@ export function ConnectionsSettings() {
                   >
                     {pendingTailscaleServeBaseUrl ?? "Pending MagicDNS endpoint"}
                   </p>
+                  {tailscaleServeRouteStatusLabel ? (
+                    <p
+                      className={cn(
+                        "mt-2 text-xs",
+                        !isTailscaleServePathValid || isTailscaleServeRouteConflict
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {tailscaleServeRouteStatusLabel}
+                      {tailscaleServeRouteProbe?.message &&
+                      tailscaleServeRouteProbe.status !== "available" &&
+                      tailscaleServeRouteProbe.status !== "owned"
+                        ? `: ${tailscaleServeRouteProbe.message}`
+                        : null}
+                    </p>
+                  ) : null}
                 </div>
               </DialogPanel>
               <DialogFooter>
@@ -3263,7 +3852,13 @@ export function ConnectionsSettings() {
                 </DialogClose>
                 <Button
                   onClick={() => void handleConfirmTailscaleServeSetup()}
-                  disabled={isUpdatingTailscaleServe || !isTailscaleServePortValid}
+                  disabled={
+                    isUpdatingTailscaleServe ||
+                    isCheckingTailscaleServeRoute ||
+                    !isTailscaleServePortValid ||
+                    !isTailscaleServePathValid ||
+                    isTailscaleServeRouteConflict
+                  }
                 >
                   {isUpdatingTailscaleServe ? (
                     <>
@@ -3271,7 +3866,7 @@ export function ConnectionsSettings() {
                       Restarting…
                     </>
                   ) : (
-                    "Enable"
+                    "Apply and restart"
                   )}
                 </Button>
               </DialogFooter>

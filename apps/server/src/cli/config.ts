@@ -1,4 +1,5 @@
 import * as NetService from "@t3tools/shared/Net";
+import { normalizePublicPathPrefix } from "@t3tools/shared/publicPath";
 import { parsePersistedServerObservabilitySettings } from "@t3tools/shared/serverSettings";
 import { DesktopBackendBootstrap, PortSchema } from "@t3tools/contracts";
 import * as Config from "effect/Config";
@@ -92,6 +93,14 @@ const EnvServerConfig = Config.all({
     Config.option,
     Config.map(Option.getOrUndefined),
   ),
+  otlpLogsUrl: Config.string("T3CODE_OTLP_LOGS_URL").pipe(
+    Config.option,
+    Config.map(Option.getOrUndefined),
+  ),
+  observabilityGrafanaUrl: Config.string("T3CODE_OBSERVABILITY_GRAFANA_URL").pipe(
+    Config.option,
+    Config.map(Option.getOrUndefined),
+  ),
   otlpExportIntervalMs: Config.int("T3CODE_OTLP_EXPORT_INTERVAL_MS").pipe(
     Config.withDefault(10_000),
   ),
@@ -125,6 +134,10 @@ const EnvServerConfig = Config.all({
     Config.map(Option.getOrUndefined),
   ),
   tailscaleServePort: Config.port("T3CODE_TAILSCALE_SERVE_PORT").pipe(
+    Config.option,
+    Config.map(Option.getOrUndefined),
+  ),
+  tailscaleServePath: Config.string("T3CODE_TAILSCALE_SERVE_PATH").pipe(
     Config.option,
     Config.map(Option.getOrUndefined),
   ),
@@ -189,7 +202,7 @@ const loadPersistedObservabilitySettings = Effect.fn(function* (settingsPath: st
   const fs = yield* FileSystem.FileSystem;
   const exists = yield* fs.exists(settingsPath).pipe(Effect.orElseSucceed(() => false));
   if (!exists) {
-    return { otlpTracesUrl: undefined, otlpMetricsUrl: undefined };
+    return { otlpTracesUrl: undefined, otlpMetricsUrl: undefined, otlpLogsUrl: undefined };
   }
 
   const raw = yield* fs.readFileString(settingsPath).pipe(Effect.orElseSucceed(() => ""));
@@ -322,6 +335,9 @@ export const resolveServerConfig = (
       ),
       () => 443,
     );
+    const tailscaleServePath = normalizePublicPathPrefix(
+      env.tailscaleServePath ?? bootstrap?.tailscaleServePath,
+    );
     const staticDir = devUrl ? undefined : yield* ServerConfig.resolveStaticDir();
     const host = Option.getOrElse(
       resolveOptionPrecedence(
@@ -348,6 +364,9 @@ export const resolveServerConfig = (
         env.otlpMetricsUrl ??
         bootstrap?.otlpMetricsUrl ??
         persistedObservabilitySettings.otlpMetricsUrl,
+      otlpLogsUrl:
+        env.otlpLogsUrl ?? bootstrap?.otlpLogsUrl ?? persistedObservabilitySettings.otlpLogsUrl,
+      observabilityGrafanaUrl: env.observabilityGrafanaUrl,
       otlpExportIntervalMs: env.otlpExportIntervalMs,
       otlpServiceName: env.otlpServiceName,
       mode,
@@ -366,6 +385,7 @@ export const resolveServerConfig = (
       logWebSocketEvents,
       tailscaleServeEnabled,
       tailscaleServePort,
+      tailscaleServePath,
     };
 
     return config;

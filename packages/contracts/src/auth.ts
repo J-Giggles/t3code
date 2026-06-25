@@ -242,6 +242,22 @@ export const AuthClientSession = Schema.Struct({
 });
 export type AuthClientSession = typeof AuthClientSession.Type;
 
+export const AuthPushNotificationPlatform = Schema.Literals(["expo"]);
+export type AuthPushNotificationPlatform = typeof AuthPushNotificationPlatform.Type;
+
+export const AuthRegisterPushNotificationTokenInput = Schema.Struct({
+  token: TrimmedNonEmptyString,
+  platform: AuthPushNotificationPlatform,
+});
+export type AuthRegisterPushNotificationTokenInput =
+  typeof AuthRegisterPushNotificationTokenInput.Type;
+
+export const AuthRegisterPushNotificationTokenResult = Schema.Struct({
+  registered: Schema.Literal(true),
+});
+export type AuthRegisterPushNotificationTokenResult =
+  typeof AuthRegisterPushNotificationTokenResult.Type;
+
 export const AuthAccessSnapshot = Schema.Struct({
   pairingLinks: Schema.Array(AuthPairingLink),
   clientSessions: Schema.Array(AuthClientSession),

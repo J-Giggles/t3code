@@ -14,8 +14,10 @@ export const DesktopBackendBootstrap = Schema.Struct({
   desktopBootstrapToken: Schema.String,
   tailscaleServeEnabled: Schema.Boolean,
   tailscaleServePort: PortSchema,
+  tailscaleServePath: Schema.optional(Schema.String),
   otlpTracesUrl: Schema.optional(Schema.String),
   otlpMetricsUrl: Schema.optional(Schema.String),
+  otlpLogsUrl: Schema.optional(Schema.String),
 });
 
 export type DesktopBackendBootstrap = typeof DesktopBackendBootstrap.Type;

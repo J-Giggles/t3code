@@ -41,7 +41,7 @@ index a30fc1a0dfed2ef215faa9554a151a53443b05d7..405a7cc184e29de5d327c01876963c8a
   * @since 4.0.0
   */
 -import { getCurrentSuite } from "@vitest/runner";
-+import { getCurrentSuite } from "vite-plus/test/plugins/runner";
++import { getCurrentSuite } from "vite-plus/test/suite";
  import * as Cause from "effect/Cause";
  import * as Duration from "effect/Duration";
  import * as Effect from "effect/Effect";
@@ -96,7 +96,7 @@ index 31c7ea1299a85ad30f2e07f740ba109e42c4ed5d..9db9071c45d27095af21787cbdebb1c5
   */
  
 -import { getCurrentSuite } from "@vitest/runner"
-+import { getCurrentSuite } from "vite-plus/test/plugins/runner"
++import { getCurrentSuite } from "vite-plus/test/suite"
  import * as Cause from "effect/Cause"
  import * as Duration from "effect/Duration"
  import * as Effect from "effect/Effect"

@@ -4,6 +4,7 @@ import {
   type DesktopServerExposureMode,
   type DesktopUpdateChannel,
 } from "@t3tools/contracts";
+import { DEFAULT_PUBLIC_PATH_PREFIX, normalizePublicPathPrefix } from "@t3tools/shared/publicPath";
 import { fromLenientJson } from "@t3tools/shared/schemaJson";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
@@ -23,6 +24,7 @@ export interface DesktopSettings {
   readonly serverExposureMode: DesktopServerExposureMode;
   readonly tailscaleServeEnabled: boolean;
   readonly tailscaleServePort: number;
+  readonly tailscaleServePath: string;
   readonly updateChannel: DesktopUpdateChannel;
   readonly updateChannelConfiguredByUser: boolean;
   // Was a "local" | "wsl" swap mode in an earlier iteration of the WSL
@@ -48,11 +50,13 @@ export interface DesktopSettingsChange {
 }
 
 export const DEFAULT_TAILSCALE_SERVE_PORT = 443;
+export const DEFAULT_TAILSCALE_SERVE_PATH = DEFAULT_PUBLIC_PATH_PREFIX;
 
 export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
   serverExposureMode: "local-only",
   tailscaleServeEnabled: false,
   tailscaleServePort: DEFAULT_TAILSCALE_SERVE_PORT,
+  tailscaleServePath: DEFAULT_TAILSCALE_SERVE_PATH,
   updateChannel: "latest",
   updateChannelConfiguredByUser: false,
   wslBackendEnabled: false,
@@ -64,6 +68,7 @@ const DesktopSettingsDocument = Schema.Struct({
   serverExposureMode: Schema.optionalKey(DesktopServerExposureModeSchema),
   tailscaleServeEnabled: Schema.optionalKey(Schema.Boolean),
   tailscaleServePort: Schema.optionalKey(Schema.Number),
+  tailscaleServePath: Schema.optionalKey(Schema.NullOr(Schema.String)),
   updateChannel: Schema.optionalKey(DesktopUpdateChannelSchema),
   updateChannelConfiguredByUser: Schema.optionalKey(Schema.Boolean),
   // Newer form of the WSL toggle. `wslMode` is still accepted on load so
@@ -109,6 +114,22 @@ export class DesktopSettingsWriteError extends Schema.TaggedErrorClass<DesktopSe
   }
 }
 
+export interface DesktopAppSettingsShape {
+  readonly load: Effect.Effect<DesktopSettings>;
+  readonly get: Effect.Effect<DesktopSettings>;
+  readonly setServerExposureMode: (
+    mode: DesktopServerExposureMode,
+  ) => Effect.Effect<DesktopSettingsChange, DesktopSettingsWriteError>;
+  readonly setTailscaleServe: (input: {
+    readonly enabled: boolean;
+    readonly port: Option.Option<number>;
+    readonly servePath?: Option.Option<string>;
+  }) => Effect.Effect<DesktopSettingsChange, DesktopSettingsWriteError>;
+  readonly setUpdateChannel: (
+    channel: DesktopUpdateChannel,
+  ) => Effect.Effect<DesktopSettingsChange, DesktopSettingsWriteError>;
+}
+
 export class DesktopAppSettings extends Context.Service<
   DesktopAppSettings,
   {
@@ -120,6 +141,7 @@ export class DesktopAppSettings extends Context.Service<
     readonly setTailscaleServe: (input: {
       readonly enabled: boolean;
       readonly port: Option.Option<number>;
+      readonly servePath?: Option.Option<string>;
     }) => Effect.Effect<DesktopSettingsChange, DesktopSettingsWriteError>;
     readonly setUpdateChannel: (
       channel: DesktopUpdateChannel,
@@ -141,9 +163,13 @@ export class DesktopAppSettings extends Context.Service<
   }
 >()("@t3tools/desktop/settings/DesktopAppSettings") {}
 
-export function resolveDefaultDesktopSettings(appVersion: string): DesktopSettings {
+export function resolveDefaultDesktopSettings(
+  appVersion: string,
+  input: { readonly tailscaleServePath?: string } = {},
+): DesktopSettings {
   return {
     ...DEFAULT_DESKTOP_SETTINGS,
+    tailscaleServePath: normalizeTailscaleServePath(input.tailscaleServePath),
     updateChannel: resolveDefaultDesktopUpdateChannel(appVersion),
   };
 }
@@ -154,15 +180,23 @@ function normalizeTailscaleServePort(value: unknown): number {
     : DEFAULT_TAILSCALE_SERVE_PORT;
 }
 
+function normalizeTailscaleServePath(
+  value: unknown,
+  fallbackPath = DEFAULT_TAILSCALE_SERVE_PATH,
+): string {
+  return typeof value === "string"
+    ? (normalizePublicPathPrefix(value) ?? fallbackPath)
+    : fallbackPath;
+}
+
 function normalizeWslDistro(value: unknown): string | null {
   return typeof value === "string" && isValidDistroName(value) ? value : null;
 }
 
 function normalizeDesktopSettingsDocument(
   parsed: DesktopSettingsDocument,
-  appVersion: string,
+  defaultSettings: DesktopSettings,
 ): DesktopSettings {
-  const defaultSettings = resolveDefaultDesktopSettings(appVersion);
   const parsedUpdateChannel = Option.fromNullishOr(parsed.updateChannel);
   const isLegacySettings = parsed.updateChannelConfiguredByUser === undefined;
   const updateChannelConfiguredByUser =
@@ -181,6 +215,10 @@ function normalizeDesktopSettingsDocument(
       parsed.serverExposureMode === "network-accessible" ? "network-accessible" : "local-only",
     tailscaleServeEnabled: parsed.tailscaleServeEnabled === true,
     tailscaleServePort: normalizeTailscaleServePort(parsed.tailscaleServePort),
+    tailscaleServePath: normalizeTailscaleServePath(
+      parsed.tailscaleServePath,
+      defaultSettings.tailscaleServePath,
+    ),
     updateChannel: updateChannelConfiguredByUser
       ? Option.getOrElse(parsedUpdateChannel, () => defaultSettings.updateChannel)
       : defaultSettings.updateChannel,
@@ -205,6 +243,9 @@ function toDesktopSettingsDocument(
   }
   if (settings.tailscaleServePort !== defaults.tailscaleServePort) {
     document.tailscaleServePort = settings.tailscaleServePort;
+  }
+  if (settings.tailscaleServePath !== defaults.tailscaleServePath) {
+    document.tailscaleServePath = settings.tailscaleServePath;
   }
   if (settings.updateChannel !== defaults.updateChannel) {
     document.updateChannel = settings.updateChannel;
@@ -239,18 +280,29 @@ function setServerExposureMode(
 
 function setTailscaleServe(
   settings: DesktopSettings,
-  input: { readonly enabled: boolean; readonly port: Option.Option<number> },
+  input: {
+    readonly enabled: boolean;
+    readonly port: Option.Option<number>;
+    readonly servePath?: Option.Option<string>;
+  },
 ): DesktopSettings {
   const port = Option.match(input.port, {
     onNone: () => settings.tailscaleServePort,
     onSome: normalizeTailscaleServePort,
   });
-  return settings.tailscaleServeEnabled === input.enabled && settings.tailscaleServePort === port
+  const servePath = Option.match(input.servePath ?? Option.none(), {
+    onNone: () => settings.tailscaleServePath,
+    onSome: normalizeTailscaleServePath,
+  });
+  return settings.tailscaleServeEnabled === input.enabled &&
+    settings.tailscaleServePort === port &&
+    settings.tailscaleServePath === servePath
     ? settings
     : {
         ...settings,
         tailscaleServeEnabled: input.enabled,
         tailscaleServePort: port,
+        tailscaleServePath: servePath,
       };
 }
 
@@ -302,10 +354,8 @@ function applyWslWindowsFallback(settings: DesktopSettings): DesktopSettings {
 function readSettings(
   fileSystem: FileSystem.FileSystem,
   settingsPath: string,
-  appVersion: string,
+  defaultSettings: DesktopSettings,
 ): Effect.Effect<DesktopSettings> {
-  const defaultSettings = resolveDefaultDesktopSettings(appVersion);
-
   return fileSystem.readFileString(settingsPath).pipe(
     Effect.option,
     Effect.flatMap(
@@ -313,7 +363,7 @@ function readSettings(
         onNone: () => Effect.succeed(defaultSettings),
         onSome: (raw) =>
           decodeDesktopSettingsJson(raw).pipe(
-            Effect.map((parsed) => normalizeDesktopSettingsDocument(parsed, appVersion)),
+            Effect.map((parsed) => normalizeDesktopSettingsDocument(parsed, defaultSettings)),
             Effect.orElseSucceed(() => defaultSettings),
           ),
       }),
@@ -427,7 +477,7 @@ export const make = Effect.gen(function* () {
       const settings = yield* readSettings(
         fileSystem,
         environment.desktopSettingsPath,
-        environment.appVersion,
+        environment.defaultDesktopSettings,
       );
       return yield* SynchronizedRef.setAndGet(settingsRef, settings);
     }).pipe(Effect.withSpan("desktop.settings.load")),

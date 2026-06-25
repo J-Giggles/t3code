@@ -11,11 +11,15 @@ describe.sequential("primary environment HTTP layer", () => {
     __resetDesktopPrimaryAuthForTests();
     Reflect.deleteProperty(globalThis, "window");
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it.effect("uses cookie credentials for browser primary environments", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
+    vi.stubEnv("VITE_HTTP_URL", "");
+    vi.stubEnv("VITE_WS_URL", "");
+    vi.stubEnv("VITE_DEV_SERVER_URL", "http://127.0.0.1:3773");
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {

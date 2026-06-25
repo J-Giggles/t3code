@@ -11,14 +11,22 @@ export default defineConfig({
   test: {
     environment: "node",
     exclude: [
+      "**/.worktrees/**",
       "**/.repos/**",
+      "**/.local/**",
       "**/node_modules/**",
       "**/dist/**",
       "**/dist-electron/**",
+      "apps/desktop/e2e/**",
       "**/.{idea,git,cache,output,temp}/**",
     ],
     hookTimeout: 60_000,
     testTimeout: 60_000,
+    server: {
+      deps: {
+        inline: ["@effect/vitest"],
+      },
+    },
   },
   staged: {
     // Formatter only for now — no lint or typecheck on commit.
@@ -27,6 +35,10 @@ export default defineConfig({
   fmt: {
     ignorePatterns: [
       ".reference",
+      ".local",
+      ".local/**",
+      ".worktrees",
+      ".worktrees/**",
       ".repos/**",
       ".plans",
       ".alchemy",
@@ -55,6 +67,10 @@ export default defineConfig({
   },
   lint: {
     ignorePatterns: [
+      ".worktrees",
+      ".worktrees/**",
+      ".local",
+      ".local/**",
       ".repos",
       ".repos/**",
       "dist",

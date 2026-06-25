@@ -96,6 +96,16 @@ contextBridge.exposeInMainWorld("desktopBridge", {
     ipcRenderer.invoke(IpcChannels.SET_WSL_BACKEND_ENABLED_CHANNEL, enabled),
   setWslDistro: (distro) => ipcRenderer.invoke(IpcChannels.SET_WSL_DISTRO_CHANNEL, distro),
   setWslOnly: (enabled) => ipcRenderer.invoke(IpcChannels.SET_WSL_ONLY_CHANNEL, enabled),
+  getTailscaleAccessState: () => ipcRenderer.invoke(IpcChannels.GET_TAILSCALE_ACCESS_STATE_CHANNEL),
+  enableTailscaleAccess: (input) =>
+    ipcRenderer.invoke(IpcChannels.ENABLE_TAILSCALE_ACCESS_CHANNEL, input),
+  disableTailscaleAccess: () => ipcRenderer.invoke(IpcChannels.DISABLE_TAILSCALE_ACCESS_CHANNEL),
+  repairTailscaleAccess: () => ipcRenderer.invoke(IpcChannels.REPAIR_TAILSCALE_ACCESS_CHANNEL),
+  probeTailscaleAccess: () => ipcRenderer.invoke(IpcChannels.PROBE_TAILSCALE_ACCESS_CHANNEL),
+  checkTailscaleServeRoute: (input) =>
+    ipcRenderer.invoke(IpcChannels.CHECK_TAILSCALE_SERVE_ROUTE_CHANNEL, input),
+  updateTailscaleServePath: (input) =>
+    ipcRenderer.invoke(IpcChannels.UPDATE_TAILSCALE_SERVE_PATH_CHANNEL, input),
   pickFolder: (options) => ipcRenderer.invoke(IpcChannels.PICK_FOLDER_CHANNEL, options),
   confirm: (message) => ipcRenderer.invoke(IpcChannels.CONFIRM_CHANNEL, message),
   setTheme: (theme) => ipcRenderer.invoke(IpcChannels.SET_THEME_CHANNEL, theme),

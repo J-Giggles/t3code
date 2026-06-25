@@ -423,6 +423,106 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
   advertisedHost: Schema.NullOr(Schema.String),
   tailscaleServeEnabled: Schema.Boolean,
   tailscaleServePort: Schema.Number,
+  tailscaleServePath: Schema.String,
+});
+
+export const DesktopTailscaleAccessProbeStatusSchema = Schema.Literals([
+  "unknown",
+  "reachable",
+  "configured",
+  "unreachable",
+]);
+export type DesktopTailscaleAccessProbeStatus = typeof DesktopTailscaleAccessProbeStatusSchema.Type;
+
+export const DesktopTailscaleServeRouteProbeStatusSchema = Schema.Literals([
+  "available",
+  "owned",
+  "conflict",
+  "reserved-conflict",
+  "invalid",
+  "unavailable",
+]);
+export type DesktopTailscaleServeRouteProbeStatus =
+  typeof DesktopTailscaleServeRouteProbeStatusSchema.Type;
+
+export interface DesktopTailscaleServeRouteProbeInput {
+  readonly servePath: string;
+  readonly servePort?: number;
+}
+
+export const DesktopTailscaleServeRouteProbeInputSchema = Schema.Struct({
+  servePath: Schema.String,
+  servePort: Schema.optionalKey(Schema.Number),
+});
+
+export interface DesktopTailscaleServeRouteProbeResult {
+  readonly status: DesktopTailscaleServeRouteProbeStatus;
+  readonly available: boolean;
+  readonly owned: boolean;
+  readonly conflict: boolean;
+  readonly servePath: string | null;
+  readonly servePort: number;
+  readonly expectedProxyUrl: string | null;
+  readonly existingProxyUrl: string | null;
+  readonly message: string | null;
+}
+
+export const DesktopTailscaleServeRouteProbeResultSchema = Schema.Struct({
+  status: DesktopTailscaleServeRouteProbeStatusSchema,
+  available: Schema.Boolean,
+  owned: Schema.Boolean,
+  conflict: Schema.Boolean,
+  servePath: Schema.NullOr(Schema.String),
+  servePort: Schema.Number,
+  expectedProxyUrl: Schema.NullOr(Schema.String),
+  existingProxyUrl: Schema.NullOr(Schema.String),
+  message: Schema.NullOr(Schema.String),
+});
+
+export interface DesktopTailscaleAccessState {
+  readonly enabled: boolean;
+  readonly available: boolean;
+  readonly defaultServePath: string;
+  readonly servePath: string;
+  readonly servePort: number;
+  readonly magicDnsName: string | null;
+  readonly tailnetIp: string | null;
+  readonly httpsUrl: string | null;
+  readonly probeStatus: DesktopTailscaleAccessProbeStatus;
+  readonly routeProbe: DesktopTailscaleServeRouteProbeResult | null;
+  readonly message: string | null;
+}
+
+export const DesktopTailscaleAccessStateSchema = Schema.Struct({
+  enabled: Schema.Boolean,
+  available: Schema.Boolean,
+  defaultServePath: Schema.String,
+  servePath: Schema.String,
+  servePort: Schema.Number,
+  magicDnsName: Schema.NullOr(Schema.String),
+  tailnetIp: Schema.NullOr(Schema.String),
+  httpsUrl: Schema.NullOr(Schema.String),
+  probeStatus: DesktopTailscaleAccessProbeStatusSchema,
+  routeProbe: Schema.NullOr(DesktopTailscaleServeRouteProbeResultSchema),
+  message: Schema.NullOr(Schema.String),
+});
+
+export interface DesktopTailscaleAccessEnableInput {
+  readonly servePath?: string;
+  readonly servePort?: number;
+}
+
+export const DesktopTailscaleAccessEnableInputSchema = Schema.Struct({
+  servePath: Schema.optionalKey(Schema.String),
+  servePort: Schema.optionalKey(Schema.Number),
+});
+
+export interface DesktopTailscaleServePathUpdateInput {
+  readonly servePath: string;
+}
+
+export const DesktopTailscaleServePathUpdateInputSchema = Schema.Struct({
+  servePath: Schema.String,
 });
 
 export interface PickFolderOptions {
@@ -985,6 +1085,19 @@ export interface DesktopBridge {
   setWslBackendEnabled: (enabled: boolean) => Promise<DesktopWslState>;
   setWslDistro: (distro: string | null) => Promise<DesktopWslState>;
   setWslOnly: (enabled: boolean) => Promise<DesktopWslState>;
+  getTailscaleAccessState: () => Promise<DesktopTailscaleAccessState>;
+  enableTailscaleAccess: (
+    input?: DesktopTailscaleAccessEnableInput,
+  ) => Promise<DesktopTailscaleAccessState>;
+  disableTailscaleAccess: () => Promise<DesktopTailscaleAccessState>;
+  repairTailscaleAccess: () => Promise<DesktopTailscaleAccessState>;
+  probeTailscaleAccess: () => Promise<DesktopTailscaleAccessState>;
+  checkTailscaleServeRoute: (
+    input: DesktopTailscaleServeRouteProbeInput,
+  ) => Promise<DesktopTailscaleServeRouteProbeResult>;
+  updateTailscaleServePath: (
+    input: DesktopTailscaleServePathUpdateInput,
+  ) => Promise<DesktopTailscaleAccessState>;
   pickFolder: (options?: PickFolderOptions) => Promise<string | null>;
   confirm: (message: string) => Promise<boolean>;
   setTheme: (theme: DesktopTheme) => Promise<void>;

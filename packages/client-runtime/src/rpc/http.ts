@@ -8,6 +8,7 @@ import {
   type EnvironmentResourceNotFoundError,
   type EnvironmentScopeRequiredError,
 } from "@t3tools/contracts";
+import { normalizeHttpBaseUrl } from "@t3tools/shared/advertisedEndpoint";
 import { httpHeaderRedactionLayer } from "@t3tools/shared/httpObservability";
 import * as Data from "effect/Data";
 import * as Duration from "effect/Duration";
@@ -15,7 +16,12 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { FetchHttpClient, HttpClient, HttpClientError } from "effect/unstable/http";
+import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientError,
+  HttpClientRequest,
+} from "effect/unstable/http";
 import * as HttpApiClient from "effect/unstable/httpapi/HttpApiClient";
 
 const isEnvironmentHttpCommonError = Schema.is(EnvironmentHttpCommonError);
@@ -87,16 +93,57 @@ export const remoteHttpClientLayer = (
   );
 
 const remoteApiBaseUrl = (httpBaseUrl: string): string => {
-  const url = new URL(httpBaseUrl);
+  const url = new URL(normalizeHttpBaseUrl(httpBaseUrl));
   url.pathname = "/";
   url.search = "";
   url.hash = "";
   return url.toString();
 };
 
+const httpBasePath = (httpBaseUrl: string): string => {
+  const { pathname } = new URL(normalizeHttpBaseUrl(httpBaseUrl));
+  if (pathname === "/") {
+    return "";
+  }
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+};
+
+const withHttpBasePath = (
+  httpBaseUrl: string,
+  client: HttpClient.HttpClient,
+): HttpClient.HttpClient => {
+  const normalizedBaseUrl = new URL(normalizeHttpBaseUrl(httpBaseUrl));
+  const basePath = httpBasePath(httpBaseUrl);
+  if (basePath.length === 0) {
+    return client;
+  }
+
+  return client.pipe(
+    HttpClient.mapRequestInput((request) => {
+      const requestUrl = new URL(request.url, normalizedBaseUrl);
+      if (
+        requestUrl.origin !== normalizedBaseUrl.origin ||
+        requestUrl.pathname === basePath ||
+        requestUrl.pathname.startsWith(`${basePath}/`)
+      ) {
+        return request;
+      }
+
+      requestUrl.pathname = `${basePath}${
+        requestUrl.pathname.startsWith("/") ? requestUrl.pathname : `/${requestUrl.pathname}`
+      }`;
+      return HttpClientRequest.setUrl(request, `${requestUrl.pathname}${requestUrl.search}`);
+    }),
+  );
+};
+
 export const makeEnvironmentHttpApiClient = (httpBaseUrl: string) =>
-  HttpApiClient.make(EnvironmentHttpApi, {
-    baseUrl: remoteApiBaseUrl(httpBaseUrl),
+  Effect.gen(function* () {
+    const httpClient = yield* HttpClient.HttpClient;
+    const pathAwareHttpClient = withHttpBasePath(httpBaseUrl, httpClient);
+    return yield* HttpApiClient.make(EnvironmentHttpApi, {
+      baseUrl: remoteApiBaseUrl(httpBaseUrl),
+    }).pipe(Effect.provideService(HttpClient.HttpClient, pathAwareHttpClient));
   });
 
 const failRemoteRequest = (

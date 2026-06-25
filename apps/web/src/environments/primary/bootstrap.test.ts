@@ -60,6 +60,9 @@ describe("environmentBootstrap", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
+    vi.stubEnv("VITE_HTTP_URL", "");
+    vi.stubEnv("VITE_WS_URL", "");
+    vi.stubEnv("VITE_DEV_SERVER_URL", "");
     installTestBrowser("http://localhost/");
   });
 
@@ -163,6 +166,36 @@ describe("environmentBootstrap", () => {
     expect(resolvePrimaryEnvironmentHttpUrl("/.well-known/t3/environment")).toBe(
       "http://localhost:5735/.well-known/t3/environment",
     );
+  });
+
+  it("uses the path-served browser origin as the descriptor base", async () => {
+    installTestBrowser("https://desktop.tail.ts.net/t3code/");
+    await installDescriptorApi();
+
+    await expect(resolveInitialPrimaryEnvironmentDescriptor()).resolves.toEqual(BASE_ENVIRONMENT);
+    expect(resolvePrimaryEnvironmentHttpUrl("/.well-known/t3/environment")).toBe(
+      "https://desktop.tail.ts.net/t3code/.well-known/t3/environment",
+    );
+    expect(getPrimaryKnownEnvironment()?.target).toEqual({
+      httpBaseUrl: "https://desktop.tail.ts.net/t3code/",
+      wsBaseUrl: "wss://desktop.tail.ts.net/t3code/",
+    });
+  });
+
+  it("prefers a path-served browser origin over configured loopback targets", async () => {
+    vi.stubEnv("VITE_HTTP_URL", "http://127.0.0.1:3773");
+    vi.stubEnv("VITE_WS_URL", "ws://127.0.0.1:3773");
+    installTestBrowser("https://desktop.tail.ts.net/t3code/");
+    await installDescriptorApi();
+
+    await expect(resolveInitialPrimaryEnvironmentDescriptor()).resolves.toEqual(BASE_ENVIRONMENT);
+    expect(resolvePrimaryEnvironmentHttpUrl("/.well-known/t3/environment")).toBe(
+      "https://desktop.tail.ts.net/t3code/.well-known/t3/environment",
+    );
+    expect(getPrimaryKnownEnvironment()?.target).toEqual({
+      httpBaseUrl: "https://desktop.tail.ts.net/t3code/",
+      wsBaseUrl: "wss://desktop.tail.ts.net/t3code/",
+    });
   });
 
   it("uses the vite proxy for desktop-managed loopback descriptor requests during local dev", async () => {

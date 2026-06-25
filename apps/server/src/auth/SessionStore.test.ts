@@ -47,6 +47,7 @@ const failingSessionLookupRepositoryLayer = Layer.succeed(AuthSessions.AuthSessi
   revoke: () => Effect.fail(repositoryFailure),
   revokeAllExcept: () => Effect.fail(repositoryFailure),
   setLastConnectedAt: () => Effect.void,
+  setPushNotificationToken: () => Effect.void,
 });
 
 const failingSessionLookupCredentialLayer = Layer.effect(

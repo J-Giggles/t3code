@@ -19,7 +19,7 @@ import {
 import { EditorId } from "./editor.ts";
 import { ModelCapabilities } from "./model.ts";
 import { ProviderDriverKind, ProviderInstanceId } from "./providerInstance.ts";
-import { ServerSettings } from "./settings.ts";
+import { ServerSettings, T3ProviderAccessMcpId } from "./settings.ts";
 
 const KeybindingsMalformedConfigIssue = Schema.Struct({
   kind: Schema.Literal("keybindings.malformed-config"),
@@ -91,6 +91,47 @@ export const ServerProviderSkill = Schema.Struct({
 });
 export type ServerProviderSkill = typeof ServerProviderSkill.Type;
 
+export const ServerProviderContextSourceKind = Schema.Literals([
+  "instructions",
+  "developer-instructions",
+  "repo-instruction-file",
+  "draft-context",
+  "thread-context",
+]);
+export type ServerProviderContextSourceKind = typeof ServerProviderContextSourceKind.Type;
+
+export const ServerProviderContextSourceProvenance = Schema.Literals([
+  "provider-config",
+  "repo-file",
+  "draft",
+  "thread",
+  "inferred",
+]);
+export type ServerProviderContextSourceProvenance =
+  typeof ServerProviderContextSourceProvenance.Type;
+
+export const ServerProviderContextSourceStatus = Schema.Literals([
+  "active",
+  "available",
+  "draft-added",
+  "draft-disabled",
+  "unavailable",
+]);
+export type ServerProviderContextSourceStatus = typeof ServerProviderContextSourceStatus.Type;
+
+export const ServerProviderContextSource = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  kind: ServerProviderContextSourceKind,
+  provenance: ServerProviderContextSourceProvenance,
+  status: ServerProviderContextSourceStatus,
+  description: Schema.optional(TrimmedNonEmptyString),
+  path: Schema.optional(TrimmedNonEmptyString),
+  layer: Schema.optional(TrimmedNonEmptyString),
+  tokenEstimate: Schema.optionalKey(NonNegativeInt),
+});
+export type ServerProviderContextSource = typeof ServerProviderContextSource.Type;
+
 /**
  * Availability of a configured provider instance from the runtime's POV.
  *
@@ -153,6 +194,49 @@ export const ServerProviderUpdateState = Schema.Struct({
 });
 export type ServerProviderUpdateState = typeof ServerProviderUpdateState.Type;
 
+export const ServerProviderUsageDailyBucket = Schema.Struct({
+  startDate: TrimmedNonEmptyString,
+  tokens: NonNegativeInt,
+});
+export type ServerProviderUsageDailyBucket = typeof ServerProviderUsageDailyBucket.Type;
+
+export const ServerProviderUsageSummary = Schema.Struct({
+  currentStreakDays: Schema.optionalKey(NonNegativeInt),
+  lifetimeTokens: Schema.optionalKey(NonNegativeInt),
+  longestRunningTurnSec: Schema.optionalKey(NonNegativeInt),
+  longestStreakDays: Schema.optionalKey(NonNegativeInt),
+  peakDailyTokens: Schema.optionalKey(NonNegativeInt),
+});
+export type ServerProviderUsageSummary = typeof ServerProviderUsageSummary.Type;
+
+export const ServerProviderUsageLimitWindow = Schema.Struct({
+  label: TrimmedNonEmptyString,
+  usedPercent: NonNegativeInt,
+  remainingPercent: NonNegativeInt,
+  resetsAt: Schema.NullOr(IsoDateTime),
+  windowMinutes: Schema.NullOr(PositiveInt),
+});
+export type ServerProviderUsageLimitWindow = typeof ServerProviderUsageLimitWindow.Type;
+
+export const ServerProviderUsageLimit = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  windows: Schema.Array(ServerProviderUsageLimitWindow),
+});
+export type ServerProviderUsageLimit = typeof ServerProviderUsageLimit.Type;
+
+export const ServerProviderUsage = Schema.Struct({
+  checkedAt: IsoDateTime,
+  summary: ServerProviderUsageSummary,
+  dailyUsageBuckets: Schema.Array(ServerProviderUsageDailyBucket).pipe(
+    Schema.withDecodingDefault(Effect.succeed([])),
+  ),
+  limits: Schema.Array(ServerProviderUsageLimit).pipe(
+    Schema.withDecodingDefault(Effect.succeed([])),
+  ),
+});
+export type ServerProviderUsage = typeof ServerProviderUsage.Type;
+
 export const ServerProvider = Schema.Struct({
   // Routing key for the configured instance this snapshot represents. This
   // is the only stable identity consumers may use for provider routing.
@@ -187,6 +271,8 @@ export const ServerProvider = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed([])),
   ),
   skills: Schema.Array(ServerProviderSkill).pipe(Schema.withDecodingDefault(Effect.succeed([]))),
+  contextSources: Schema.optionalKey(Schema.Array(ServerProviderContextSource)),
+  usage: Schema.optionalKey(ServerProviderUsage),
   versionAdvisory: Schema.optionalKey(ServerProviderVersionAdvisory),
   updateState: Schema.optionalKey(ServerProviderUpdateState),
 });
@@ -211,6 +297,9 @@ export const ServerObservability = Schema.Struct({
   otlpTracesEnabled: Schema.Boolean,
   otlpMetricsUrl: Schema.optional(TrimmedNonEmptyString),
   otlpMetricsEnabled: Schema.Boolean,
+  otlpLogsUrl: Schema.optional(TrimmedNonEmptyString),
+  otlpLogsEnabled: Schema.Boolean,
+  observabilityGrafanaUrl: Schema.optional(TrimmedNonEmptyString),
 });
 export type ServerObservability = typeof ServerObservability.Type;
 
@@ -406,6 +495,63 @@ export const ServerSignalProcessResult = Schema.Struct({
 });
 export type ServerSignalProcessResult = typeof ServerSignalProcessResult.Type;
 
+export const ServerRuntimeRestartCapability = Schema.Struct({
+  available: Schema.Boolean,
+  kind: Schema.Literals(["desktop-dev-supervisor", "standalone-supervisor", "unsupported"]),
+  scope: Schema.Literal("full-setup"),
+  reason: Schema.optionalKey(TrimmedNonEmptyString),
+});
+export type ServerRuntimeRestartCapability = typeof ServerRuntimeRestartCapability.Type;
+
+export const ServerRuntimeRestartRequiredPayload = Schema.Struct({
+  detectedAt: IsoDateTime,
+  reason: TrimmedNonEmptyString,
+  capability: ServerRuntimeRestartCapability,
+});
+export type ServerRuntimeRestartRequiredPayload = typeof ServerRuntimeRestartRequiredPayload.Type;
+
+export const ServerRestartRuntimeInput = Schema.Struct({
+  mode: Schema.Literal("full-setup"),
+  reason: Schema.optionalKey(TrimmedNonEmptyString),
+});
+export type ServerRestartRuntimeInput = typeof ServerRestartRuntimeInput.Type;
+
+export const ServerRestartRuntimeResult = Schema.Struct({
+  accepted: Schema.Boolean,
+  message: Schema.optionalKey(TrimmedNonEmptyString),
+});
+export type ServerRestartRuntimeResult = typeof ServerRestartRuntimeResult.Type;
+
+export class ServerRuntimeRestartError extends Schema.TaggedErrorClass<ServerRuntimeRestartError>()(
+  "ServerRuntimeRestartError",
+  {
+    reason: TrimmedNonEmptyString,
+    cause: Schema.optional(Schema.Defect()),
+  },
+) {
+  override get message(): string {
+    return this.reason;
+  }
+}
+
+export const ServerT3ProviderAccessMcpCatalogEntry = Schema.Struct({
+  id: T3ProviderAccessMcpId,
+  displayName: TrimmedNonEmptyString,
+  description: TrimmedNonEmptyString,
+  command: TrimmedNonEmptyString,
+  args: Schema.Array(Schema.String),
+  availabilityPath: TrimmedNonEmptyString,
+  available: Schema.Boolean,
+  unavailableReason: Schema.optionalKey(TrimmedNonEmptyString),
+});
+export type ServerT3ProviderAccessMcpCatalogEntry =
+  typeof ServerT3ProviderAccessMcpCatalogEntry.Type;
+
+export const ServerT3ProviderAccessCatalog = Schema.Struct({
+  mcps: Schema.Array(ServerT3ProviderAccessMcpCatalogEntry),
+});
+export type ServerT3ProviderAccessCatalog = typeof ServerT3ProviderAccessCatalog.Type;
+
 export const ServerConfig = Schema.Struct({
   environment: ExecutionEnvironmentDescriptor,
   auth: ServerAuthDescriptor,
@@ -417,6 +563,9 @@ export const ServerConfig = Schema.Struct({
   availableEditors: Schema.Array(EditorId),
   observability: ServerObservability,
   settings: ServerSettings,
+  t3ProviderAccessCatalog: Schema.optionalKey(
+    ServerT3ProviderAccessCatalog.pipe(Schema.withDecodingDefault(Effect.succeed({ mcps: [] }))),
+  ),
 });
 export type ServerConfig = typeof ServerConfig.Type;
 
@@ -515,12 +664,21 @@ export const ServerLifecycleReadyPayload = Schema.Struct({
 });
 export type ServerLifecycleReadyPayload = typeof ServerLifecycleReadyPayload.Type;
 
+export const ProviderSessionRecoverySummary = Schema.Struct({
+  recoveredCount: NonNegativeInt,
+  needsResumeCount: NonNegativeInt,
+  failedCount: NonNegativeInt,
+  needsResumeThreadIds: Schema.Array(ThreadId),
+});
+export type ProviderSessionRecoverySummary = typeof ProviderSessionRecoverySummary.Type;
+
 export const ServerLifecycleWelcomePayload = Schema.Struct({
   environment: ExecutionEnvironmentDescriptor,
   cwd: TrimmedNonEmptyString,
   projectName: TrimmedNonEmptyString,
   bootstrapProjectId: Schema.optional(ProjectId),
   bootstrapThreadId: Schema.optional(ThreadId),
+  providerSessionRecoverySummary: Schema.optionalKey(ProviderSessionRecoverySummary),
 });
 export type ServerLifecycleWelcomePayload = typeof ServerLifecycleWelcomePayload.Type;
 
@@ -540,9 +698,19 @@ export const ServerLifecycleStreamReadyEvent = Schema.Struct({
 });
 export type ServerLifecycleStreamReadyEvent = typeof ServerLifecycleStreamReadyEvent.Type;
 
+export const ServerLifecycleStreamRuntimeRestartRequiredEvent = Schema.Struct({
+  version: Schema.Literal(1),
+  sequence: NonNegativeInt,
+  type: Schema.Literal("runtimeRestartRequired"),
+  payload: ServerRuntimeRestartRequiredPayload,
+});
+export type ServerLifecycleStreamRuntimeRestartRequiredEvent =
+  typeof ServerLifecycleStreamRuntimeRestartRequiredEvent.Type;
+
 export const ServerLifecycleStreamEvent = Schema.Union([
   ServerLifecycleStreamWelcomeEvent,
   ServerLifecycleStreamReadyEvent,
+  ServerLifecycleStreamRuntimeRestartRequiredEvent,
 ]);
 export type ServerLifecycleStreamEvent = typeof ServerLifecycleStreamEvent.Type;
 
@@ -557,6 +725,46 @@ export const ServerProviderUpdateInput = Schema.Struct({
 });
 export type ServerProviderUpdateInput = typeof ServerProviderUpdateInput.Type;
 
+export const ServerProviderSkillConfigWriteInput = Schema.Struct({
+  instanceId: ProviderInstanceId,
+  name: Schema.optionalKey(TrimmedNonEmptyString),
+  path: Schema.optionalKey(TrimmedNonEmptyString),
+  enabled: Schema.Boolean,
+});
+export type ServerProviderSkillConfigWriteInput = typeof ServerProviderSkillConfigWriteInput.Type;
+
+export const ServerProviderSkillConfigWriteResult = Schema.Struct({
+  effectiveEnabled: Schema.Boolean,
+  providers: ServerProviders,
+});
+export type ServerProviderSkillConfigWriteResult = typeof ServerProviderSkillConfigWriteResult.Type;
+
+export const ServerProviderNativeResetStatus = Schema.Literals([
+  "completed",
+  "unsupported",
+  "skipped",
+]);
+export type ServerProviderNativeResetStatus = typeof ServerProviderNativeResetStatus.Type;
+
+export const ServerProviderNativeResetResult = Schema.Struct({
+  status: ServerProviderNativeResetStatus,
+  detail: Schema.optionalKey(TrimmedNonEmptyString),
+});
+export type ServerProviderNativeResetResult = typeof ServerProviderNativeResetResult.Type;
+
+export const ServerProviderResetInput = Schema.Struct({
+  instanceId: ProviderInstanceId,
+  nativeProviderReset: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+});
+export type ServerProviderResetInput = typeof ServerProviderResetInput.Type;
+
+export const ServerProviderResetResult = Schema.Struct({
+  providers: ServerProviders,
+  settings: ServerSettings,
+  nativeReset: ServerProviderNativeResetResult,
+});
+export type ServerProviderResetResult = typeof ServerProviderResetResult.Type;
+
 export class ServerProviderUpdateError extends Schema.TaggedErrorClass<ServerProviderUpdateError>()(
   "ServerProviderUpdateError",
   {
@@ -567,5 +775,31 @@ export class ServerProviderUpdateError extends Schema.TaggedErrorClass<ServerPro
 ) {
   override get message(): string {
     return `Provider update failed for ${this.provider}: ${this.reason}`;
+  }
+}
+
+export class ServerProviderResetError extends Schema.TaggedErrorClass<ServerProviderResetError>()(
+  "ServerProviderResetError",
+  {
+    instanceId: ProviderInstanceId,
+    reason: TrimmedNonEmptyString,
+    cause: Schema.optional(Schema.Defect()),
+  },
+) {
+  override get message(): string {
+    return `Provider reset failed for ${this.instanceId}: ${this.reason}`;
+  }
+}
+
+export class ServerProviderSkillConfigWriteError extends Schema.TaggedErrorClass<ServerProviderSkillConfigWriteError>()(
+  "ServerProviderSkillConfigWriteError",
+  {
+    instanceId: ProviderInstanceId,
+    reason: TrimmedNonEmptyString,
+    cause: Schema.optional(Schema.Defect()),
+  },
+) {
+  override get message(): string {
+    return `Provider skill config write failed for ${this.instanceId}: ${this.reason}`;
   }
 }

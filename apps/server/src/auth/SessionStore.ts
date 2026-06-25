@@ -61,13 +61,49 @@ export type SessionCredentialChange =
       readonly sessionId: AuthSessionId;
     };
 
-export class MalformedSessionTokenError extends Schema.TaggedErrorClass<MalformedSessionTokenError>()(
-  "MalformedSessionTokenError",
-  {},
-) {
-  override get message(): string {
-    return "Malformed session token.";
-  }
+export interface SessionStoreShape {
+  readonly cookieName: string;
+  readonly issue: (input?: {
+    readonly ttl?: Duration.Duration;
+    readonly subject?: string;
+    readonly method?: ServerAuthSessionMethod;
+    readonly scopes?: ReadonlyArray<AuthEnvironmentScope>;
+    readonly client?: AuthClientMetadata;
+    readonly proofKeyThumbprint?: string;
+  }) => Effect.Effect<IssuedSession, SessionCredentialInternalError>;
+  readonly verify: (token: string) => Effect.Effect<VerifiedSession, SessionCredentialError>;
+  readonly issueWebSocketToken: (
+    sessionId: AuthSessionId,
+    input?: {
+      readonly ttl?: Duration.Duration;
+    },
+  ) => Effect.Effect<
+    {
+      readonly token: string;
+      readonly expiresAt: DateTime.DateTime;
+    },
+    SessionCredentialInternalError
+  >;
+  readonly verifyWebSocketToken: (
+    token: string,
+  ) => Effect.Effect<VerifiedSession, SessionCredentialError>;
+  readonly listActive: () => Effect.Effect<
+    ReadonlyArray<AuthClientSession>,
+    SessionCredentialInternalError
+  >;
+  readonly streamChanges: Stream.Stream<SessionCredentialChange>;
+  readonly revoke: (
+    sessionId: AuthSessionId,
+  ) => Effect.Effect<boolean, SessionCredentialInternalError>;
+  readonly revokeAllExcept: (
+    sessionId: AuthSessionId,
+  ) => Effect.Effect<number, SessionCredentialInternalError>;
+  readonly markConnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
+  readonly markDisconnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
+  readonly setPushNotificationToken: (
+    sessionId: AuthSessionId,
+    input: { readonly token: string; readonly platform: "expo" },
+  ) => Effect.Effect<void, SessionCredentialInternalError>;
 }
 
 export class InvalidSessionTokenSignatureError extends Schema.TaggedErrorClass<InvalidSessionTokenSignatureError>()(
@@ -76,6 +112,15 @@ export class InvalidSessionTokenSignatureError extends Schema.TaggedErrorClass<I
 ) {
   override get message(): string {
     return "Invalid session token signature.";
+  }
+}
+
+export class MalformedSessionTokenError extends Schema.TaggedErrorClass<MalformedSessionTokenError>()(
+  "MalformedSessionTokenError",
+  {},
+) {
+  override get message(): string {
+    return "Malformed session token.";
   }
 }
 
@@ -355,49 +400,9 @@ export const SessionCredentialError = Schema.Union([
 export type SessionCredentialError = typeof SessionCredentialError.Type;
 export const isSessionCredentialError = Schema.is(SessionCredentialError);
 
-export class SessionStore extends Context.Service<
-  SessionStore,
-  {
-    readonly cookieName: string;
-    readonly issue: (input?: {
-      readonly ttl?: Duration.Duration;
-      readonly subject?: string;
-      readonly method?: ServerAuthSessionMethod;
-      readonly scopes?: ReadonlyArray<AuthEnvironmentScope>;
-      readonly client?: AuthClientMetadata;
-      readonly proofKeyThumbprint?: string;
-    }) => Effect.Effect<IssuedSession, SessionCredentialInternalError>;
-    readonly verify: (token: string) => Effect.Effect<VerifiedSession, SessionCredentialError>;
-    readonly issueWebSocketToken: (
-      sessionId: AuthSessionId,
-      input?: {
-        readonly ttl?: Duration.Duration;
-      },
-    ) => Effect.Effect<
-      {
-        readonly token: string;
-        readonly expiresAt: DateTime.DateTime;
-      },
-      SessionCredentialInternalError
-    >;
-    readonly verifyWebSocketToken: (
-      token: string,
-    ) => Effect.Effect<VerifiedSession, SessionCredentialError>;
-    readonly listActive: () => Effect.Effect<
-      ReadonlyArray<AuthClientSession>,
-      SessionCredentialInternalError
-    >;
-    readonly streamChanges: Stream.Stream<SessionCredentialChange>;
-    readonly revoke: (
-      sessionId: AuthSessionId,
-    ) => Effect.Effect<boolean, SessionCredentialInternalError>;
-    readonly revokeAllExcept: (
-      sessionId: AuthSessionId,
-    ) => Effect.Effect<number, SessionCredentialInternalError>;
-    readonly markConnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
-    readonly markDisconnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
-  }
->()("t3/auth/SessionStore") {}
+export class SessionStore extends Context.Service<SessionStore, SessionStoreShape>()(
+  "t3/auth/SessionStore",
+) {}
 
 const SIGNING_SECRET_NAME = "server-signing-key";
 const DEFAULT_SESSION_TTL = Duration.days(30);
@@ -895,7 +900,39 @@ export const make = Effect.gen(function* () {
     return revokedSessionIds.length;
   });
 
-  return SessionStore.of({
+  const setPushNotificationToken: SessionStoreShape["setPushNotificationToken"] = Effect.fn(
+    "SessionStore.setPushNotificationToken",
+  )(function* (sessionId, input) {
+    yield* authSessions
+      .setPushNotificationToken({
+        sessionId,
+        token: input.token,
+        platform: input.platform,
+      })
+      .pipe(
+        Effect.mapError(
+          (cause) =>
+            new SessionCredentialIssueError({
+              sessionId,
+              cause,
+            }),
+        ),
+      );
+    const session = yield* loadActiveSession(sessionId).pipe(
+      Effect.mapError(
+        (cause) =>
+          new SessionCredentialIssueError({
+            sessionId,
+            cause,
+          }),
+      ),
+    );
+    if (Option.isSome(session)) {
+      yield* emitUpsert(session.value);
+    }
+  });
+
+  return {
     cookieName,
     issue,
     verify,
@@ -909,7 +946,8 @@ export const make = Effect.gen(function* () {
     revokeAllExcept,
     markConnected,
     markDisconnected,
-  });
+    setPushNotificationToken,
+  } satisfies SessionStoreShape;
 });
 
 export const layer = Layer.effect(SessionStore, make).pipe(Layer.provideMerge(AuthSessions.layer));

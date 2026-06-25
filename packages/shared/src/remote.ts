@@ -3,6 +3,7 @@ import * as Schema from "effect/Schema";
 const PAIRING_TOKEN_PARAM = "token";
 const HOSTED_PAIRING_HOST_PARAM = "host";
 const HOSTED_PAIRING_LABEL_PARAM = "label";
+const PAIRING_PAGE_PATH = "/pair";
 const SUPPORTED_REMOTE_BACKEND_PROTOCOLS = new Set(["http:", "https:", "ws:", "wss:"]);
 
 const readHashParams = (url: URL): URLSearchParams =>
@@ -97,10 +98,25 @@ const normalizeRemoteBaseUrl = (
       protocol: url.protocol,
     });
   }
-  url.pathname = "/";
+  url.pathname = normalizeRemoteBasePathname(url.pathname);
   url.search = "";
   url.hash = "";
   return url;
+};
+
+const normalizeRemoteBasePathname = (pathname: string): string => {
+  const withoutTrailingSlash =
+    pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  const withoutPairingPage =
+    withoutTrailingSlash === PAIRING_PAGE_PATH ||
+    withoutTrailingSlash.endsWith(`${PAIRING_PAGE_PATH}`)
+      ? withoutTrailingSlash.slice(0, -PAIRING_PAGE_PATH.length)
+      : pathname;
+
+  if (!withoutPairingPage || withoutPairingPage === "/") {
+    return "/";
+  }
+  return withoutPairingPage.endsWith("/") ? withoutPairingPage : `${withoutPairingPage}/`;
 };
 
 const toHttpBaseUrl = (url: URL): string => {
@@ -110,7 +126,7 @@ const toHttpBaseUrl = (url: URL): string => {
   } else if (next.protocol === "wss:") {
     next.protocol = "https:";
   }
-  next.pathname = "/";
+  next.pathname = normalizeRemoteBasePathname(next.pathname);
   next.search = "";
   next.hash = "";
   return next.toString();
@@ -123,7 +139,7 @@ const toWsBaseUrl = (url: URL): string => {
   } else if (next.protocol === "https:") {
     next.protocol = "wss:";
   }
-  next.pathname = "/";
+  next.pathname = normalizeRemoteBasePathname(next.pathname);
   next.search = "";
   next.hash = "";
   return next.toString();

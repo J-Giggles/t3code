@@ -112,6 +112,14 @@ const desktopServerExposureLayer = Layer.succeed(DesktopServerExposure.DesktopSe
   configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
   setMode: () => Effect.die("unexpected setMode"),
   setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
+  getTailscaleAccessState: () => Effect.die("unexpected getTailscaleAccessState"),
+  enableTailscaleAccess: () => Effect.die("unexpected enableTailscaleAccess"),
+  updateTailscaleServePath: () => Effect.die("unexpected updateTailscaleServePath"),
+  disableTailscaleAccess: Effect.die("unexpected disableTailscaleAccess"),
+  repairTailscaleAccess: Effect.die("unexpected repairTailscaleAccess"),
+  probeTailscaleAccess: Effect.die("unexpected probeTailscaleAccess"),
+  checkTailscaleServeRoute: () => Effect.die("unexpected checkTailscaleServeRoute"),
+  syncTailscaleServeRouteOnBackendReady: Effect.void,
   getAdvertisedEndpoints: Effect.die("unexpected getAdvertisedEndpoints"),
 } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 

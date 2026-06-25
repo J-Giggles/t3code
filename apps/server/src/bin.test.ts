@@ -11,6 +11,7 @@ import * as NetService from "@t3tools/shared/Net";
 import { assert, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as HttpRouter from "effect/unstable/http/HttpRouter";
 import * as HttpServer from "effect/unstable/http/HttpServer";
 import * as HttpApi from "effect/unstable/httpapi/HttpApi";
@@ -21,6 +22,7 @@ import { Command } from "effect/unstable/cli";
 
 import { cli, makeCli } from "./bin.ts";
 import * as ServerConfig from "./config.ts";
+import { resolveCliAuthConfig } from "./cli/config.ts";
 import * as ProjectionSnapshotQuery from "./orchestration/Services/ProjectionSnapshotQuery.ts";
 import { OrchestrationLayerLive } from "./orchestration/runtimeLayer.ts";
 import { orchestrationHttpApiLayer } from "./orchestration/http.ts";
@@ -40,6 +42,7 @@ class ProjectCliHttpApi extends HttpApi.make("environment").add(EnvironmentOrche
 
 const connectCli = makeCli({ cloudEnabled: true });
 const noConnectCli = makeCli({ cloudEnabled: false });
+const CLOUD_CLI_OAUTH_TOKEN_SECRET = "cloud-cli-oauth-token";
 const runCli = (args: ReadonlyArray<string>, command = cli) =>
   Command.runWith(command, { version: "0.0.0" })(args);
 const runConnectCli = (args: ReadonlyArray<string>) => runCli(args, connectCli);
@@ -56,36 +59,9 @@ const captureStdout = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   }).pipe(Effect.provide(Layer.mergeAll(CliRuntimeLayer, TestConsole.layer)));
 
 const makeCliTestServerConfig = (baseDir: string) =>
-  Effect.gen(function* () {
-    const derivedPaths = yield* ServerConfig.deriveServerPaths(baseDir, undefined);
-    return {
-      logLevel: "Info",
-      traceMinLevel: "Info",
-      traceTimingEnabled: true,
-      traceBatchWindowMs: 200,
-      traceMaxBytes: 10 * 1024 * 1024,
-      traceMaxFiles: 10,
-      otlpTracesUrl: undefined,
-      otlpMetricsUrl: undefined,
-      otlpExportIntervalMs: 10_000,
-      otlpServiceName: "t3-server",
-      mode: "web",
-      port: 0,
-      host: "127.0.0.1",
-      cwd: process.cwd(),
-      baseDir,
-      ...derivedPaths,
-      staticDir: undefined,
-      devUrl: undefined,
-      noBrowser: true,
-      startupPresentation: "browser",
-      desktopBootstrapToken: undefined,
-      autoBootstrapProjectFromCwd: false,
-      logWebSocketEvents: false,
-      tailscaleServeEnabled: false,
-      tailscaleServePort: 443,
-    } satisfies ServerConfig.ServerConfig["Service"];
-  });
+  resolveCliAuthConfig({ baseDir: Option.some(baseDir) }, Option.some("Info")).pipe(
+    Effect.provide(CliRuntimeLayer),
+  );
 
 const makeProjectPersistenceLayer = (config: ServerConfig.ServerConfig["Service"]) =>
   Layer.mergeAll(
@@ -104,6 +80,45 @@ const readPersistedSnapshot = (baseDir: string) =>
       return yield* projectionSnapshotQuery.getSnapshot();
     }).pipe(Effect.provide(makeProjectPersistenceLayer(config)));
   });
+
+const encodePersistedCloudCliToken = (input: {
+  readonly accessToken: string;
+  readonly refreshToken: string;
+  readonly expiresAtEpochMs: number;
+}) => new TextEncoder().encode(JSON.stringify(input));
+
+const withCliSecretStore = <A, E, R>(
+  baseDir: string,
+  effect: Effect.Effect<A, E, R | ServerSecretStore.ServerSecretStore>,
+) =>
+  Effect.gen(function* () {
+    const config = yield* makeCliTestServerConfig(baseDir);
+    return yield* effect.pipe(
+      Effect.provide(
+        ServerSecretStore.layer.pipe(
+          Layer.provide(Layer.succeed(ServerConfig.ServerConfig, config)),
+        ),
+      ),
+    );
+  });
+
+const setPersistedCloudCliToken = (baseDir: string, value: Uint8Array) =>
+  withCliSecretStore(
+    baseDir,
+    Effect.gen(function* () {
+      const secrets = yield* ServerSecretStore.ServerSecretStore;
+      yield* secrets.set(CLOUD_CLI_OAUTH_TOKEN_SECRET, value);
+    }),
+  );
+
+const readPersistedCloudCliToken = (baseDir: string) =>
+  withCliSecretStore(
+    baseDir,
+    Effect.gen(function* () {
+      const secrets = yield* ServerSecretStore.ServerSecretStore;
+      return yield* secrets.get(CLOUD_CLI_OAUTH_TOKEN_SECRET);
+    }),
+  );
 
 const withLiveProjectCliServer = <A, E, R>(baseDir: string, run: () => Effect.Effect<A, E, R>) =>
   Effect.gen(function* () {
@@ -241,12 +256,9 @@ it.layer(NodeServices.layer)("bin cli parsing", (it) => {
       const baseDir = NodeFS.mkdtempSync(
         NodePath.join(NodeOS.tmpdir(), "t3-cli-cloud-login-test-"),
       );
-      const { secretsDir } = yield* ServerConfig.deriveServerPaths(baseDir, undefined);
-      NodeFS.mkdirSync(secretsDir, { recursive: true });
-      NodeFS.writeFileSync(
-        NodePath.join(secretsDir, "cloud-cli-oauth-token.bin"),
-        // @effect-diagnostics-next-line preferSchemaOverJson:off - Test fixture matches the persisted CLI token representation.
-        JSON.stringify({
+      yield* setPersistedCloudCliToken(
+        baseDir,
+        encodePersistedCloudCliToken({
           accessToken: "access-token",
           refreshToken: "refresh-token",
           expiresAtEpochMs: Number.MAX_SAFE_INTEGER,
@@ -289,17 +301,17 @@ it.layer(NodeServices.layer)("bin cli parsing", (it) => {
       const baseDir = NodeFS.mkdtempSync(
         NodePath.join(NodeOS.tmpdir(), "t3-cli-cloud-logout-test-"),
       );
-      const { secretsDir } = yield* ServerConfig.deriveServerPaths(baseDir, undefined);
-      const tokenPath = NodePath.join(secretsDir, "cloud-cli-oauth-token.bin");
-      NodeFS.mkdirSync(secretsDir, { recursive: true });
-      NodeFS.writeFileSync(tokenPath, "invalid persisted token");
+      yield* setPersistedCloudCliToken(
+        baseDir,
+        new TextEncoder().encode("invalid persisted token"),
+      );
 
       const { output } = yield* captureStdout(
         runConnectCli(["connect", "logout", "--base-dir", baseDir]),
       );
 
       assert.equal(output, "Signed out of T3 Connect locally.");
-      assert.isFalse(NodeFS.existsSync(tokenPath));
+      assert.deepStrictEqual(yield* readPersistedCloudCliToken(baseDir), Option.none());
     }),
   );
 

@@ -12,24 +12,24 @@ describe("remote", () => {
   it("derives backend urls and token from a pairing url", () => {
     expect(
       resolveRemotePairingTarget({
-        pairingUrl: "https://remote.example.com/pair#token=pairing-token",
+        pairingUrl: "https://remote.example.com/t3code-main/pair#token=pairing-token",
       }),
     ).toEqual({
       credential: "pairing-token",
-      httpBaseUrl: "https://remote.example.com/",
-      wsBaseUrl: "wss://remote.example.com/",
+      httpBaseUrl: "https://remote.example.com/t3code-main/",
+      wsBaseUrl: "wss://remote.example.com/t3code-main/",
     });
   });
 
   it("accepts pairing urls that still use a query token", () => {
     expect(
       resolveRemotePairingTarget({
-        pairingUrl: "https://remote.example.com/pair?token=pairing-token",
+        pairingUrl: "https://remote.example.com/t3code-main/?token=pairing-token",
       }),
     ).toEqual({
       credential: "pairing-token",
-      httpBaseUrl: "https://remote.example.com/",
-      wsBaseUrl: "wss://remote.example.com/",
+      httpBaseUrl: "https://remote.example.com/t3code-main/",
+      wsBaseUrl: "wss://remote.example.com/t3code-main/",
     });
   });
 
@@ -37,12 +37,12 @@ describe("remote", () => {
     expect(
       resolveRemotePairingTarget({
         pairingUrl:
-          "https://app.t3.codes/pair?host=https%3A%2F%2Fdesktop.tailnet.ts.net%3A44342%2F#token=pairing-token",
+          "https://app.t3.codes/pair?host=https%3A%2F%2Fdesktop.tailnet.ts.net%3A44342%2Ft3code-main%2F#token=pairing-token",
       }),
     ).toEqual({
       credential: "pairing-token",
-      httpBaseUrl: "https://desktop.tailnet.ts.net:44342/",
-      wsBaseUrl: "wss://desktop.tailnet.ts.net:44342/",
+      httpBaseUrl: "https://desktop.tailnet.ts.net:44342/t3code-main/",
+      wsBaseUrl: "wss://desktop.tailnet.ts.net:44342/t3code-main/",
     });
   });
 

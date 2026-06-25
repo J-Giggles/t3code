@@ -1,32 +1,34 @@
 import { assert, describe, it } from "@effect/vitest";
-import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
-import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
-import * as PlatformError from "effect/PlatformError";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
-import * as TestClock from "effect/testing/TestClock";
+import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
 import {
+  assertTailscaleServePathAvailable,
   buildTailscaleHttpsBaseUrl,
+  DEFAULT_TAILSCALE_SERVE_PATH,
   disableTailscaleServe,
+  disableTailscaleServeIfOwned,
   ensureTailscaleServe,
   isTailscaleIpv4Address,
   parseTailscaleMagicDnsName,
+  parseTailscaleServeRouteStatus,
   parseTailscaleStatus,
+  probeTailscaleHttpsEndpoint,
+  readTailscaleServeRouteAvailability,
+  readTailscaleServeRouteStatus,
   readTailscaleStatus,
-  TAILSCALE_STATUS_TIMEOUT,
-  TailscaleCommandExitError,
-  TailscaleCommandSpawnError,
-  TailscaleCommandTimeoutError,
+  TailscaleServePathConflictError,
   TailscaleStatusParseError,
 } from "./tailscale.ts";
 
 const encoder = new TextEncoder();
 const tailscaleStatusJson = `{"Self":{"DNSName":"desktop.tail.ts.net.","TailscaleIPs":["100.100.100.100","fd7a:115c:a1e0::1","192.168.1.20"]}}`;
 const tailscaleStatusWithSingleIpJson = `{"Self":{"DNSName":"desktop.tail.ts.net.","TailscaleIPs":["100.90.1.2"]}}`;
+const tailscaleServeStatusJson = `{"TCP":{"443":{"HTTPS":true}},"Web":{"desktop.tail.ts.net:443":{"Handlers":{"/t3code":{"Proxy":"http://127.0.0.1:4173"},"/t3code-staging":{"Proxy":"http://127.0.0.1:4174"}}}}}`;
 
 function mockHandle(result: { stdout?: string; stderr?: string; code?: number }) {
   return ChildProcessSpawner.makeHandle({
@@ -38,22 +40,6 @@ function mockHandle(result: { stdout?: string; stderr?: string; code?: number })
     stdin: Sink.drain,
     stdout: Stream.make(encoder.encode(result.stdout ?? "")),
     stderr: Stream.make(encoder.encode(result.stderr ?? "")),
-    all: Stream.empty,
-    getInputFd: () => Sink.drain,
-    getOutputFd: () => Stream.empty,
-  });
-}
-
-function neverFinishingMockHandle() {
-  return ChildProcessSpawner.makeHandle({
-    pid: ChildProcessSpawner.ProcessId(1),
-    exitCode: Effect.never,
-    isRunning: Effect.succeed(true),
-    kill: () => Effect.void,
-    unref: Effect.succeed(Effect.void),
-    stdin: Sink.drain,
-    stdout: Stream.empty,
-    stderr: Stream.empty,
     all: Stream.empty,
     getInputFd: () => Sink.drain,
     getOutputFd: () => Stream.empty,
@@ -79,6 +65,12 @@ function mockSpawnerLayer(
 }
 
 describe("tailscale", () => {
+  it.effect("defaults Tailscale Serve to the T3 Code public path", () =>
+    Effect.sync(() => {
+      assert.equal(DEFAULT_TAILSCALE_SERVE_PATH, "/t3code");
+    }),
+  );
+
   it.effect("detects Tailnet IPv4 addresses", () =>
     Effect.sync(() => {
       assert.equal(isTailscaleIpv4Address("100.64.0.1"), true);
@@ -121,12 +113,82 @@ describe("tailscale", () => {
     Effect.sync(() => {
       assert.equal(
         buildTailscaleHttpsBaseUrl({ magicDnsName: "desktop.tail.ts.net" }),
-        "https://desktop.tail.ts.net/",
+        "https://desktop.tail.ts.net/t3code/",
       );
       assert.equal(
         buildTailscaleHttpsBaseUrl({ magicDnsName: "desktop.tail.ts.net", servePort: 8443 }),
-        "https://desktop.tail.ts.net:8443/",
+        "https://desktop.tail.ts.net:8443/t3code/",
       );
+      assert.equal(
+        buildTailscaleHttpsBaseUrl({
+          magicDnsName: "desktop.tail.ts.net",
+          servePath: "/t3code",
+        }),
+        "https://desktop.tail.ts.net/t3code/",
+      );
+    }),
+  );
+
+  it.effect("probes path-prefixed HTTPS endpoints without dropping the serve path", () => {
+    const requestUrls: string[] = [];
+    const layer = Layer.succeed(
+      HttpClient.HttpClient,
+      HttpClient.make((request) =>
+        Effect.sync(() => {
+          requestUrls.push(request.url);
+          return HttpClientResponse.fromWeb(request, new Response("", { status: 200 }));
+        }),
+      ),
+    );
+
+    return Effect.gen(function* () {
+      const reachable = yield* probeTailscaleHttpsEndpoint({
+        baseUrl: "https://desktop.tail.ts.net/t3code/",
+      });
+
+      assert.equal(reachable, true);
+      assert.deepEqual(requestUrls, [
+        "https://desktop.tail.ts.net/t3code/.well-known/t3/environment",
+      ]);
+    }).pipe(Effect.provide(layer));
+  });
+
+  it.effect("parses path-prefixed tailscale serve route status", () =>
+    Effect.gen(function* () {
+      const defaultConfigured = yield* parseTailscaleServeRouteStatus(tailscaleServeStatusJson, {
+        localPort: 4173,
+      });
+      assert.deepEqual(defaultConfigured, {
+        configured: true,
+        proxyUrl: "http://127.0.0.1:4173",
+      });
+
+      const configured = yield* parseTailscaleServeRouteStatus(tailscaleServeStatusJson, {
+        servePath: "/t3code",
+        localPort: 4173,
+      });
+      assert.deepEqual(configured, {
+        configured: true,
+        proxyUrl: "http://127.0.0.1:4173",
+      });
+
+      const mismatched = yield* parseTailscaleServeRouteStatus(tailscaleServeStatusJson, {
+        servePath: "/t3code",
+        localPort: 4174,
+      });
+      assert.deepEqual(mismatched, {
+        configured: false,
+        proxyUrl: "http://127.0.0.1:4173",
+      });
+
+      const missing = yield* parseTailscaleServeRouteStatus(tailscaleServeStatusJson, {
+        servePath: "/missing",
+        localPort: 4173,
+      });
+      assert.deepEqual(missing, {
+        configured: false,
+        proxyUrl: null,
+      });
     }),
   );
 
@@ -148,112 +210,80 @@ describe("tailscale", () => {
     });
   });
 
-  it.effect("preserves tailscale spawn failures as causes", () => {
-    const systemCause = new Error("private executable lookup detail");
-    const cause = PlatformError.systemError({
-      _tag: "NotFound",
-      module: "ChildProcess",
-      method: "spawn",
-      cause: systemCause,
+  it.effect("reads tailscale serve route status through the process spawner service", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return {
+        stdout: tailscaleServeStatusJson,
+      };
     });
-    const layer = Layer.succeed(
-      ChildProcessSpawner.ChildProcessSpawner,
-      ChildProcessSpawner.make(() => Effect.fail(cause)),
-    );
 
     return Effect.gen(function* () {
-      const error = yield* readTailscaleStatus.pipe(Effect.flip, Effect.provide(layer));
-
-      assert.instanceOf(error, TailscaleCommandSpawnError);
-      assert.equal(error.executable, "tailscale");
-      assert.equal(error.subcommand, "status");
-      assert.equal(error.argumentCount, 2);
-      assert.strictEqual(error.cause, cause);
-      assert.equal(error.message, "Failed to spawn tailscale status.");
-      assert.notInclude(error.message, systemCause.message);
+      const status = yield* readTailscaleServeRouteStatus({
+        servePath: "/t3code",
+        localPort: 4173,
+      }).pipe(Effect.provide(layer));
+      assert.deepEqual(status, {
+        configured: true,
+        proxyUrl: "http://127.0.0.1:4173",
+      });
     });
-  });
-
-  it.effect("keeps nonzero exit diagnostics structured", () => {
-    const layer = mockSpawnerLayer(() => ({
-      code: 7,
-      stderr: "not logged in tskey-auth-secret-token-value",
-    }));
-
-    return Effect.gen(function* () {
-      const error = yield* readTailscaleStatus.pipe(Effect.flip, Effect.provide(layer));
-
-      assert.instanceOf(error, TailscaleCommandExitError);
-      assert.equal(error.executable, "tailscale");
-      assert.equal(error.subcommand, "status");
-      assert.equal(error.argumentCount, 2);
-      assert.equal(error.exitCode, 7);
-      assert.equal(error.stdoutLength, 0);
-      assert.equal(error.stderrLength, 43);
-      assert.notProperty(error, "command");
-      assert.notProperty(error, "stderr");
-      assert.notInclude(error.message, "tskey-auth-secret-token-value");
-      assert.equal(error.message, "tailscale status exited with code 7.");
-    });
-  });
-
-  it.effect("times out tailscale status through TestClock", () => {
-    const layer = Layer.merge(
-      TestClock.layer(),
-      Layer.succeed(
-        ChildProcessSpawner.ChildProcessSpawner,
-        ChildProcessSpawner.make(() => Effect.succeed(neverFinishingMockHandle())),
-      ),
-    );
-
-    return Effect.gen(function* () {
-      const fiber = yield* readTailscaleStatus.pipe(Effect.flip, Effect.forkScoped);
-      yield* Effect.yieldNow;
-      yield* TestClock.adjust(TAILSCALE_STATUS_TIMEOUT);
-      const error = yield* Fiber.join(fiber);
-
-      assert.instanceOf(error, TailscaleCommandTimeoutError);
-      assert.equal(error.executable, "tailscale");
-      assert.equal(error.subcommand, "status");
-      assert.equal(error.argumentCount, 2);
-      assert.equal(error.timeoutMs, 1_500);
-      assert.isTrue(Cause.isTimeoutError(error.cause));
-      assert.equal(error.message, "tailscale status timed out after 1500ms.");
-    }).pipe(Effect.provide(layer));
   });
 
   it.effect("configures tailscale serve through the process spawner service", () => {
     const layer = mockSpawnerLayer((command, args) => {
       assert.equal(command, "tailscale");
-      assert.deepEqual(args, ["serve", "--bg", "--https=8443", "http://127.0.0.1:13773"]);
+      assert.deepEqual(args, [
+        "serve",
+        "--bg",
+        "--https=8443",
+        "--set-path=/t3code",
+        "http://127.0.0.1:13773",
+      ]);
       return {};
     });
 
     return ensureTailscaleServe({ localPort: 13773, servePort: 8443 }).pipe(Effect.provide(layer));
   });
 
-  it.effect("retains tailscale serve exit diagnostics", () => {
-    const layer = mockSpawnerLayer(() => ({
-      code: 1,
-      stderr: "serve permission denied tskey-auth-secret-token-value",
-    }));
-
-    return Effect.gen(function* () {
-      const error = yield* ensureTailscaleServe({ localPort: 13773, servePort: 8443 }).pipe(
-        Effect.flip,
-        Effect.provide(layer),
-      );
-
-      assert.instanceOf(error, TailscaleCommandExitError);
-      assert.equal(error.executable, "tailscale");
-      assert.equal(error.subcommand, "serve");
-      assert.equal(error.argumentCount, 4);
-      assert.equal(error.exitCode, 1);
-      assert.equal(error.stderrLength, 53);
-      assert.notProperty(error, "command");
-      assert.notProperty(error, "stderr");
-      assert.notInclude(error.message, "tskey-auth-secret-token-value");
+  it.effect("configures path-prefixed tailscale serve routes", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, [
+        "serve",
+        "--bg",
+        "--https=443",
+        "--set-path=/t3code",
+        "http://127.0.0.1:13773",
+      ]);
+      return {};
     });
+
+    return ensureTailscaleServe({
+      localPort: 13773,
+      servePath: "/t3code/",
+    }).pipe(Effect.provide(layer));
+  });
+
+  it.effect("configures path-prefixed tailscale serve routes with a local target path", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, [
+        "serve",
+        "--bg",
+        "--https=443",
+        "--set-path=/project/main/app",
+        "http://127.0.0.1:3030/project/main/app",
+      ]);
+      return {};
+    });
+
+    return ensureTailscaleServe({
+      localPort: 3030,
+      servePath: "/project/main/app/",
+      localPath: "/project/main/app/",
+    }).pipe(Effect.provide(layer));
   });
 
   it.effect("disables tailscale serve through the process spawner service", () => {
@@ -264,15 +294,206 @@ describe("tailscale", () => {
     const layer = mockSpawnerLayer((command, args) => {
       commands.push({ command, args });
       assert.equal(command, "tailscale");
-      assert.deepEqual(args, ["serve", "--https=8443", "off"]);
+      assert.deepEqual(args, ["serve", "--https=8443", "--set-path=/t3code", "off"]);
       return {};
     });
 
     return Effect.gen(function* () {
       yield* disableTailscaleServe({ servePort: 8443 }).pipe(Effect.provide(layer));
       assert.deepEqual(commands, [
-        { command: "tailscale", args: ["serve", "--https=8443", "off"] },
+        {
+          command: "tailscale",
+          args: ["serve", "--https=8443", "--set-path=/t3code", "off"],
+        },
       ]);
+    });
+  });
+
+  it.effect("disables path-prefixed tailscale serve routes", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "--https=443", "--set-path=/t3code", "off"]);
+      return {};
+    });
+
+    return disableTailscaleServe({ servePath: "/t3code/" }).pipe(Effect.provide(layer));
+  });
+
+  it.effect("disables an owned tailscale serve route", () => {
+    const commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }> = [];
+    const layer = mockSpawnerLayer((command, args) => {
+      commands.push({ command, args });
+      assert.equal(command, "tailscale");
+      return args.join(" ") === "serve status --json" ? { stdout: tailscaleServeStatusJson } : {};
+    });
+
+    return Effect.gen(function* () {
+      const result = yield* disableTailscaleServeIfOwned({
+        servePath: "/t3code",
+        localPort: 4173,
+      }).pipe(Effect.provide(layer));
+
+      assert.deepEqual(result, {
+        disabled: true,
+        existingProxyUrl: "http://127.0.0.1:4173",
+      });
+      assert.deepEqual(commands, [
+        { command: "tailscale", args: ["serve", "status", "--json"] },
+        { command: "tailscale", args: ["serve", "--https=443", "--set-path=/t3code", "off"] },
+      ]);
+    });
+  });
+
+  it.effect("does not disable a tailscale serve route owned by another backend", () => {
+    const commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }> = [];
+    const layer = mockSpawnerLayer((command, args) => {
+      commands.push({ command, args });
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return { stdout: tailscaleServeStatusJson };
+    });
+
+    return Effect.gen(function* () {
+      const result = yield* disableTailscaleServeIfOwned({
+        servePath: "/t3code",
+        localPort: 4174,
+      }).pipe(Effect.provide(layer));
+
+      assert.deepEqual(result, {
+        disabled: false,
+        existingProxyUrl: "http://127.0.0.1:4173",
+      });
+      assert.deepEqual(commands, [{ command: "tailscale", args: ["serve", "status", "--json"] }]);
+    });
+  });
+
+  it.effect("allows a serve path that is free or already bound to this backend", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return { stdout: tailscaleServeStatusJson };
+    });
+
+    return assertTailscaleServePathAvailable({
+      servePath: "/t3code",
+      localPort: 4173,
+    }).pipe(Effect.provide(layer));
+  });
+
+  it.effect("reports an available tailscale serve route", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return { stdout: tailscaleServeStatusJson };
+    });
+
+    return Effect.gen(function* () {
+      const availability = yield* readTailscaleServeRouteAvailability({
+        servePath: "/missing",
+        localPort: 4173,
+      }).pipe(Effect.provide(layer));
+
+      assert.deepEqual(availability, {
+        status: "available",
+        available: true,
+        owned: false,
+        conflict: false,
+        servePath: "/missing",
+        servePort: 443,
+        expectedProxyUrl: "http://127.0.0.1:4173",
+        existingProxyUrl: null,
+      });
+    });
+  });
+
+  it.effect("reports an owned tailscale serve route", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return { stdout: tailscaleServeStatusJson };
+    });
+
+    return Effect.gen(function* () {
+      const availability = yield* readTailscaleServeRouteAvailability({
+        servePath: "/t3code",
+        localPort: 4173,
+      }).pipe(Effect.provide(layer));
+
+      assert.deepEqual(availability, {
+        status: "owned",
+        available: false,
+        owned: true,
+        conflict: false,
+        servePath: "/t3code",
+        servePort: 443,
+        expectedProxyUrl: "http://127.0.0.1:4173",
+        existingProxyUrl: "http://127.0.0.1:4173",
+      });
+    });
+  });
+
+  it.effect("reports a conflicting tailscale serve route", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return { stdout: tailscaleServeStatusJson };
+    });
+
+    return Effect.gen(function* () {
+      const availability = yield* readTailscaleServeRouteAvailability({
+        servePath: "/t3code",
+        localPort: 13773,
+      }).pipe(Effect.provide(layer));
+
+      assert.deepEqual(availability, {
+        status: "conflict",
+        available: false,
+        owned: false,
+        conflict: true,
+        servePath: "/t3code",
+        servePort: 443,
+        expectedProxyUrl: "http://127.0.0.1:13773",
+        existingProxyUrl: "http://127.0.0.1:4173",
+      });
+    });
+  });
+
+  it.effect("allows a serve path already bound to this backend with a local target path", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return {
+        stdout:
+          '{"TCP":{"443":{"HTTPS":true}},"Web":{"desktop.tail.ts.net:443":{"Handlers":{"/project/main/app":{"Proxy":"http://127.0.0.1:3030/project/main/app"}}}}}',
+      };
+    });
+
+    return assertTailscaleServePathAvailable({
+      servePath: "/project/main/app",
+      localPath: "/project/main/app",
+      localPort: 3030,
+    }).pipe(Effect.provide(layer));
+  });
+
+  it.effect("rejects a serve path already bound to another backend", () => {
+    const layer = mockSpawnerLayer((command, args) => {
+      assert.equal(command, "tailscale");
+      assert.deepEqual(args, ["serve", "status", "--json"]);
+      return { stdout: tailscaleServeStatusJson };
+    });
+
+    return Effect.gen(function* () {
+      const error = yield* assertTailscaleServePathAvailable({
+        servePath: "/t3code",
+        localPort: 13773,
+      }).pipe(Effect.provide(layer), Effect.flip);
+      assert.instanceOf(error, TailscaleServePathConflictError);
+      assert.equal(error.servePath, "/t3code");
+      assert.equal(error.existingProxyUrl, "http://127.0.0.1:4173");
+      assert.equal(error.expectedProxyUrl, "http://127.0.0.1:13773");
+      assert.match(error.message, /already in use/);
+      assert.include(error.message, "http://127.0.0.1:4173");
+      assert.include(error.message, "http://127.0.0.1:13773");
     });
   });
 });

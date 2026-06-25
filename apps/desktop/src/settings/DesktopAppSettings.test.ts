@@ -14,6 +14,7 @@ const DesktopSettingsPatch = Schema.Struct({
   serverExposureMode: Schema.optionalKey(Schema.Literals(["local-only", "network-accessible"])),
   tailscaleServeEnabled: Schema.optionalKey(Schema.Boolean),
   tailscaleServePort: Schema.optionalKey(Schema.Number),
+  tailscaleServePath: Schema.optionalKey(Schema.NullOr(Schema.String)),
   updateChannel: Schema.optionalKey(Schema.Literals(["latest", "nightly"])),
   updateChannelConfiguredByUser: Schema.optionalKey(Schema.Boolean),
   wslBackendEnabled: Schema.optionalKey(Schema.Boolean),
@@ -25,7 +26,11 @@ const DesktopSettingsPatch = Schema.Struct({
 const decodeDesktopSettingsPatch = Schema.decodeEffect(Schema.fromJsonString(DesktopSettingsPatch));
 const encodeDesktopSettingsPatch = Schema.encodeEffect(Schema.fromJsonString(DesktopSettingsPatch));
 
-function makeEnvironmentLayer(baseDir: string, appVersion = "0.0.17") {
+function makeEnvironmentLayer(
+  baseDir: string,
+  appVersion = "0.0.17",
+  env: Record<string, string | undefined> = {},
+) {
   return DesktopEnvironment.layer({
     dirname: "/repo/apps/desktop/src",
     homeDirectory: baseDir,
@@ -38,7 +43,7 @@ function makeEnvironmentLayer(baseDir: string, appVersion = "0.0.17") {
     runningUnderArm64Translation: false,
   }).pipe(
     Layer.provide(
-      Layer.mergeAll(NodeServices.layer, DesktopConfig.layerTest({ T3CODE_HOME: baseDir })),
+      Layer.mergeAll(NodeServices.layer, DesktopConfig.layerTest({ T3CODE_HOME: baseDir, ...env })),
     ),
   );
 }
@@ -49,7 +54,7 @@ const withSettings = <A, E, R>(
     E,
     R | DesktopAppSettings.DesktopAppSettings | DesktopEnvironment.DesktopEnvironment
   >,
-  options?: { readonly appVersion?: string },
+  options?: { readonly appVersion?: string; readonly env?: Record<string, string | undefined> },
 ) =>
   Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
@@ -59,7 +64,7 @@ const withSettings = <A, E, R>(
     return yield* effect.pipe(
       Effect.provide(
         DesktopAppSettings.layer.pipe(
-          Layer.provideMerge(makeEnvironmentLayer(baseDir, options?.appVersion)),
+          Layer.provideMerge(makeEnvironmentLayer(baseDir, options?.appVersion, options?.env)),
           Layer.provideMerge(NodeServices.layer),
         ),
       ),
@@ -94,6 +99,7 @@ describe("DesktopSettings", () => {
         serverExposureMode: "local-only",
         tailscaleServeEnabled: false,
         tailscaleServePort: 443,
+        tailscaleServePath: "/t3code",
         updateChannel: "nightly",
         updateChannelConfiguredByUser: false,
         wslBackendEnabled: false,
@@ -103,6 +109,29 @@ describe("DesktopSettings", () => {
     );
   });
 
+  it.effect("uses the workspace slug as the default Tailscale Serve path", () =>
+    withSettings(
+      Effect.gen(function* () {
+        const settings = yield* DesktopAppSettings.DesktopAppSettings;
+        const environment = yield* DesktopEnvironment.DesktopEnvironment;
+        const expected = {
+          ...DesktopAppSettings.DEFAULT_DESKTOP_SETTINGS,
+          tailscaleServePath: "/staging",
+        } satisfies DesktopAppSettings.DesktopSettings;
+
+        assert.deepEqual(environment.defaultDesktopSettings, expected);
+        assert.deepEqual(yield* settings.load, expected);
+
+        yield* writeSettingsPatch({ tailscaleServePath: null });
+        assert.equal((yield* settings.load).tailscaleServePath, "/staging");
+
+        yield* writeSettingsPatch({ tailscaleServePath: "/" });
+        assert.equal((yield* settings.load).tailscaleServePath, "/staging");
+      }),
+      { env: { T3CODE_WORKSPACE_SLUG: "staging" } },
+    ),
+  );
+
   it.effect("loads persisted settings and applies semantic updates", () =>
     withSettings(
       Effect.gen(function* () {
@@ -111,6 +140,7 @@ describe("DesktopSettings", () => {
           serverExposureMode: "network-accessible",
           tailscaleServeEnabled: true,
           tailscaleServePort: 8443,
+          tailscaleServePath: "/t3code-main/",
           updateChannel: "latest",
           updateChannelConfiguredByUser: true,
         });
@@ -119,6 +149,7 @@ describe("DesktopSettings", () => {
           serverExposureMode: "network-accessible",
           tailscaleServeEnabled: true,
           tailscaleServePort: 8443,
+          tailscaleServePath: "/t3code-main",
           updateChannel: "latest",
           updateChannelConfiguredByUser: true,
           wslBackendEnabled: false,
@@ -133,9 +164,11 @@ describe("DesktopSettings", () => {
         const tailscale = yield* settings.setTailscaleServe({
           enabled: true,
           port: Option.some(9443),
+          servePath: Option.some("t3code-staging/"),
         });
         assert.isTrue(tailscale.changed);
         assert.equal(tailscale.settings.tailscaleServePort, 9443);
+        assert.equal(tailscale.settings.tailscaleServePath, "/t3code-staging");
 
         const updateChannel = yield* settings.setUpdateChannel("nightly");
         assert.isTrue(updateChannel.changed);
@@ -215,6 +248,7 @@ describe("DesktopSettings", () => {
             "serverExposureMode": "network-accessible",
             "tailscaleServeEnabled": true,
             "tailscaleServePort": 8443,
+            "tailscaleServePath": "t3code",
           }\n`,
         );
 
@@ -222,12 +256,30 @@ describe("DesktopSettings", () => {
           serverExposureMode: "network-accessible",
           tailscaleServeEnabled: true,
           tailscaleServePort: 8443,
+          tailscaleServePath: "/t3code",
           updateChannel: "latest",
           updateChannelConfiguredByUser: false,
           wslBackendEnabled: false,
           wslOnly: false,
           wslDistro: null,
         } satisfies DesktopAppSettings.DesktopSettings);
+      }),
+    ),
+  );
+
+  it.effect("defaults missing, null, and root Tailscale Serve paths to /t3code", () =>
+    withSettings(
+      Effect.gen(function* () {
+        const settings = yield* DesktopAppSettings.DesktopAppSettings;
+
+        yield* writeSettingsPatch({ tailscaleServePath: null });
+        assert.equal((yield* settings.load).tailscaleServePath, "/t3code");
+
+        yield* writeSettingsPatch({ tailscaleServePath: "/" });
+        assert.equal((yield* settings.load).tailscaleServePath, "/t3code");
+
+        yield* writeSettingsPatch({});
+        assert.equal((yield* settings.load).tailscaleServePath, "/t3code");
       }),
     ),
   );
@@ -264,6 +316,7 @@ describe("DesktopSettings", () => {
           serverExposureMode: "local-only",
           tailscaleServeEnabled: false,
           tailscaleServePort: 443,
+          tailscaleServePath: "/t3code",
           updateChannel: "nightly",
           updateChannelConfiguredByUser: false,
           wslBackendEnabled: false,
@@ -289,6 +342,7 @@ describe("DesktopSettings", () => {
           serverExposureMode: "local-only",
           tailscaleServeEnabled: false,
           tailscaleServePort: 443,
+          tailscaleServePath: "/t3code",
           updateChannel: "latest",
           updateChannelConfiguredByUser: true,
           wslBackendEnabled: false,
@@ -313,6 +367,7 @@ describe("DesktopSettings", () => {
           serverExposureMode: "local-only",
           tailscaleServeEnabled: true,
           tailscaleServePort: 443,
+          tailscaleServePath: "/t3code",
           updateChannel: "latest",
           updateChannelConfiguredByUser: false,
           wslBackendEnabled: false,

@@ -91,4 +91,20 @@ describe("hostedPairing", () => {
     vi.stubEnv("VITE_HTTP_URL", "https://backend.example.com");
     expect(isHostedStaticApp(new URL("https://nightly.app.t3.codes/"))).toBe(false);
   });
+
+  it("treats path-served local apps as primary environments", () => {
+    vi.stubEnv("VITE_HOSTED_APP_URL", "https://giggabit.tailfb378a.ts.net");
+    vi.stubEnv("VITE_HOSTED_APP_CHANNEL", "nightly");
+    vi.stubEnv("VITE_HTTP_URL", "");
+    vi.stubEnv("VITE_WS_URL", "");
+
+    expect(isHostedStaticApp(new URL("https://giggabit.tailfb378a.ts.net/"))).toBe(true);
+    expect(isHostedStaticApp(new URL("https://giggabit.tailfb378a.ts.net/t3code/"))).toBe(false);
+    expect(isHostedStaticApp(new URL("https://giggabit.tailfb378a.ts.net/t3code-main/"))).toBe(
+      false,
+    );
+    expect(
+      isHostedStaticApp(new URL("https://giggabit.tailfb378a.ts.net/t3code-staging/pair")),
+    ).toBe(false);
+  });
 });

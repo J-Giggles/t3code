@@ -67,6 +67,8 @@ function createBrowserLocalApi(): LocalApi {
       getConfig: () => Promise.reject(unavailableLocalBackendError()),
       refreshProviders: () => Promise.reject(unavailableLocalBackendError()),
       updateProvider: () => Promise.reject(unavailableLocalBackendError()),
+      resetProvider: () => Promise.reject(unavailableLocalBackendError()),
+      writeProviderSkillConfig: () => Promise.reject(unavailableLocalBackendError()),
       upsertKeybinding: () => Promise.reject(unavailableLocalBackendError()),
       removeKeybinding: () => Promise.reject(unavailableLocalBackendError()),
       getSettings: () => Promise.reject(unavailableLocalBackendError()),
@@ -76,6 +78,12 @@ function createBrowserLocalApi(): LocalApi {
       getProcessDiagnostics: () => Promise.reject(unavailableLocalBackendError()),
       getProcessResourceHistory: () => Promise.reject(unavailableLocalBackendError()),
       signalProcess: () => Promise.reject(unavailableLocalBackendError()),
+      restartRuntime: () => Promise.reject(unavailableLocalBackendError()),
+      getDevLaunchState: () => Promise.reject(unavailableLocalBackendError()),
+      launchDevApp: () => Promise.reject(unavailableLocalBackendError()),
+      stopDevApp: () => Promise.reject(unavailableLocalBackendError()),
+      listActiveDevLaunches: () => Promise.reject(unavailableLocalBackendError()),
+      buildDevLaunchCollisionPrompt: () => Promise.reject(unavailableLocalBackendError()),
     },
   };
 }

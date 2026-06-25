@@ -2,6 +2,7 @@ import type {
   AdvertisedEndpoint,
   DesktopBridge,
   DesktopServerExposureState,
+  DesktopTailscaleAccessState,
 } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -13,12 +14,13 @@ const DESKTOP_NETWORK_ACCESS_STALE_TIME_MS = 30_000;
 
 type DesktopNetworkAccessBridge = Pick<
   DesktopBridge,
-  "getAdvertisedEndpoints" | "getServerExposureState"
+  "getAdvertisedEndpoints" | "getServerExposureState" | "getTailscaleAccessState"
 >;
 
 export interface DesktopNetworkAccessSnapshot {
   readonly advertisedEndpoints: ReadonlyArray<AdvertisedEndpoint>;
   readonly serverExposureState: DesktopServerExposureState;
+  readonly tailscaleAccessState: DesktopTailscaleAccessState;
 }
 
 class DesktopNetworkAccessUnavailableError extends Schema.TaggedErrorClass<DesktopNetworkAccessUnavailableError>()(
@@ -48,6 +50,15 @@ class DesktopAdvertisedEndpointsLoadError extends Schema.TaggedErrorClass<Deskto
   }
 }
 
+class DesktopTailscaleAccessStateLoadError extends Schema.TaggedErrorClass<DesktopTailscaleAccessStateLoadError>()(
+  "DesktopTailscaleAccessStateLoadError",
+  { cause: Schema.Defect() },
+) {
+  override get message(): string {
+    return "Failed to load desktop Tailscale access state.";
+  }
+}
+
 function getDesktopNetworkAccessBridge(): DesktopNetworkAccessBridge | undefined {
   return typeof window === "undefined" ? undefined : window.desktopBridge;
 }
@@ -60,7 +71,7 @@ export function createDesktopNetworkAccessStateAtom(
     if (!bridge) {
       return yield* new DesktopNetworkAccessUnavailableError();
     }
-    const [serverExposureState, advertisedEndpoints] = yield* Effect.all(
+    const [serverExposureState, advertisedEndpoints, tailscaleAccessState] = yield* Effect.all(
       [
         Effect.tryPromise({
           try: () => bridge.getServerExposureState(),
@@ -70,12 +81,17 @@ export function createDesktopNetworkAccessStateAtom(
           try: () => bridge.getAdvertisedEndpoints(),
           catch: (cause) => new DesktopAdvertisedEndpointsLoadError({ cause }),
         }),
+        Effect.tryPromise({
+          try: () => bridge.getTailscaleAccessState(),
+          catch: (cause) => new DesktopTailscaleAccessStateLoadError({ cause }),
+        }),
       ],
       { concurrency: "unbounded" },
     );
     return {
       advertisedEndpoints,
       serverExposureState,
+      tailscaleAccessState,
     } satisfies DesktopNetworkAccessSnapshot;
   });
 
