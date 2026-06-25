@@ -40,6 +40,29 @@ describe("branding", () => {
     expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (Nightly)");
   });
 
+  it("shows dev worktree metadata ahead of generic desktop dev branding", async () => {
+    vi.stubEnv("VITE_DEV_WORKTREE_NAME", "staging");
+    vi.stubEnv("VITE_DEV_BRANCH_NAME", "staging");
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        desktopBridge: {
+          getAppBranding: () => ({
+            baseName: "T3 Code",
+            stageLabel: "Dev",
+            displayName: "T3 Code (Dev)",
+          }),
+        },
+      },
+    });
+
+    const branding = await import("./branding");
+
+    expect(branding.DEV_APP_STAGE_LABEL).toBe("staging / staging");
+    expect(branding.APP_STAGE_LABEL).toBe("staging / staging");
+    expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (staging / staging)");
+  });
+
   it("normalizes hosted app channel metadata", async () => {
     vi.stubEnv("VITE_HOSTED_APP_CHANNEL", "nightly");
 

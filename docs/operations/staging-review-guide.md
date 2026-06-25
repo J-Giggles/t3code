@@ -131,12 +131,17 @@ Reviewers should check:
 - Path normalization is deterministic for root paths, nested paths, and empty
   values.
 - Public origins are cleaned without losing the required Serve path.
+- Reserved worktree routes such as `/main`, `/staging`, and `/original` come from
+  launcher env before persisted desktop settings, so stale saved routes cannot
+  create doubled asset paths like `/staging/t3code-staging/...`.
 - Pairing links do not accidentally include local-only origins when hosted
   access is available.
 - Web assets, HTTP API calls, and WebSocket connections use the same base path.
 - Existing localhost development still works when no hosted path is configured.
 - Tailscale route mutation is only performed by desktop/server code that owns
   that responsibility.
+- Tailscale Serve upstreams point at `http://127.0.0.1:<port>` loopback targets,
+  never at another public, LAN, or hosted URL.
 - MagicDNS validation rejects unusable endpoints before exposing bad launch URLs.
 
 ### Suggested Manual Checks
@@ -147,6 +152,8 @@ Reviewers should check:
   once.
 - Open the hosted URL in a browser and confirm assets, API calls, and WebSocket
   connection all load under the path prefix.
+- Inspect the first generated module script and confirm it returns JavaScript
+  with a JavaScript MIME type, not the app HTML fallback.
 
 ## Topic 2: Project App Launcher From Chat
 
@@ -302,9 +309,10 @@ are the runtime facts the UI already consumes; the component does not parse
 paths or shell out itself.
 
 The browser display name covers the other common review cue: window titles and
-tabs. Vite computes that metadata at startup from explicit env values or Git,
-then the web app uses it only for dev builds and only when higher-priority
-desktop or hosted branding is absent.
+tabs. Vite computes that metadata at startup from explicit env values or Git. In
+dev builds, the web app prefers that explicit worktree/branch metadata ahead of
+generic desktop `Dev` branding; hosted builds without local dev metadata continue
+to use their hosted release-channel labels.
 
 The sidebar label is deliberately compact. It replaces the generic stage badge
 in this spot because the worktree and branch are more useful during staging
@@ -319,8 +327,9 @@ Reviewers should check:
   branch text.
 - Long worktree and branch names truncate without resizing the sidebar header.
 - The tooltip exposes the full worktree path and branch when available.
-- Vite/browser display names use dev checkout metadata without overriding
-  desktop-injected app branding or hosted release-channel labels.
+- Vite/browser display names use dev checkout metadata ahead of generic desktop
+  `Dev` branding while preserving hosted release-channel labels when dev
+  metadata is absent.
 - Hosted or connected windows without local cwd/ref data do not present guessed
   local context.
 

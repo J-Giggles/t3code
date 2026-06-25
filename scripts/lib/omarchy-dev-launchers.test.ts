@@ -66,9 +66,11 @@ describe("omarchy-dev-launchers", () => {
   it("preserves target-specific command and worktree route bindings", () => {
     expect(scriptContent("original")).toMatch(/mise exec node@24\.13\.1 -- pnpm run dev:desktop/u);
     expect(scriptContent("main")).toMatch(/\n  pnpm run dev:desktop\n/u);
+    expect(scriptContent("original")).toMatch(/export T3CODE_TAILSCALE_SERVE_PATH="\/original"/u);
+    expect(scriptContent("main")).toMatch(/export T3CODE_TAILSCALE_SERVE_PATH="\/main"/u);
 
     const staging = scriptContent("staging");
-    expect(staging).not.toMatch(/T3CODE_TAILSCALE_SERVE_PATH/u);
+    expect(staging).toMatch(/export T3CODE_TAILSCALE_SERVE_PATH="\/staging"/u);
     expect(staging).toMatch(/export T3CODE_DEV_INSTANCE="staging"/u);
     expect(staging).toMatch(/export T3CODE_WORKSPACE_SLUG="staging"/u);
     expect(staging).toMatch(/export T3CODE_WORKTREE_ROLE="staging"/u);

@@ -2768,7 +2768,10 @@ function SidebarBrand() {
       <span className="truncate text-sm font-medium tracking-tight text-muted-foreground">
         Code
       </span>
-      <span className="sidebar-brand-stage shrink-0 items-center whitespace-nowrap rounded-full bg-muted/50 px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground/60">
+      <span
+        className="sidebar-brand-stage min-w-0 max-w-36 shrink truncate rounded-full bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/70"
+        title={stageLabel}
+      >
         {stageLabel}
       </span>
     </Link>

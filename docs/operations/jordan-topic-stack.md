@@ -18,15 +18,15 @@ upstream refreshes can be rebuilt and verified without rewriting protected
      `/original`, and `/staging` ownership checks against actual git identity.
 2. `feat(dev-launch): add durable worktree launch profiles`
    - Owns `.t3code/dev-apps.json`, dev launcher contracts/runtime, desktop and
-     server launch managers, Omarchy launchers, port isolation, and manual
-     restart policy.
+     server launch managers, Omarchy launchers, launcher-owned Tailscale Serve
+     paths, port isolation, and manual restart policy.
    - Owns dev-runner reserved-route preflight failures and dev-launch
      route-collision prompts when another backend already owns a Tailscale
      route.
 3. `feat(runtime): preserve worktree context and controlled recovery`
    - Owns worktree/branch context, session recovery, controlled backend restart
-     flows, reconnect coalescing, provider startup recovery, and push lifecycle
-     state.
+     flows, visible sidebar/browser labels, reconnect coalescing, provider
+     startup recovery, and push lifecycle state.
 4. `feat(project-git): add project Git dashboard and VCS reconciliation`
    - Owns workspace Git snapshots, dashboard UI, shared Git helpers, and VCS
      refresh reconciliation.
@@ -109,6 +109,16 @@ vp run test:desktop-smoke
 vp run test:desktop-e2e:smoke
 T3CODE_E2E_ALLOW_TAILSCALE_MUTATION=1 node apps/desktop/scripts/run-e2e.mjs headed e2e/specs/pairing-path.spec.ts
 ```
+
+For the remote-access topic, also verify the live reserved route:
+
+- `https://<machine>.<tailnet>.ts.net/staging/` boots the app, not a blank shell.
+- Generated JavaScript and CSS assets use `/staging/...` exactly once; paths such
+  as `/staging/t3code-staging/...` are regressions.
+- Module script responses have JavaScript MIME types, not `text/html` fallback
+  responses.
+- `tailscale serve status --json` maps `/main`, `/staging`, `/original`, and dev
+  worktree routes to `http://127.0.0.1:<port>` loopback upstreams only.
 
 When rebuilding from an unsquashed source branch, verify no content was lost:
 

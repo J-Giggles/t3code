@@ -378,8 +378,8 @@ function resolveDevPublicBasePath(input: {
 }): string | undefined {
   const configured =
     normalizePublicPathPrefix(input.baseEnv.VITE_T3CODE_PUBLIC_BASE_PATH) ??
-    readPersistedDesktopTailscaleServePath(input.path, input.baseDir) ??
-    normalizePublicPathPrefix(input.baseEnv.T3CODE_TAILSCALE_SERVE_PATH);
+    normalizePublicPathPrefix(input.baseEnv.T3CODE_TAILSCALE_SERVE_PATH) ??
+    readPersistedDesktopTailscaleServePath(input.path, input.baseDir);
   if (configured !== undefined) {
     return configured;
   }
