@@ -1,4 +1,4 @@
-import { assert, it, describe } from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as Cause from "effect/Cause";
 import * as Deferred from "effect/Deferred";
@@ -48,18 +48,22 @@ const baseRemoteStatus: VcsStatusRemoteResult = {
 const remoteStatusWithPr: VcsStatusRemoteResult = {
   ...baseRemoteStatus,
   pr: {
-    number: 2978,
-    title: "[codex] Rewrite client connection architecture",
-    url: "https://github.com/pingdotgg/t3code/pull/2978",
+    number: 123,
+    title: "Status broadcast",
+    url: "https://github.com/t3tools/t3code/pull/123",
     baseRef: "main",
-    headRef: "codex/connection-state-audit",
+    headRef: "feature/status-broadcast",
     state: "open",
   },
 };
 
-const baseStatus: VcsStatusResult = {
+const baseLocalOnlyStatus: VcsStatusResult = {
   ...baseLocalStatus,
-  ...baseRemoteStatus,
+  hasUpstream: false,
+  aheadCount: 0,
+  behindCount: 0,
+  aheadOfDefaultCount: 0,
+  pr: null,
 };
 
 function makeTestLayer(state: {
@@ -100,7 +104,7 @@ function makeTestLayer(state: {
 }
 
 describe("VcsStatusBroadcaster", () => {
-  it.effect("reuses the cached VCS status across repeated reads", () => {
+  it.effect("returns cached local status without loading remote status on direct reads", () => {
     const state = {
       currentLocalStatus: baseLocalStatus,
       currentRemoteStatus: baseRemoteStatus,
@@ -116,10 +120,10 @@ describe("VcsStatusBroadcaster", () => {
       const first = yield* broadcaster.getStatus({ cwd: "/repo" });
       const second = yield* broadcaster.getStatus({ cwd: "/repo" });
 
-      assert.deepStrictEqual(first, baseStatus);
-      assert.deepStrictEqual(second, baseStatus);
+      assert.deepStrictEqual(first, baseLocalOnlyStatus);
+      assert.deepStrictEqual(second, baseLocalOnlyStatus);
       assert.equal(state.localStatusCalls, 1);
-      assert.equal(state.remoteStatusCalls, 1);
+      assert.equal(state.remoteStatusCalls, 0);
       assert.equal(state.localInvalidationCalls, 0);
       assert.equal(state.remoteInvalidationCalls, 0);
     }).pipe(Effect.provide(makeTestLayer(state)));
@@ -148,25 +152,30 @@ describe("VcsStatusBroadcaster", () => {
         aheadCount: 2,
       };
       const refreshed = yield* broadcaster.refreshStatus("/repo");
+      yield* Effect.yieldNow;
       const cached = yield* broadcaster.getStatus({ cwd: "/repo" });
 
-      assert.deepStrictEqual(initial, baseStatus);
+      assert.deepStrictEqual(initial, baseLocalOnlyStatus);
       assert.deepStrictEqual(refreshed, {
         ...state.currentLocalStatus,
-        ...state.currentRemoteStatus,
+        hasUpstream: false,
+        aheadCount: 0,
+        behindCount: 0,
+        aheadOfDefaultCount: 0,
+        pr: null,
       });
       assert.deepStrictEqual(cached, {
         ...state.currentLocalStatus,
         ...state.currentRemoteStatus,
       });
       assert.equal(state.localStatusCalls, 2);
-      assert.equal(state.remoteStatusCalls, 2);
+      assert.equal(state.remoteStatusCalls, 1);
       assert.equal(state.localInvalidationCalls, 1);
       assert.equal(state.remoteInvalidationCalls, 1);
     }).pipe(Effect.provide(makeTestLayer(state)));
   });
 
-  it.effect("keeps the cached snapshot unchanged when a refresh branch fails", () => {
+  it.effect("keeps local refreshes responsive when a remote refresh fails", () => {
     const state = {
       currentLocalStatus: baseLocalStatus,
       currentRemoteStatus: baseRemoteStatus,
@@ -224,11 +233,24 @@ describe("VcsStatusBroadcaster", () => {
       };
       state.failRemoteStatus = true;
 
-      const refreshExit = yield* broadcaster.refreshStatus("/repo").pipe(Effect.exit);
+      const refreshed = yield* broadcaster.refreshStatus("/repo");
+      yield* Effect.yieldNow;
       const cached = yield* broadcaster.getStatus({ cwd: "/repo" });
 
-      assert.isTrue(Exit.isFailure(refreshExit));
-      assert.deepStrictEqual(cached, baseStatus);
+      const expectedLocalOnly = {
+        ...state.currentLocalStatus,
+        hasUpstream: false,
+        aheadCount: 0,
+        behindCount: 0,
+        aheadOfDefaultCount: 0,
+        pr: null,
+      };
+      assert.deepStrictEqual(refreshed, expectedLocalOnly);
+      assert.deepStrictEqual(cached, expectedLocalOnly);
+      assert.equal(state.localStatusCalls, 2);
+      assert.equal(state.remoteStatusCalls, 1);
+      assert.equal(state.localInvalidationCalls, 1);
+      assert.equal(state.remoteInvalidationCalls, 1);
     }).pipe(Effect.provide(testLayer));
   });
 
@@ -255,14 +277,18 @@ describe("VcsStatusBroadcaster", () => {
       const refreshedLocal = yield* broadcaster.refreshLocalStatus("/repo");
       const cached = yield* broadcaster.getStatus({ cwd: "/repo" });
 
-      assert.deepStrictEqual(initial, baseStatus);
+      assert.deepStrictEqual(initial, baseLocalOnlyStatus);
       assert.deepStrictEqual(refreshedLocal, state.currentLocalStatus);
       assert.deepStrictEqual(cached, {
         ...state.currentLocalStatus,
-        ...baseRemoteStatus,
+        hasUpstream: false,
+        aheadCount: 0,
+        behindCount: 0,
+        aheadOfDefaultCount: 0,
+        pr: null,
       });
       assert.equal(state.localStatusCalls, 2);
-      assert.equal(state.remoteStatusCalls, 1);
+      assert.equal(state.remoteStatusCalls, 0);
       assert.equal(state.localInvalidationCalls, 1);
       assert.equal(state.remoteInvalidationCalls, 0);
     }).pipe(Effect.provide(makeTestLayer(state)));
@@ -323,9 +349,9 @@ describe("VcsStatusBroadcaster", () => {
       yield* broadcaster.getStatus({ cwd: linkDir });
       yield* broadcaster.getStatus({ cwd: realDir });
 
-      assert.deepStrictEqual(seenCwds, [realPath, realPath]);
+      assert.deepStrictEqual(seenCwds, [realPath]);
       assert.equal(state.localStatusCalls, 1);
-      assert.equal(state.remoteStatusCalls, 1);
+      assert.equal(state.remoteStatusCalls, 0);
     }).pipe(Effect.provide(testLayer));
   });
 
@@ -557,7 +583,8 @@ describe("VcsStatusBroadcaster", () => {
 
     return Effect.gen(function* () {
       const broadcaster = yield* VcsStatusBroadcaster.VcsStatusBroadcaster;
-      yield* broadcaster.getStatus({ cwd: "/repo" });
+      yield* broadcaster.refreshStatus("/repo");
+      yield* Effect.yieldNow;
       const scope = yield* Scope.make();
       const snapshotDeferred = yield* Deferred.make<VcsStatusStreamEvent>();
       yield* Stream.runForEach(
@@ -573,7 +600,7 @@ describe("VcsStatusBroadcaster", () => {
 
       yield* Deferred.await(snapshotDeferred);
       assert.equal(state.remoteStatusCalls, 1);
-      assert.equal(state.remoteInvalidationCalls, 0);
+      assert.equal(state.remoteInvalidationCalls, 1);
 
       yield* TestClock.adjust(Duration.seconds(59));
       assert.equal(state.remoteStatusCalls, 1);
@@ -581,7 +608,7 @@ describe("VcsStatusBroadcaster", () => {
       yield* TestClock.adjust(Duration.seconds(1));
       yield* Effect.yieldNow;
       assert.equal(state.remoteStatusCalls, 2);
-      assert.equal(state.remoteInvalidationCalls, 1);
+      assert.equal(state.remoteInvalidationCalls, 2);
 
       yield* Scope.close(scope, Exit.void);
     }).pipe(Effect.provide(Layer.merge(makeTestLayer(state), TestClock.layer())));

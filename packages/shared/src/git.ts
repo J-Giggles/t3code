@@ -93,6 +93,26 @@ export function buildTemporaryWorktreeBranchName(
   return `${WORKTREE_BRANCH_PREFIX}/${token}`;
 }
 
+/**
+ * Sanitize a generated branch fragment into T3 Code's managed worktree
+ * namespace. Strips any existing namespace first so prompts can return either
+ * "fix sidebar" or "t3code/fix-sidebar" without nesting the prefix.
+ */
+export function buildGeneratedWorktreeBranchName(raw: string): string {
+  const normalized = raw
+    .trim()
+    .toLowerCase()
+    .replace(/^refs\/heads\//, "")
+    .replace(/['"`]/g, "");
+
+  const withoutPrefix = normalized.startsWith(`${WORKTREE_BRANCH_PREFIX}/`)
+    ? normalized.slice(`${WORKTREE_BRANCH_PREFIX}/`.length)
+    : normalized;
+
+  const branchFragment = sanitizeBranchFragment(withoutPrefix);
+  return `${WORKTREE_BRANCH_PREFIX}/${branchFragment}`;
+}
+
 export function isTemporaryWorktreeBranch(refName: string): boolean {
   return TEMP_WORKTREE_BRANCH_PATTERN.test(refName.trim().toLowerCase());
 }

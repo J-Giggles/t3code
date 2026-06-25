@@ -78,3 +78,5 @@ export class VcsDriver extends Context.Service<
     ) => Effect.Effect<ReviewDiffPreviewResult, VcsError>;
   }
 >()("t3/vcs/VcsDriver") {}
+
+export type VcsDriverShape = VcsDriver["Service"];

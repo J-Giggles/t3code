@@ -155,3 +155,5 @@ export const make = Effect.gen(function* () {
 export const layer = Layer.effect(VcsDriverRegistry, make).pipe(
   Layer.provide(VcsProjectConfig.layer),
 );
+
+export type VcsDriverRegistryShape = VcsDriverRegistry["Service"];

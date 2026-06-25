@@ -875,3 +875,5 @@ export const make = Effect.gen(function* () {
 
 export const vcsLayer = Layer.effect(VcsDriver.VcsDriver, makeVcsDriver);
 export const layer = Layer.effect(GitVcsDriver, make);
+
+export type GitVcsDriverShape = GitVcsDriver["Service"];

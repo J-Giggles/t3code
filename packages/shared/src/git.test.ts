@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   applyGitStatusStreamEvent,
+  buildGeneratedWorktreeBranchName,
   buildTemporaryWorktreeBranchName,
   isTemporaryWorktreeBranch,
   normalizeGitRemoteUrl,
@@ -75,6 +76,27 @@ describe("isTemporaryWorktreeBranch", () => {
     expect(isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}/feature/demo`)).toBe(false);
     expect(isTemporaryWorktreeBranch("main")).toBe(false);
     expect(isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}/deadbeef-extra`)).toBe(false);
+  });
+});
+
+describe("buildGeneratedWorktreeBranchName", () => {
+  it("strips duplicate T3 Code worktree prefixes", () => {
+    expect(buildGeneratedWorktreeBranchName("t3code/fix-sidebar-controls")).toBe(
+      "t3code/fix-sidebar-controls",
+    );
+    expect(buildGeneratedWorktreeBranchName("refs/heads/t3code/fix-sidebar-controls")).toBe(
+      "t3code/fix-sidebar-controls",
+    );
+  });
+
+  it("sanitizes punctuation and casing", () => {
+    expect(buildGeneratedWorktreeBranchName("Fix Sidebar Controls!!")).toBe(
+      "t3code/fix-sidebar-controls",
+    );
+  });
+
+  it("falls back to update when the generated content is empty", () => {
+    expect(buildGeneratedWorktreeBranchName("''")).toBe("t3code/update");
   });
 });
 

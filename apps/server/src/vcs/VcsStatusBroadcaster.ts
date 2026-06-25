@@ -168,6 +168,8 @@ export class VcsStatusBroadcaster extends Context.Service<
   }
 >()("t3/vcs/VcsStatusBroadcaster") {}
 
+export type VcsStatusBroadcasterShape = VcsStatusBroadcaster["Service"];
+
 function fingerprintStatusPart(status: unknown): string {
   return JSON.stringify(status);
 }
@@ -257,48 +259,6 @@ export const make = Effect.gen(function* () {
     },
   );
 
-  const updateCachedStatus = Effect.fn("VcsStatusBroadcaster.updateCachedStatus")(function* (
-    cwd: string,
-    local: VcsStatusLocalResult,
-    remote: VcsStatusRemoteResult | null,
-    options?: { publish?: boolean },
-  ) {
-    const nextLocal = {
-      fingerprint: fingerprintStatusPart(local),
-      value: local,
-    } satisfies CachedValue<VcsStatusLocalResult>;
-    const nextRemote = {
-      fingerprint: fingerprintStatusPart(remote),
-      value: remote,
-    } satisfies CachedValue<VcsStatusRemoteResult | null>;
-    const shouldPublish = yield* Ref.modify(cacheRef, (cache) => {
-      const previous = cache.get(cwd) ?? { local: null, remote: null };
-      const nextCache = new Map(cache);
-      nextCache.set(cwd, {
-        local: nextLocal,
-        remote: nextRemote,
-      });
-      return [
-        previous.local?.fingerprint !== nextLocal.fingerprint ||
-          previous.remote?.fingerprint !== nextRemote.fingerprint,
-        nextCache,
-      ] as const;
-    });
-
-    if (options?.publish && shouldPublish) {
-      yield* PubSub.publish(changesPubSub, {
-        cwd,
-        event: {
-          _tag: "snapshot",
-          local,
-          remote,
-        },
-      });
-    }
-
-    return mergeGitStatusParts(local, remote);
-  });
-
   const loadLocalStatus = Effect.fn("VcsStatusBroadcaster.loadLocalStatus")(function* (
     cwd: string,
   ) {
@@ -318,22 +278,33 @@ export const make = Effect.gen(function* () {
 
   const withFileSystem = Effect.provideService(FileSystem.FileSystem, fs);
 
+  const logRemoteRefreshFailure = (cwd: string, cause: Cause.Cause<GitManagerServiceError>) =>
+    Effect.logWarning("VCS remote status refresh failed", {
+      cwdLength: cwd.length,
+      ...remoteRefreshFailureDiagnostics(cause),
+    });
+
+  const startRemoteStatusRefresh = Effect.fn("VcsStatusBroadcaster.startRemoteStatusRefresh")(
+    function* (
+      cwd: string,
+      refresh: Effect.Effect<VcsStatusRemoteResult | null, GitManagerServiceError>,
+    ) {
+      yield* refresh.pipe(
+        Effect.catchCause((cause) => logRemoteRefreshFailure(cwd, cause)),
+        Effect.forkIn(broadcasterScope),
+        Effect.asVoid,
+      );
+    },
+  );
+
   const getStatus: VcsStatusBroadcaster["Service"]["getStatus"] = Effect.fn(
     "VcsStatusBroadcaster.getStatus",
   )(function* (input) {
     const cwd = yield* withFileSystem(normalizeCwd(input.cwd));
+    const local = yield* getOrLoadLocalStatus(cwd);
     const cached = yield* getCachedStatus(cwd);
-    if (cached?.local && cached.remote) {
-      return mergeGitStatusParts(cached.local.value, cached.remote.value);
-    }
-    const [local, remote] = yield* Effect.all(
-      [
-        cached?.local ? Effect.succeed(cached.local.value) : workflow.localStatus({ cwd }),
-        cached?.remote ? Effect.succeed(cached.remote.value) : workflow.remoteStatus({ cwd }),
-      ],
-      { concurrency: "unbounded" },
-    );
-    return yield* updateCachedStatus(cwd, local, remote);
+    const remote = cached?.remote?.value ?? null;
+    return mergeGitStatusParts(local, remote);
   });
 
   const refreshLocalStatusCore = Effect.fn("VcsStatusBroadcaster.refreshLocalStatusCore")(
@@ -366,15 +337,11 @@ export const make = Effect.gen(function* () {
     "VcsStatusBroadcaster.refreshStatus",
   )(function* (rawCwd) {
     const cwd = yield* withFileSystem(normalizeCwd(rawCwd));
-    yield* Effect.all([workflow.invalidateLocalStatus(cwd), workflow.invalidateRemoteStatus(cwd)], {
-      concurrency: "unbounded",
-      discard: true,
-    });
-    const [local, remote] = yield* Effect.all(
-      [workflow.localStatus({ cwd }), workflow.remoteStatus({ cwd })],
-      { concurrency: "unbounded" },
-    );
-    return yield* updateCachedStatus(cwd, local, remote, { publish: true });
+    const local = yield* refreshLocalStatusCore(cwd);
+    const cached = yield* getCachedStatus(cwd);
+    const remote = cached?.remote?.value ?? null;
+    yield* startRemoteStatusRefresh(cwd, refreshRemoteStatus(cwd));
+    return mergeGitStatusParts(local, remote);
   });
 
   const makeRemoteRefreshLoop = (

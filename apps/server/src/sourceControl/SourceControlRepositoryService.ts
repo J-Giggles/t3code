@@ -288,3 +288,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(SourceControlRepositoryService, make);
+
+export type SourceControlRepositoryServiceShape = SourceControlRepositoryService["Service"];

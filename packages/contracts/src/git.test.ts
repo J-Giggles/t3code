@@ -7,6 +7,7 @@ import {
   GitRunStackedActionResult,
   GitRunStackedActionInput,
   GitResolvePullRequestResult,
+  WorkspaceGitSnapshotResult,
 } from "./git.ts";
 
 const decodeCreateWorktreeInput = Schema.decodeUnknownSync(VcsCreateWorktreeInput);
@@ -16,6 +17,7 @@ const decodePreparePullRequestThreadInput = Schema.decodeUnknownSync(
 const decodeRunStackedActionInput = Schema.decodeUnknownSync(GitRunStackedActionInput);
 const decodeRunStackedActionResult = Schema.decodeUnknownSync(GitRunStackedActionResult);
 const decodeResolvePullRequestResult = Schema.decodeUnknownSync(GitResolvePullRequestResult);
+const decodeWorkspaceGitSnapshotResult = Schema.decodeUnknownSync(WorkspaceGitSnapshotResult);
 
 describe("VcsCreateWorktreeInput", () => {
   it("accepts omitted newRefName for existing-refName worktrees", () => {
@@ -124,5 +126,66 @@ describe("GitRunStackedActionResult", () => {
     if (parsed.toast.cta.kind === "run_action") {
       expect(parsed.toast.cta.action.kind).toBe("create_pr");
     }
+  });
+});
+
+describe("WorkspaceGitSnapshotResult", () => {
+  it("decodes repository, worktree, remote, dirty file, and recent commit state", () => {
+    const parsed = decodeWorkspaceGitSnapshotResult({
+      rootPath: "/workspace",
+      generatedAt: "2026-06-15T10:00:00.000Z",
+      repositories: [
+        {
+          id: "/workspace/.git",
+          label: "workspace",
+          rootPath: "/workspace",
+          commonGitDir: "/workspace/.git",
+          remotes: [
+            {
+              name: "origin",
+              fetchUrl: "git@github.com:example/workspace.git",
+              pushUrl: "git@github.com:example/workspace.git",
+            },
+          ],
+          worktrees: [
+            {
+              id: "/workspace",
+              path: "/workspace",
+              label: "workspace",
+              branch: "main",
+              headSha: "89abcdef01234567",
+              headSubject: "feat: workspace git",
+              upstream: "origin/main",
+              aheadCount: 1,
+              behindCount: 0,
+              hasUncommittedChanges: true,
+              stagedCount: 1,
+              unstagedCount: 1,
+              untrackedCount: 1,
+              changedFiles: [
+                {
+                  path: "src/index.ts",
+                  indexStatus: "M",
+                  worktreeStatus: " ",
+                },
+              ],
+              recentCommits: [
+                {
+                  sha: "89abcdef01234567",
+                  shortSha: "89abcde",
+                  subject: "feat: workspace git",
+                  authorName: "Test User",
+                  relativeDate: "2 minutes ago",
+                  pushed: false,
+                },
+              ],
+              statusError: null,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(parsed.repositories[0]?.worktrees[0]?.recentCommits[0]?.pushed).toBe(false);
   });
 });

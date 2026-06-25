@@ -1872,3 +1872,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(GitManager, make);
+
+export type GitManagerShape = GitManager["Service"];

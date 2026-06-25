@@ -1471,16 +1471,24 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     return yield* readStatusDetailsLocal(cwd);
   });
 
+  const refreshStatusUpstreamBestEffort = Effect.fn("refreshStatusUpstreamBestEffort")(function* (
+    cwd: string,
+  ) {
+    yield* refreshStatusUpstreamIfStale(cwd).pipe(
+      Effect.catchIf(isMissingGitCwdError, () => Effect.void),
+      Effect.catch((error: GitCommandError) =>
+        Effect.logDebug("Git upstream refresh for status failed", {
+          cwd,
+          detail: error.message,
+        }),
+      ),
+    );
+  });
+
   const statusDetails: GitVcsDriver.GitVcsDriver["Service"]["statusDetails"] = Effect.fn(
     "statusDetails",
   )(function* (cwd) {
-    yield* refreshStatusUpstreamIfStale(cwd).pipe(
-      Effect.catchTags({
-        GitCommandError: (error) =>
-          isMissingGitCwdError(error) ? Effect.void : Effect.fail(error),
-      }),
-      Effect.ignoreCause({ log: true }),
-    );
+    yield* refreshStatusUpstreamBestEffort(cwd);
     return yield* readStatusDetailsLocal(cwd);
   });
 

@@ -104,6 +104,72 @@ export const VcsStatusInput = Schema.Struct({
 });
 export type VcsStatusInput = typeof VcsStatusInput.Type;
 
+export const WorkspaceGitSnapshotInput = Schema.Struct({
+  rootPath: Schema.optional(TrimmedNonEmptyStringSchema),
+});
+export type WorkspaceGitSnapshotInput = typeof WorkspaceGitSnapshotInput.Type;
+
+export const WorkspaceGitChangedFile = Schema.Struct({
+  path: TrimmedNonEmptyStringSchema,
+  indexStatus: Schema.String,
+  worktreeStatus: Schema.String,
+});
+export type WorkspaceGitChangedFile = typeof WorkspaceGitChangedFile.Type;
+
+export const WorkspaceGitCommit = Schema.Struct({
+  sha: TrimmedNonEmptyStringSchema,
+  shortSha: TrimmedNonEmptyStringSchema,
+  subject: Schema.String,
+  authorName: Schema.String,
+  relativeDate: Schema.String,
+  pushed: Schema.NullOr(Schema.Boolean),
+});
+export type WorkspaceGitCommit = typeof WorkspaceGitCommit.Type;
+
+export const WorkspaceGitRemote = Schema.Struct({
+  name: TrimmedNonEmptyStringSchema,
+  fetchUrl: TrimmedNonEmptyStringSchema,
+  pushUrl: Schema.NullOr(TrimmedNonEmptyStringSchema),
+});
+export type WorkspaceGitRemote = typeof WorkspaceGitRemote.Type;
+
+export const WorkspaceGitWorktreeSnapshot = Schema.Struct({
+  id: TrimmedNonEmptyStringSchema,
+  path: TrimmedNonEmptyStringSchema,
+  label: TrimmedNonEmptyStringSchema,
+  branch: Schema.NullOr(TrimmedNonEmptyStringSchema),
+  headSha: Schema.NullOr(TrimmedNonEmptyStringSchema),
+  headSubject: Schema.NullOr(Schema.String),
+  upstream: Schema.NullOr(TrimmedNonEmptyStringSchema),
+  aheadCount: NonNegativeInt,
+  behindCount: NonNegativeInt,
+  hasUncommittedChanges: Schema.Boolean,
+  stagedCount: NonNegativeInt,
+  unstagedCount: NonNegativeInt,
+  untrackedCount: NonNegativeInt,
+  changedFiles: Schema.Array(WorkspaceGitChangedFile),
+  recentCommits: Schema.Array(WorkspaceGitCommit),
+  statusError: Schema.NullOr(Schema.String),
+});
+export type WorkspaceGitWorktreeSnapshot = typeof WorkspaceGitWorktreeSnapshot.Type;
+
+export const WorkspaceGitRepositorySnapshot = Schema.Struct({
+  id: TrimmedNonEmptyStringSchema,
+  label: TrimmedNonEmptyStringSchema,
+  rootPath: TrimmedNonEmptyStringSchema,
+  commonGitDir: Schema.NullOr(TrimmedNonEmptyStringSchema),
+  remotes: Schema.Array(WorkspaceGitRemote),
+  worktrees: Schema.Array(WorkspaceGitWorktreeSnapshot),
+});
+export type WorkspaceGitRepositorySnapshot = typeof WorkspaceGitRepositorySnapshot.Type;
+
+export const WorkspaceGitSnapshotResult = Schema.Struct({
+  rootPath: TrimmedNonEmptyStringSchema,
+  repositories: Schema.Array(WorkspaceGitRepositorySnapshot),
+  generatedAt: Schema.String,
+});
+export type WorkspaceGitSnapshotResult = typeof WorkspaceGitSnapshotResult.Type;
+
 export const VcsPullInput = Schema.Struct({
   cwd: TrimmedNonEmptyStringSchema,
 });
