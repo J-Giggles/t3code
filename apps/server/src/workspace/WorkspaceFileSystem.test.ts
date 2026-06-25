@@ -265,4 +265,67 @@ it.layer(TestLayer, { excludeTestServices: true })("WorkspaceFileSystemLive", (i
       }),
     );
   });
+
+  describe("deleteFile", () => {
+    it.effect("deletes regular files and refreshes the workspace entry cache", () =>
+      Effect.gen(function* () {
+        const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
+        const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
+        const cwd = yield* makeTempDir;
+        yield* writeTextFile(cwd, "plans/effect-rpc.md", "# Plan\n");
+
+        const beforeDelete = yield* workspaceEntries.list({ cwd });
+        expect(beforeDelete.entries).toEqual(
+          expect.arrayContaining([expect.objectContaining({ path: "plans/effect-rpc.md" })]),
+        );
+
+        expect(
+          yield* workspaceFileSystem.deleteFile({
+            cwd,
+            relativePath: "plans/effect-rpc.md",
+          }),
+        ).toEqual({ relativePath: "plans/effect-rpc.md" });
+
+        const afterDelete = yield* workspaceEntries.list({ cwd });
+        expect(afterDelete.entries.some((entry) => entry.path === "plans/effect-rpc.md")).toBe(
+          false,
+        );
+      }),
+    );
+
+    it.effect("rejects deletes outside the workspace root", () =>
+      Effect.gen(function* () {
+        const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
+        const cwd = yield* makeTempDir;
+
+        const error = yield* workspaceFileSystem
+          .deleteFile({ cwd, relativePath: "../escape.md" })
+          .pipe(Effect.flip);
+
+        expect(error.message).toContain(
+          "Workspace file path must be relative to the project root: ../escape.md",
+        );
+      }),
+    );
+
+    it.effect("rejects directories and missing files", () =>
+      Effect.gen(function* () {
+        const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
+        const cwd = yield* makeTempDir;
+        const fileSystem = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fileSystem.makeDirectory(path.join(cwd, ".agents/memory"), { recursive: true });
+
+        const directoryError = yield* workspaceFileSystem
+          .deleteFile({ cwd, relativePath: ".agents/memory" })
+          .pipe(Effect.flip);
+        expect(directoryError.message).toContain("regular file");
+
+        const missingError = yield* workspaceFileSystem
+          .deleteFile({ cwd, relativePath: "CLAUDE.md" })
+          .pipe(Effect.flip);
+        expect(missingError.message.toLowerCase()).toContain("no such file");
+      }),
+    );
+  });
 });

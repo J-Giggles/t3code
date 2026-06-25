@@ -54,6 +54,7 @@ const makeTerminalManagerLayer = (
     attachStream: () => Effect.die(new Error("unused")),
     resize: () => Effect.void,
     clear: () => Effect.void,
+    kill: () => Effect.void,
     restart: () => Effect.die(new Error("unused")),
     close: () => Effect.void,
     subscribe: () => Effect.succeed(() => undefined),
@@ -105,6 +106,9 @@ describe("ProjectSetupScriptRunner", () => {
           exitSignal: null,
           label: "setup-setup",
           updatedAt: "2026-01-01T00:00:00.000Z",
+          owner: { kind: "user" as const },
+          readOnly: false as const,
+          backing: "pty" as const,
         }),
       );
       const write = vi.fn(() => Effect.void);

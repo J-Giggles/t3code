@@ -10,6 +10,8 @@
 import * as NodeFSP from "node:fs/promises";
 
 import type {
+  ProjectAgentFileDeleteInput,
+  ProjectAgentFileDeleteResult,
   ProjectReadFileInput,
   ProjectReadFileResult,
   ProjectWriteFileInput,
@@ -27,6 +29,25 @@ import * as WorkspacePaths from "./WorkspacePaths.ts";
 
 const PROJECT_READ_FILE_MAX_BYTES = 1024 * 1024;
 
+const formatOperationCauseMessage = (cause: unknown): string => {
+  if (cause instanceof Error && cause.message.length > 0) {
+    return cause.message;
+  }
+  if (
+    typeof cause === "object" &&
+    cause !== null &&
+    "message" in cause &&
+    typeof cause.message === "string" &&
+    cause.message.length > 0
+  ) {
+    return cause.message;
+  }
+  if (typeof cause === "object" && cause !== null && "code" in cause && cause.code === "ENOENT") {
+    return "no such file";
+  }
+  return "";
+};
+
 export class WorkspaceFileSystemOperationError extends Schema.TaggedErrorClass<WorkspaceFileSystemOperationError>()(
   "WorkspaceFileSystemOperationError",
   {
@@ -41,14 +62,18 @@ export class WorkspaceFileSystemOperationError extends Schema.TaggedErrorClass<W
       "stat",
       "read",
       "close",
+      "lstat",
       "make-directory",
+      "delete-file",
       "write-file",
     ]),
     cause: Schema.Defect(),
   },
 ) {
   override get message(): string {
-    return `Workspace file operation '${this.operation}' failed at '${this.operationPath}' for resolved path '${this.resolvedPath}' (requested as '${this.relativePath}' in '${this.workspaceRoot}').`;
+    const formattedCauseMessage = formatOperationCauseMessage(this.cause);
+    const causeMessage = formattedCauseMessage.length > 0 ? `: ${formattedCauseMessage}` : "";
+    return `Workspace file operation '${this.operation}' failed at '${this.operationPath}' for resolved path '${this.resolvedPath}' (requested as '${this.relativePath}' in '${this.workspaceRoot}')${causeMessage}.`;
   }
 }
 
@@ -75,7 +100,7 @@ export class WorkspacePathNotFileError extends Schema.TaggedErrorClass<Workspace
   },
 ) {
   override get message(): string {
-    return `Workspace path '${this.relativePath}' in '${this.workspaceRoot}' is not a file: ${this.resolvedPath}`;
+    return `Workspace path '${this.relativePath}' in '${this.workspaceRoot}' is not a regular file: ${this.resolvedPath}`;
   }
 }
 
@@ -121,6 +146,13 @@ export class WorkspaceFileSystem extends Context.Service<
       input: ProjectWriteFileInput,
     ) => Effect.Effect<
       ProjectWriteFileResult,
+      WorkspaceFileSystemError | WorkspacePaths.WorkspacePathOutsideRootError
+    >;
+    /** Delete a regular file relative to the workspace root. */
+    readonly deleteFile: (
+      input: ProjectAgentFileDeleteInput,
+    ) => Effect.Effect<
+      ProjectAgentFileDeleteResult,
       WorkspaceFileSystemError | WorkspacePaths.WorkspacePathOutsideRootError
     >;
   }
@@ -297,7 +329,50 @@ export const make = Effect.gen(function* () {
     return { relativePath: target.relativePath };
   });
 
-  return WorkspaceFileSystem.of({ readFile, writeFile });
+  const deleteFile: WorkspaceFileSystem["Service"]["deleteFile"] = Effect.fn(
+    "WorkspaceFileSystem.deleteFile",
+  )(function* (input) {
+    const target = yield* workspacePaths.resolveRelativePathWithinRoot({
+      workspaceRoot: input.cwd,
+      relativePath: input.relativePath,
+    });
+
+    const stat = yield* Effect.tryPromise({
+      try: () => NodeFSP.lstat(target.absolutePath),
+      catch: (cause) =>
+        new WorkspaceFileSystemOperationError({
+          workspaceRoot: input.cwd,
+          relativePath: input.relativePath,
+          resolvedPath: target.absolutePath,
+          operationPath: target.absolutePath,
+          operation: "lstat",
+          cause,
+        }),
+    });
+    if (!stat.isFile()) {
+      return yield* new WorkspacePathNotFileError({
+        workspaceRoot: input.cwd,
+        relativePath: input.relativePath,
+        resolvedPath: target.absolutePath,
+      });
+    }
+    yield* Effect.tryPromise({
+      try: () => NodeFSP.unlink(target.absolutePath),
+      catch: (cause) =>
+        new WorkspaceFileSystemOperationError({
+          workspaceRoot: input.cwd,
+          relativePath: input.relativePath,
+          resolvedPath: target.absolutePath,
+          operationPath: target.absolutePath,
+          operation: "delete-file",
+          cause,
+        }),
+    });
+    yield* workspaceEntries.refresh(input.cwd);
+    return { relativePath: target.relativePath };
+  });
+
+  return WorkspaceFileSystem.of({ deleteFile, readFile, writeFile });
 });
 
 export const layer = Layer.effect(WorkspaceFileSystem, make);

@@ -186,3 +186,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(ProjectSetupScriptRunner, make);
+
+export type ProjectSetupScriptRunnerShape = ProjectSetupScriptRunner["Service"];

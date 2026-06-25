@@ -235,3 +235,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(ProjectFaviconResolver, make);
+
+export type ProjectFaviconResolverShape = ProjectFaviconResolver["Service"];
