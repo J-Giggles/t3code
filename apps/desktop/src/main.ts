@@ -5,6 +5,7 @@ import * as NodeOS from "node:os";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import { HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import * as Electron from "electron";
 
@@ -33,11 +34,12 @@ import * as DesktopAssets from "./app/DesktopAssets.ts";
 import * as DesktopBackendConfiguration from "./backend/DesktopBackendConfiguration.ts";
 import * as DesktopBackendPool from "./backend/DesktopBackendPool.ts";
 import * as DesktopLocalEnvironmentAuth from "./backend/DesktopLocalEnvironmentAuth.ts";
-import * as DesktopNetworkInterfaces from "./backend/DesktopNetworkInterfaces.ts";
+import * as DesktopDevAppLaunchManager from "./backend/DesktopDevAppLaunchManager.ts";
 import * as DesktopEnvironment from "./app/DesktopEnvironment.ts";
 import * as DesktopLifecycle from "./app/DesktopLifecycle.ts";
 import * as DesktopShutdown from "./app/DesktopShutdown.ts";
 import * as DesktopObservability from "./app/DesktopObservability.ts";
+import * as DesktopNetworkInterfaces from "./backend/DesktopNetworkInterfaces.ts";
 import * as DesktopServerExposure from "./backend/DesktopServerExposure.ts";
 import * as DesktopClientSettings from "./settings/DesktopClientSettings.ts";
 import * as DesktopSavedEnvironments from "./settings/DesktopSavedEnvironments.ts";
@@ -49,9 +51,81 @@ import * as DesktopState from "./app/DesktopState.ts";
 import * as DesktopUpdates from "./updates/DesktopUpdates.ts";
 import * as BrowserSession from "./preview/BrowserSession.ts";
 import * as PreviewManager from "./preview/Manager.ts";
+import * as AppAutomationManager from "./appAutomation/AppAutomationManager.ts";
 import * as DesktopWindow from "./window/DesktopWindow.ts";
 import * as DesktopWslBackend from "./wsl/DesktopWslBackend.ts";
 import * as DesktopWslEnvironment from "./wsl/DesktopWslEnvironment.ts";
+import * as IpcChannels from "./ipc/channels.ts";
+
+const RUNTIME_RESTART_REQUIRED_PATH = "/.well-known/t3/runtime/restart-required";
+const RESTART_CONTROL_TOKEN_ENV = "T3CODE_RESTART_CONTROL_TOKEN";
+
+function notifyRendererRunningCodeUpdated() {
+  for (const window of Electron.BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed()) {
+      continue;
+    }
+    window.webContents.send(IpcChannels.RUNNING_CODE_UPDATED_CHANNEL);
+  }
+}
+
+const notifyBackendRuntimeRestartRequired = Effect.fn(
+  "desktop.runningCodeUpdate.notifyBackendRuntimeRestartRequired",
+)(function* (backendPool: DesktopBackendPool.DesktopBackendPool["Service"]) {
+  const token = process.env[RESTART_CONTROL_TOKEN_ENV]?.trim();
+  if (!token) {
+    return;
+  }
+
+  const primaryBackend = yield* backendPool.primary;
+  const config = yield* primaryBackend.currentConfig;
+  if (Option.isNone(config)) {
+    return;
+  }
+
+  const client = yield* HttpClient.HttpClient;
+  const url = new URL(RUNTIME_RESTART_REQUIRED_PATH, config.value.httpBaseUrl);
+  yield* client
+    .post(url, {
+      body: HttpBody.text('{"reason":"Running desktop/server code changed."}', "application/json"),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    .pipe(
+      Effect.flatMap(HttpClientResponse.filterStatusOk),
+      Effect.asVoid,
+      Effect.catch((cause) =>
+        Effect.logWarning("Failed to notify backend about running code update", {
+          cause,
+        }),
+      ),
+    );
+});
+
+const desktopRunningCodeUpdateSignalLayer = Layer.effectDiscard(
+  Effect.gen(function* () {
+    const backendPool = yield* DesktopBackendPool.DesktopBackendPool;
+    const httpClient = yield* HttpClient.HttpClient;
+    const context = yield* Effect.context<never>();
+    const runFork = Effect.runForkWith(context);
+    const handler = () => {
+      notifyRendererRunningCodeUpdated();
+      runFork(
+        notifyBackendRuntimeRestartRequired(backendPool).pipe(
+          Effect.provideService(HttpClient.HttpClient, httpClient),
+        ),
+      );
+    };
+
+    process.on("SIGUSR2", handler);
+    yield* Effect.addFinalizer(() =>
+      Effect.sync(() => {
+        process.off("SIGUSR2", handler);
+      }),
+    );
+  }),
+);
 
 const desktopEnvironmentLayer = Layer.unwrap(
   Effect.gen(function* () {
@@ -168,15 +242,22 @@ const desktopLocalEnvironmentAuthLayer = DesktopLocalEnvironmentAuth.layer.pipe(
   Layer.provideMerge(desktopBackendLayer),
 );
 
+const desktopDevAppLaunchLayer = DesktopDevAppLaunchManager.DesktopDevAppLaunchManagerLive.pipe(
+  Layer.provideMerge(desktopFoundationLayer),
+);
+
 const desktopApplicationLayer = Layer.mergeAll(
   DesktopLifecycle.layer,
   DesktopApplicationMenu.layer,
   DesktopShellEnvironment.layer,
+  desktopRunningCodeUpdateSignalLayer,
   desktopSshLayer,
 ).pipe(
+  Layer.provideMerge(AppAutomationManager.layer),
   Layer.provideMerge(DesktopUpdates.layer),
   Layer.provideMerge(desktopWslBackendLayer),
   Layer.provideMerge(desktopLocalEnvironmentAuthLayer),
+  Layer.provideMerge(desktopDevAppLaunchLayer),
 );
 
 const desktopClerkLayer = DesktopClerk.layer.pipe(

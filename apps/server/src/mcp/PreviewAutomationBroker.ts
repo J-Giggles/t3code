@@ -18,6 +18,8 @@ import {
   type PreviewAutomationOperation,
   type PreviewAutomationHost,
   type PreviewAutomationHostFocus,
+  type PreviewAutomationOwner,
+  type PreviewAutomationOwnerIdentity,
   type PreviewAutomationResponse,
   type PreviewAutomationStreamEvent,
 } from "@t3tools/contracts";
@@ -50,6 +52,10 @@ export class PreviewAutomationBroker extends Context.Service<
       host: PreviewAutomationHost,
     ) => Effect.Effect<Stream.Stream<PreviewAutomationStreamEvent>>;
     readonly focusHost: (host: PreviewAutomationHostFocus) => Effect.Effect<void>;
+    readonly reportOwner: (
+      owner: PreviewAutomationOwner,
+    ) => Effect.Effect<void, PreviewAutomationError>;
+    readonly clearOwner: (owner: PreviewAutomationOwnerIdentity) => Effect.Effect<void>;
     readonly respond: (
       response: PreviewAutomationResponse,
     ) => Effect.Effect<void, PreviewAutomationError>;
@@ -388,6 +394,45 @@ export const make = Effect.gen(function* PreviewAutomationBrokerMake() {
     });
   });
 
+  const reportOwner: PreviewAutomationBroker["Service"]["reportOwner"] = Effect.fn(
+    "PreviewAutomationBroker.reportOwner",
+  )(function* (owner) {
+    yield* SynchronizedRef.update(state, (current) => {
+      const currentHost = current.clients.get(owner.clientId);
+      if (!currentHost || currentHost.environmentId !== owner.environmentId) {
+        return current;
+      }
+      const focused = owner.supportsAutomation && owner.visible;
+      const focusSequence = focused ? current.focusSequence + 1 : current.focusSequence;
+      const clients = new Map(current.clients);
+      clients.set(owner.clientId, {
+        ...currentHost,
+        focused,
+        focusOrder: focused ? focusSequence : currentHost.focusOrder,
+      });
+      return { ...current, clients, focusSequence };
+    });
+  });
+
+  const clearOwner: PreviewAutomationBroker["Service"]["clearOwner"] = Effect.fn(
+    "PreviewAutomationBroker.clearOwner",
+  )(function* (owner) {
+    yield* SynchronizedRef.update(state, (current) => {
+      const currentHost = current.clients.get(owner.clientId);
+      if (!currentHost || currentHost.environmentId !== owner.environmentId) {
+        return current;
+      }
+      const clients = new Map(current.clients);
+      clients.set(owner.clientId, { ...currentHost, focused: false });
+      const assignments = new Map(
+        Array.from(current.assignments).filter(
+          ([, assignment]) => assignment.clientId !== owner.clientId,
+        ),
+      );
+      return { ...current, clients, assignments };
+    });
+  });
+
   const respond: PreviewAutomationBroker["Service"]["respond"] = Effect.fn(
     "PreviewAutomationBroker.respond",
   )(function* (response) {
@@ -579,7 +624,14 @@ export const make = Effect.gen(function* PreviewAutomationBrokerMake() {
     return result;
   });
 
-  return PreviewAutomationBroker.of({ connect, focusHost, respond, invoke });
+  return PreviewAutomationBroker.of({
+    connect,
+    focusHost,
+    reportOwner,
+    clearOwner,
+    respond,
+    invoke,
+  });
 }).pipe(Effect.withSpan("PreviewAutomationBroker.make"));
 
 export const layer = Layer.effect(PreviewAutomationBroker, make);

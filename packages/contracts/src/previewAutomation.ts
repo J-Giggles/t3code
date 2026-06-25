@@ -558,6 +558,22 @@ export const PreviewAutomationHost = Schema.Struct({
 });
 export type PreviewAutomationHost = typeof PreviewAutomationHost.Type;
 
+export const PreviewAutomationOwnerIdentity = Schema.Struct({
+  clientId: PreviewAutomationClientId,
+  environmentId: EnvironmentId,
+  threadId: ThreadId,
+});
+export type PreviewAutomationOwnerIdentity = typeof PreviewAutomationOwnerIdentity.Type;
+
+export const PreviewAutomationOwner = Schema.Struct({
+  ...PreviewAutomationOwnerIdentity.fields,
+  tabId: Schema.NullOr(PreviewTabId),
+  visible: Schema.Boolean,
+  supportsAutomation: Schema.Boolean,
+  focusedAt: Schema.String,
+});
+export type PreviewAutomationOwner = typeof PreviewAutomationOwner.Type;
+
 export const PreviewAutomationHostFocus = Schema.Struct({
   ...PreviewAutomationHostIdentity.fields,
   connectionId: PreviewAutomationConnectionId,

@@ -12,7 +12,15 @@ import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstab
 import packageJson from "../../package.json" with { type: "json" };
 import * as McpInvocationContext from "./McpInvocationContext.ts";
 import * as McpSessionRegistry from "./McpSessionRegistry.ts";
+import * as AppAutomationBroker from "./AppAutomationBroker.ts";
 import * as PreviewAutomationBroker from "./PreviewAutomationBroker.ts";
+import {
+  AppSnapshotToolkitHandlersLive,
+  AppStandardToolkitHandlersLive,
+} from "./toolkits/app/handlers.ts";
+import { AppSnapshotTool, AppSnapshotToolkit, AppStandardToolkit } from "./toolkits/app/tools.ts";
+import { ObservabilityToolkitHandlersLive } from "./toolkits/observability/handlers.ts";
+import { ObservabilityToolkit } from "./toolkits/observability/tools.ts";
 import {
   PreviewSnapshotToolkitHandlersLive,
   PreviewStandardToolkitHandlersLive,
@@ -195,6 +203,84 @@ const registerPreviewSnapshot = Effect.fn("McpHttpServer.registerPreviewSnapshot
   });
 });
 
+const registerAppSnapshot = Effect.fn("McpHttpServer.registerAppSnapshot")(function* () {
+  const server = yield* McpServer.McpServer;
+  const broker = yield* AppAutomationBroker.AppAutomationBroker;
+  const built = yield* AppSnapshotToolkit;
+  const tool = AppSnapshotTool;
+  yield* server.addTool({
+    tool: new McpSchema.Tool({
+      name: tool.name,
+      description: Tool.getDescription(tool),
+      inputSchema: Tool.getJsonSchema(tool),
+      annotations: {
+        ...Context.getOption(tool.annotations, Tool.Title).pipe(
+          Option.map((title) => ({ title })),
+          Option.getOrUndefined,
+        ),
+        readOnlyHint: Context.get(tool.annotations, Tool.Readonly),
+        destructiveHint: Context.get(tool.annotations, Tool.Destructive),
+        idempotentHint: Context.get(tool.annotations, Tool.Idempotent),
+        openWorldHint: Context.get(tool.annotations, Tool.OpenWorld),
+      },
+    }),
+    annotations: tool.annotations,
+    handle: (payload) =>
+      Effect.withFiber((fiber) => {
+        const invocation = Context.getUnsafe(
+          fiber.context,
+          McpInvocationContext.McpInvocationContext,
+        );
+        return built.handle("app_snapshot", payload).pipe(
+          Stream.unwrap,
+          Stream.run(Sink.last()),
+          Effect.flatMap(Effect.fromOption),
+          Effect.provideService(AppAutomationBroker.AppAutomationBroker, broker),
+          Effect.provideService(McpInvocationContext.McpInvocationContext, invocation),
+          Effect.matchCause({
+            onFailure: (cause) =>
+              new McpSchema.CallToolResult({
+                isError: true,
+                content: [{ type: "text", text: Cause.pretty(cause) }],
+              }),
+            onSuccess: ({ encodedResult }) => {
+              const snapshot = encodedResult as {
+                readonly screenshot: {
+                  readonly mimeType: "image/png";
+                  readonly data: string;
+                  readonly width: number;
+                  readonly height: number;
+                };
+                readonly [key: string]: unknown;
+              };
+              const { screenshot, ...page } = snapshot;
+              const metadata = {
+                ...page,
+                screenshot: {
+                  mimeType: screenshot.mimeType,
+                  width: screenshot.width,
+                  height: screenshot.height,
+                },
+              };
+              return new McpSchema.CallToolResult({
+                isError: false,
+                structuredContent: metadata,
+                content: [
+                  { type: "text", text: JSON.stringify(metadata) },
+                  {
+                    type: "image",
+                    data: new Uint8Array(Buffer.from(screenshot.data, "base64")),
+                    mimeType: screenshot.mimeType,
+                  },
+                ],
+              });
+            },
+          }),
+        );
+      }),
+  });
+});
+
 const PreviewStandardToolkitRegistrationLive = McpServer.toolkit(PreviewStandardToolkit).pipe(
   Layer.provide(PreviewStandardToolkitHandlersLive),
 );
@@ -208,10 +294,35 @@ export const PreviewToolkitRegistrationLive = Layer.mergeAll(
   PreviewSnapshotRegistrationLive,
 );
 
+const AppStandardToolkitRegistrationLive = McpServer.toolkit(AppStandardToolkit).pipe(
+  Layer.provide(AppStandardToolkitHandlersLive),
+);
+
+const AppSnapshotRegistrationLive = Layer.effectDiscard(registerAppSnapshot()).pipe(
+  Layer.provide(AppSnapshotToolkitHandlersLive),
+);
+
+export const AppToolkitRegistrationLive = Layer.mergeAll(
+  AppStandardToolkitRegistrationLive,
+  AppSnapshotRegistrationLive,
+);
+
+const ObservabilityToolkitRegistrationLive = McpServer.toolkit(ObservabilityToolkit).pipe(
+  Layer.provide(ObservabilityToolkitHandlersLive),
+);
+
 const McpTransportLive = McpServer.layerHttp({
   name: "T3 Code",
   version: packageJson.version,
   path: "/mcp",
 }).pipe(Layer.provide(McpAuthMiddlewareLive));
 
-export const layer = PreviewToolkitRegistrationLive.pipe(Layer.provideMerge(McpTransportLive));
+export const layer = Layer.mergeAll(
+  PreviewToolkitRegistrationLive,
+  AppToolkitRegistrationLive,
+  ObservabilityToolkitRegistrationLive,
+).pipe(
+  Layer.provideMerge(McpTransportLive),
+  Layer.provide(AppAutomationBroker.layer),
+  Layer.provide(PreviewAutomationBroker.layer),
+);

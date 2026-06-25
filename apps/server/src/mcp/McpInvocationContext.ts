@@ -7,7 +7,7 @@ import {
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 
-export type McpCapability = "preview";
+export type McpCapability = "preview" | "desktop-shell";
 
 export interface McpInvocationScope {
   readonly environmentId: EnvironmentId;
@@ -30,7 +30,7 @@ export const requireMcpCapability = Effect.fn("mcp.requireCapability")(function*
   const invocation = yield* McpInvocationContext;
   if (!invocation.capabilities.has(capability)) {
     return yield* new PreviewAutomationUnavailableError({
-      capability,
+      capability: "preview",
       environmentId: invocation.environmentId,
       threadId: invocation.threadId,
       providerSessionId: invocation.providerSessionId,

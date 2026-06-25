@@ -4,7 +4,8 @@ import { EnvironmentId, ProviderInstanceId, ThreadId } from "@t3tools/contracts"
 import * as Effect from "effect/Effect";
 import { HttpServer } from "effect/unstable/http";
 
-import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import * as ServerConfig from "../config.ts";
+import * as ServerEnvironment from "../environment/Services/ServerEnvironment.ts";
 import * as McpSessionRegistry from "./McpSessionRegistry.ts";
 
 const environmentId = EnvironmentId.make("environment-1");
@@ -19,7 +20,59 @@ const fakeEnvironment = ServerEnvironment.ServerEnvironment.of({
   getDescriptor: Effect.die("unused"),
 });
 
-const makeRegistry = (now: () => number, httpServer = fakeHttpServer) =>
+const makeServerConfig = (overrides: Partial<ServerConfig.ServerConfigShape> = {}) =>
+  ServerConfig.ServerConfig.of({
+    logLevel: "Error",
+    traceMinLevel: "Info",
+    traceTimingEnabled: true,
+    traceBatchWindowMs: 200,
+    traceMaxBytes: 10 * 1024 * 1024,
+    traceMaxFiles: 10,
+    otlpTracesUrl: undefined,
+    otlpMetricsUrl: undefined,
+    otlpLogsUrl: undefined,
+    observabilityGrafanaUrl: undefined,
+    otlpExportIntervalMs: 10_000,
+    otlpServiceName: "t3-server-test",
+    mode: "web",
+    port: 43123,
+    host: "127.0.0.1",
+    cwd: "/tmp/t3",
+    baseDir: "/tmp/t3",
+    stateDir: "/tmp/t3/userdata",
+    dbPath: "/tmp/t3/userdata/state.sqlite",
+    keybindingsConfigPath: "/tmp/t3/userdata/keybindings.json",
+    settingsPath: "/tmp/t3/userdata/settings.json",
+    providerStatusCacheDir: "/tmp/t3/caches",
+    worktreesDir: "/tmp/t3/worktrees",
+    attachmentsDir: "/tmp/t3/userdata/attachments",
+    logsDir: "/tmp/t3/userdata/logs",
+    serverLogPath: "/tmp/t3/userdata/logs/server.log",
+    serverTracePath: "/tmp/t3/userdata/logs/server.trace.ndjson",
+    providerLogsDir: "/tmp/t3/userdata/logs/provider",
+    providerEventLogPath: "/tmp/t3/userdata/logs/provider/events.log",
+    terminalLogsDir: "/tmp/t3/userdata/logs/terminals",
+    anonymousIdPath: "/tmp/t3/userdata/anonymous-id",
+    environmentIdPath: "/tmp/t3/userdata/environment-id",
+    serverRuntimeStatePath: "/tmp/t3/userdata/server-runtime.json",
+    secretsDir: "/tmp/t3/userdata/secrets",
+    staticDir: undefined,
+    devUrl: undefined,
+    noBrowser: true,
+    startupPresentation: "headless",
+    desktopBootstrapToken: undefined,
+    autoBootstrapProjectFromCwd: false,
+    logWebSocketEvents: false,
+    tailscaleServeEnabled: false,
+    tailscaleServePort: 443,
+    tailscaleServePath: undefined,
+    ...overrides,
+  });
+
+const makeRegistry = (
+  now: () => number,
+  config: ServerConfig.ServerConfigShape = makeServerConfig(),
+) =>
   McpSessionRegistry.__testing
     .make({
       now,
@@ -27,8 +80,9 @@ const makeRegistry = (now: () => number, httpServer = fakeHttpServer) =>
       maximumLifetimeMs: 1_000,
     })
     .pipe(
-      Effect.provideService(HttpServer.HttpServer, httpServer),
+      Effect.provideService(HttpServer.HttpServer, fakeHttpServer),
       Effect.provideService(ServerEnvironment.ServerEnvironment, fakeEnvironment),
+      Effect.provideService(ServerConfig.ServerConfig, config),
       Effect.provide(NodeServices.layer),
     );
 
@@ -47,6 +101,8 @@ it.effect("stores only a token hash, resolves the bearer token, and revokes by t
 
     const resolved = yield* registry.resolve(token);
     expect(resolved?.threadId).toBe(threadId);
+    expect(resolved?.capabilities.has("preview")).toBe(true);
+    expect(resolved?.capabilities.has("desktop-shell")).toBe(false);
 
     yield* registry.revokeThread(threadId);
     expect(yield* registry.resolve(token)).toBeUndefined();
@@ -55,23 +111,53 @@ it.effect("stores only a token hash, resolves the bearer token, and revokes by t
   }),
 );
 
-it.effect("builds MCP endpoints from the bound server host", () =>
+it.effect("issues desktop-shell only for the embedded desktop backend", () =>
   Effect.gen(function* () {
-    const cases = [
-      ["100.64.0.40", "http://100.64.0.40:43123/mcp"],
-      ["0.0.0.0", "http://127.0.0.1:43123/mcp"],
-      ["localhost", "http://localhost:43123/mcp"],
-      ["127.0.0.1", "http://127.0.0.1:43123/mcp"],
-    ] as const;
+    let timestamp = 1_000;
+    const desktopRegistry = yield* makeRegistry(
+      () => timestamp,
+      makeServerConfig({ mode: "desktop", desktopBootstrapToken: "desktop-token" }),
+    );
+    const desktopCredential = yield* desktopRegistry.issue({
+      threadId: ThreadId.make("thread-desktop"),
+      providerInstanceId: ProviderInstanceId.make("codex"),
+    });
+    const desktopToken = desktopCredential.config.authorizationHeader.replace(/^Bearer\s+/, "");
+    const desktopScope = yield* desktopRegistry.resolve(desktopToken);
+    expect(desktopScope?.capabilities.has("preview")).toBe(true);
+    expect(desktopScope?.capabilities.has("desktop-shell")).toBe(true);
 
-    for (const [hostname, expectedEndpoint] of cases) {
-      const registry = yield* makeRegistry(() => 1_000, makeFakeHttpServer(hostname));
-      const issued = yield* registry.issue({
-        threadId: ThreadId.make(`thread-${hostname}`),
-        providerInstanceId: ProviderInstanceId.make("codex"),
-      });
-      expect(issued.config.endpoint).toBe(expectedEndpoint);
-    }
+    timestamp += 1;
+    const desktopWithoutTokenRegistry = yield* makeRegistry(
+      () => timestamp,
+      makeServerConfig({ mode: "desktop", desktopBootstrapToken: undefined }),
+    );
+    const desktopWithoutTokenCredential = yield* desktopWithoutTokenRegistry.issue({
+      threadId: ThreadId.make("thread-desktop-no-token"),
+      providerInstanceId: ProviderInstanceId.make("codex"),
+    });
+    const desktopWithoutToken = desktopWithoutTokenCredential.config.authorizationHeader.replace(
+      /^Bearer\s+/,
+      "",
+    );
+    const desktopWithoutTokenScope =
+      yield* desktopWithoutTokenRegistry.resolve(desktopWithoutToken);
+    expect(desktopWithoutTokenScope?.capabilities.has("preview")).toBe(true);
+    expect(desktopWithoutTokenScope?.capabilities.has("desktop-shell")).toBe(false);
+
+    timestamp += 1;
+    const webRegistry = yield* makeRegistry(
+      () => timestamp,
+      makeServerConfig({ mode: "web", desktopBootstrapToken: "desktop-token" }),
+    );
+    const webCredential = yield* webRegistry.issue({
+      threadId: ThreadId.make("thread-web"),
+      providerInstanceId: ProviderInstanceId.make("codex"),
+    });
+    const webToken = webCredential.config.authorizationHeader.replace(/^Bearer\s+/, "");
+    const webScope = yield* webRegistry.resolve(webToken);
+    expect(webScope?.capabilities.has("preview")).toBe(true);
+    expect(webScope?.capabilities.has("desktop-shell")).toBe(false);
   }),
 );
 
