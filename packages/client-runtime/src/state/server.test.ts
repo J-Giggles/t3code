@@ -61,6 +61,14 @@ function session(client: WsRpcProtocolClient): RpcSession {
   };
 }
 
+const ENVIRONMENT = {
+  environmentId: EnvironmentId.make("environment-local"),
+  label: "Local",
+  platform: { os: "linux", arch: "x64" },
+  serverVersion: "0.0.0-test",
+  capabilities: { repositoryIdentity: false },
+} as const;
+
 describe("server state projection", () => {
   it("applies every config category to the projected snapshot", () => {
     const snapshot = applyServerConfigProjection(Option.none(), {
@@ -82,17 +90,24 @@ describe("server state projection", () => {
 
   it("retains welcome when a ready event follows in the same stream chunk", () => {
     const welcome = {
-      environment: {} as ServerLifecycleWelcomePayload["environment"],
+      environment: ENVIRONMENT,
       cwd: "/repo",
       projectName: "repo",
     } as ServerLifecycleWelcomePayload;
     const [afterWelcome] = projectServerWelcome(Option.none(), {
+      version: 1,
+      sequence: 0,
       type: "welcome",
       payload: welcome,
     });
     const [afterReady, emitted] = projectServerWelcome(afterWelcome, {
+      version: 1,
+      sequence: 1,
       type: "ready",
-      payload: {},
+      payload: {
+        at: "2026-04-01T00:00:00.000Z",
+        environment: ENVIRONMENT,
+      },
     });
 
     expect(Option.getOrThrow(afterReady)).toBe(welcome);

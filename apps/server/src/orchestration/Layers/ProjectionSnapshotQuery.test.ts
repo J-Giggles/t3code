@@ -275,6 +275,8 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
               runOnWorktreeCreate: false,
             },
           ],
+          devLaunchProfiles: [],
+          devLaunchWarnings: [],
           createdAt: "2026-02-24T00:00:00.000Z",
           updatedAt: "2026-02-24T00:00:01.000Z",
           deletedAt: null,
@@ -360,6 +362,13 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
             runtimeMode: "approval-required",
             activeTurnId: asTurnId("turn-1"),
             lastError: null,
+            providerConnection: {
+              status: "stale",
+              lastSeenAt: null,
+              lastRuntimeEvent: null,
+              lastRuntimeEventAt: null,
+              staleAfterMs: 30_000,
+            },
             updatedAt: "2026-02-24T00:00:07.000Z",
           },
         },
@@ -386,6 +395,8 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
               runOnWorktreeCreate: false,
             },
           ],
+          devLaunchProfiles: [],
+          devLaunchWarnings: [],
           createdAt: "2026-02-24T00:00:00.000Z",
           updatedAt: "2026-02-24T00:00:01.000Z",
         },
@@ -425,6 +436,13 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
             runtimeMode: "approval-required",
             activeTurnId: asTurnId("turn-1"),
             lastError: null,
+            providerConnection: {
+              status: "stale",
+              lastSeenAt: null,
+              lastRuntimeEvent: null,
+              lastRuntimeEventAt: null,
+              staleAfterMs: 30_000,
+            },
             updatedAt: "2026-02-24T00:00:07.000Z",
           },
           latestUserMessageAt: "2026-02-24T00:00:04.000Z",
@@ -1457,6 +1475,7 @@ it.effect(
         }),
       ),
       Layer.provideMerge(SqlitePersistenceMemory),
+      Layer.provideMerge(NodeServices.layer),
     );
 
     return Effect.gen(function* () {

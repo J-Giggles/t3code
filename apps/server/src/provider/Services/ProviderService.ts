@@ -49,6 +49,7 @@ export interface ProviderServiceShape {
    */
   readonly sendTurn: (
     input: ProviderSendTurnInput,
+    options?: { readonly allowEmptyInput?: boolean },
   ) => Effect.Effect<ProviderTurnStartResult, ProviderServiceError>;
 
   /**

@@ -16,6 +16,12 @@ const TARGET = {
   terminalId: "term-1",
 } as const;
 
+const TERMINAL_DEFAULTS = {
+  owner: { kind: "user" },
+  readOnly: false,
+  backing: "pty",
+} as const;
+
 const BASE_SNAPSHOT: TerminalSessionSnapshot = {
   threadId: TARGET.threadId,
   terminalId: TARGET.terminalId,
@@ -26,6 +32,7 @@ const BASE_SNAPSHOT: TerminalSessionSnapshot = {
   history: "hello",
   exitCode: null,
   exitSignal: null,
+  ...TERMINAL_DEFAULTS,
   label: "Terminal 1",
   updatedAt: "2026-04-01T00:00:00.000Z",
 };
@@ -46,6 +53,7 @@ describe("terminal session reducers", () => {
           exitSignal: BASE_SNAPSHOT.exitSignal,
           updatedAt: BASE_SNAPSHOT.updatedAt,
           hasRunningSubprocess: false,
+          ...TERMINAL_DEFAULTS,
           label: BASE_SNAPSHOT.label,
         },
       ],
@@ -79,6 +87,7 @@ describe("terminal session reducers", () => {
           exitSignal: BASE_SNAPSHOT.exitSignal,
           updatedAt: BASE_SNAPSHOT.updatedAt,
           hasRunningSubprocess: false,
+          ...TERMINAL_DEFAULTS,
           label: BASE_SNAPSHOT.label,
         },
       ],
@@ -148,6 +157,7 @@ describe("terminal session reducers", () => {
           exitSignal: BASE_SNAPSHOT.exitSignal,
           updatedAt: BASE_SNAPSHOT.updatedAt,
           hasRunningSubprocess: false,
+          ...TERMINAL_DEFAULTS,
           label: BASE_SNAPSHOT.label,
         },
       ],

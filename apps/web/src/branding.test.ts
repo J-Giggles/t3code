@@ -8,6 +8,7 @@ const originalWindow = globalThis.window;
 
 afterEach(() => {
   vi.resetModules();
+  vi.unstubAllEnvs();
 
   if (originalWindow === undefined) {
     Reflect.deleteProperty(globalThis, "window");
@@ -48,6 +49,25 @@ describe("branding", () => {
     expect(branding.HOSTED_APP_CHANNEL_LABEL).toBe("Nightly");
     expect(branding.APP_STAGE_LABEL).toBe("Nightly");
     expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (Nightly)");
+  });
+
+  it("uses dev worktree and branch metadata when available", async () => {
+    vi.stubEnv("VITE_DEV_WORKTREE_NAME", "staging");
+    vi.stubEnv("VITE_DEV_BRANCH_NAME", "feature/pairing-label");
+
+    const branding = await import("./branding");
+
+    expect(branding.DEV_APP_STAGE_LABEL).toBe("staging / feature/pairing-label");
+    expect(branding.APP_STAGE_LABEL).toBe("staging / feature/pairing-label");
+    expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (staging / feature/pairing-label)");
+  });
+
+  it("falls back to the static dev label when dev checkout metadata is unavailable", async () => {
+    const branding = await import("./branding");
+
+    expect(branding.DEV_APP_STAGE_LABEL).toBeNull();
+    expect(branding.APP_STAGE_LABEL).toBe("Dev");
+    expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (Dev)");
   });
 
   it("ignores unknown hosted app channels", async () => {

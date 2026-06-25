@@ -112,3 +112,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(ReviewService, make);
+
+export type ReviewServiceShape = ReviewService["Service"];

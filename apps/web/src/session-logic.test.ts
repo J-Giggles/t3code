@@ -1,6 +1,9 @@
 import {
   EventId,
   MessageId,
+  ProviderDriverKind,
+  ProviderInstanceId,
+  type ServerProvider,
   ThreadId,
   TurnId,
   type OrchestrationThreadActivity,
@@ -18,6 +21,7 @@ import {
   findSidebarProposedPlan,
   hasActionableProposedPlan,
   isLatestTurnSettled,
+  resolveProviderHeaderStatusPresentation,
   workEntryIndicatesToolFailure,
   workEntryIndicatesToolNeutralStatus,
   workEntryIndicatesToolSuccess,
@@ -816,6 +820,79 @@ describe("deriveWorkLogEntries", () => {
 
     const entries = deriveWorkLogEntries(activities);
     expect(entries.map((entry) => entry.id)).toEqual(["tool-complete"]);
+  });
+
+  it("collapses repeated Codex provider reconnect warnings for the same turn", () => {
+    const activities: OrchestrationThreadActivity[] = [
+      makeActivity({
+        id: "reconnect-2",
+        createdAt: "2026-02-23T00:00:01.000Z",
+        kind: "runtime.warning",
+        summary: "Reconnecting... 2/5",
+        tone: "info",
+        turnId: "turn-1",
+        payload: {
+          message: "Reconnecting... 2/5",
+          retry: {
+            source: "codex",
+            kind: "provider-reconnect",
+            attempt: 2,
+            maxAttempts: 5,
+            willRetry: true,
+          },
+        },
+      }),
+      makeActivity({
+        id: "reconnect-3",
+        createdAt: "2026-02-23T00:00:02.000Z",
+        kind: "runtime.warning",
+        summary: "Reconnecting... 3/5",
+        tone: "info",
+        turnId: "turn-1",
+        payload: {
+          message: "Reconnecting... 3/5",
+          retry: {
+            source: "codex",
+            kind: "provider-reconnect",
+            attempt: 3,
+            maxAttempts: 5,
+            willRetry: true,
+          },
+        },
+      }),
+    ];
+
+    const entries = deriveWorkLogEntries(activities);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.id).toBe("reconnect-3");
+    expect(entries[0]?.label).toBe("Codex reconnecting (3/5)");
+    expect(entries[0]?.sourceActivityKind).toBe("runtime.warning");
+  });
+
+  it("keeps unrelated runtime warnings as separate work log entries", () => {
+    const activities: OrchestrationThreadActivity[] = [
+      makeActivity({
+        id: "warning-1",
+        createdAt: "2026-02-23T00:00:01.000Z",
+        kind: "runtime.warning",
+        summary: "Provider got slow",
+        tone: "info",
+        turnId: "turn-1",
+        payload: { message: "Provider got slow" },
+      }),
+      makeActivity({
+        id: "warning-2",
+        createdAt: "2026-02-23T00:00:02.000Z",
+        kind: "runtime.warning",
+        summary: "Provider still slow",
+        tone: "info",
+        turnId: "turn-1",
+        payload: { message: "Provider still slow" },
+      }),
+    ];
+
+    const entries = deriveWorkLogEntries(activities);
+    expect(entries.map((entry) => entry.id)).toEqual(["warning-1", "warning-2"]);
   });
 
   it("omits ExitPlanMode lifecycle entries once the plan card is shown", () => {
@@ -1684,5 +1761,74 @@ describe("deriveActiveWorkStartedAt", () => {
         "2026-02-27T21:11:00.000Z",
       ),
     ).toBe("2026-02-27T21:11:00.000Z");
+  });
+});
+
+function makeProviderStatus(overrides: Partial<ServerProvider> = {}): ServerProvider {
+  return {
+    instanceId: ProviderInstanceId.make("codex"),
+    driver: ProviderDriverKind.make("codex"),
+    enabled: true,
+    installed: true,
+    version: "1.2.3",
+    status: "ready",
+    auth: {
+      status: "authenticated",
+      type: "api-key",
+      label: "API key",
+    },
+    checkedAt: "2026-06-12T10:00:00.000Z",
+    models: [],
+    slashCommands: [],
+    skills: [],
+    ...overrides,
+  };
+}
+
+describe("resolveProviderHeaderStatusPresentation", () => {
+  it("maps a ready provider into a connected header presentation", () => {
+    expect(resolveProviderHeaderStatusPresentation(makeProviderStatus())).toMatchObject({
+      state: "ready",
+      label: "Codex ready",
+      dotClass: "bg-success",
+      pulse: true,
+      tooltip: "Provider connection · Codex ready · Authenticated · API key",
+    });
+  });
+
+  it("surfaces unauthenticated providers as unavailable", () => {
+    expect(
+      resolveProviderHeaderStatusPresentation(
+        makeProviderStatus({
+          status: "error",
+          auth: { status: "unauthenticated" },
+        }),
+      ),
+    ).toMatchObject({
+      state: "error",
+      label: "Codex unavailable",
+      dotClass: "bg-destructive",
+      pulse: false,
+      tooltip:
+        "Provider connection · Codex unavailable · Sign in via the CLI to authenticate again.",
+    });
+  });
+
+  it("uses unavailable driver metadata when present", () => {
+    expect(
+      resolveProviderHeaderStatusPresentation(
+        makeProviderStatus({
+          displayName: "Custom Codex",
+          availability: "unavailable",
+          unavailableReason: "Driver not shipped in this build.",
+        }),
+      ),
+    ).toMatchObject({
+      state: "unavailable",
+      label: "Custom Codex driver unavailable",
+      dotClass: "bg-muted-foreground",
+      tooltip:
+        "Provider connection · Custom Codex driver unavailable · Driver not shipped in this build.",
+    });
   });
 });

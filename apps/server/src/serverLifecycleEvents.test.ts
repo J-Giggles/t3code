@@ -46,8 +46,30 @@ it.effect(
       assertTrue(Option.isSome(ready));
       assert.equal(ready.value.sequence, 2);
 
+      const restartRequired = yield* lifecycleEvents
+        .publish({
+          version: 1,
+          type: "runtimeRestartRequired",
+          payload: {
+            detectedAt: "2026-01-01T00:00:01.000Z",
+            reason: "Running code changed.",
+            capability: {
+              available: true,
+              kind: "desktop-dev-supervisor",
+              scope: "full-setup",
+            },
+          },
+        })
+        .pipe(Effect.timeoutOption("50 millis"));
+      assertTrue(Option.isSome(restartRequired));
+      assert.equal(restartRequired.value.sequence, 3);
+
       const snapshot = yield* lifecycleEvents.snapshot;
-      assert.equal(snapshot.sequence, 2);
-      assert.deepEqual(snapshot.events.map((event) => event.type).toSorted(), ["ready", "welcome"]);
+      assert.equal(snapshot.sequence, 3);
+      assert.deepEqual(snapshot.events.map((event) => event.type).toSorted(), [
+        "ready",
+        "runtimeRestartRequired",
+        "welcome",
+      ]);
     }).pipe(Effect.provide(ServerLifecycleEvents.layer)),
 );

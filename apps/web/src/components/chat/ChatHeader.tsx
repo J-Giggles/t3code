@@ -6,6 +6,7 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { GitBranchIcon } from "lucide-react";
 import { memo } from "react";
 import GitActionsControl from "../GitActionsControl";
 import { type DraftId } from "~/composerDraftStore";
@@ -17,6 +18,8 @@ import ProjectScriptsControl, {
 import { OpenInPicker } from "./OpenInPicker";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { cn } from "~/lib/utils";
+import { Button } from "../ui/button";
+import { WorkspaceGitDashboard } from "../workspace-git/WorkspaceGitDashboard";
 
 interface ChatHeaderProps {
   activeThreadEnvironmentId: EnvironmentId;
@@ -117,6 +120,22 @@ export const ChatHeader = memo(function ChatHeader({
             keybindings={keybindings}
             availableEditors={availableEditors}
             openInCwd={openInCwd}
+          />
+        )}
+        {activeProjectName && gitCwd && (
+          <WorkspaceGitDashboard
+            environmentId={activeThreadEnvironmentId}
+            projectRoot={gitCwd}
+            trigger={
+              <Button
+                aria-label="Open project Git dashboard"
+                className="shrink-0"
+                size="icon-xs"
+                variant="outline"
+              >
+                <GitBranchIcon className="size-3.5" aria-hidden />
+              </Button>
+            }
           />
         )}
         {activeProjectName && (

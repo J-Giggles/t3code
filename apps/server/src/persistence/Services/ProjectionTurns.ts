@@ -27,6 +27,7 @@ import type { ProjectionRepositoryError } from "../Errors.ts";
 export const ProjectionTurnState = Schema.Literals([
   "pending",
   "running",
+  "paused",
   "interrupted",
   "completed",
   "error",

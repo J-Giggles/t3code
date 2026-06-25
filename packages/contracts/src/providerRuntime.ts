@@ -601,6 +601,15 @@ export type ToolDeniedPayload = typeof ToolDeniedPayload.Type;
 const RuntimeWarningPayload = Schema.Struct({
   message: TrimmedNonEmptyStringSchema,
   detail: Schema.optional(Schema.Unknown),
+  retry: Schema.optional(
+    Schema.Struct({
+      source: Schema.Literal("codex"),
+      kind: Schema.Literal("provider-reconnect"),
+      attempt: Schema.optional(NonNegativeInt),
+      maxAttempts: Schema.optional(NonNegativeInt),
+      willRetry: Schema.Boolean,
+    }),
+  ),
 });
 export type RuntimeWarningPayload = typeof RuntimeWarningPayload.Type;
 

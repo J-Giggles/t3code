@@ -276,7 +276,10 @@ validationLayer("CodexAdapterLive validation", (it) => {
         runtimeMode: "full-access",
       });
 
-      NodeAssert.deepStrictEqual(validationRuntimeFactory.factory.mock.calls[0]?.[0], {
+      const runtimeOptions = validationRuntimeFactory.factory.mock.calls[0]?.[0];
+      NodeAssert.ok(runtimeOptions);
+      const { environment, ...stableRuntimeOptions } = runtimeOptions;
+      NodeAssert.deepStrictEqual(stableRuntimeOptions, {
         binaryPath: "codex",
         cwd: process.cwd(),
         model: "gpt-5.3-codex",
@@ -285,6 +288,8 @@ validationLayer("CodexAdapterLive validation", (it) => {
         threadId: asThreadId("thread-1"),
         runtimeMode: "full-access",
       });
+      NodeAssert.equal(environment?.CODEX_CI, "1");
+      NodeAssert.equal(environment?.PATH, process.env.PATH);
     }),
   );
 });
@@ -694,6 +699,13 @@ lifecycleLayer("CodexAdapterLive lifecycle", (it) => {
       }
       NodeAssert.equal(firstEvent.value.turnId, "turn-1");
       NodeAssert.equal(firstEvent.value.payload.message, "Reconnecting... 2/5");
+      NodeAssert.deepStrictEqual(firstEvent.value.payload.retry, {
+        source: "codex",
+        kind: "provider-reconnect",
+        attempt: 2,
+        maxAttempts: 5,
+        willRetry: true,
+      });
     }),
   );
 

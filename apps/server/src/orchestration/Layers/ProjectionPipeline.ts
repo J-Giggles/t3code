@@ -3,6 +3,7 @@ import {
   type ChatAttachment,
   type OrchestrationEvent,
   type OrchestrationSessionStatus,
+  type OrchestrationThreadLifecycleStatus,
   ThreadId,
 } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
@@ -89,6 +90,7 @@ function settledTurnStateForSessionStatus(
       return "interrupted";
     case "starting":
     case "running":
+    case "paused":
       return null;
   }
 }
@@ -117,6 +119,41 @@ function extractActivityRequestId(payload: unknown): ApprovalRequestId | null {
   }
   const requestId = (payload as Record<string, unknown>).requestId;
   return typeof requestId === "string" ? ApprovalRequestId.make(requestId) : null;
+}
+
+function lifecycleForSessionStatus(
+  status: OrchestrationSessionStatus,
+): OrchestrationThreadLifecycleStatus {
+  switch (status) {
+    case "starting":
+      return "connecting";
+    case "running":
+      return "running";
+    case "paused":
+      return "paused";
+    case "ready":
+    case "idle":
+      return "completed";
+    case "error":
+      return "error";
+    case "interrupted":
+    case "stopped":
+      return "stopped";
+  }
+}
+
+function lifecycleForActivityKind(kind: string): OrchestrationThreadLifecycleStatus | null {
+  switch (kind) {
+    case "approval.requested":
+      return "pending_approval";
+    case "user-input.requested":
+      return "requires_input";
+    case "approval.resolved":
+    case "user-input.resolved":
+      return null;
+    default:
+      return null;
+  }
 }
 
 function isStalePendingApprovalFailureDetail(detail: string | null): boolean {
@@ -611,6 +648,9 @@ const makeOrchestrationProjectionPipeline = Effect.fn("makeOrchestrationProjecti
             pendingApprovalCount: 0,
             pendingUserInputCount: 0,
             hasActionableProposedPlan: 0,
+            lifecycleStatus: null,
+            lifecycleUpdatedAt: null,
+            lifecycleReason: null,
             deletedAt: null,
           });
           return;
@@ -724,8 +764,34 @@ const makeOrchestrationProjectionPipeline = Effect.fn("makeOrchestrationProjecti
           if (Option.isNone(existingRow)) {
             return;
           }
+          let activityLifecycle: ReturnType<typeof lifecycleForActivityKind> = null;
+          let activityLifecycleReason: string | null = null;
+          let shouldClearPendingLifecycle = false;
+          if (event.type === "thread.activity-appended") {
+            activityLifecycle = lifecycleForActivityKind(event.payload.activity.kind);
+            activityLifecycleReason = event.payload.activity.summary;
+            shouldClearPendingLifecycle =
+              activityLifecycle === null &&
+              (event.payload.activity.kind === "approval.resolved" ||
+                event.payload.activity.kind === "user-input.resolved") &&
+              (existingRow.value.lifecycleStatus === "pending_approval" ||
+                existingRow.value.lifecycleStatus === "requires_input");
+          }
           yield* projectionThreadRepository.upsert({
             ...existingRow.value,
+            ...(activityLifecycle !== null
+              ? {
+                  lifecycleStatus: activityLifecycle,
+                  lifecycleUpdatedAt: event.occurredAt,
+                  lifecycleReason: activityLifecycleReason,
+                }
+              : shouldClearPendingLifecycle
+                ? {
+                    lifecycleStatus: null,
+                    lifecycleUpdatedAt: event.occurredAt,
+                    lifecycleReason: null,
+                  }
+                : {}),
             updatedAt: event.occurredAt,
           });
           yield* refreshThreadShellSummary(event.payload.threadId);
@@ -742,6 +808,9 @@ const makeOrchestrationProjectionPipeline = Effect.fn("makeOrchestrationProjecti
           yield* projectionThreadRepository.upsert({
             ...existingRow.value,
             latestTurnId: event.payload.session.activeTurnId,
+            lifecycleStatus: lifecycleForSessionStatus(event.payload.session.status),
+            lifecycleUpdatedAt: event.payload.session.updatedAt,
+            lifecycleReason: event.payload.session.lastError,
             updatedAt: event.occurredAt,
           });
           yield* refreshThreadShellSummary(event.payload.threadId);
@@ -758,6 +827,9 @@ const makeOrchestrationProjectionPipeline = Effect.fn("makeOrchestrationProjecti
           yield* projectionThreadRepository.upsert({
             ...existingRow.value,
             latestTurnId: event.payload.turnId,
+            lifecycleStatus: event.payload.status === "error" ? "error" : "completed",
+            lifecycleUpdatedAt: event.payload.completedAt,
+            lifecycleReason: event.payload.status === "error" ? "Turn diff failed" : null,
             updatedAt: event.occurredAt,
           });
           yield* refreshThreadShellSummary(event.payload.threadId);

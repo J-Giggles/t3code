@@ -700,3 +700,5 @@ const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(Keybindings, make);
+
+export type KeybindingsShape = Keybindings["Service"];

@@ -1368,6 +1368,178 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
     }),
   );
 
+  it.effect("projects thread lifecycle status from session and activity events", () =>
+    Effect.gen(function* () {
+      const projectionPipeline = yield* OrchestrationProjectionPipeline;
+      const eventStore = yield* OrchestrationEventStore;
+      const sql = yield* SqlClient.SqlClient;
+      const threadId = ThreadId.make("thread-lifecycle-status");
+      const now = "2026-01-02T00:00:00.000Z";
+      const appendAndProject = (event: Parameters<typeof eventStore.append>[0]) =>
+        eventStore
+          .append(event)
+          .pipe(Effect.flatMap((savedEvent) => projectionPipeline.projectEvent(savedEvent)));
+
+      yield* appendAndProject({
+        type: "thread.created",
+        eventId: EventId.make("evt-lifecycle-1"),
+        aggregateKind: "thread",
+        aggregateId: threadId,
+        occurredAt: now,
+        commandId: CommandId.make("cmd-lifecycle-1"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-lifecycle-1"),
+        metadata: {},
+        payload: {
+          threadId,
+          projectId: ProjectId.make("project-lifecycle-status"),
+          title: "Lifecycle status",
+          modelSelection: {
+            instanceId: ProviderInstanceId.make("codex"),
+            model: "gpt-5-codex",
+          },
+          runtimeMode: "full-access",
+          branch: null,
+          worktreePath: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      yield* appendAndProject({
+        type: "thread.session-set",
+        eventId: EventId.make("evt-lifecycle-2"),
+        aggregateKind: "thread",
+        aggregateId: threadId,
+        occurredAt: "2026-01-02T00:00:01.000Z",
+        commandId: CommandId.make("cmd-lifecycle-2"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-lifecycle-2"),
+        metadata: {},
+        payload: {
+          threadId,
+          session: {
+            threadId,
+            status: "paused",
+            providerName: "codex",
+            runtimeMode: "full-access",
+            activeTurnId: TurnId.make("turn-lifecycle-status"),
+            lastError: null,
+            updatedAt: "2026-01-02T00:00:01.000Z",
+          },
+        },
+      });
+
+      let rows = yield* sql<{
+        readonly lifecycleStatus: string | null;
+        readonly lifecycleUpdatedAt: string | null;
+        readonly lifecycleReason: string | null;
+      }>`
+        SELECT
+          lifecycle_status AS "lifecycleStatus",
+          lifecycle_updated_at AS "lifecycleUpdatedAt",
+          lifecycle_reason AS "lifecycleReason"
+        FROM projection_threads
+        WHERE thread_id = ${threadId}
+      `;
+      assert.deepEqual(rows, [
+        {
+          lifecycleStatus: "paused",
+          lifecycleUpdatedAt: "2026-01-02T00:00:01.000Z",
+          lifecycleReason: null,
+        },
+      ]);
+
+      yield* appendAndProject({
+        type: "thread.activity-appended",
+        eventId: EventId.make("evt-lifecycle-3"),
+        aggregateKind: "thread",
+        aggregateId: threadId,
+        occurredAt: "2026-01-02T00:00:02.000Z",
+        commandId: CommandId.make("cmd-lifecycle-3"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-lifecycle-3"),
+        metadata: {},
+        payload: {
+          threadId,
+          activity: {
+            id: EventId.make("activity-lifecycle-approval"),
+            tone: "approval",
+            kind: "approval.requested",
+            summary: "Command approval requested",
+            payload: { requestId: "approval-lifecycle-1" },
+            turnId: null,
+            createdAt: "2026-01-02T00:00:02.000Z",
+          },
+        },
+      });
+
+      rows = yield* sql<{
+        readonly lifecycleStatus: string | null;
+        readonly lifecycleUpdatedAt: string | null;
+        readonly lifecycleReason: string | null;
+      }>`
+        SELECT
+          lifecycle_status AS "lifecycleStatus",
+          lifecycle_updated_at AS "lifecycleUpdatedAt",
+          lifecycle_reason AS "lifecycleReason"
+        FROM projection_threads
+        WHERE thread_id = ${threadId}
+      `;
+      assert.deepEqual(rows, [
+        {
+          lifecycleStatus: "pending_approval",
+          lifecycleUpdatedAt: "2026-01-02T00:00:02.000Z",
+          lifecycleReason: "Command approval requested",
+        },
+      ]);
+
+      yield* appendAndProject({
+        type: "thread.activity-appended",
+        eventId: EventId.make("evt-lifecycle-4"),
+        aggregateKind: "thread",
+        aggregateId: threadId,
+        occurredAt: "2026-01-02T00:00:03.000Z",
+        commandId: CommandId.make("cmd-lifecycle-4"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-lifecycle-4"),
+        metadata: {},
+        payload: {
+          threadId,
+          activity: {
+            id: EventId.make("activity-lifecycle-approval-resolved"),
+            tone: "info",
+            kind: "approval.resolved",
+            summary: "Approval resolved",
+            payload: { requestId: "approval-lifecycle-1" },
+            turnId: null,
+            createdAt: "2026-01-02T00:00:03.000Z",
+          },
+        },
+      });
+
+      rows = yield* sql<{
+        readonly lifecycleStatus: string | null;
+        readonly lifecycleUpdatedAt: string | null;
+        readonly lifecycleReason: string | null;
+      }>`
+        SELECT
+          lifecycle_status AS "lifecycleStatus",
+          lifecycle_updated_at AS "lifecycleUpdatedAt",
+          lifecycle_reason AS "lifecycleReason"
+        FROM projection_threads
+        WHERE thread_id = ${threadId}
+      `;
+      assert.deepEqual(rows, [
+        {
+          lifecycleStatus: null,
+          lifecycleUpdatedAt: "2026-01-02T00:00:03.000Z",
+          lifecycleReason: null,
+        },
+      ]);
+    }),
+  );
+
   it.effect("settles a superseded running turn when a new turn becomes active", () =>
     Effect.gen(function* () {
       const projectionPipeline = yield* OrchestrationProjectionPipeline;

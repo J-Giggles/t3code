@@ -45,11 +45,13 @@ function checkpointStatusToLatestTurnState(status: "ready" | "missing" | "error"
  */
 function settledTurnStateForSessionStatus(
   status: OrchestrationSession["status"],
-): "completed" | "interrupted" | "error" | null {
+): "completed" | "paused" | "interrupted" | "error" | null {
   switch (status) {
     case "idle":
     case "ready":
       return "completed";
+    case "paused":
+      return "paused";
     case "error":
       return "error";
     case "interrupted":

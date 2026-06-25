@@ -11,15 +11,26 @@ function readInjectedDesktopAppBranding(): DesktopAppBranding | null {
 
 const injectedDesktopAppBranding = readInjectedDesktopAppBranding();
 const hostedAppChannel = import.meta.env.VITE_HOSTED_APP_CHANNEL?.trim().toLowerCase();
+const devWorktreeName = import.meta.env.VITE_DEV_WORKTREE_NAME?.trim();
+const devBranchName = import.meta.env.VITE_DEV_BRANCH_NAME?.trim();
 
 export const HOSTED_APP_CHANNEL =
   hostedAppChannel === "latest" || hostedAppChannel === "nightly" ? hostedAppChannel : null;
 export const HOSTED_APP_CHANNEL_LABEL =
   HOSTED_APP_CHANNEL === "nightly" ? "Nightly" : HOSTED_APP_CHANNEL === "latest" ? "Latest" : null;
+export const DEV_APP_STAGE_LABEL =
+  import.meta.env.DEV && devWorktreeName && devBranchName
+    ? `${devWorktreeName} / ${devBranchName}`
+    : import.meta.env.DEV && devWorktreeName
+      ? devWorktreeName
+      : import.meta.env.DEV && devBranchName
+        ? devBranchName
+        : null;
 export const APP_BASE_NAME = injectedDesktopAppBranding?.baseName ?? "T3 Code";
 export const APP_STAGE_LABEL =
   injectedDesktopAppBranding?.stageLabel ??
   HOSTED_APP_CHANNEL_LABEL ??
+  DEV_APP_STAGE_LABEL ??
   (import.meta.env.DEV ? "Dev" : "Alpha");
 export const APP_DISPLAY_NAME =
   injectedDesktopAppBranding?.displayName ??

@@ -62,6 +62,7 @@ import {
 import { clamp } from "effect/Number";
 import { HttpRouter, HttpServerRequest, HttpServerRespondable } from "effect/unstable/http";
 import { RpcSerialization, RpcServer } from "effect/unstable/rpc";
+import { buildGeneratedWorktreeBranchName } from "@t3tools/shared/git";
 
 import * as CheckpointDiffQuery from "./checkpointing/CheckpointDiffQuery.ts";
 import * as ServerConfig from "./config.ts";
@@ -77,29 +78,37 @@ import {
 } from "./observability/RpcInstrumentation.ts";
 import * as ProviderRegistry from "./provider/Services/ProviderRegistry.ts";
 import * as ProviderMaintenanceRunner from "./provider/providerMaintenanceRunner.ts";
-import * as ServerLifecycleEvents from "./serverLifecycleEvents.ts";
-import * as ServerRuntimeStartup from "./serverRuntimeStartup.ts";
+import { ServerLifecycleEvents } from "./serverLifecycleEvents.ts";
+import { ServerRuntimeRestart } from "./serverRuntimeRestart.ts";
+import { ServerRuntimeStartup } from "./serverRuntimeStartup.ts";
 import * as ServerSettings from "./serverSettings.ts";
-import * as TerminalManager from "./terminal/Manager.ts";
+import { redactServerSettingsForClient, ServerSettingsService } from "./serverSettings.ts";
+import { TerminalManager } from "./terminal/Manager.ts";
+import * as AppAutomationBroker from "./mcp/AppAutomationBroker.ts";
 import * as PreviewAutomationBroker from "./mcp/PreviewAutomationBroker.ts";
+import { loadT3ProviderAccessCatalog } from "./mcp/t3ProviderMcpCatalog.ts";
 import * as PreviewManager from "./preview/Manager.ts";
 import { issueAssetUrl } from "./assets/AssetAccess.ts";
 import * as PortScanner from "./preview/PortScanner.ts";
 import * as WorkspaceEntries from "./workspace/WorkspaceEntries.ts";
 import * as WorkspaceFileSystem from "./workspace/WorkspaceFileSystem.ts";
-import * as WorkspacePaths from "./workspace/WorkspacePaths.ts";
-import * as VcsStatusBroadcaster from "./vcs/VcsStatusBroadcaster.ts";
-import * as VcsProvisioningService from "./vcs/VcsProvisioningService.ts";
-import * as GitWorkflowService from "./git/GitWorkflowService.ts";
-import * as ReviewService from "./review/ReviewService.ts";
+import * as WorkspacePaths from "./workspace/Services/WorkspacePaths.ts";
+import { ProjectAgentFiles } from "./project/Services/ProjectAgentFiles.ts";
+import { readWorkspaceGitSnapshot } from "./workspaceGit/WorkspaceGitSnapshot.ts";
+import { VcsStatusBroadcaster } from "./vcs/VcsStatusBroadcaster.ts";
+import { VcsProvisioningService } from "./vcs/VcsProvisioningService.ts";
+import { GitWorkflowService } from "./git/GitWorkflowService.ts";
+import { ReviewService } from "./review/ReviewService.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
 import * as RepositoryIdentityResolver from "./project/RepositoryIdentityResolver.ts";
 import * as ServerEnvironment from "./environment/ServerEnvironment.ts";
+import { TextGeneration } from "./textGeneration/TextGeneration.ts";
 import * as EnvironmentAuth from "./auth/EnvironmentAuth.ts";
 import * as ProcessDiagnostics from "./diagnostics/ProcessDiagnostics.ts";
 import * as ProcessResourceMonitor from "./diagnostics/ProcessResourceMonitor.ts";
 import * as TraceDiagnostics from "./diagnostics/TraceDiagnostics.ts";
 import * as SourceControlDiscovery from "./sourceControl/SourceControlDiscovery.ts";
+import * as ServerDevAppLaunchManager from "./devLaunch/ServerDevAppLaunchManager.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import * as AzureDevOpsCli from "./sourceControl/AzureDevOpsCli.ts";
 import * as BitbucketApi from "./sourceControl/BitbucketApi.ts";
@@ -221,7 +230,10 @@ function projectFileFailureContext(
       return {
         failure: "operation_failed",
         resolvedPath: error.resolvedPath,
-        operation: error.operation,
+        operation:
+          error.operation === "lstat" || error.operation === "delete-file"
+            ? "write-file"
+            : error.operation,
         operationPath: error.operationPath,
       };
     case "WorkspaceFilePathEscapeError":
@@ -287,6 +299,8 @@ const RPC_REQUIRED_SCOPE = new Map<string, AuthEnvironmentScope>([
   [WS_METHODS.serverGetConfig, AuthOrchestrationReadScope],
   [WS_METHODS.serverRefreshProviders, AuthOrchestrationOperateScope],
   [WS_METHODS.serverUpdateProvider, AuthOrchestrationOperateScope],
+  [WS_METHODS.serverResetProvider, AuthOrchestrationOperateScope],
+  [WS_METHODS.serverWriteProviderSkillConfig, AuthOrchestrationOperateScope],
   [WS_METHODS.serverUpsertKeybinding, AuthOrchestrationOperateScope],
   [WS_METHODS.serverRemoveKeybinding, AuthOrchestrationOperateScope],
   [WS_METHODS.serverGetSettings, AuthOrchestrationReadScope],
@@ -296,6 +310,13 @@ const RPC_REQUIRED_SCOPE = new Map<string, AuthEnvironmentScope>([
   [WS_METHODS.serverGetProcessDiagnostics, AuthOrchestrationReadScope],
   [WS_METHODS.serverGetProcessResourceHistory, AuthOrchestrationReadScope],
   [WS_METHODS.serverSignalProcess, AuthOrchestrationOperateScope],
+  [WS_METHODS.serverRestartRuntime, AuthOrchestrationOperateScope],
+  [WS_METHODS.serverRegisterPushNotifications, AuthOrchestrationOperateScope],
+  [WS_METHODS.serverGetDevLaunchState, AuthOrchestrationReadScope],
+  [WS_METHODS.serverLaunchDevApp, AuthOrchestrationOperateScope],
+  [WS_METHODS.serverStopDevApp, AuthOrchestrationOperateScope],
+  [WS_METHODS.serverListActiveDevLaunches, AuthOrchestrationReadScope],
+  [WS_METHODS.serverBuildDevLaunchCollisionPrompt, AuthOrchestrationReadScope],
   [WS_METHODS.cloudGetRelayClientStatus, AuthRelayWriteScope],
   [WS_METHODS.cloudInstallRelayClient, AuthRelayWriteScope],
   [WS_METHODS.sourceControlLookupRepository, AuthOrchestrationReadScope],
@@ -305,6 +326,13 @@ const RPC_REQUIRED_SCOPE = new Map<string, AuthEnvironmentScope>([
   [WS_METHODS.projectsReadFile, AuthOrchestrationReadScope],
   [WS_METHODS.projectsSearchEntries, AuthOrchestrationReadScope],
   [WS_METHODS.projectsWriteFile, AuthOrchestrationOperateScope],
+  [WS_METHODS.projectsListAgentFiles, AuthOrchestrationReadScope],
+  [WS_METHODS.projectsReadAgentFile, AuthOrchestrationReadScope],
+  [WS_METHODS.projectsWriteAgentFile, AuthOrchestrationOperateScope],
+  [WS_METHODS.projectsDeleteAgentFile, AuthOrchestrationOperateScope],
+  [WS_METHODS.projectsScaffoldAgentHarness, AuthOrchestrationOperateScope],
+  [WS_METHODS.projectsWriteAgentSecret, AuthOrchestrationOperateScope],
+  [WS_METHODS.projectsDeleteAgentSecret, AuthOrchestrationOperateScope],
   [WS_METHODS.shellOpenInEditor, AuthOrchestrationOperateScope],
   [WS_METHODS.filesystemBrowse, AuthOrchestrationReadScope],
   [WS_METHODS.assetsCreateUrl, AuthOrchestrationReadScope],
@@ -320,12 +348,14 @@ const RPC_REQUIRED_SCOPE = new Map<string, AuthEnvironmentScope>([
   [WS_METHODS.vcsCreateRef, AuthOrchestrationOperateScope],
   [WS_METHODS.vcsSwitchRef, AuthOrchestrationOperateScope],
   [WS_METHODS.vcsInit, AuthOrchestrationOperateScope],
+  [WS_METHODS.workspaceGitSnapshot, AuthOrchestrationReadScope],
   [WS_METHODS.reviewGetDiffPreview, AuthReviewWriteScope],
   [WS_METHODS.terminalOpen, AuthTerminalOperateScope],
   [WS_METHODS.terminalAttach, AuthTerminalOperateScope],
   [WS_METHODS.terminalWrite, AuthTerminalOperateScope],
   [WS_METHODS.terminalResize, AuthTerminalOperateScope],
   [WS_METHODS.terminalClear, AuthTerminalOperateScope],
+  [WS_METHODS.terminalKill, AuthTerminalOperateScope],
   [WS_METHODS.terminalRestart, AuthTerminalOperateScope],
   [WS_METHODS.terminalClose, AuthTerminalOperateScope],
   [WS_METHODS.subscribeTerminalEvents, AuthTerminalOperateScope],
@@ -340,6 +370,12 @@ const RPC_REQUIRED_SCOPE = new Map<string, AuthEnvironmentScope>([
   [WS_METHODS.previewAutomationConnect, AuthOrchestrationOperateScope],
   [WS_METHODS.previewAutomationRespond, AuthOrchestrationOperateScope],
   [WS_METHODS.previewAutomationFocusHost, AuthOrchestrationOperateScope],
+  [WS_METHODS.previewAutomationReportOwner, AuthOrchestrationOperateScope],
+  [WS_METHODS.previewAutomationClearOwner, AuthOrchestrationOperateScope],
+  [WS_METHODS.appAutomationConnect, AuthOrchestrationOperateScope],
+  [WS_METHODS.appAutomationRespond, AuthOrchestrationOperateScope],
+  [WS_METHODS.appAutomationReportOwner, AuthOrchestrationOperateScope],
+  [WS_METHODS.appAutomationClearOwner, AuthOrchestrationOperateScope],
   [WS_METHODS.subscribePreviewEvents, AuthOrchestrationReadScope],
   [WS_METHODS.subscribeDiscoveredLocalServers, AuthOrchestrationReadScope],
   [WS_METHODS.subscribeServerConfig, AuthOrchestrationReadScope],
@@ -400,21 +436,25 @@ const makeWsRpcLayer = (
       const checkpointDiffQuery = yield* CheckpointDiffQuery.CheckpointDiffQuery;
       const keybindings = yield* Keybindings.Keybindings;
       const externalLauncher = yield* ExternalLauncher.ExternalLauncher;
-      const gitWorkflow = yield* GitWorkflowService.GitWorkflowService;
-      const review = yield* ReviewService.ReviewService;
-      const vcsProvisioning = yield* VcsProvisioningService.VcsProvisioningService;
-      const vcsStatusBroadcaster = yield* VcsStatusBroadcaster.VcsStatusBroadcaster;
-      const terminalManager = yield* TerminalManager.TerminalManager;
+      const gitWorkflow = yield* GitWorkflowService;
+      const textGeneration = yield* TextGeneration;
+      const review = yield* ReviewService;
+      const vcsProvisioning = yield* VcsProvisioningService;
+      const vcsStatusBroadcaster = yield* VcsStatusBroadcaster;
+      const terminalManager = yield* TerminalManager;
+      const appAutomationBroker = yield* AppAutomationBroker.AppAutomationBroker;
       const previewManager = yield* PreviewManager.PreviewManager;
       const portDiscovery = yield* PortScanner.PortDiscovery;
       const providerRegistry = yield* ProviderRegistry.ProviderRegistry;
       const providerMaintenanceRunner = yield* ProviderMaintenanceRunner.ProviderMaintenanceRunner;
       const config = yield* ServerConfig.ServerConfig;
-      const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
-      const serverSettings = yield* ServerSettings.ServerSettingsService;
-      const startup = yield* ServerRuntimeStartup.ServerRuntimeStartup;
+      const lifecycleEvents = yield* ServerLifecycleEvents;
+      const runtimeRestart = yield* ServerRuntimeRestart;
+      const serverSettings = yield* ServerSettingsService;
+      const startup = yield* ServerRuntimeStartup;
       const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
       const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
+      const projectAgentFiles = yield* ProjectAgentFiles;
       const projectSetupScriptRunner = yield* ProjectSetupScriptRunner.ProjectSetupScriptRunner;
       const repositoryIdentityResolver =
         yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
@@ -436,6 +476,7 @@ const makeWsRpcLayer = (
       const processDiagnostics = yield* ProcessDiagnostics.ProcessDiagnostics;
       const processResourceMonitor = yield* ProcessResourceMonitor.ProcessResourceMonitor;
       const relayClient = yield* RelayClient.RelayClient;
+      const devAppLaunchManager = yield* ServerDevAppLaunchManager.ServerDevAppLaunchManager;
       const authorizationError = (requiredScope: AuthEnvironmentScope) =>
         new EnvironmentAuthorizationError({
           message: `The authenticated token is missing required scope: ${requiredScope}.`,
@@ -688,6 +729,75 @@ const makeWsRpcLayer = (
           let targetProjectCwd = bootstrap?.prepareWorktree?.projectCwd;
           let targetWorktreePath = bootstrap?.createThread?.worktreePath ?? null;
 
+          const resolveNonCollidingGeneratedBranch = (input: {
+            readonly projectCwd: string;
+            readonly preferredBranch: string;
+          }) =>
+            gitWorkflow
+              .listRefs({
+                cwd: input.projectCwd,
+                query: input.preferredBranch,
+                limit: 200,
+              })
+              .pipe(
+                Effect.map((refsResult) => {
+                  const existingBranchNames = new Set(
+                    refsResult.refs.map((ref) => ref.name.toLowerCase()),
+                  );
+                  let candidate = input.preferredBranch;
+                  let suffix = 2;
+                  while (existingBranchNames.has(candidate.toLowerCase())) {
+                    candidate = `${input.preferredBranch}-${suffix}`;
+                    suffix += 1;
+                  }
+                  return candidate;
+                }),
+              );
+
+          const resolveBootstrapWorktreeBranch = (input: {
+            readonly projectCwd: string;
+            readonly fallbackBranch?: string | undefined;
+          }) =>
+            Effect.gen(function* () {
+              const { textGenerationModelSelection: modelSelection } =
+                yield* serverSettings.getSettings;
+              const generated = yield* textGeneration.generateBranchName({
+                cwd: input.projectCwd,
+                message: command.message.text,
+                ...(command.message.attachments.length > 0
+                  ? { attachments: command.message.attachments }
+                  : {}),
+                modelSelection,
+              });
+              return yield* resolveNonCollidingGeneratedBranch({
+                projectCwd: input.projectCwd,
+                preferredBranch: buildGeneratedWorktreeBranchName(generated.branch),
+              });
+            }).pipe(
+              Effect.catchCause((cause) =>
+                Effect.logWarning(
+                  "bootstrap turn start failed to generate semantic worktree branch; using fallback",
+                  {
+                    threadId: command.threadId,
+                    projectCwd: input.projectCwd,
+                    fallbackBranch: input.fallbackBranch ?? null,
+                    cause: Cause.pretty(cause),
+                  },
+                ).pipe(Effect.as(input.fallbackBranch)),
+              ),
+            );
+
+          const isLikelyWorktreeNameCollision = (error: unknown): boolean => {
+            const detail =
+              error instanceof Error ? error.message : typeof error === "string" ? error : "";
+            const normalized = detail.toLowerCase();
+            return (
+              normalized.includes("already exists") ||
+              normalized.includes("already checked out") ||
+              normalized.includes("a branch named")
+            );
+          };
+
           const cleanupCreatedThread = () =>
             createdThread
               ? serverCommandId("bootstrap-thread-delete").pipe(
@@ -836,26 +946,64 @@ const makeWsRpcLayer = (
             }
 
             if (bootstrap?.prepareWorktree) {
-              let worktreeBaseRef = bootstrap.prepareWorktree.baseBranch;
-              if (bootstrap.prepareWorktree.startFromOrigin) {
+              const prepareWorktree = bootstrap.prepareWorktree;
+              const fallbackBranch = prepareWorktree.branch;
+              let worktreeBaseRef = prepareWorktree.baseBranch;
+              if (prepareWorktree.startFromOrigin) {
                 yield* gitWorkflow.fetchRemote({
-                  cwd: bootstrap.prepareWorktree.projectCwd,
+                  cwd: prepareWorktree.projectCwd,
                   remoteName: "origin",
                 });
                 const resolvedRemoteBase = yield* gitWorkflow.resolveRemoteTrackingCommit({
-                  cwd: bootstrap.prepareWorktree.projectCwd,
-                  refName: bootstrap.prepareWorktree.baseBranch,
+                  cwd: prepareWorktree.projectCwd,
+                  refName: prepareWorktree.baseBranch,
                   fallbackRemoteName: "origin",
                 });
                 worktreeBaseRef = resolvedRemoteBase.commitSha;
               }
-              const worktree = yield* gitWorkflow.createWorktree({
-                cwd: bootstrap.prepareWorktree.projectCwd,
-                refName: worktreeBaseRef,
-                newRefName: bootstrap.prepareWorktree.branch,
-                baseRefName: bootstrap.prepareWorktree.baseBranch,
-                path: null,
+              const resolvedBranch = yield* resolveBootstrapWorktreeBranch({
+                projectCwd: prepareWorktree.projectCwd,
+                fallbackBranch,
               });
+              const worktree = yield* gitWorkflow
+                .createWorktree({
+                  cwd: prepareWorktree.projectCwd,
+                  refName: worktreeBaseRef,
+                  ...(resolvedBranch !== undefined ? { newRefName: resolvedBranch } : {}),
+                  baseRefName: prepareWorktree.baseBranch,
+                  path: null,
+                })
+                .pipe(
+                  Effect.catch((error) => {
+                    if (
+                      resolvedBranch === fallbackBranch ||
+                      fallbackBranch === undefined ||
+                      !isLikelyWorktreeNameCollision(error)
+                    ) {
+                      return Effect.fail(error);
+                    }
+                    return Effect.logWarning(
+                      "bootstrap turn start semantic worktree branch collided; retrying fallback branch",
+                      {
+                        threadId: command.threadId,
+                        projectCwd: prepareWorktree.projectCwd,
+                        semanticBranch: resolvedBranch,
+                        fallbackBranch,
+                        detail: error.message,
+                      },
+                    ).pipe(
+                      Effect.flatMap(() =>
+                        gitWorkflow.createWorktree({
+                          cwd: prepareWorktree.projectCwd,
+                          refName: worktreeBaseRef,
+                          newRefName: fallbackBranch,
+                          baseRefName: prepareWorktree.baseBranch,
+                          path: null,
+                        }),
+                      ),
+                    );
+                  }),
+                );
               targetWorktreePath = worktree.worktree.path;
               yield* orchestrationEngine.dispatch({
                 type: "thread.meta.update",
@@ -909,9 +1057,8 @@ const makeWsRpcLayer = (
       const loadServerConfig = Effect.gen(function* () {
         const keybindingsConfig = yield* keybindings.loadConfigState;
         const providers = yield* providerRegistry.getProviders;
-        const settings = ServerSettings.redactServerSettingsForClient(
-          yield* serverSettings.getSettings,
-        );
+        const settings = redactServerSettingsForClient(yield* serverSettings.getSettings);
+        const t3ProviderAccessCatalog = yield* loadT3ProviderAccessCatalog();
         const environment = yield* serverEnvironment.getDescriptor;
         const auth = yield* serverAuth.getDescriptor();
 
@@ -933,8 +1080,14 @@ const makeWsRpcLayer = (
               ? { otlpMetricsUrl: config.otlpMetricsUrl }
               : {}),
             otlpMetricsEnabled: config.otlpMetricsUrl !== undefined,
+            ...(config.otlpLogsUrl !== undefined ? { otlpLogsUrl: config.otlpLogsUrl } : {}),
+            otlpLogsEnabled: config.otlpLogsUrl !== undefined,
+            ...(config.observabilityGrafanaUrl !== undefined
+              ? { observabilityGrafanaUrl: config.observabilityGrafanaUrl }
+              : {}),
           },
           settings,
+          t3ProviderAccessCatalog,
         };
       });
 
@@ -1259,6 +1412,18 @@ const makeWsRpcLayer = (
               "rpc.aggregate": "server",
             },
           ),
+        [WS_METHODS.serverResetProvider]: (input) =>
+          observeRpcEffect(WS_METHODS.serverResetProvider, providerRegistry.resetProvider(input), {
+            "rpc.aggregate": "server",
+          }),
+        [WS_METHODS.serverWriteProviderSkillConfig]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.serverWriteProviderSkillConfig,
+            providerRegistry.writeProviderSkillConfig(input),
+            {
+              "rpc.aggregate": "server",
+            },
+          ),
         [WS_METHODS.serverUpsertKeybinding]: (rule) =>
           observeRpcEffect(
             WS_METHODS.serverUpsertKeybinding,
@@ -1332,6 +1497,59 @@ const makeWsRpcLayer = (
           observeRpcEffect(WS_METHODS.serverSignalProcess, processDiagnostics.signal(input), {
             "rpc.aggregate": "server",
           }),
+        [WS_METHODS.serverRestartRuntime]: (input) =>
+          observeRpcEffect(WS_METHODS.serverRestartRuntime, runtimeRestart.restart(input), {
+            "rpc.aggregate": "server",
+          }),
+        [WS_METHODS.serverGetDevLaunchState]: (threadRef) =>
+          observeRpcEffect(
+            WS_METHODS.serverGetDevLaunchState,
+            devAppLaunchManager.getState(threadRef),
+            {
+              "rpc.aggregate": "dev-launch",
+            },
+          ),
+        [WS_METHODS.serverLaunchDevApp]: (input) =>
+          observeRpcEffect(WS_METHODS.serverLaunchDevApp, devAppLaunchManager.launch(input), {
+            "rpc.aggregate": "dev-launch",
+          }),
+        [WS_METHODS.serverStopDevApp]: (input) =>
+          observeRpcEffect(WS_METHODS.serverStopDevApp, devAppLaunchManager.stop(input), {
+            "rpc.aggregate": "dev-launch",
+          }),
+        [WS_METHODS.serverListActiveDevLaunches]: (_input) =>
+          observeRpcEffect(WS_METHODS.serverListActiveDevLaunches, devAppLaunchManager.listActive, {
+            "rpc.aggregate": "dev-launch",
+          }),
+        [WS_METHODS.serverBuildDevLaunchCollisionPrompt]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.serverBuildDevLaunchCollisionPrompt,
+            devAppLaunchManager.buildCollisionPrompt(input),
+            {
+              "rpc.aggregate": "dev-launch",
+            },
+          ),
+        [WS_METHODS.serverRegisterPushNotifications]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.serverRegisterPushNotifications,
+            sessions
+              .setPushNotificationToken(currentSessionId, {
+                token: input.token,
+                platform: input.platform,
+              })
+              .pipe(
+                Effect.catch((error) =>
+                  Effect.logWarning("failed to register push notification token", {
+                    sessionId: currentSessionId,
+                    error,
+                  }),
+                ),
+                Effect.as({ registered: true as const }),
+              ),
+            {
+              "rpc.aggregate": "server",
+            },
+          ),
         [WS_METHODS.cloudGetRelayClientStatus]: (_input) =>
           observeRpcEffect(WS_METHODS.cloudGetRelayClientStatus, relayClient.resolve, {
             "rpc.aggregate": "cloud",
@@ -1453,6 +1671,46 @@ const makeWsRpcLayer = (
               ),
             ),
             { "rpc.aggregate": "workspace" },
+          ),
+        [WS_METHODS.projectsListAgentFiles]: (input) =>
+          observeRpcEffect(WS_METHODS.projectsListAgentFiles, projectAgentFiles.list(input), {
+            "rpc.aggregate": "workspace",
+          }),
+        [WS_METHODS.projectsReadAgentFile]: (input) =>
+          observeRpcEffect(WS_METHODS.projectsReadAgentFile, projectAgentFiles.read(input), {
+            "rpc.aggregate": "workspace",
+          }),
+        [WS_METHODS.projectsWriteAgentFile]: (input) =>
+          observeRpcEffect(WS_METHODS.projectsWriteAgentFile, projectAgentFiles.write(input), {
+            "rpc.aggregate": "workspace",
+          }),
+        [WS_METHODS.projectsDeleteAgentFile]: (input) =>
+          observeRpcEffect(WS_METHODS.projectsDeleteAgentFile, projectAgentFiles.delete(input), {
+            "rpc.aggregate": "workspace",
+          }),
+        [WS_METHODS.projectsScaffoldAgentHarness]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.projectsScaffoldAgentHarness,
+            projectAgentFiles.scaffoldHarness(input),
+            {
+              "rpc.aggregate": "workspace",
+            },
+          ),
+        [WS_METHODS.projectsWriteAgentSecret]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.projectsWriteAgentSecret,
+            projectAgentFiles.writeSecret(input),
+            {
+              "rpc.aggregate": "workspace",
+            },
+          ),
+        [WS_METHODS.projectsDeleteAgentSecret]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.projectsDeleteAgentSecret,
+            projectAgentFiles.deleteSecret(input),
+            {
+              "rpc.aggregate": "workspace",
+            },
           ),
         [WS_METHODS.shellOpenInEditor]: (input) =>
           observeRpcEffect(WS_METHODS.shellOpenInEditor, externalLauncher.launchEditor(input), {
@@ -1624,6 +1882,12 @@ const makeWsRpcLayer = (
               .pipe(Effect.tap(() => refreshGitStatus(input.cwd))),
             { "rpc.aggregate": "vcs" },
           ),
+        [WS_METHODS.workspaceGitSnapshot]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.workspaceGitSnapshot,
+            Effect.sync(() => readWorkspaceGitSnapshot({ config, ...input })),
+            { "rpc.aggregate": "vcs" },
+          ),
         [WS_METHODS.reviewGetDiffPreview]: (input) =>
           observeRpcEffect(WS_METHODS.reviewGetDiffPreview, review.getDiffPreview(input), {
             "rpc.aggregate": "review",
@@ -1653,6 +1917,10 @@ const makeWsRpcLayer = (
           }),
         [WS_METHODS.terminalClear]: (input) =>
           observeRpcEffect(WS_METHODS.terminalClear, terminalManager.clear(input), {
+            "rpc.aggregate": "terminal",
+          }),
+        [WS_METHODS.terminalKill]: (input) =>
+          observeRpcEffect(WS_METHODS.terminalKill, terminalManager.kill(input), {
             "rpc.aggregate": "terminal",
           }),
         [WS_METHODS.terminalRestart]: (input) =>
@@ -1730,6 +1998,40 @@ const makeWsRpcLayer = (
             WS_METHODS.previewAutomationFocusHost,
             previewAutomationBroker.focusHost(input),
             { "rpc.aggregate": "preview-automation" },
+          ),
+        [WS_METHODS.previewAutomationReportOwner]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.previewAutomationReportOwner,
+            previewAutomationBroker.reportOwner(input),
+            { "rpc.aggregate": "preview-automation" },
+          ),
+        [WS_METHODS.previewAutomationClearOwner]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.previewAutomationClearOwner,
+            previewAutomationBroker.clearOwner(input),
+            { "rpc.aggregate": "preview-automation" },
+          ),
+        [WS_METHODS.appAutomationConnect]: (input) =>
+          observeRpcStreamEffect(
+            WS_METHODS.appAutomationConnect,
+            appAutomationBroker.connect(input.clientId),
+            { "rpc.aggregate": "app-automation" },
+          ),
+        [WS_METHODS.appAutomationRespond]: (input) =>
+          observeRpcEffect(WS_METHODS.appAutomationRespond, appAutomationBroker.respond(input), {
+            "rpc.aggregate": "app-automation",
+          }),
+        [WS_METHODS.appAutomationReportOwner]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.appAutomationReportOwner,
+            appAutomationBroker.reportOwner(input),
+            { "rpc.aggregate": "app-automation" },
+          ),
+        [WS_METHODS.appAutomationClearOwner]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.appAutomationClearOwner,
+            appAutomationBroker.clearOwner(input.clientId),
+            { "rpc.aggregate": "app-automation" },
           ),
         [WS_METHODS.subscribePreviewEvents]: (_input) =>
           observeRpcStream(WS_METHODS.subscribePreviewEvents, previewManager.events, {
@@ -1883,6 +2185,7 @@ export const websocketRpcRouteLayer = Layer.unwrap(
           Effect.provide(
             makeWsRpcLayer(session, previewAutomationBroker).pipe(
               Layer.provideMerge(RpcSerialization.layerJson),
+              Layer.provide(AppAutomationBroker.layer),
               Layer.provide(ProviderMaintenanceRunner.layer),
               Layer.provide(
                 SourceControlDiscovery.layer.pipe(

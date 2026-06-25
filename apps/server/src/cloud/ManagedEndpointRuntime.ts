@@ -317,3 +317,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(CloudManagedEndpointRuntime, make);
+
+export type CloudManagedEndpointRuntimeShape = CloudManagedEndpointRuntime["Service"];

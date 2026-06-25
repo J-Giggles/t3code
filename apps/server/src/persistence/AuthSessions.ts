@@ -40,6 +40,8 @@ export const AuthSessionRecord = Schema.Struct({
   expiresAt: Schema.DateTimeUtcFromString,
   lastConnectedAt: Schema.NullOr(Schema.DateTimeUtcFromString),
   revokedAt: Schema.NullOr(Schema.DateTimeUtcFromString),
+  pushNotificationToken: Schema.NullOr(Schema.String),
+  pushNotificationPlatform: Schema.NullOr(Schema.Literals(["expo"])),
 });
 export type AuthSessionRecord = typeof AuthSessionRecord.Type;
 
@@ -82,28 +84,41 @@ export const SetAuthSessionLastConnectedAtInput = Schema.Struct({
 });
 export type SetAuthSessionLastConnectedAtInput = typeof SetAuthSessionLastConnectedAtInput.Type;
 
+export const SetAuthSessionPushNotificationTokenInput = Schema.Struct({
+  sessionId: AuthSessionId,
+  token: Schema.String,
+  platform: Schema.Literals(["expo"]),
+});
+export type SetAuthSessionPushNotificationTokenInput =
+  typeof SetAuthSessionPushNotificationTokenInput.Type;
+
+export interface AuthSessionRepositoryShape {
+  readonly create: (
+    input: CreateAuthSessionInput,
+  ) => Effect.Effect<void, AuthSessionRepositoryError>;
+  readonly getById: (
+    input: GetAuthSessionByIdInput,
+  ) => Effect.Effect<Option.Option<AuthSessionRecord>, AuthSessionRepositoryError>;
+  readonly listActive: (
+    input: ListActiveAuthSessionsInput,
+  ) => Effect.Effect<ReadonlyArray<AuthSessionRecord>, AuthSessionRepositoryError>;
+  readonly revoke: (
+    input: RevokeAuthSessionInput,
+  ) => Effect.Effect<boolean, AuthSessionRepositoryError>;
+  readonly revokeAllExcept: (
+    input: RevokeOtherAuthSessionsInput,
+  ) => Effect.Effect<ReadonlyArray<AuthSessionId>, AuthSessionRepositoryError>;
+  readonly setLastConnectedAt: (
+    input: SetAuthSessionLastConnectedAtInput,
+  ) => Effect.Effect<void, AuthSessionRepositoryError>;
+  readonly setPushNotificationToken: (
+    input: SetAuthSessionPushNotificationTokenInput,
+  ) => Effect.Effect<void, AuthSessionRepositoryError>;
+}
+
 export class AuthSessionRepository extends Context.Service<
   AuthSessionRepository,
-  {
-    readonly create: (
-      input: CreateAuthSessionInput,
-    ) => Effect.Effect<void, AuthSessionRepositoryError>;
-    readonly getById: (
-      input: GetAuthSessionByIdInput,
-    ) => Effect.Effect<Option.Option<AuthSessionRecord>, AuthSessionRepositoryError>;
-    readonly listActive: (
-      input: ListActiveAuthSessionsInput,
-    ) => Effect.Effect<ReadonlyArray<AuthSessionRecord>, AuthSessionRepositoryError>;
-    readonly revoke: (
-      input: RevokeAuthSessionInput,
-    ) => Effect.Effect<boolean, AuthSessionRepositoryError>;
-    readonly revokeAllExcept: (
-      input: RevokeOtherAuthSessionsInput,
-    ) => Effect.Effect<ReadonlyArray<AuthSessionId>, AuthSessionRepositoryError>;
-    readonly setLastConnectedAt: (
-      input: SetAuthSessionLastConnectedAtInput,
-    ) => Effect.Effect<void, AuthSessionRepositoryError>;
-  }
+  AuthSessionRepositoryShape
 >()("t3/persistence/AuthSessions/AuthSessionRepository") {}
 
 const AuthSessionDbRow = Schema.Struct({
@@ -121,6 +136,8 @@ const AuthSessionDbRow = Schema.Struct({
   expiresAt: Schema.DateTimeUtcFromString,
   lastConnectedAt: Schema.NullOr(Schema.DateTimeUtcFromString),
   revokedAt: Schema.NullOr(Schema.DateTimeUtcFromString),
+  pushNotificationToken: Schema.NullOr(Schema.String),
+  pushNotificationPlatform: Schema.NullOr(Schema.Literals(["expo"])),
 });
 
 const AuthSessionRawDbRow = Schema.Struct({
@@ -138,6 +155,8 @@ const AuthSessionRawDbRow = Schema.Struct({
   expiresAt: Schema.Unknown,
   lastConnectedAt: Schema.Unknown,
   revokedAt: Schema.Unknown,
+  pushNotificationToken: Schema.Unknown,
+  pushNotificationPlatform: Schema.Unknown,
 });
 
 const decodeAuthSessionDbRow = Schema.decodeUnknownEffect(AuthSessionDbRow);
@@ -160,6 +179,8 @@ function toAuthSessionRecord(row: typeof AuthSessionDbRow.Type): AuthSessionReco
     expiresAt: row.expiresAt,
     lastConnectedAt: row.lastConnectedAt,
     revokedAt: row.revokedAt,
+    pushNotificationToken: row.pushNotificationToken,
+    pushNotificationPlatform: row.pushNotificationPlatform,
   };
 }
 
@@ -237,7 +258,9 @@ export const make = Effect.gen(function* () {
           issued_at AS "issuedAt",
           expires_at AS "expiresAt",
           last_connected_at AS "lastConnectedAt",
-          revoked_at AS "revokedAt"
+          revoked_at AS "revokedAt",
+          push_notification_token AS "pushNotificationToken",
+          push_notification_platform AS "pushNotificationPlatform"
         FROM auth_sessions
         WHERE session_id = ${sessionId}
       `,
@@ -262,7 +285,9 @@ export const make = Effect.gen(function* () {
           issued_at AS "issuedAt",
           expires_at AS "expiresAt",
           last_connected_at AS "lastConnectedAt",
-          revoked_at AS "revokedAt"
+          revoked_at AS "revokedAt",
+          push_notification_token AS "pushNotificationToken",
+          push_notification_platform AS "pushNotificationPlatform"
         FROM auth_sessions
         WHERE revoked_at IS NULL
           AND expires_at > ${now}
@@ -276,6 +301,19 @@ export const make = Effect.gen(function* () {
       sql`
         UPDATE auth_sessions
         SET last_connected_at = ${lastConnectedAt}
+        WHERE session_id = ${sessionId}
+          AND revoked_at IS NULL
+      `,
+  });
+
+  const setPushNotificationTokenRow = SqlSchema.void({
+    Request: SetAuthSessionPushNotificationTokenInput,
+    execute: ({ sessionId, token, platform }) =>
+      sql`
+        UPDATE auth_sessions
+        SET
+          push_notification_token = ${token},
+          push_notification_platform = ${platform}
         WHERE session_id = ${sessionId}
           AND revoked_at IS NULL
       `,
@@ -404,6 +442,18 @@ export const make = Effect.gen(function* () {
       ),
     );
 
+  const setPushNotificationToken: AuthSessionRepositoryShape["setPushNotificationToken"] = (
+    input,
+  ) =>
+    setPushNotificationTokenRow(input).pipe(
+      Effect.mapError(
+        toPersistenceSqlOrDecodeError(
+          "AuthSessionRepository.setPushNotificationToken:query",
+          "AuthSessionRepository.setPushNotificationToken:encodeRequest",
+        ),
+      ),
+    );
+
   return {
     create,
     getById,
@@ -411,7 +461,8 @@ export const make = Effect.gen(function* () {
     revoke,
     revokeAllExcept,
     setLastConnectedAt,
-  } satisfies AuthSessionRepository["Service"];
+    setPushNotificationToken,
+  } satisfies AuthSessionRepositoryShape;
 });
 
 export const layer = Layer.effect(AuthSessionRepository, make);

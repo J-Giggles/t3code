@@ -47,6 +47,9 @@ const makeProjectionThreadRepository = Effect.gen(function* () {
           pending_approval_count,
           pending_user_input_count,
           has_actionable_proposed_plan,
+          lifecycle_status,
+          lifecycle_updated_at,
+          lifecycle_reason,
           deleted_at
         )
         VALUES (
@@ -66,6 +69,9 @@ const makeProjectionThreadRepository = Effect.gen(function* () {
           ${row.pendingApprovalCount},
           ${row.pendingUserInputCount},
           ${row.hasActionableProposedPlan},
+          ${row.lifecycleStatus ?? null},
+          ${row.lifecycleUpdatedAt ?? null},
+          ${row.lifecycleReason ?? null},
           ${row.deletedAt}
         )
         ON CONFLICT (thread_id)
@@ -85,6 +91,9 @@ const makeProjectionThreadRepository = Effect.gen(function* () {
           pending_approval_count = excluded.pending_approval_count,
           pending_user_input_count = excluded.pending_user_input_count,
           has_actionable_proposed_plan = excluded.has_actionable_proposed_plan,
+          lifecycle_status = excluded.lifecycle_status,
+          lifecycle_updated_at = excluded.lifecycle_updated_at,
+          lifecycle_reason = excluded.lifecycle_reason,
           deleted_at = excluded.deleted_at
       `,
   });
@@ -111,6 +120,9 @@ const makeProjectionThreadRepository = Effect.gen(function* () {
           pending_approval_count AS "pendingApprovalCount",
           pending_user_input_count AS "pendingUserInputCount",
           has_actionable_proposed_plan AS "hasActionableProposedPlan",
+          lifecycle_status AS "lifecycleStatus",
+          lifecycle_updated_at AS "lifecycleUpdatedAt",
+          lifecycle_reason AS "lifecycleReason",
           deleted_at AS "deletedAt"
         FROM projection_threads
         WHERE thread_id = ${threadId}
@@ -139,6 +151,9 @@ const makeProjectionThreadRepository = Effect.gen(function* () {
           pending_approval_count AS "pendingApprovalCount",
           pending_user_input_count AS "pendingUserInputCount",
           has_actionable_proposed_plan AS "hasActionableProposedPlan",
+          lifecycle_status AS "lifecycleStatus",
+          lifecycle_updated_at AS "lifecycleUpdatedAt",
+          lifecycle_reason AS "lifecycleReason",
           deleted_at AS "deletedAt"
         FROM projection_threads
         WHERE project_id = ${projectId}

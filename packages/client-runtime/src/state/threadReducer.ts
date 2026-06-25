@@ -490,13 +490,15 @@ export function applyThreadDetailEvent(
  */
 function settledTurnStateForSessionStatus(
   status: OrchestrationSession["status"],
-): "completed" | "interrupted" | "error" | null {
+): "paused" | "completed" | "interrupted" | "error" | null {
   switch (status) {
     case "idle":
     case "ready":
       return "completed";
     case "error":
       return "error";
+    case "paused":
+      return "paused";
     case "interrupted":
     case "stopped":
       return "interrupted";

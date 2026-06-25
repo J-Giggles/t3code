@@ -7,6 +7,7 @@ import * as HttpApiBuilder from "effect/unstable/httpapi/HttpApiBuilder";
 import * as ServerConfig from "./config.ts";
 import {
   otlpTracesProxyRouteLayer,
+  otlpLogsProxyRouteLayer,
   assetRouteLayer,
   serverEnvironmentHttpApiLayer,
   staticAndDevRouteLayer,
@@ -17,6 +18,10 @@ import { websocketRpcRouteLayer } from "./ws.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import { layerConfig as SqlitePersistenceLayerLive } from "./persistence/Layers/Sqlite.ts";
 import * as ServerLifecycleEvents from "./serverLifecycleEvents.ts";
+import {
+  runtimeRestartNotificationRouteLayer,
+  ServerRuntimeRestartLive,
+} from "./serverRuntimeRestart.ts";
 import * as AnalyticsService from "./telemetry/AnalyticsService.ts";
 import { ProviderSessionDirectoryLive } from "./provider/Layers/ProviderSessionDirectory.ts";
 import * as ProviderSessionRuntime from "./persistence/ProviderSessionRuntime.ts";
@@ -24,6 +29,7 @@ import { ProviderAdapterRegistryLive } from "./provider/Layers/ProviderAdapterRe
 import * as ProviderEventLoggers from "./provider/Layers/ProviderEventLoggers.ts";
 import { ProviderServiceLive } from "./provider/Layers/ProviderService.ts";
 import { ProviderSessionReaperLive } from "./provider/Layers/ProviderSessionReaper.ts";
+import { ProviderSessionStartupRecoveryLive } from "./provider/Layers/ProviderSessionStartupRecovery.ts";
 import * as OpenCodeRuntime from "./provider/opencodeRuntime.ts";
 import * as CheckpointDiffQuery from "./checkpointing/CheckpointDiffQuery.ts";
 import * as CheckpointStore from "./checkpointing/CheckpointStore.ts";
@@ -44,6 +50,7 @@ import * as GitManager from "./git/GitManager.ts";
 import * as Keybindings from "./keybindings.ts";
 import * as ServerRuntimeStartup from "./serverRuntimeStartup.ts";
 import { OrchestrationReactorLive } from "./orchestration/Layers/OrchestrationReactor.ts";
+import { ConnectedDeviceNotificationsLive } from "./orchestration/Layers/ConnectedDeviceNotifications.ts";
 import { RuntimeReceiptBusLive } from "./orchestration/Layers/RuntimeReceiptBus.ts";
 import { ProviderRuntimeIngestionLive } from "./orchestration/Layers/ProviderRuntimeIngestion.ts";
 import { ProviderCommandReactorLive } from "./orchestration/Layers/ProviderCommandReactor.ts";
@@ -54,9 +61,12 @@ import { hasCloudPublicConfig } from "./cloud/publicConfig.ts";
 import { ProviderRegistryLive } from "./provider/Layers/ProviderRegistry.ts";
 import * as ServerSettings from "./serverSettings.ts";
 import * as ProjectFaviconResolver from "./project/ProjectFaviconResolver.ts";
+import { ProjectAgentFilesLive } from "./project/Layers/ProjectAgentFiles.ts";
+import { ProjectAgentHarnessResolverLive } from "./project/Layers/ProjectAgentHarnessResolver.ts";
 import * as RepositoryIdentityResolver from "./project/RepositoryIdentityResolver.ts";
 import * as WorkspaceEntries from "./workspace/WorkspaceEntries.ts";
 import * as WorkspaceFileSystem from "./workspace/WorkspaceFileSystem.ts";
+import { WorkspaceFileSystemLive as WorkspaceFileSystemServiceLive } from "./workspace/Layers/WorkspaceFileSystem.ts";
 import * as WorkspacePaths from "./workspace/WorkspacePaths.ts";
 import * as GitVcsDriver from "./vcs/GitVcsDriver.ts";
 import * as VcsDriverRegistry from "./vcs/VcsDriverRegistry.ts";
@@ -82,6 +92,7 @@ import * as CloudCliState from "./cloud/CliState.ts";
 import * as ProcessDiagnostics from "./diagnostics/ProcessDiagnostics.ts";
 import * as ProcessResourceMonitor from "./diagnostics/ProcessResourceMonitor.ts";
 import * as TraceDiagnostics from "./diagnostics/TraceDiagnostics.ts";
+import * as ServerDevAppLaunchManager from "./devLaunch/ServerDevAppLaunchManager.ts";
 import { OrchestrationLayerLive } from "./orchestration/runtimeLayer.ts";
 import {
   clearPersistedServerRuntimeState,
@@ -229,6 +240,7 @@ const ReactorLayerLive = Layer.empty.pipe(
   Layer.provideMerge(ProviderCommandReactorLive),
   Layer.provideMerge(CheckpointReactorLive),
   Layer.provideMerge(ThreadDeletionReactorLive),
+  Layer.provideMerge(ConnectedDeviceNotificationsLive),
   Layer.provideMerge(AgentAwarenessRelay.layer.pipe(Layer.provide(ServerSecretStore.layer))),
   Layer.provideMerge(RuntimeReceiptBusLive),
 );
@@ -323,6 +335,11 @@ const WorkspaceFileSystemLayerLive = WorkspaceFileSystem.layer.pipe(
   Layer.provide(WorkspaceEntriesLayerLive),
 );
 
+const WorkspaceFileSystemServiceLayerLive = WorkspaceFileSystemServiceLive.pipe(
+  Layer.provide(WorkspacePaths.layer),
+  Layer.provide(WorkspaceEntriesLayerLive),
+);
+
 const WorkspaceLayerLive = Layer.mergeAll(
   WorkspacePaths.layer,
   WorkspaceEntriesLayerLive,
@@ -331,6 +348,26 @@ const WorkspaceLayerLive = Layer.mergeAll(
 
 const ProjectFaviconResolverLayerLive = ProjectFaviconResolver.layer.pipe(
   Layer.provide(WorkspacePaths.layer),
+);
+
+const ProjectAgentFilesLayerLive = ProjectAgentFilesLive.pipe(
+  Layer.provide(WorkspaceLayerLive),
+  Layer.provide(WorkspaceFileSystemServiceLayerLive),
+  Layer.provide(RepositoryIdentityResolver.layer),
+  Layer.provide(ServerSecretStore.layer),
+);
+
+const ProjectAgentHarnessResolverLayerLive = ProjectAgentHarnessResolverLive.pipe(
+  Layer.provide(WorkspacePaths.layer),
+  Layer.provide(RepositoryIdentityResolver.layer),
+  Layer.provide(ServerSecretStore.layer),
+);
+
+const ProjectLayerLive = Layer.mergeAll(
+  ProjectFaviconResolverLayerLive,
+  ProjectAgentFilesLayerLive,
+  ProjectAgentHarnessResolverLayerLive,
+  RepositoryIdentityResolver.layer,
 );
 
 const AuthLayerLive = EnvironmentAuth.layer.pipe(
@@ -346,9 +383,13 @@ const CloudManagedEndpointRuntimeLive = Layer.mergeAll(
   ),
 );
 
-const ProviderRuntimeLayerLive = ProviderSessionReaperLive.pipe(
+const ProviderRuntimeLayerLive = Layer.mergeAll(
+  ProviderSessionReaperLive,
+  ProviderSessionStartupRecoveryLive,
+).pipe(
   Layer.provideMerge(ProviderLayerLive),
   Layer.provideMerge(OrchestrationLayerLive),
+  Layer.provideMerge(ProviderSessionRuntime.layer),
 );
 
 const RuntimeCoreDependenciesLive = ReactorLayerLive.pipe(
@@ -382,8 +423,7 @@ const RuntimeCoreDependenciesLive = ReactorLayerLive.pipe(
   Layer.provideMerge(OpenCodeRuntime.OpenCodeRuntimeLive),
   Layer.provideMerge(ServerSettings.layer.pipe(Layer.provide(ServerSecretStore.layer))),
   Layer.provideMerge(WorkspaceLayerLive),
-  Layer.provideMerge(ProjectFaviconResolverLayerLive),
-  Layer.provideMerge(RepositoryIdentityResolver.layer),
+  Layer.provideMerge(ProjectLayerLive),
   Layer.provideMerge(ServerEnvironment.layer),
   Layer.provideMerge(AuthLayerLive),
   Layer.provideMerge(ServerSecretStore.layer),
@@ -395,6 +435,10 @@ const RuntimeCoreDependenciesLive = ReactorLayerLive.pipe(
   ),
 );
 
+const RuntimeLifecycleLayerLive = ServerRuntimeRestartLive.pipe(
+  Layer.provideMerge(ServerLifecycleEvents.layer),
+);
+
 const RuntimeDependenciesLive = RuntimeCoreDependenciesLive.pipe(
   // Misc.
   Layer.provideMerge(ProcessDiagnostics.layer),
@@ -402,7 +446,8 @@ const RuntimeDependenciesLive = RuntimeCoreDependenciesLive.pipe(
   Layer.provideMerge(TraceDiagnostics.layer),
   Layer.provideMerge(AnalyticsService.layer),
   Layer.provideMerge(ExternalLauncher.layer),
-  Layer.provideMerge(ServerLifecycleEvents.layer),
+  Layer.provideMerge(ServerDevAppLaunchManager.ServerDevAppLaunchManagerLive),
+  Layer.provideMerge(RuntimeLifecycleLayerLive),
   Layer.provide(NetService.layer),
 );
 
@@ -420,7 +465,9 @@ export const makeRoutesLayer = Layer.mergeAll(
       Layer.provide(environmentAuthenticatedAuthLayer),
     ),
     otlpTracesProxyRouteLayer,
+    otlpLogsProxyRouteLayer,
     assetRouteLayer,
+    runtimeRestartNotificationRouteLayer,
     staticAndDevRouteLayer,
     websocketRpcRouteLayer,
   ),

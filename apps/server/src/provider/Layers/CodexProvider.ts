@@ -16,6 +16,7 @@ import * as CodexErrors from "effect-codex-app-server/errors";
 import type {
   CodexSettings,
   ServerProvider,
+  ServerProviderUsage,
   ServerProviderState,
   ModelCapabilities,
   ProviderOptionDescriptor,
@@ -47,6 +48,7 @@ export interface CodexAppServerProviderSnapshot {
   readonly version: string | undefined;
   readonly models: ReadonlyArray<ServerProviderModel>;
   readonly skills: ReadonlyArray<ServerProviderSkill>;
+  readonly usage?: ServerProviderUsage;
 }
 
 const REASONING_EFFORT_LABELS: Readonly<Record<string, string>> = {
@@ -135,7 +137,9 @@ export function mapCodexModelCapabilities(
   )
     ? model.defaultServiceTier
     : null;
-  const defaultServiceTier = catalogDefaultServiceTier ?? DEFAULT_SERVICE_TIER_ID;
+  const fastServiceTier = serviceTiers.some((tier) => tier.id === "fast") ? "fast" : null;
+  const defaultServiceTier =
+    fastServiceTier ?? catalogDefaultServiceTier ?? DEFAULT_SERVICE_TIER_ID;
   const optionDescriptors: ProviderOptionDescriptor[] = [];
 
   if (reasoningOptions.length > 0) {
@@ -262,16 +266,169 @@ const requestAllCodexModels = Effect.fn("requestAllCodexModels")(function* (
   let cursor: string | null | undefined = undefined;
 
   do {
-    const response: CodexSchema.V2ModelListResponse = yield* client.request(
-      "model/list",
-      cursor ? { cursor } : {},
-    );
+    const params: CodexSchema.V2ModelListParams = cursor ? { cursor } : {};
+    const response: CodexSchema.V2ModelListResponse = yield* client.request("model/list", params);
     models.push(...parseCodexModelListResponse(response));
     cursor = response.nextCursor;
   } while (cursor);
 
   return models;
 });
+
+function codexWindowLabel(windowMinutes: number | null | undefined): string {
+  if (!windowMinutes || windowMinutes <= 0) return "Limit";
+  if (windowMinutes % (60 * 24 * 7) === 0) {
+    const weeks = windowMinutes / (60 * 24 * 7);
+    return weeks === 1 ? "Weekly limit" : `${weeks} week limit`;
+  }
+  if (windowMinutes % (60 * 24) === 0) {
+    const days = windowMinutes / (60 * 24);
+    return days === 1 ? "Daily limit" : `${days} day limit`;
+  }
+  if (windowMinutes % 60 === 0) {
+    const hours = windowMinutes / 60;
+    return `${hours}h limit`;
+  }
+  return `${windowMinutes}m limit`;
+}
+
+function normalizeCodexRateLimitWindow(
+  label: string,
+  window: CodexSchema.V2GetAccountRateLimitsResponse__RateLimitWindow | null | undefined,
+): ServerProviderUsage["limits"][number]["windows"][number] | null {
+  if (!window) return null;
+  const usedPercent = Math.max(0, Math.min(100, window.usedPercent));
+  const resetsAt =
+    typeof window.resetsAt === "number" && Number.isFinite(window.resetsAt)
+      ? DateTime.formatIso(DateTime.makeUnsafe(window.resetsAt * 1000))
+      : null;
+  return {
+    label,
+    usedPercent,
+    remainingPercent: 100 - usedPercent,
+    resetsAt,
+    windowMinutes:
+      typeof window.windowDurationMins === "number" && window.windowDurationMins > 0
+        ? window.windowDurationMins
+        : null,
+  };
+}
+
+type NormalizedCodexUsageLimit = ServerProviderUsage["limits"][number];
+type NormalizedCodexUsageLimitWindow = NormalizedCodexUsageLimit["windows"][number];
+
+function normalizeCodexUsageSortLabel(label: string): string {
+  return label.trim().replace(/[-_]+/g, " ").replace(/\s+/g, " ").toLowerCase();
+}
+
+function codexUsageLimitRank(label: string): number {
+  switch (normalizeCodexUsageSortLabel(label)) {
+    case "codex":
+      return 0;
+    case "codex spark":
+      return 1;
+    default:
+      return 2;
+  }
+}
+
+function compareCodexUsageLimits(
+  left: NormalizedCodexUsageLimit,
+  right: NormalizedCodexUsageLimit,
+): number {
+  const leftRank = codexUsageLimitRank(left.label);
+  const rightRank = codexUsageLimitRank(right.label);
+  if (leftRank !== rightRank) return leftRank - rightRank;
+
+  const leftLabel = normalizeCodexUsageSortLabel(left.label);
+  const rightLabel = normalizeCodexUsageSortLabel(right.label);
+  return leftLabel.localeCompare(rightLabel) || left.id.localeCompare(right.id);
+}
+
+function compareCodexUsageLimitWindows(
+  left: NormalizedCodexUsageLimitWindow,
+  right: NormalizedCodexUsageLimitWindow,
+): number {
+  const leftWindowMinutes = left.windowMinutes ?? Number.POSITIVE_INFINITY;
+  const rightWindowMinutes = right.windowMinutes ?? Number.POSITIVE_INFINITY;
+  return leftWindowMinutes - rightWindowMinutes || left.label.localeCompare(right.label);
+}
+
+export function normalizeCodexUsage(input: {
+  readonly checkedAt: string;
+  readonly tokenUsage?: CodexSchema.V2GetAccountTokenUsageResponse | undefined;
+  readonly rateLimits?: CodexSchema.V2GetAccountRateLimitsResponse | undefined;
+}): ServerProviderUsage {
+  const rateLimitsByLimitId = input.rateLimits?.rateLimitsByLimitId;
+  const rateLimitEntries: ReadonlyArray<
+    readonly [string, CodexSchema.V2GetAccountRateLimitsResponse__RateLimitSnapshot]
+  > = rateLimitsByLimitId ? Object.entries(rateLimitsByLimitId) : [];
+  const snapshots: ReadonlyArray<
+    readonly [string, CodexSchema.V2GetAccountRateLimitsResponse__RateLimitSnapshot]
+  > =
+    rateLimitEntries.length > 0
+      ? rateLimitEntries
+      : input.rateLimits
+        ? [[input.rateLimits.rateLimits.limitId ?? "codex", input.rateLimits.rateLimits]]
+        : [];
+  const limits = snapshots
+    .flatMap(([id, snapshot]) => {
+      const primary = normalizeCodexRateLimitWindow(
+        codexWindowLabel(snapshot.primary?.windowDurationMins),
+        snapshot.primary,
+      );
+      const secondary = normalizeCodexRateLimitWindow(
+        codexWindowLabel(snapshot.secondary?.windowDurationMins),
+        snapshot.secondary,
+      );
+      const windows = [primary, secondary].filter((window) => window !== null);
+      if (windows.length === 0) return [];
+      return [
+        {
+          id,
+          label: snapshot.limitName?.trim() || id,
+          windows: windows.toSorted(compareCodexUsageLimitWindows),
+        },
+      ];
+    })
+    .toSorted(compareCodexUsageLimits);
+
+  return {
+    checkedAt: input.checkedAt,
+    summary: {
+      ...(input.tokenUsage?.summary.currentStreakDays !== null &&
+      input.tokenUsage?.summary.currentStreakDays !== undefined
+        ? { currentStreakDays: input.tokenUsage.summary.currentStreakDays }
+        : {}),
+      ...(input.tokenUsage?.summary.lifetimeTokens !== null &&
+      input.tokenUsage?.summary.lifetimeTokens !== undefined
+        ? { lifetimeTokens: input.tokenUsage.summary.lifetimeTokens }
+        : {}),
+      ...(input.tokenUsage?.summary.longestRunningTurnSec !== null &&
+      input.tokenUsage?.summary.longestRunningTurnSec !== undefined
+        ? { longestRunningTurnSec: input.tokenUsage.summary.longestRunningTurnSec }
+        : {}),
+      ...(input.tokenUsage?.summary.longestStreakDays !== null &&
+      input.tokenUsage?.summary.longestStreakDays !== undefined
+        ? { longestStreakDays: input.tokenUsage.summary.longestStreakDays }
+        : {}),
+      ...(input.tokenUsage?.summary.peakDailyTokens !== null &&
+      input.tokenUsage?.summary.peakDailyTokens !== undefined
+        ? { peakDailyTokens: input.tokenUsage.summary.peakDailyTokens }
+        : {}),
+    },
+    dailyUsageBuckets: input.tokenUsage?.dailyUsageBuckets ?? [],
+    limits,
+  };
+}
+
+function hasCodexUsageData(usage: ServerProviderUsage): boolean {
+  return (
+    usage.limits.length > 0 ||
+    usage.dailyUsageBuckets.length > 0 ||
+    Object.keys(usage.summary).length > 0
+  );
+}
 
 export function buildCodexInitializeParams(): CodexSchema.V1InitializeParams {
   return {
@@ -285,6 +442,63 @@ export function buildCodexInitializeParams(): CodexSchema.V1InitializeParams {
     },
   };
 }
+
+export interface CodexSkillConfigWriteInput {
+  readonly name?: string | undefined;
+  readonly path?: string | undefined;
+  readonly enabled: boolean;
+}
+
+export const writeCodexSkillConfig = Effect.fn("writeCodexSkillConfig")(function* (
+  codexSettings: CodexSettings,
+  input: CodexSkillConfigWriteInput,
+  environment?: NodeJS.ProcessEnv,
+) {
+  const resolvedHomePath = codexSettings.homePath
+    ? expandHomePath(codexSettings.homePath)
+    : undefined;
+  const resolvedEnvironment = {
+    ...(environment ?? process.env),
+    ...(resolvedHomePath ? { CODEX_HOME: resolvedHomePath } : {}),
+  };
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const spawnCommand = yield* resolveSpawnCommand(codexSettings.binaryPath, ["app-server"], {
+    env: resolvedEnvironment,
+    extendEnv: true,
+  });
+  const child = yield* spawner
+    .spawn(
+      ChildProcess.make(spawnCommand.command, spawnCommand.args, {
+        cwd: process.cwd(),
+        env: resolvedEnvironment,
+        extendEnv: true,
+        forceKillAfter: CODEX_APP_SERVER_PROBE_FORCE_KILL_AFTER,
+        shell: spawnCommand.shell,
+      }),
+    )
+    .pipe(
+      Effect.mapError(
+        (cause) =>
+          new CodexErrors.CodexAppServerSpawnError({
+            command: `${codexSettings.binaryPath} app-server`,
+            cause,
+          }),
+      ),
+    );
+  const clientContext = yield* Layer.build(CodexClient.layerChildProcess(child));
+  const client = yield* Effect.service(CodexClient.CodexAppServerClient).pipe(
+    Effect.provide(clientContext),
+  );
+
+  yield* client.request("initialize", buildCodexInitializeParams());
+  yield* client.notify("initialized", undefined);
+
+  return yield* client.request("skills/config/write", {
+    enabled: input.enabled,
+    ...(input.name ? { name: input.name } : {}),
+    ...(input.path ? { path: input.path } : {}),
+  });
+});
 
 const probeCodexAppServerProvider = Effect.fn("probeCodexAppServerProvider")(function* (input: {
   readonly binaryPath: string;
@@ -357,21 +571,30 @@ const probeCodexAppServerProvider = Effect.fn("probeCodexAppServerProvider")(fun
     } satisfies CodexAppServerProviderSnapshot;
   }
 
-  const [skillsResponse, models] = yield* Effect.all(
+  const [skillsResponse, models, tokenUsageResult, rateLimitsResult] = yield* Effect.all(
     [
       client.request("skills/list", {
         cwds: [input.cwd],
       }),
       requestAllCodexModels(client),
+      client.request("account/usage/read", undefined).pipe(Effect.option),
+      client.request("account/rateLimits/read", undefined).pipe(Effect.option),
     ],
     { concurrency: "unbounded" },
   );
+  const checkedAt = DateTime.formatIso(yield* DateTime.now);
+  const usage = normalizeCodexUsage({
+    checkedAt,
+    tokenUsage: Option.getOrUndefined(tokenUsageResult),
+    rateLimits: Option.getOrUndefined(rateLimitsResult),
+  });
 
   return {
     account: accountResponse,
     version,
     models: appendCustomCodexModels(models, input.customModels ?? []),
     skills: parseCodexSkillsListResponse(skillsResponse, input.cwd),
+    ...(hasCodexUsageData(usage) ? { usage } : {}),
   } satisfies CodexAppServerProviderSnapshot;
 });
 
@@ -559,6 +782,7 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
     checkedAt,
     models: snapshot.models,
     skills: snapshot.skills,
+    usage: snapshot.usage,
     probe: {
       installed: true,
       version: snapshot.version ?? null,

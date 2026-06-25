@@ -18,6 +18,7 @@ import {
   ExternalLauncherCommandNotFoundError,
   type OrchestrationThreadShell,
   TerminalNotRunningError,
+  TextGenerationError,
   type OrchestrationCommand,
   type OrchestrationEvent,
   ORCHESTRATION_WS_METHODS,
@@ -26,10 +27,13 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   ResolvedKeybindingRule,
+  type TerminalSessionSnapshot,
   ThreadId,
   WS_METHODS,
   WsRpcGroup,
   EditorId,
+  ServerRuntimeRestartError,
+  type DesktopDevLaunchState,
 } from "@t3tools/contracts";
 import {
   computeDpopAccessTokenHash,
@@ -133,30 +137,48 @@ import * as ServerConfig from "./config.ts";
 import { rewriteCssForPublicPathPrefix, rewriteHtmlForPublicPathPrefix } from "./http.ts";
 import { configureTailscaleServeForBackend, makeRoutesLayer } from "./server.ts";
 import * as CheckpointDiffQuery from "./checkpointing/CheckpointDiffQuery.ts";
+import type { CheckpointDiffQueryShape } from "./checkpointing/CheckpointDiffQuery.ts";
 import * as GitManager from "./git/GitManager.ts";
+import type { GitManagerShape } from "./git/GitManager.ts";
 import * as Keybindings from "./keybindings.ts";
+import type { KeybindingsShape } from "./keybindings.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as OrchestrationEngine from "./orchestration/Services/OrchestrationEngine.ts";
+import type { OrchestrationEngineShape } from "./orchestration/Services/OrchestrationEngine.ts";
 import { OrchestrationListenerCallbackError } from "./orchestration/Errors.ts";
 import * as ProjectionSnapshotQuery from "./orchestration/Services/ProjectionSnapshotQuery.ts";
+import type { ProjectionSnapshotQueryShape } from "./orchestration/Services/ProjectionSnapshotQuery.ts";
 import { SqlitePersistenceMemory } from "./persistence/Layers/Sqlite.ts";
 import { PersistenceSqlError } from "./persistence/Errors.ts";
 import * as ProviderRegistry from "./provider/Services/ProviderRegistry.ts";
+import type { ProviderRegistryShape } from "./provider/Services/ProviderRegistry.ts";
 import { makeManualOnlyProviderMaintenanceCapabilities } from "./provider/providerMaintenance.ts";
 import * as ServerLifecycleEvents from "./serverLifecycleEvents.ts";
-import * as ServerRuntimeStartup from "./serverRuntimeStartup.ts";
-import * as ServerSettings from "./serverSettings.ts";
-import * as TerminalManager from "./terminal/Manager.ts";
+import type { ServerLifecycleEventsShape } from "./serverLifecycleEvents.ts";
+import { ServerRuntimeRestart, type ServerRuntimeRestartShape } from "./serverRuntimeRestart.ts";
+import { ServerRuntimeStartup, type ServerRuntimeStartupShape } from "./serverRuntimeStartup.ts";
+import { ServerSettingsService, type ServerSettingsShape } from "./serverSettings.ts";
+import { TextGeneration, type TextGenerationShape } from "./textGeneration/TextGeneration.ts";
+import * as TerminalManager from "./terminal/Services/Manager.ts";
+import type { TerminalManagerShape } from "./terminal/Services/Manager.ts";
 import * as PreviewManager from "./preview/Manager.ts";
 import * as PortScanner from "./preview/PortScanner.ts";
-import * as BrowserTraceCollector from "./observability/BrowserTraceCollector.ts";
-import * as ProjectFaviconResolver from "./project/ProjectFaviconResolver.ts";
-import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
-import * as RepositoryIdentityResolver from "./project/RepositoryIdentityResolver.ts";
-import * as ServerEnvironment from "./environment/ServerEnvironment.ts";
+import * as BrowserTraceCollector from "./observability/Services/BrowserTraceCollector.ts";
+import type { BrowserTraceCollectorShape } from "./observability/Services/BrowserTraceCollector.ts";
+import { ProjectFaviconResolverLive } from "./project/Layers/ProjectFaviconResolver.ts";
+import * as ProjectSetupScriptRunner from "./project/Services/ProjectSetupScriptRunner.ts";
+import type { ProjectSetupScriptRunnerShape } from "./project/Services/ProjectSetupScriptRunner.ts";
+import { ProjectAgentFiles } from "./project/Services/ProjectAgentFiles.ts";
+import * as RepositoryIdentityResolver from "./project/Services/RepositoryIdentityResolver.ts";
+import type { RepositoryIdentityResolverShape } from "./project/Services/RepositoryIdentityResolver.ts";
+import {
+  ServerEnvironment,
+  type ServerEnvironmentShape,
+} from "./environment/Services/ServerEnvironment.ts";
 import * as WorkspaceEntries from "./workspace/WorkspaceEntries.ts";
 import * as WorkspaceFileSystem from "./workspace/WorkspaceFileSystem.ts";
 import * as WorkspacePaths from "./workspace/WorkspacePaths.ts";
+import type { CloudManagedEndpointRuntimeShape } from "./cloud/ManagedEndpointRuntime.ts";
 import * as GitVcsDriver from "./vcs/GitVcsDriver.ts";
 import * as VcsDriver from "./vcs/VcsDriver.ts";
 import * as VcsStatusBroadcaster from "./vcs/VcsStatusBroadcaster.ts";
@@ -172,6 +194,10 @@ import * as CloudCliTokenManager from "./cloud/CliTokenManager.ts";
 import * as ProcessDiagnostics from "./diagnostics/ProcessDiagnostics.ts";
 import * as ProcessResourceMonitor from "./diagnostics/ProcessResourceMonitor.ts";
 import * as TraceDiagnostics from "./diagnostics/TraceDiagnostics.ts";
+import {
+  ServerDevAppLaunchManager,
+  type ServerDevAppLaunchManagerShape,
+} from "./devLaunch/ServerDevAppLaunchManager.ts";
 import * as Data from "effect/Data";
 
 const defaultProjectId = ProjectId.make("project-default");
@@ -375,38 +401,33 @@ const makeBrowserOtlpPayload = (spanName: string) =>
 const buildAppUnderTest = (options?: {
   config?: Partial<ServerConfig.ServerConfig["Service"]>;
   layers?: {
-    keybindings?: Partial<Keybindings.Keybindings["Service"]>;
-    providerRegistry?: Partial<ProviderRegistry.ProviderRegistry["Service"]>;
-    serverSettings?: Partial<ServerSettings.ServerSettingsService["Service"]>;
-    externalLauncher?: Partial<ExternalLauncher.ExternalLauncher["Service"]>;
-    vcsDriver?: Partial<VcsDriver.VcsDriver["Service"]>;
-    vcsDriverRegistry?: Partial<VcsDriverRegistry.VcsDriverRegistry["Service"]>;
-    gitVcsDriver?: Partial<GitVcsDriver.GitVcsDriver["Service"]>;
-    gitManager?: Partial<GitManager.GitManager["Service"]>;
-    sourceControlRepositoryService?: Partial<
-      SourceControlRepositoryService.SourceControlRepositoryService["Service"]
-    >;
-    reviewService?: Partial<ReviewService.ReviewService["Service"]>;
-    vcsStatusBroadcaster?: Partial<VcsStatusBroadcaster.VcsStatusBroadcaster["Service"]>;
-    projectSetupScriptRunner?: Partial<
-      ProjectSetupScriptRunner.ProjectSetupScriptRunner["Service"]
-    >;
-    terminalManager?: Partial<TerminalManager.TerminalManager["Service"]>;
-    orchestrationEngine?: Partial<OrchestrationEngine.OrchestrationEngineService["Service"]>;
-    projectionSnapshotQuery?: Partial<ProjectionSnapshotQuery.ProjectionSnapshotQuery["Service"]>;
-    checkpointDiffQuery?: Partial<CheckpointDiffQuery.CheckpointDiffQuery["Service"]>;
-    browserTraceCollector?: Partial<BrowserTraceCollector.BrowserTraceCollector["Service"]>;
-    serverLifecycleEvents?: Partial<ServerLifecycleEvents.ServerLifecycleEvents["Service"]>;
-    serverRuntimeStartup?: Partial<ServerRuntimeStartup.ServerRuntimeStartup["Service"]>;
-    serverEnvironment?: Partial<ServerEnvironment.ServerEnvironment["Service"]>;
-    repositoryIdentityResolver?: Partial<
-      RepositoryIdentityResolver.RepositoryIdentityResolver["Service"]
-    >;
-    cloudManagedEndpointRuntime?: Partial<
-      CloudManagedEndpointRuntime.CloudManagedEndpointRuntime["Service"]
-    >;
-    relayClient?: Partial<RelayClient.RelayClient["Service"]>;
-    cloudCliTokenManager?: Partial<CloudCliTokenManager.CloudCliTokenManager["Service"]>;
+    keybindings?: Partial<KeybindingsShape>;
+    providerRegistry?: Partial<ProviderRegistryShape>;
+    serverSettings?: Partial<ServerSettingsShape>;
+    externalLauncher?: Partial<ExternalLauncher.ExternalLauncherShape>;
+    vcsDriver?: Partial<VcsDriver.VcsDriverShape>;
+    vcsDriverRegistry?: Partial<VcsDriverRegistry.VcsDriverRegistryShape>;
+    gitVcsDriver?: Partial<GitVcsDriver.GitVcsDriverShape>;
+    gitManager?: Partial<GitManagerShape>;
+    sourceControlRepositoryService?: Partial<SourceControlRepositoryService.SourceControlRepositoryServiceShape>;
+    reviewService?: Partial<ReviewService.ReviewServiceShape>;
+    vcsStatusBroadcaster?: Partial<VcsStatusBroadcaster.VcsStatusBroadcasterShape>;
+    projectSetupScriptRunner?: Partial<ProjectSetupScriptRunnerShape>;
+    terminalManager?: Partial<TerminalManagerShape>;
+    orchestrationEngine?: Partial<OrchestrationEngineShape>;
+    projectionSnapshotQuery?: Partial<ProjectionSnapshotQueryShape>;
+    checkpointDiffQuery?: Partial<CheckpointDiffQueryShape>;
+    browserTraceCollector?: Partial<BrowserTraceCollectorShape>;
+    serverLifecycleEvents?: Partial<ServerLifecycleEventsShape>;
+    serverRuntimeRestart?: Partial<ServerRuntimeRestartShape>;
+    serverRuntimeStartup?: Partial<ServerRuntimeStartupShape>;
+    textGeneration?: Partial<TextGenerationShape>;
+    serverEnvironment?: Partial<ServerEnvironmentShape>;
+    repositoryIdentityResolver?: Partial<RepositoryIdentityResolverShape>;
+    cloudManagedEndpointRuntime?: Partial<CloudManagedEndpointRuntimeShape>;
+    relayClient?: Partial<RelayClient.RelayClientShape>;
+    cloudCliTokenManager?: Partial<CloudCliTokenManager.CloudCliTokenManagerShape>;
+    serverDevAppLaunchManager?: Partial<ServerDevAppLaunchManagerShape>;
   };
 }) =>
   Effect.gen(function* () {
@@ -424,6 +445,8 @@ const buildAppUnderTest = (options?: {
       traceMaxFiles: 10,
       otlpTracesUrl: undefined,
       otlpMetricsUrl: undefined,
+      otlpLogsUrl: undefined,
+      observabilityGrafanaUrl: undefined,
       otlpExportIntervalMs: 10_000,
       otlpServiceName: "t3-server",
       mode: "desktop",
@@ -441,6 +464,7 @@ const buildAppUnderTest = (options?: {
       logWebSocketEvents: false,
       tailscaleServeEnabled: false,
       tailscaleServePort: 443,
+      tailscaleServePath: undefined,
       ...options?.config,
     };
     const layerConfig = ServerConfig.layer(config);
@@ -556,7 +580,42 @@ const buildAppUnderTest = (options?: {
         Layer.provide(WorkspacePaths.layer),
         Layer.provide(workspaceEntriesLayer),
       ),
-      ProjectFaviconResolver.layer.pipe(Layer.provide(WorkspacePaths.layer)),
+      ProjectFaviconResolverLive.pipe(Layer.provide(WorkspacePaths.layer)),
+      Layer.mock(ProjectAgentFiles)({
+        list: (input) =>
+          Effect.succeed({
+            cwd: input.cwd,
+            files: [],
+            secretStatuses: [],
+            warnings: [],
+          }),
+        read: () => Effect.die("ProjectAgentFiles.read not stubbed in this test"),
+        write: () => Effect.die("ProjectAgentFiles.write not stubbed in this test"),
+        delete: () => Effect.die("ProjectAgentFiles.delete not stubbed in this test"),
+        scaffoldHarness: () =>
+          Effect.succeed({
+            created: [],
+            skipped: [],
+            files: [],
+            warnings: [],
+          }),
+        writeSecret: (input) =>
+          Effect.succeed({
+            secretRef: input.secretRef,
+            configured: true,
+            projectKey: "test",
+            mcpServerIds: [],
+            toolIds: [],
+          }),
+        deleteSecret: (input) =>
+          Effect.succeed({
+            secretRef: input.secretRef,
+            configured: false,
+            projectKey: "test",
+            mcpServerIds: [],
+            toolIds: [],
+          }),
+      }),
     );
     const gitWorkflowLayer = GitWorkflowService.layer.pipe(
       Layer.provideMerge(vcsDriverRegistryLayer),
@@ -579,6 +638,38 @@ const buildAppUnderTest = (options?: {
           ...options.layers.vcsStatusBroadcaster,
         })
       : VcsStatusBroadcaster.layer.pipe(Layer.provide(gitWorkflowLayer));
+    const defaultDevLaunchState: DesktopDevLaunchState = { current: null, active: [] };
+    const textGenerationLayer = Layer.succeed(TextGeneration, {
+      generateCommitMessage: () =>
+        Effect.fail(
+          new TextGenerationError({
+            operation: "generateCommitMessage",
+            detail: "Text generation not stubbed in this test.",
+          }),
+        ),
+      generatePrContent: () =>
+        Effect.fail(
+          new TextGenerationError({
+            operation: "generatePrContent",
+            detail: "Text generation not stubbed in this test.",
+          }),
+        ),
+      generateBranchName: () =>
+        Effect.fail(
+          new TextGenerationError({
+            operation: "generateBranchName",
+            detail: "Text generation not stubbed in this test.",
+          }),
+        ),
+      generateThreadTitle: () =>
+        Effect.fail(
+          new TextGenerationError({
+            operation: "generateThreadTitle",
+            detail: "Text generation not stubbed in this test.",
+          }),
+        ),
+      ...options?.layers?.textGeneration,
+    } satisfies TextGenerationShape);
 
     const servedRoutesLayer = HttpRouter.serve(makeRoutesLayer, {
       disableListenLog: true,
@@ -609,14 +700,17 @@ const buildAppUnderTest = (options?: {
         }),
       ),
       Layer.provide(
-        Layer.mock(ServerSettings.ServerSettingsService)({
-          start: Effect.void,
-          ready: Effect.void,
-          getSettings: Effect.succeed(DEFAULT_SERVER_SETTINGS),
-          updateSettings: () => Effect.succeed(DEFAULT_SERVER_SETTINGS),
-          streamChanges: Stream.empty,
-          ...options?.layers?.serverSettings,
-        }),
+        Layer.mergeAll(
+          Layer.mock(ServerSettingsService)({
+            start: Effect.void,
+            ready: Effect.void,
+            getSettings: Effect.succeed(DEFAULT_SERVER_SETTINGS),
+            updateSettings: () => Effect.succeed(DEFAULT_SERVER_SETTINGS),
+            streamChanges: Stream.empty,
+            ...options?.layers?.serverSettings,
+          }),
+          textGenerationLayer,
+        ),
       ),
       Layer.provide(
         Layer.mock(ExternalLauncher.ExternalLauncher)({
@@ -807,7 +901,55 @@ const buildAppUnderTest = (options?: {
         }),
       ),
       Layer.provide(
-        Layer.mock(ServerRuntimeStartup.ServerRuntimeStartup)({
+        Layer.mock(ServerRuntimeRestart)({
+          capability: Effect.succeed({
+            available: false,
+            kind: "unsupported",
+            scope: "full-setup",
+            reason: "No restart supervisor is configured.",
+          }),
+          notifyRequired: () =>
+            Effect.succeed({
+              version: 1,
+              sequence: 1,
+              type: "runtimeRestartRequired" as const,
+              payload: {
+                detectedAt: "1970-01-01T00:00:00.000Z",
+                reason: "Running code changed.",
+                capability: {
+                  available: false,
+                  kind: "unsupported",
+                  scope: "full-setup",
+                  reason: "No restart supervisor is configured.",
+                },
+              },
+            }),
+          notifyRequiredFromSupervisor: () =>
+            Effect.succeed({
+              version: 1,
+              sequence: 1,
+              type: "runtimeRestartRequired" as const,
+              payload: {
+                detectedAt: "1970-01-01T00:00:00.000Z",
+                reason: "Running code changed.",
+                capability: {
+                  available: false,
+                  kind: "unsupported",
+                  scope: "full-setup",
+                  reason: "No restart supervisor is configured.",
+                },
+              },
+            }),
+          restart: () =>
+            Effect.succeed({
+              accepted: true,
+              message: "Runtime restart accepted.",
+            }),
+          ...options?.layers?.serverRuntimeRestart,
+        }),
+      ),
+      Layer.provide(
+        Layer.mock(ServerRuntimeStartup)({
           awaitCommandReady: Effect.void,
           markHttpListening: Effect.void,
           enqueueCommand: (effect) => effect,
@@ -815,7 +957,17 @@ const buildAppUnderTest = (options?: {
         }),
       ),
       Layer.provide(
-        Layer.mock(ServerEnvironment.ServerEnvironment)({
+        Layer.mock(ServerDevAppLaunchManager)({
+          getState: () => Effect.succeed(defaultDevLaunchState),
+          launch: () => Effect.succeed(defaultDevLaunchState),
+          stop: () => Effect.succeed(defaultDevLaunchState),
+          listActive: Effect.succeed(defaultDevLaunchState),
+          buildCollisionPrompt: () => Effect.succeed({ prompt: "Resolve dev launch collision." }),
+          ...options?.layers?.serverDevAppLaunchManager,
+        }),
+      ),
+      Layer.provide(
+        Layer.mock(ServerEnvironment)({
           getEnvironmentId: Effect.succeed(testEnvironmentDescriptor.environmentId),
           getDescriptor: Effect.succeed(testEnvironmentDescriptor),
           ...options?.layers?.serverEnvironment,
@@ -4309,6 +4461,108 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
+  it.effect("returns 204 for browser OTLP logs when no upstream collector is configured", () =>
+    Effect.gen(function* () {
+      yield* buildAppUnderTest();
+
+      const response = yield* HttpClient.post("/api/observability/v1/logs", {
+        headers: {
+          cookie: yield* getAuthenticatedSessionCookieHeader(),
+          "content-type": "application/json",
+        },
+        // @effect-diagnostics-next-line preferSchemaOverJson:off
+        body: HttpBody.text(JSON.stringify({ resourceLogs: [] }), "application/json"),
+      });
+
+      assert.equal(response.status, 204);
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("forwards browser OTLP logs to the configured collector", () =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const payload = { resourceLogs: [{ scopeLogs: [{ logRecords: [] }] }] };
+        const upstreamRequests: Array<{
+          readonly body: string;
+          readonly contentType: string | null;
+        }> = [];
+        const collector = yield* Effect.acquireRelease(
+          Effect.promise(async () => {
+            const NodeHttp = await import("node:http");
+
+            return await new Promise<{
+              readonly close: () => Promise<void>;
+              readonly url: string;
+            }>((resolve, reject) => {
+              const server = NodeHttp.createServer((request, response) => {
+                const chunks: Buffer[] = [];
+                request.on("data", (chunk) => {
+                  chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                });
+                request.on("end", () => {
+                  upstreamRequests.push({
+                    body: Buffer.concat(chunks).toString("utf8"),
+                    contentType: request.headers["content-type"] ?? null,
+                  });
+                  response.statusCode = 200;
+                  response.end("");
+                });
+              });
+
+              server.on("error", reject);
+              server.listen(0, "127.0.0.1", () => {
+                const address = server.address();
+                if (!address || typeof address === "string") {
+                  reject(new Error("Expected TCP collector address"));
+                  return;
+                }
+
+                resolve({
+                  url: `http://127.0.0.1:${address.port}/v1/logs`,
+                  close: () =>
+                    new Promise<void>((resolveClose, rejectClose) => {
+                      server.close((error) => {
+                        if (error) {
+                          rejectClose(error);
+                          return;
+                        }
+                        resolveClose();
+                      });
+                    }),
+                });
+              });
+            });
+          }),
+          ({ close }) => Effect.promise(close),
+        );
+
+        yield* buildAppUnderTest({
+          config: {
+            otlpLogsUrl: collector.url,
+          },
+        });
+
+        const response = yield* HttpClient.post("/api/observability/v1/logs", {
+          headers: {
+            cookie: yield* getAuthenticatedSessionCookieHeader(),
+            "content-type": "application/json",
+          },
+          // @effect-diagnostics-next-line preferSchemaOverJson:off
+          body: HttpBody.text(JSON.stringify(payload), "application/json"),
+        });
+
+        assert.equal(response.status, 204);
+        assert.deepEqual(upstreamRequests, [
+          {
+            // @effect-diagnostics-next-line preferSchemaOverJson:off
+            body: JSON.stringify(payload),
+            contentType: "application/json",
+          },
+        ]);
+      }),
+    ).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
   it.effect("routes websocket rpc server.upsertKeybinding", () =>
     Effect.gen(function* () {
       const rule: KeybindingRule = {
@@ -4482,6 +4736,8 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         config: {
           otlpTracesUrl: "http://localhost:4318/v1/traces",
           otlpMetricsUrl: "http://localhost:4318/v1/metrics",
+          otlpLogsUrl: "http://localhost:4318/v1/logs",
+          observabilityGrafanaUrl: "http://localhost:3030",
         },
         layers: {
           keybindings: {
@@ -4517,6 +4773,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         assert.equal(first.config.observability.otlpTracesEnabled, true);
         assert.equal(first.config.observability.otlpMetricsUrl, "http://localhost:4318/v1/metrics");
         assert.equal(first.config.observability.otlpMetricsEnabled, true);
+        assert.equal(first.config.observability.otlpLogsUrl, "http://localhost:4318/v1/logs");
+        assert.equal(first.config.observability.otlpLogsEnabled, true);
+        assert.equal(first.config.observability.observabilityGrafanaUrl, "http://localhost:3030");
         assert.deepEqual(first.config.settings, DEFAULT_SERVER_SETTINGS);
       }
       assert.deepEqual(second, {
@@ -4629,6 +4888,169 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         assert.equal(second?.type, "ready");
         assert.equal(second?.sequence, 2);
       }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("routes websocket rpc server.restartRuntime to the restart service", () =>
+    Effect.gen(function* () {
+      const restartRequests: Array<{ readonly mode: string; readonly reason?: string }> = [];
+      yield* buildAppUnderTest({
+        layers: {
+          serverRuntimeRestart: {
+            restart: (input) =>
+              Effect.sync(() => {
+                restartRequests.push(input);
+                return {
+                  accepted: true,
+                  message: "Runtime restart accepted.",
+                };
+              }),
+          },
+        },
+      });
+
+      const wsUrl = yield* getWsServerUrl("/ws");
+      const result = yield* Effect.scoped(
+        withWsRpcClient(wsUrl, (client) =>
+          client[WS_METHODS.serverRestartRuntime]({
+            mode: "full-setup",
+            reason: "test restart",
+          }),
+        ),
+      );
+
+      assert.equal(result.accepted, true);
+      assert.deepEqual(restartRequests, [{ mode: "full-setup", reason: "test restart" }]);
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("routes websocket rpc server.launchDevApp to the dev launch manager", () =>
+    Effect.gen(function* () {
+      const threadRef = {
+        environmentId: testEnvironmentDescriptor.environmentId,
+        threadId: ThreadId.make("thread-dev-launch"),
+      };
+      const launchInput = {
+        threadRef,
+        projectId: ProjectId.make("project-dev-launch"),
+        projectRoot: "/repo/giggabit-invoice",
+        projectName: "giggabit-invoice",
+        branch: "feat/invoice-preview",
+        worktreePath: "/repo/giggabit-invoice/.worktrees/dev-invoice-preview",
+        profileId: "app",
+      };
+      const launchRecord: NonNullable<DesktopDevLaunchState["current"]> = {
+        threadRef,
+        projectId: launchInput.projectId,
+        projectRoot: launchInput.projectRoot,
+        projectSlug: "giggabit-invoice",
+        canonicalWorktreePath: launchInput.worktreePath,
+        worktreeSlug: "feat-invoice-preview",
+        profileId: "app",
+        profileName: "App",
+        profileCwd: ".",
+        appSegment: "app",
+        localPort: 5173,
+        localHost: "127.0.0.1",
+        localUrl: "http://127.0.0.1:5173",
+        publicPath: "/giggabit-invoice/feat-invoice-preview/app/",
+        publicUrl: "https://desktop.tailnet.ts.net/giggabit-invoice/feat-invoice-preview/app/",
+        pid: 12345,
+        startedAt: "2026-06-17T00:00:00.000Z",
+        status: "running",
+      };
+      const launchState: DesktopDevLaunchState = {
+        current: launchRecord,
+        active: [launchRecord],
+      };
+      const launchRequests: unknown[] = [];
+
+      yield* buildAppUnderTest({
+        layers: {
+          serverDevAppLaunchManager: {
+            launch: (input) =>
+              Effect.sync(() => {
+                launchRequests.push(input);
+                return launchState;
+              }),
+          },
+        },
+      });
+
+      const wsUrl = yield* getWsServerUrl("/ws");
+      const result = yield* Effect.scoped(
+        withWsRpcClient(wsUrl, (client) => client[WS_METHODS.serverLaunchDevApp](launchInput)),
+      );
+
+      assert.equal(result.current?.publicUrl, launchRecord.publicUrl);
+      assert.deepEqual(launchRequests, [launchInput]);
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("rejects websocket rpc server.restartRuntime without operate scope", () =>
+    Effect.gen(function* () {
+      yield* buildAppUnderTest();
+
+      const { response: tokenResponse, body: tokenBody } = yield* exchangeAccessToken(
+        defaultDesktopBootstrapToken,
+        { scope: "orchestration:read" },
+      );
+      assert.equal(tokenResponse.status, 200);
+      assert.isDefined(tokenBody.access_token);
+
+      const wsTicketUrl = yield* getHttpServerUrl("/api/auth/websocket-ticket");
+      const wsTicketResponse = yield* fetchEffect(wsTicketUrl, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${tokenBody.access_token ?? ""}`,
+        },
+      });
+      const wsTicketBody = yield* responseJsonEffect<{ readonly ticket: string }>(wsTicketResponse);
+      const wsUrl = `${yield* getWsServerUrl("/ws", { authenticated: false })}?wsTicket=${encodeURIComponent(wsTicketBody.ticket)}`;
+
+      const rpcError = yield* Effect.flip(
+        Effect.scoped(
+          withWsRpcClient(wsUrl, (client) =>
+            client[WS_METHODS.serverRestartRuntime]({ mode: "full-setup" }),
+          ),
+        ),
+      );
+
+      assert.equal(rpcError._tag, "EnvironmentAuthorizationError");
+      if (rpcError._tag === "EnvironmentAuthorizationError") {
+        assert.equal(rpcError.requiredScope, "orchestration:operate");
+      }
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("returns a structured error when runtime restart is unavailable", () =>
+    Effect.gen(function* () {
+      yield* buildAppUnderTest({
+        layers: {
+          serverRuntimeRestart: {
+            restart: () =>
+              Effect.fail(
+                new ServerRuntimeRestartError({
+                  reason: "Runtime restart is not available for this server.",
+                }),
+              ),
+          },
+        },
+      });
+
+      const wsUrl = yield* getWsServerUrl("/ws");
+      const rpcError = yield* Effect.flip(
+        Effect.scoped(
+          withWsRpcClient(wsUrl, (client) =>
+            client[WS_METHODS.serverRestartRuntime]({ mode: "full-setup" }),
+          ),
+        ),
+      );
+
+      assert.equal(rpcError._tag, "ServerRuntimeRestartError");
+      if (rpcError._tag === "ServerRuntimeRestartError") {
+        assert.equal(rpcError.reason, "Runtime restart is not available for this server.");
+      }
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
   it.effect("routes websocket rpc projects.searchEntries", () =>
@@ -6344,17 +6766,22 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
   );
 
   it.effect(
-    "bootstraps first-send worktree turns on the server before dispatching turn start",
+    "bootstraps first-send worktree turns with a semantic branch before dispatching turn start",
     () =>
       Effect.gen(function* () {
         const dispatchedCommands: Array<OrchestrationCommand> = [];
         const bootstrapGitOperations: string[] = [];
+        const generateBranchName = vi.fn<TextGenerationShape["generateBranchName"]>((input) =>
+          Effect.succeed({
+            branch: input.message === "hello" ? "Semantic Bootstrap" : "Fallback Bootstrap",
+          }),
+        );
         const refreshStatus = vi.fn((_: string) =>
           Effect.succeed({
             isRepo: true,
             hasPrimaryRemote: true,
             isDefaultRef: false,
-            refName: "t3code/bootstrap-refName",
+            refName: "t3code/semantic-bootstrap",
             hasWorkingTreeChanges: false,
             workingTree: {
               files: [],
@@ -6385,16 +6812,25 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
             }),
         );
         const createWorktree = vi.fn(
-          (_: Parameters<GitVcsDriver.GitVcsDriver["Service"]["createWorktree"]>[0]) =>
+          (input: Parameters<GitVcsDriver.GitVcsDriver["Service"]["createWorktree"]>[0]) =>
             Effect.sync(() => {
               bootstrapGitOperations.push("create-worktree");
               return {
                 worktree: {
-                  refName: "t3code/bootstrap-refName",
+                  refName: input.newRefName ?? input.refName,
                   path: "/tmp/bootstrap-worktree",
                 },
               };
             }),
+        );
+        const listRefs = vi.fn((_: Parameters<GitVcsDriver.GitVcsDriverShape["listRefs"]>[0]) =>
+          Effect.succeed({
+            refs: [],
+            isRepo: true,
+            hasPrimaryRemote: true,
+            nextCursor: null,
+            totalCount: 0,
+          }),
         );
         const runForThread = vi.fn(
           (
@@ -6417,6 +6853,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               fetchRemote,
               resolveRemoteTrackingCommit,
               createWorktree,
+              listRefs,
+            },
+            textGeneration: {
+              generateBranchName,
             },
             vcsStatusBroadcaster: {
               refreshStatus,
@@ -6490,7 +6930,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         assert.deepEqual(createWorktree.mock.calls[0]?.[0], {
           cwd: "/tmp/project",
           refName: fetchedOriginCommit,
-          newRefName: "t3code/bootstrap-refName",
+          newRefName: "t3code/semantic-bootstrap",
           baseRefName: "main",
           path: null,
         });
@@ -6508,6 +6948,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           "resolve-remote-commit",
           "create-worktree",
         ]);
+        assert.deepEqual(generateBranchName.mock.calls[0]?.[0], {
+          cwd: "/tmp/project",
+          message: "hello",
+          modelSelection: DEFAULT_SERVER_SETTINGS.textGenerationModelSelection,
+        });
         assert.deepEqual(runForThread.mock.calls[0]?.[0], {
           threadId: ThreadId.make("thread-bootstrap"),
           projectId: defaultProjectId,
@@ -6530,6 +6975,205 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           assert.equal(finalCommand.bootstrap, undefined);
         }
       }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("suffixes generated worktree branches that already exist", () =>
+    Effect.gen(function* () {
+      const dispatchedCommands: Array<OrchestrationCommand> = [];
+      const createWorktree = vi.fn(
+        (input: Parameters<GitVcsDriver.GitVcsDriverShape["createWorktree"]>[0]) =>
+          Effect.succeed({
+            worktree: {
+              refName: input.newRefName ?? input.refName,
+              path: "/tmp/bootstrap-worktree",
+            },
+          }),
+      );
+      const listRefs = vi.fn((_: Parameters<GitVcsDriver.GitVcsDriverShape["listRefs"]>[0]) =>
+        Effect.succeed({
+          refs: [
+            {
+              name: "t3code/semantic-bootstrap",
+              current: false,
+              isDefault: false,
+              worktreePath: null,
+            },
+          ],
+          isRepo: true,
+          hasPrimaryRemote: true,
+          nextCursor: null,
+          totalCount: 1,
+        }),
+      );
+
+      yield* buildAppUnderTest({
+        layers: {
+          vcsDriver: {
+            isInsideWorkTree: () => Effect.succeed(true),
+          },
+          gitVcsDriver: {
+            createWorktree,
+            listRefs,
+          },
+          textGeneration: {
+            generateBranchName: () => Effect.succeed({ branch: "Semantic Bootstrap" }),
+          },
+          orchestrationEngine: {
+            dispatch: (command) =>
+              Effect.sync(() => {
+                dispatchedCommands.push(command);
+                return { sequence: dispatchedCommands.length };
+              }),
+            readEvents: () => Stream.empty,
+          },
+        },
+      });
+
+      const createdAt = "2026-01-01T00:00:00.000Z";
+      const wsUrl = yield* getWsServerUrl("/ws");
+      const response = yield* Effect.scoped(
+        withWsRpcClient(wsUrl, (client) =>
+          client[ORCHESTRATION_WS_METHODS.dispatchCommand]({
+            type: "thread.turn.start",
+            commandId: CommandId.make("cmd-bootstrap-turn-start-collision"),
+            threadId: ThreadId.make("thread-bootstrap-collision"),
+            message: {
+              messageId: MessageId.make("msg-bootstrap-collision"),
+              role: "user",
+              text: "hello",
+              attachments: [],
+            },
+            modelSelection: defaultModelSelection,
+            runtimeMode: "full-access",
+            interactionMode: "default",
+            bootstrap: {
+              createThread: {
+                projectId: defaultProjectId,
+                title: "Bootstrap Thread",
+                modelSelection: defaultModelSelection,
+                runtimeMode: "full-access",
+                interactionMode: "default",
+                branch: "main",
+                worktreePath: null,
+                createdAt,
+              },
+              prepareWorktree: {
+                projectCwd: "/tmp/project",
+                baseBranch: "main",
+                branch: "t3code/bootstrap-refName",
+              },
+              runSetupScript: false,
+            },
+            createdAt,
+          }),
+        ),
+      );
+
+      assert.equal(response.sequence, 3);
+      assert.deepEqual(createWorktree.mock.calls[0]?.[0], {
+        cwd: "/tmp/project",
+        refName: "main",
+        newRefName: "t3code/semantic-bootstrap-2",
+        baseRefName: "main",
+        path: null,
+      });
+      assert.deepEqual(
+        dispatchedCommands.map((command) => command.type),
+        ["thread.create", "thread.meta.update", "thread.turn.start"],
+      );
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("falls back to the temporary worktree branch when semantic generation fails", () =>
+    Effect.gen(function* () {
+      const dispatchedCommands: Array<OrchestrationCommand> = [];
+      const createWorktree = vi.fn(
+        (input: Parameters<GitVcsDriver.GitVcsDriverShape["createWorktree"]>[0]) =>
+          Effect.succeed({
+            worktree: {
+              refName: input.newRefName ?? input.refName,
+              path: "/tmp/bootstrap-worktree",
+            },
+          }),
+      );
+      const generateBranchName = vi.fn<TextGenerationShape["generateBranchName"]>(() =>
+        Effect.fail(
+          new TextGenerationError({
+            operation: "generateBranchName",
+            detail: "simulated text generation failure",
+          }),
+        ),
+      );
+
+      yield* buildAppUnderTest({
+        layers: {
+          gitVcsDriver: {
+            createWorktree,
+          },
+          textGeneration: {
+            generateBranchName,
+          },
+          orchestrationEngine: {
+            dispatch: (command) =>
+              Effect.sync(() => {
+                dispatchedCommands.push(command);
+                return { sequence: dispatchedCommands.length };
+              }),
+            readEvents: () => Stream.empty,
+          },
+        },
+      });
+
+      const createdAt = "2026-01-01T00:00:00.000Z";
+      const wsUrl = yield* getWsServerUrl("/ws");
+      const response = yield* Effect.scoped(
+        withWsRpcClient(wsUrl, (client) =>
+          client[ORCHESTRATION_WS_METHODS.dispatchCommand]({
+            type: "thread.turn.start",
+            commandId: CommandId.make("cmd-bootstrap-turn-start-fallback"),
+            threadId: ThreadId.make("thread-bootstrap-fallback"),
+            message: {
+              messageId: MessageId.make("msg-bootstrap-fallback"),
+              role: "user",
+              text: "hello",
+              attachments: [],
+            },
+            modelSelection: defaultModelSelection,
+            runtimeMode: "full-access",
+            interactionMode: "default",
+            bootstrap: {
+              createThread: {
+                projectId: defaultProjectId,
+                title: "Bootstrap Thread",
+                modelSelection: defaultModelSelection,
+                runtimeMode: "full-access",
+                interactionMode: "default",
+                branch: "main",
+                worktreePath: null,
+                createdAt,
+              },
+              prepareWorktree: {
+                projectCwd: "/tmp/project",
+                baseBranch: "main",
+                branch: "t3code/bootstrap-refName",
+              },
+              runSetupScript: false,
+            },
+            createdAt,
+          }),
+        ),
+      );
+
+      assert.equal(response.sequence, 3);
+      assert.equal(generateBranchName.mock.calls.length, 1);
+      assert.deepEqual(createWorktree.mock.calls[0]?.[0], {
+        cwd: "/tmp/project",
+        refName: "main",
+        newRefName: "t3code/bootstrap-refName",
+        baseRefName: "main",
+        path: null,
+      });
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
   it.effect("records setup-script failures without aborting bootstrap turn start", () =>
@@ -6836,7 +7480,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
   it.effect("routes websocket rpc terminal methods", () =>
     Effect.gen(function* () {
-      const snapshot = {
+      const snapshot: TerminalSessionSnapshot = {
         threadId: "thread-1",
         terminalId: "default",
         cwd: "/tmp/project",
@@ -6846,6 +7490,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         history: "",
         exitCode: null,
         exitSignal: null,
+        owner: { kind: "user" as const },
+        readOnly: false,
+        backing: "pty" as const,
         label: "Primary",
         updatedAt: "2026-01-01T00:00:00.000Z",
       };
@@ -6857,6 +7504,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
             write: () => Effect.void,
             resize: () => Effect.void,
             clear: () => Effect.void,
+            kill: () => Effect.void,
             restart: () => Effect.succeed(snapshot),
             close: () => Effect.void,
           },

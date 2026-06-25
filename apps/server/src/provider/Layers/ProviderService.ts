@@ -10,6 +10,7 @@
  * @module ProviderServiceLive
  */
 import {
+  DEFAULT_SERVER_SETTINGS,
   ModelSelection,
   NonNegativeInt,
   ThreadId,
@@ -55,6 +56,15 @@ import * as ProviderEventLoggers from "./ProviderEventLoggers.ts";
 import * as AnalyticsService from "../../telemetry/AnalyticsService.ts";
 import * as McpProviderSession from "../../mcp/McpProviderSession.ts";
 import * as McpSessionRegistry from "../../mcp/McpSessionRegistry.ts";
+import {
+  loadT3ProviderAccessCatalog,
+  resolveEnabledT3ProviderMcps,
+} from "../../mcp/t3ProviderMcpCatalog.ts";
+import {
+  ProjectAgentHarnessResolver,
+  type ProjectAgentHarnessResolverShape,
+} from "../../project/Services/ProjectAgentHarnessResolver.ts";
+import { ServerSettingsService } from "../../serverSettings.ts";
 const isModelSelection = Schema.is(ModelSelection);
 
 /**
@@ -64,10 +74,22 @@ const isModelSelection = Schema.is(ModelSelection);
  */
 export interface ProviderServiceLiveOptions {
   readonly canonicalEventLogger?: EventNdjsonLogger;
+  readonly projectAgentHarnessResolver?: ProjectAgentHarnessResolverShape;
 }
 
 type ProviderServiceMethod<Name extends keyof ProviderService.ProviderService["Service"]> =
   ProviderService.ProviderService["Service"][Name];
+
+const NoopProjectAgentHarnessResolver = {
+  resolveForWorkspace: () =>
+    Effect.succeed({
+      externalMcps: [],
+      environment: {},
+      secretStatuses: [],
+      unavailableMcps: [],
+      warnings: [],
+    }),
+} satisfies ProjectAgentHarnessResolverShape;
 
 const ProviderRollbackConversationInput = Schema.Struct({
   threadId: ThreadId,
@@ -211,17 +233,93 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
   const canonicalEventLogger = options?.canonicalEventLogger ?? eventLoggers.canonical;
 
   const registry = yield* ProviderAdapterRegistry.ProviderAdapterRegistry;
+  const serverSettings = yield* ServerSettingsService;
+  const projectAgentHarnessResolver = yield* ProjectAgentHarnessResolver;
   const directory = yield* ProviderSessionDirectory.ProviderSessionDirectory;
   const runtimeEventPubSub = yield* PubSub.unbounded<ProviderRuntimeEvent>();
   const nowIso = Effect.map(DateTime.now, DateTime.formatIso);
-  const prepareMcpSession = (threadId: ThreadId, providerInstanceId: ProviderInstanceId) =>
-    McpSessionRegistry.issueActiveMcpCredential({ threadId, providerInstanceId }).pipe(
-      Effect.tap((credential) =>
-        credential
-          ? Effect.sync(() => McpProviderSession.setMcpProviderSession(credential.config))
-          : Effect.void,
-      ),
-    );
+  const prepareMcpSession = (
+    threadId: ThreadId,
+    providerInstanceId: ProviderInstanceId,
+    cwd: string | undefined,
+  ) =>
+    Effect.gen(function* () {
+      const settings = yield* serverSettings.getSettings.pipe(
+        Effect.catch((cause) =>
+          Effect.logWarning("provider.t3-access.settings-read-failed", {
+            threadId,
+            providerInstanceId,
+            cause,
+          }).pipe(Effect.as(DEFAULT_SERVER_SETTINGS)),
+        ),
+      );
+      const catalog = yield* loadT3ProviderAccessCatalog();
+      const externalMcps: McpProviderSession.ExternalMcpProviderSessionConfig[] =
+        resolveEnabledT3ProviderMcps({ catalog, settings }).map((entry) => ({
+          id: entry.id,
+          name: entry.id,
+          command: entry.command,
+          args: entry.args,
+        }));
+      const projectHarness = yield* projectAgentHarnessResolver.resolveForWorkspace(cwd);
+      for (const warning of projectHarness.warnings) {
+        yield* Effect.logWarning("provider.project-harness.warning", {
+          threadId,
+          providerInstanceId,
+          cwd,
+          warning,
+        });
+      }
+      for (const unavailable of projectHarness.unavailableMcps) {
+        yield* Effect.logWarning("provider.project-harness.mcp-unavailable", {
+          threadId,
+          providerInstanceId,
+          cwd,
+          mcpId: unavailable.id,
+          mcpName: unavailable.name,
+          missingSecretRefs: unavailable.missingSecretRefs,
+        });
+      }
+      const externalMcpByName = new Map<
+        string,
+        McpProviderSession.ExternalMcpProviderSessionConfig
+      >(externalMcps.map((entry) => [entry.name, entry]));
+      for (const projectMcp of projectHarness.externalMcps) {
+        if (projectMcp.name === "t3-code") {
+          yield* Effect.logWarning("provider.project-harness.mcp-reserved-name", {
+            threadId,
+            providerInstanceId,
+            cwd,
+            mcpId: projectMcp.id,
+            mcpName: projectMcp.name,
+          });
+          continue;
+        }
+        if (externalMcpByName.has(projectMcp.name)) {
+          yield* Effect.logWarning("provider.project-harness.mcp-duplicate-name", {
+            threadId,
+            providerInstanceId,
+            cwd,
+            mcpId: projectMcp.id,
+            mcpName: projectMcp.name,
+          });
+          continue;
+        }
+        externalMcpByName.set(projectMcp.name, projectMcp);
+      }
+      const credential = yield* McpSessionRegistry.issueActiveMcpCredential({
+        threadId,
+        providerInstanceId,
+        externalMcps: [...externalMcpByName.values()],
+      });
+      if (credential) {
+        yield* Effect.sync(() => McpProviderSession.setMcpProviderSession(credential.config));
+      }
+      return {
+        credential,
+        environment: projectHarness.environment,
+      } as const;
+    });
   const clearMcpSession = (threadId: ThreadId) =>
     McpSessionRegistry.revokeActiveMcpThread(threadId).pipe(
       Effect.tap(() => Effect.sync(() => McpProviderSession.clearMcpProviderSession(threadId))),
@@ -397,7 +495,11 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
       const persistedCwd = readPersistedCwd(input.binding.runtimePayload);
       const persistedModelSelection = readPersistedModelSelection(input.binding.runtimePayload);
 
-      yield* prepareMcpSession(input.binding.threadId, bindingInstanceId);
+      const preparedMcpSession = yield* prepareMcpSession(
+        input.binding.threadId,
+        bindingInstanceId,
+        persistedCwd,
+      );
       const resumed = yield* adapter
         .startSession({
           threadId: input.binding.threadId,
@@ -405,6 +507,9 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
           providerInstanceId: bindingInstanceId,
           ...(persistedCwd ? { cwd: persistedCwd } : {}),
           ...(persistedModelSelection ? { modelSelection: persistedModelSelection } : {}),
+          ...(Object.keys(preparedMcpSession.environment).length > 0
+            ? { environment: preparedMcpSession.environment }
+            : {}),
           ...(hasResumeCursor ? { resumeCursor: input.binding.resumeCursor } : {}),
           runtimeMode: input.binding.runtimeMode ?? "full-access",
         })
@@ -590,12 +695,19 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
           "provider.cwd.effective": effectiveCwd ?? "",
         });
         const adapter = yield* registry.getByInstance(resolvedInstanceId);
-        yield* prepareMcpSession(threadId, resolvedInstanceId);
+        const preparedMcpSession = yield* prepareMcpSession(
+          threadId,
+          resolvedInstanceId,
+          effectiveCwd,
+        );
         const session = yield* adapter
           .startSession({
             ...input,
             providerInstanceId: resolvedInstanceId,
             ...(effectiveCwd !== undefined ? { cwd: effectiveCwd } : {}),
+            ...(Object.keys(preparedMcpSession.environment).length > 0
+              ? { environment: preparedMcpSession.environment }
+              : {}),
             ...(effectiveResumeCursor !== undefined ? { resumeCursor: effectiveResumeCursor } : {}),
           })
           .pipe(Effect.onError(() => clearMcpSession(threadId)));
@@ -642,80 +754,82 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
     },
   );
 
-  const sendTurn: ProviderServiceMethod<"sendTurn"> = Effect.fn("sendTurn")(function* (rawInput) {
-    const parsed = yield* decodeInputOrValidationError({
-      operation: "ProviderService.sendTurn",
-      schema: ProviderSendTurnInput,
-      payload: rawInput,
-    });
-
-    const input = {
-      ...parsed,
-      attachments: parsed.attachments ?? [],
-    };
-    if (!input.input && input.attachments.length === 0) {
-      return yield* toValidationError(
-        "ProviderService.sendTurn",
-        "Either input text or at least one attachment is required",
-      );
-    }
-    yield* Effect.annotateCurrentSpan({
-      "provider.operation": "send-turn",
-      "provider.thread_id": input.threadId,
-      "provider.interaction_mode": input.interactionMode,
-      "provider.attachment_count": input.attachments.length,
-    });
-    let metricProvider = "unknown";
-    let metricModel = input.modelSelection?.model;
-    return yield* Effect.gen(function* () {
-      const routed = yield* resolveRoutableSession({
-        threadId: input.threadId,
+  const sendTurn: ProviderServiceMethod<"sendTurn"> = Effect.fn("sendTurn")(
+    function* (rawInput, options) {
+      const parsed = yield* decodeInputOrValidationError({
         operation: "ProviderService.sendTurn",
-        allowRecovery: true,
+        schema: ProviderSendTurnInput,
+        payload: rawInput,
       });
-      metricProvider = routed.adapter.provider;
-      metricModel = input.modelSelection?.model;
+
+      const input = {
+        ...parsed,
+        attachments: parsed.attachments ?? [],
+      };
+      if (!options?.allowEmptyInput && !input.input && input.attachments.length === 0) {
+        return yield* toValidationError(
+          "ProviderService.sendTurn",
+          "Either input text or at least one attachment is required",
+        );
+      }
       yield* Effect.annotateCurrentSpan({
-        "provider.kind": routed.adapter.provider,
-        ...(input.modelSelection?.model ? { "provider.model": input.modelSelection.model } : {}),
+        "provider.operation": "send-turn",
+        "provider.thread_id": input.threadId,
+        "provider.interaction_mode": input.interactionMode,
+        "provider.attachment_count": input.attachments.length,
       });
-      const turn = yield* routed.adapter.sendTurn(input);
-      yield* directory.upsert({
-        threadId: input.threadId,
-        provider: routed.adapter.provider,
-        providerInstanceId: routed.instanceId,
-        status: "running",
-        ...(turn.resumeCursor !== undefined ? { resumeCursor: turn.resumeCursor } : {}),
-        runtimePayload: {
-          ...(input.modelSelection !== undefined ? { modelSelection: input.modelSelection } : {}),
-          activeTurnId: turn.turnId,
-          lastRuntimeEvent: "provider.sendTurn",
-          lastRuntimeEventAt: yield* nowIso,
-        },
-      });
-      yield* analytics.record("provider.turn.sent", {
-        provider: routed.adapter.provider,
-        model: input.modelSelection?.model,
-        interactionMode: input.interactionMode,
-        attachmentCount: input.attachments.length,
-        hasInput: typeof input.input === "string" && input.input.trim().length > 0,
-      });
-      return turn;
-    }).pipe(
-      withMetrics({
-        counter: providerTurnsTotal,
-        timer: providerTurnDuration,
-        attributes: () =>
-          providerTurnMetricAttributes({
-            provider: metricProvider,
-            model: metricModel,
-            extra: {
-              operation: "send",
-            },
-          }),
-      }),
-    );
-  });
+      let metricProvider = "unknown";
+      let metricModel = input.modelSelection?.model;
+      return yield* Effect.gen(function* () {
+        const routed = yield* resolveRoutableSession({
+          threadId: input.threadId,
+          operation: "ProviderService.sendTurn",
+          allowRecovery: true,
+        });
+        metricProvider = routed.adapter.provider;
+        metricModel = input.modelSelection?.model;
+        yield* Effect.annotateCurrentSpan({
+          "provider.kind": routed.adapter.provider,
+          ...(input.modelSelection?.model ? { "provider.model": input.modelSelection.model } : {}),
+        });
+        const turn = yield* routed.adapter.sendTurn(input);
+        yield* directory.upsert({
+          threadId: input.threadId,
+          provider: routed.adapter.provider,
+          providerInstanceId: routed.instanceId,
+          status: "running",
+          ...(turn.resumeCursor !== undefined ? { resumeCursor: turn.resumeCursor } : {}),
+          runtimePayload: {
+            ...(input.modelSelection !== undefined ? { modelSelection: input.modelSelection } : {}),
+            activeTurnId: turn.turnId,
+            lastRuntimeEvent: "provider.sendTurn",
+            lastRuntimeEventAt: yield* nowIso,
+          },
+        });
+        yield* analytics.record("provider.turn.sent", {
+          provider: routed.adapter.provider,
+          model: input.modelSelection?.model,
+          interactionMode: input.interactionMode,
+          attachmentCount: input.attachments.length,
+          hasInput: typeof input.input === "string" && input.input.trim().length > 0,
+        });
+        return turn;
+      }).pipe(
+        withMetrics({
+          counter: providerTurnsTotal,
+          timer: providerTurnDuration,
+          attributes: () =>
+            providerTurnMetricAttributes({
+              provider: metricProvider,
+              model: metricModel,
+              extra: {
+                operation: "send",
+              },
+            }),
+        }),
+      );
+    },
+  );
 
   const interruptTurn: ProviderServiceMethod<"interruptTurn"> = Effect.fn("interruptTurn")(
     function* (rawInput) {
@@ -1094,5 +1208,11 @@ export const ProviderServiceLive = Layer.effect(
 );
 
 export function makeProviderServiceLive(options?: ProviderServiceLiveOptions) {
-  return Layer.effect(ProviderService.ProviderService, makeProviderService(options));
+  const harnessResolverLayer = Layer.succeed(
+    ProjectAgentHarnessResolver,
+    options?.projectAgentHarnessResolver ?? NoopProjectAgentHarnessResolver,
+  );
+  return Layer.effect(ProviderService.ProviderService, makeProviderService(options)).pipe(
+    Layer.provide(harnessResolverLayer),
+  );
 }

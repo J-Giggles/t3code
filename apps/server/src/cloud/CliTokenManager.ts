@@ -274,3 +274,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(CloudCliTokenManager, make);
+
+export type CloudCliTokenManagerShape = CloudCliTokenManager["Service"];

@@ -24,6 +24,25 @@ type SidebarProject = {
   updatedAt?: string | undefined;
 };
 
+export function resolveRunningWorktreeSlug(cwd: string | null | undefined): string | null {
+  const segments = cwd
+    ?.trim()
+    .split(/[\\/]+/)
+    .filter((segment) => segment.length > 0);
+  if (!segments || segments.length === 0) {
+    return null;
+  }
+
+  const worktreesIndex = segments.lastIndexOf(".worktrees");
+  const slug = worktreesIndex >= 0 ? segments[worktreesIndex + 1] : undefined;
+  return slug && slug.length > 0 ? slug : null;
+}
+
+export function resolveRunningBranchLabel(refName: string | null | undefined): string | null {
+  const trimmed = refName?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+}
+
 export type ThreadTraversalDirection = "previous" | "next";
 
 export interface ThreadStatusPill {

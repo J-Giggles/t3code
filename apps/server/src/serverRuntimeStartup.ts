@@ -33,7 +33,9 @@ import * as ServerSettings from "./serverSettings.ts";
 import * as AnalyticsService from "./telemetry/AnalyticsService.ts";
 import * as ServerEnvironment from "./environment/ServerEnvironment.ts";
 import * as EnvironmentAuth from "./auth/EnvironmentAuth.ts";
-import * as ProviderSessionReaper from "./provider/Services/ProviderSessionReaper.ts";
+import { ProviderSessionReaper } from "./provider/Services/ProviderSessionReaper.ts";
+import { ProviderSessionStartupRecovery } from "./provider/Services/ProviderSessionStartupRecovery.ts";
+import { ConnectedDeviceNotifications } from "./orchestration/Services/ConnectedDeviceNotifications.ts";
 import {
   formatHeadlessServeOutput,
   formatHostForUrl,
@@ -292,7 +294,9 @@ export const make = Effect.gen(function* () {
   const serverConfig = yield* ServerConfig.ServerConfig;
   const keybindings = yield* Keybindings.Keybindings;
   const orchestrationReactor = yield* OrchestrationReactor.OrchestrationReactor;
-  const providerSessionReaper = yield* ProviderSessionReaper.ProviderSessionReaper;
+  const providerSessionReaper = yield* ProviderSessionReaper;
+  const providerSessionStartupRecovery = yield* ProviderSessionStartupRecovery;
+  const connectedDeviceNotifications = yield* ConnectedDeviceNotifications;
   const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
   const serverSettings = yield* ServerSettings.ServerSettingsService;
   const serverEnvironment = yield* ServerEnvironment.ServerEnvironment;
@@ -343,7 +347,25 @@ export const make = Effect.gen(function* () {
       Effect.gen(function* () {
         yield* orchestrationReactor.start().pipe(Scope.provide(reactorScope));
         yield* providerSessionReaper.start().pipe(Scope.provide(reactorScope));
+        yield* connectedDeviceNotifications.start().pipe(Scope.provide(reactorScope));
       }),
+    );
+
+    yield* Effect.logDebug("startup phase: recovering provider sessions");
+    const providerSessionRecoverySummary = yield* runStartupPhase(
+      "provider-session-recovery",
+      providerSessionStartupRecovery.recoverActiveSessions.pipe(
+        Effect.catchCause((cause) =>
+          Effect.logWarning("provider session startup recovery failed", { cause }).pipe(
+            Effect.as({
+              recoveredCount: 0,
+              needsResumeCount: 0,
+              failedCount: 0,
+              needsResumeThreadIds: [],
+            }),
+          ),
+        ),
+      ),
     );
 
     const welcomeBase = yield* resolveWelcomeBase;
@@ -362,6 +384,7 @@ export const make = Effect.gen(function* () {
         payload: {
           environment,
           ...welcomeBase,
+          providerSessionRecoverySummary,
         },
       }),
     );
@@ -391,6 +414,7 @@ export const make = Effect.gen(function* () {
               payload: {
                 environment,
                 ...welcomeBase,
+                providerSessionRecoverySummary,
                 ...bootstrapTargets,
               },
             });
@@ -476,3 +500,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(ServerRuntimeStartup, make);
+
+export type ServerRuntimeStartupShape = ServerRuntimeStartup["Service"];

@@ -23,6 +23,7 @@ import {
   ProviderApprovalDecision,
   ThreadId,
   ProviderSendTurnInput,
+  type PromptOverrides,
 } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Crypto from "effect/Crypto";
@@ -38,6 +39,7 @@ import * as CodexErrors from "effect-codex-app-server/errors";
 import * as EffectCodexSchema from "effect-codex-app-server/schema";
 
 import { getModelSelectionStringOptionValue } from "@t3tools/shared/model";
+import { parsePersistedServerPromptOverrides } from "@t3tools/shared/serverSettings";
 import { getCodexServiceTierOptionValue } from "../../codexModelOptions.ts";
 import * as McpProviderSession from "../../mcp/McpProviderSession.ts";
 
@@ -69,6 +71,7 @@ const isCodexSessionRuntimeThreadIdMissingError = Schema.is(
 const isCodexResumeCursorSchema = Schema.is(CodexResumeCursorSchema);
 
 const PROVIDER = ProviderDriverKind.make("codex");
+const CODEX_RECONNECT_WARNING_PATTERN = /^Reconnecting\.\.\.\s*(\d+)\/(\d+)$/u;
 
 export interface CodexAdapterLiveOptions {
   readonly instanceId?: ProviderInstanceId;
@@ -82,6 +85,7 @@ export interface CodexAdapterLiveOptions {
   >;
   readonly nativeEventLogPath?: string;
   readonly nativeEventLogger?: EventNdjsonLogger;
+  readonly resolvePromptOverrides?: Effect.Effect<PromptOverrides, never>;
 }
 
 interface CodexAdapterSessionContext {
@@ -424,6 +428,25 @@ function providerRefsFromEvent(
   if (event.requestId) refs.providerRequestId = event.requestId;
 
   return Object.keys(refs).length > 0 ? (refs as ProviderRuntimeEvent["providerRefs"]) : undefined;
+}
+
+export function parseCodexProviderReconnectRetry(message: string, willRetry: boolean) {
+  if (!willRetry) {
+    return undefined;
+  }
+  const match = CODEX_RECONNECT_WARNING_PATTERN.exec(message.trim());
+  if (!match) {
+    return undefined;
+  }
+  const attempt = Number.parseInt(match[1]!, 10);
+  const maxAttempts = Number.parseInt(match[2]!, 10);
+  return {
+    source: "codex" as const,
+    kind: "provider-reconnect" as const,
+    ...(Number.isSafeInteger(attempt) && attempt >= 0 ? { attempt } : {}),
+    ...(Number.isSafeInteger(maxAttempts) && maxAttempts >= 0 ? { maxAttempts } : {}),
+    willRetry,
+  };
 }
 
 function runtimeEventBase(
@@ -1243,6 +1266,7 @@ function mapToRuntimeEvents(
     const payload = readPayload(EffectCodexSchema.V2ErrorNotification, event.payload);
     const message = payload?.error.message ?? event.message ?? "Provider runtime error";
     const willRetry = payload?.willRetry === true;
+    const retry = parseCodexProviderReconnectRetry(message, willRetry);
     return [
       {
         type: willRetry ? "runtime.warning" : "runtime.error",
@@ -1250,6 +1274,7 @@ function mapToRuntimeEvents(
         payload: {
           message,
           ...(!willRetry ? { class: "provider_error" as const } : {}),
+          ...(retry ? { retry } : {}),
           ...(event.payload !== undefined ? { detail: event.payload } : {}),
         },
       },
@@ -1354,6 +1379,12 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
   const childProcessSpawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const crypto = yield* Crypto.Crypto;
   const serverConfig = yield* Effect.service(ServerConfig);
+  const resolvePromptOverrides =
+    options?.resolvePromptOverrides ??
+    fileSystem.readFileString(serverConfig.settingsPath).pipe(
+      Effect.map(parsePersistedServerPromptOverrides),
+      Effect.orElseSucceed(() => ({})),
+    );
   const nativeEventLogger =
     options?.nativeEventLogger ??
     (options?.nativeEventLogPath !== undefined
@@ -1387,12 +1418,23 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
             ? getCodexServiceTierOptionValue(input.modelSelection)
             : undefined;
         const mcpSession = McpProviderSession.readMcpProviderSession(input.threadId);
+        const externalMcpArgs =
+          mcpSession?.externalMcps.flatMap((server) => [
+            "-c",
+            `mcp_servers.${server.name}.command=${JSON.stringify(server.command)}`,
+            "-c",
+            `mcp_servers.${server.name}.args=${JSON.stringify(server.args)}`,
+          ]) ?? [];
+        const sessionEnvironment = {
+          ...(options?.environment ?? process.env),
+          ...input.environment,
+        };
         const runtimeInput: CodexSessionRuntimeOptions = {
           threadId: input.threadId,
           providerInstanceId: boundInstanceId,
           cwd: input.cwd ?? process.cwd(),
           binaryPath: codexConfig.binaryPath,
-          ...(options?.environment ? { environment: options.environment } : {}),
+          environment: sessionEnvironment,
           ...(codexConfig.homePath ? { homePath: codexConfig.homePath } : {}),
           ...(isCodexResumeCursorSchema(input.resumeCursor)
             ? { resumeCursor: input.resumeCursor }
@@ -1405,7 +1447,7 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
           ...(mcpSession
             ? {
                 environment: {
-                  ...(options?.environment ?? process.env),
+                  ...sessionEnvironment,
                   T3_MCP_BEARER_TOKEN: mcpSession.authorizationHeader.replace(/^Bearer\s+/, ""),
                 },
                 appServerArgs: [
@@ -1413,6 +1455,7 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
                   `mcp_servers.t3-code.url=${mcpSession.endpoint}`,
                   "-c",
                   'mcp_servers.t3-code.bearer_token_env_var="T3_MCP_BEARER_TOKEN"',
+                  ...externalMcpArgs,
                 ],
               }
             : {}),
@@ -1525,6 +1568,7 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
       (attachment) => resolveAttachment(input, attachment),
       { concurrency: 1 },
     );
+    const promptOverrides = yield* resolvePromptOverrides;
 
     const session = yield* requireSession(input.threadId);
     const reasoningEffort =
@@ -1548,6 +1592,7 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
           : {}),
         ...(serviceTier ? { serviceTier } : {}),
         ...(input.interactionMode !== undefined ? { interactionMode: input.interactionMode } : {}),
+        ...(Object.keys(promptOverrides).length > 0 ? { promptOverrides } : {}),
         ...(codexAttachments.length > 0 ? { attachments: codexAttachments } : {}),
       })
       .pipe(Effect.mapError((cause) => mapCodexRuntimeError(input.threadId, "turn/start", cause)));

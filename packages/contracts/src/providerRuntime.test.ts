@@ -6,6 +6,41 @@ import { ProviderRuntimeEvent } from "./providerRuntime.ts";
 const decodeRuntimeEvent = Schema.decodeUnknownSync(ProviderRuntimeEvent);
 
 describe("ProviderRuntimeEvent", () => {
+  it("decodes structured provider reconnect retry warning metadata", () => {
+    const parsed = decodeRuntimeEvent({
+      type: "runtime.warning",
+      eventId: "event-retry-warning",
+      provider: "codex",
+      sessionId: "runtime-session-retry",
+      createdAt: "2026-02-28T00:00:00.000Z",
+      threadId: "thread-1",
+      turnId: "turn-1",
+      payload: {
+        message: "Reconnecting... 2/5",
+        detail: { msg: "Reconnecting... 2/5" },
+        retry: {
+          source: "codex",
+          kind: "provider-reconnect",
+          attempt: 2,
+          maxAttempts: 5,
+          willRetry: true,
+        },
+      },
+    });
+
+    expect(parsed.type).toBe("runtime.warning");
+    if (parsed.type !== "runtime.warning") {
+      throw new Error("expected runtime.warning");
+    }
+    expect(parsed.payload.retry).toEqual({
+      source: "codex",
+      kind: "provider-reconnect",
+      attempt: 2,
+      maxAttempts: 5,
+      willRetry: true,
+    });
+  });
+
   it("accepts fork-provided driver kinds as branded slugs", () => {
     const parsed = decodeRuntimeEvent({
       type: "session.started",

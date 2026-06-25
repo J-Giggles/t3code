@@ -6,9 +6,7 @@ import * as PubSub from "effect/PubSub";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
 
-type LifecycleEventInput =
-  | Omit<Extract<ServerLifecycleStreamEvent, { type: "welcome" }>, "sequence">
-  | Omit<Extract<ServerLifecycleStreamEvent, { type: "ready" }>, "sequence">;
+type LifecycleEventInput = Omit<ServerLifecycleStreamEvent, "sequence">;
 
 interface SnapshotState {
   readonly sequence: number;
@@ -31,25 +29,28 @@ const make = Effect.gen(function* () {
     events: [],
   });
 
-  return {
+  return ServerLifecycleEvents.of({
     publish: (event) =>
       Ref.modify(state, (current) => {
         const nextSequence = current.sequence + 1;
         const nextEvent = {
           ...event,
           sequence: nextSequence,
-        } satisfies ServerLifecycleStreamEvent;
-        const nextEvents =
-          nextEvent.type === "welcome"
-            ? [nextEvent, ...current.events.filter((entry) => entry.type !== "welcome")]
-            : [nextEvent, ...current.events.filter((entry) => entry.type !== "ready")];
+        } as ServerLifecycleStreamEvent;
+        const nextEvents = [
+          nextEvent,
+          ...current.events.filter((entry) => entry.type !== nextEvent.type),
+        ] satisfies ReadonlyArray<ServerLifecycleStreamEvent>;
         return [nextEvent, { sequence: nextSequence, events: nextEvents }] as const;
       }).pipe(Effect.tap((event) => PubSub.publish(pubsub, event))),
     snapshot: Ref.get(state),
     get stream() {
       return Stream.fromPubSub(pubsub);
     },
-  } satisfies ServerLifecycleEvents["Service"];
+  });
 });
 
 export const layer = Layer.effect(ServerLifecycleEvents, make);
+export const ServerLifecycleEventsLive = layer;
+
+export type ServerLifecycleEventsShape = ServerLifecycleEvents["Service"];

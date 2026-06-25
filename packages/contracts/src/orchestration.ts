@@ -4,6 +4,7 @@ import * as Schema from "effect/Schema";
 import * as SchemaIssue from "effect/SchemaIssue";
 import * as SchemaTransformation from "effect/SchemaTransformation";
 import * as Struct from "effect/Struct";
+import { ProjectDevLaunchProfile, ProjectDevLaunchWarning } from "./devLaunch.ts";
 import { ProviderOptionSelections } from "./model.ts";
 import { RepositoryIdentity } from "./environment.ts";
 import {
@@ -215,6 +216,8 @@ export const OrchestrationProject = Schema.Struct({
   repositoryIdentity: Schema.optional(Schema.NullOr(RepositoryIdentity)),
   defaultModelSelection: Schema.NullOr(ModelSelection),
   scripts: Schema.Array(ProjectScript),
+  devLaunchProfiles: Schema.optionalKey(Schema.Array(ProjectDevLaunchProfile)),
+  devLaunchWarnings: Schema.optionalKey(Schema.Array(ProjectDevLaunchWarning)),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
   deletedAt: Schema.NullOr(IsoDateTime),
@@ -261,12 +264,33 @@ export const OrchestrationSessionStatus = Schema.Literals([
   "idle",
   "starting",
   "running",
+  "paused",
   "ready",
   "interrupted",
   "stopped",
   "error",
 ]);
 export type OrchestrationSessionStatus = typeof OrchestrationSessionStatus.Type;
+
+export const OrchestrationProviderConnectionStatus = Schema.Literals([
+  "unknown",
+  "connected",
+  "stale",
+  "recovering",
+  "disconnected",
+  "error",
+]);
+export type OrchestrationProviderConnectionStatus =
+  typeof OrchestrationProviderConnectionStatus.Type;
+
+export const OrchestrationProviderConnection = Schema.Struct({
+  status: OrchestrationProviderConnectionStatus,
+  lastSeenAt: Schema.NullOr(IsoDateTime),
+  lastRuntimeEvent: Schema.NullOr(TrimmedNonEmptyString),
+  lastRuntimeEventAt: Schema.NullOr(IsoDateTime),
+  staleAfterMs: NonNegativeInt,
+});
+export type OrchestrationProviderConnection = typeof OrchestrationProviderConnection.Type;
 
 export const OrchestrationSession = Schema.Struct({
   threadId: ThreadId,
@@ -275,7 +299,9 @@ export const OrchestrationSession = Schema.Struct({
   providerInstanceId: Schema.optional(ProviderInstanceId),
   runtimeMode: RuntimeMode.pipe(Schema.withDecodingDefault(Effect.succeed(DEFAULT_RUNTIME_MODE))),
   activeTurnId: Schema.NullOr(TurnId),
+  pid: Schema.optional(Schema.Int.check(Schema.isGreaterThan(0))),
   lastError: Schema.NullOr(TrimmedNonEmptyString),
+  providerConnection: Schema.optional(OrchestrationProviderConnection),
   updatedAt: IsoDateTime,
 });
 export type OrchestrationSession = typeof OrchestrationSession.Type;
@@ -324,6 +350,7 @@ export type OrchestrationThreadActivity = typeof OrchestrationThreadActivity.Typ
 
 const OrchestrationLatestTurnState = Schema.Literals([
   "running",
+  "paused",
   "interrupted",
   "completed",
   "error",
@@ -340,6 +367,19 @@ export const OrchestrationLatestTurn = Schema.Struct({
   sourceProposedPlan: Schema.optional(SourceProposedPlanReference),
 });
 export type OrchestrationLatestTurn = typeof OrchestrationLatestTurn.Type;
+
+export const OrchestrationThreadLifecycleStatus = Schema.Literals([
+  "idle",
+  "requires_input",
+  "pending_approval",
+  "connecting",
+  "running",
+  "paused",
+  "completed",
+  "error",
+  "stopped",
+]);
+export type OrchestrationThreadLifecycleStatus = typeof OrchestrationThreadLifecycleStatus.Type;
 
 export const OrchestrationThread = Schema.Struct({
   id: ThreadId,
@@ -364,6 +404,9 @@ export const OrchestrationThread = Schema.Struct({
   activities: Schema.Array(OrchestrationThreadActivity),
   checkpoints: Schema.Array(OrchestrationCheckpointSummary),
   session: Schema.NullOr(OrchestrationSession),
+  lifecycleStatus: Schema.optional(OrchestrationThreadLifecycleStatus),
+  lifecycleUpdatedAt: Schema.optional(IsoDateTime),
+  lifecycleReason: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
 });
 export type OrchestrationThread = typeof OrchestrationThread.Type;
 
@@ -382,6 +425,8 @@ export const OrchestrationProjectShell = Schema.Struct({
   repositoryIdentity: Schema.optional(Schema.NullOr(RepositoryIdentity)),
   defaultModelSelection: Schema.NullOr(ModelSelection),
   scripts: Schema.Array(ProjectScript),
+  devLaunchProfiles: Schema.optionalKey(Schema.Array(ProjectDevLaunchProfile)),
+  devLaunchWarnings: Schema.optionalKey(Schema.Array(ProjectDevLaunchWarning)),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
 });
@@ -407,6 +452,9 @@ export const OrchestrationThreadShell = Schema.Struct({
   hasPendingApprovals: Schema.Boolean,
   hasPendingUserInput: Schema.Boolean,
   hasActionableProposedPlan: Schema.Boolean,
+  lifecycleStatus: Schema.optional(OrchestrationThreadLifecycleStatus),
+  lifecycleUpdatedAt: Schema.optional(IsoDateTime),
+  lifecycleReason: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
 });
 export type OrchestrationThreadShell = typeof OrchestrationThreadShell.Type;
 
@@ -1174,6 +1222,7 @@ export const ThreadTurnDiff = TurnCountRange.mapFields(
 export const ProviderSessionRuntimeStatus = Schema.Literals([
   "starting",
   "running",
+  "paused",
   "stopped",
   "error",
 ]);
@@ -1181,6 +1230,7 @@ export type ProviderSessionRuntimeStatus = typeof ProviderSessionRuntimeStatus.T
 
 const ProjectionThreadTurnStatus = Schema.Literals([
   "running",
+  "paused",
   "completed",
   "interrupted",
   "error",

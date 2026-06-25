@@ -6,6 +6,8 @@ import { ExternalLauncherError, LaunchEditorInput } from "./editor.ts";
 import {
   AuthAccessStreamError,
   AuthAccessStreamEvent,
+  AuthRegisterPushNotificationTokenInput,
+  AuthRegisterPushNotificationTokenResult,
   EnvironmentAuthorizationError,
 } from "./auth.ts";
 import {
@@ -38,6 +40,8 @@ import {
   VcsStatusInput,
   VcsStatusResult,
   VcsStatusStreamEvent,
+  WorkspaceGitSnapshotInput,
+  WorkspaceGitSnapshotResult,
 } from "./git.ts";
 import {
   ReviewDiffPreviewError,
@@ -68,6 +72,20 @@ import {
   ProjectListEntriesError,
   ProjectListEntriesInput,
   ProjectListEntriesResult,
+  ProjectAgentFileDeleteInput,
+  ProjectAgentFileDeleteResult,
+  ProjectAgentFileOperationError,
+  ProjectAgentFileReadInput,
+  ProjectAgentFileReadResult,
+  ProjectAgentFilesListInput,
+  ProjectAgentFilesListResult,
+  ProjectAgentFileWriteInput,
+  ProjectAgentFileWriteResult,
+  ProjectAgentHarnessScaffoldInput,
+  ProjectAgentHarnessScaffoldResult,
+  ProjectAgentSecretDeleteInput,
+  ProjectAgentSecretStatus,
+  ProjectAgentSecretWriteInput,
   ProjectReadFileError,
   ProjectReadFileInput,
   ProjectReadFileResult,
@@ -85,6 +103,7 @@ import {
   TerminalCloseInput,
   TerminalError,
   TerminalEvent,
+  TerminalKillInput,
   TerminalMetadataStreamEvent,
   TerminalOpenInput,
   TerminalResizeInput,
@@ -110,18 +129,35 @@ import {
   PreviewAutomationError,
   PreviewAutomationHost,
   PreviewAutomationHostFocus,
+  PreviewAutomationOwner,
+  PreviewAutomationOwnerIdentity,
   PreviewAutomationResponse,
   PreviewAutomationStreamEvent,
 } from "./previewAutomation.ts";
 import {
+  AppAutomationError,
+  AppAutomationOwner,
+  AppAutomationRequest,
+  AppAutomationResponse,
+} from "./appAutomation.ts";
+import {
   ServerConfigStreamEvent,
   ServerConfig,
+  ServerProviderSkillConfigWriteError,
+  ServerProviderSkillConfigWriteInput,
+  ServerProviderSkillConfigWriteResult,
+  ServerProviderResetError,
+  ServerProviderResetInput,
+  ServerProviderResetResult,
   ServerProviderUpdateError,
   ServerProviderUpdateInput,
   ServerLifecycleStreamEvent,
   ServerRemoveKeybindingInput,
   ServerRemoveKeybindingResult,
   ServerProviderUpdatedPayload,
+  ServerRestartRuntimeInput,
+  ServerRestartRuntimeResult,
+  ServerRuntimeRestartError,
   ServerTraceDiagnosticsResult,
   ServerProcessDiagnosticsResult,
   ServerProcessResourceHistoryInput,
@@ -143,6 +179,15 @@ import {
   SourceControlRepositoryLookupInput,
 } from "./sourceControl.ts";
 import { VcsError } from "./vcs.ts";
+import {
+  DesktopDevLaunchCollisionPromptInput,
+  DesktopDevLaunchCollisionPromptResult,
+  DesktopDevLaunchError,
+  DesktopDevLaunchLaunchInput,
+  DesktopDevLaunchState,
+  DesktopDevLaunchStopInput,
+  DesktopDevLaunchThreadRef,
+} from "./devLaunch.ts";
 
 export const WS_METHODS = {
   // Project registry methods
@@ -153,6 +198,13 @@ export const WS_METHODS = {
   projectsReadFile: "projects.readFile",
   projectsSearchEntries: "projects.searchEntries",
   projectsWriteFile: "projects.writeFile",
+  projectsListAgentFiles: "projects.listAgentFiles",
+  projectsReadAgentFile: "projects.readAgentFile",
+  projectsWriteAgentFile: "projects.writeAgentFile",
+  projectsDeleteAgentFile: "projects.deleteAgentFile",
+  projectsScaffoldAgentHarness: "projects.scaffoldAgentHarness",
+  projectsWriteAgentSecret: "projects.writeAgentSecret",
+  projectsDeleteAgentSecret: "projects.deleteAgentSecret",
 
   // Shell methods
   shellOpenInEditor: "shell.openInEditor",
@@ -170,6 +222,7 @@ export const WS_METHODS = {
   vcsCreateRef: "vcs.createRef",
   vcsSwitchRef: "vcs.switchRef",
   vcsInit: "vcs.init",
+  workspaceGitSnapshot: "workspaceGit.snapshot",
 
   // Git workflow methods
   gitRunStackedAction: "git.runStackedAction",
@@ -185,6 +238,7 @@ export const WS_METHODS = {
   terminalWrite: "terminal.write",
   terminalResize: "terminal.resize",
   terminalClear: "terminal.clear",
+  terminalKill: "terminal.kill",
   terminalRestart: "terminal.restart",
   terminalClose: "terminal.close",
 
@@ -199,11 +253,21 @@ export const WS_METHODS = {
   previewAutomationConnect: "previewAutomation.connect",
   previewAutomationRespond: "previewAutomation.respond",
   previewAutomationFocusHost: "previewAutomation.focusHost",
+  previewAutomationReportOwner: "previewAutomation.reportOwner",
+  previewAutomationClearOwner: "previewAutomation.clearOwner",
+
+  // Local desktop shell automation methods
+  appAutomationConnect: "appAutomation.connect",
+  appAutomationRespond: "appAutomation.respond",
+  appAutomationReportOwner: "appAutomation.reportOwner",
+  appAutomationClearOwner: "appAutomation.clearOwner",
 
   // Server meta
   serverGetConfig: "server.getConfig",
   serverRefreshProviders: "server.refreshProviders",
   serverUpdateProvider: "server.updateProvider",
+  serverResetProvider: "server.resetProvider",
+  serverWriteProviderSkillConfig: "server.writeProviderSkillConfig",
   serverUpsertKeybinding: "server.upsertKeybinding",
   serverRemoveKeybinding: "server.removeKeybinding",
   serverGetSettings: "server.getSettings",
@@ -213,6 +277,13 @@ export const WS_METHODS = {
   serverGetProcessDiagnostics: "server.getProcessDiagnostics",
   serverGetProcessResourceHistory: "server.getProcessResourceHistory",
   serverSignalProcess: "server.signalProcess",
+  serverRestartRuntime: "server.restartRuntime",
+  serverRegisterPushNotifications: "server.registerPushNotifications",
+  serverGetDevLaunchState: "server.getDevLaunchState",
+  serverLaunchDevApp: "server.launchDevApp",
+  serverStopDevApp: "server.stopDevApp",
+  serverListActiveDevLaunches: "server.listActiveDevLaunches",
+  serverBuildDevLaunchCollisionPrompt: "server.buildDevLaunchCollisionPrompt",
 
   // Cloud environment methods
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
@@ -272,6 +343,21 @@ export const WsServerUpdateProviderRpc = Rpc.make(WS_METHODS.serverUpdateProvide
   error: Schema.Union([ServerProviderUpdateError, EnvironmentAuthorizationError]),
 });
 
+export const WsServerResetProviderRpc = Rpc.make(WS_METHODS.serverResetProvider, {
+  payload: ServerProviderResetInput,
+  success: ServerProviderResetResult,
+  error: Schema.Union([ServerProviderResetError, EnvironmentAuthorizationError]),
+});
+
+export const WsServerWriteProviderSkillConfigRpc = Rpc.make(
+  WS_METHODS.serverWriteProviderSkillConfig,
+  {
+    payload: ServerProviderSkillConfigWriteInput,
+    success: ServerProviderSkillConfigWriteResult,
+    error: Schema.Union([ServerProviderSkillConfigWriteError, EnvironmentAuthorizationError]),
+  },
+);
+
 export const WsServerGetSettingsRpc = Rpc.make(WS_METHODS.serverGetSettings, {
   payload: Schema.Struct({}),
   success: ServerSettings,
@@ -316,6 +402,54 @@ export const WsServerSignalProcessRpc = Rpc.make(WS_METHODS.serverSignalProcess,
   success: ServerSignalProcessResult,
   error: EnvironmentAuthorizationError,
 });
+
+export const WsServerRestartRuntimeRpc = Rpc.make(WS_METHODS.serverRestartRuntime, {
+  payload: ServerRestartRuntimeInput,
+  success: ServerRestartRuntimeResult,
+  error: Schema.Union([ServerRuntimeRestartError, EnvironmentAuthorizationError]),
+});
+
+export const WsServerGetDevLaunchStateRpc = Rpc.make(WS_METHODS.serverGetDevLaunchState, {
+  payload: DesktopDevLaunchThreadRef,
+  success: DesktopDevLaunchState,
+  error: Schema.Union([DesktopDevLaunchError, EnvironmentAuthorizationError]),
+});
+
+export const WsServerLaunchDevAppRpc = Rpc.make(WS_METHODS.serverLaunchDevApp, {
+  payload: DesktopDevLaunchLaunchInput,
+  success: DesktopDevLaunchState,
+  error: Schema.Union([DesktopDevLaunchError, EnvironmentAuthorizationError]),
+});
+
+export const WsServerStopDevAppRpc = Rpc.make(WS_METHODS.serverStopDevApp, {
+  payload: DesktopDevLaunchStopInput,
+  success: DesktopDevLaunchState,
+  error: Schema.Union([DesktopDevLaunchError, EnvironmentAuthorizationError]),
+});
+
+export const WsServerListActiveDevLaunchesRpc = Rpc.make(WS_METHODS.serverListActiveDevLaunches, {
+  payload: Schema.Struct({}),
+  success: DesktopDevLaunchState,
+  error: Schema.Union([DesktopDevLaunchError, EnvironmentAuthorizationError]),
+});
+
+export const WsServerBuildDevLaunchCollisionPromptRpc = Rpc.make(
+  WS_METHODS.serverBuildDevLaunchCollisionPrompt,
+  {
+    payload: DesktopDevLaunchCollisionPromptInput,
+    success: DesktopDevLaunchCollisionPromptResult,
+    error: EnvironmentAuthorizationError,
+  },
+);
+
+export const WsServerRegisterPushNotificationsRpc = Rpc.make(
+  WS_METHODS.serverRegisterPushNotifications,
+  {
+    payload: AuthRegisterPushNotificationTokenInput,
+    success: AuthRegisterPushNotificationTokenResult,
+    error: EnvironmentAuthorizationError,
+  },
+);
 
 export const WsCloudGetRelayClientStatusRpc = Rpc.make(WS_METHODS.cloudGetRelayClientStatus, {
   payload: Schema.Struct({}),
@@ -376,6 +510,48 @@ export const WsProjectsWriteFileRpc = Rpc.make(WS_METHODS.projectsWriteFile, {
   payload: ProjectWriteFileInput,
   success: ProjectWriteFileResult,
   error: Schema.Union([ProjectWriteFileError, EnvironmentAuthorizationError]),
+});
+
+export const WsProjectsListAgentFilesRpc = Rpc.make(WS_METHODS.projectsListAgentFiles, {
+  payload: ProjectAgentFilesListInput,
+  success: ProjectAgentFilesListResult,
+  error: Schema.Union([ProjectAgentFileOperationError, EnvironmentAuthorizationError]),
+});
+
+export const WsProjectsReadAgentFileRpc = Rpc.make(WS_METHODS.projectsReadAgentFile, {
+  payload: ProjectAgentFileReadInput,
+  success: ProjectAgentFileReadResult,
+  error: Schema.Union([ProjectAgentFileOperationError, EnvironmentAuthorizationError]),
+});
+
+export const WsProjectsWriteAgentFileRpc = Rpc.make(WS_METHODS.projectsWriteAgentFile, {
+  payload: ProjectAgentFileWriteInput,
+  success: ProjectAgentFileWriteResult,
+  error: Schema.Union([ProjectAgentFileOperationError, EnvironmentAuthorizationError]),
+});
+
+export const WsProjectsDeleteAgentFileRpc = Rpc.make(WS_METHODS.projectsDeleteAgentFile, {
+  payload: ProjectAgentFileDeleteInput,
+  success: ProjectAgentFileDeleteResult,
+  error: Schema.Union([ProjectAgentFileOperationError, EnvironmentAuthorizationError]),
+});
+
+export const WsProjectsScaffoldAgentHarnessRpc = Rpc.make(WS_METHODS.projectsScaffoldAgentHarness, {
+  payload: ProjectAgentHarnessScaffoldInput,
+  success: ProjectAgentHarnessScaffoldResult,
+  error: Schema.Union([ProjectAgentFileOperationError, EnvironmentAuthorizationError]),
+});
+
+export const WsProjectsWriteAgentSecretRpc = Rpc.make(WS_METHODS.projectsWriteAgentSecret, {
+  payload: ProjectAgentSecretWriteInput,
+  success: ProjectAgentSecretStatus,
+  error: Schema.Union([ProjectAgentFileOperationError, EnvironmentAuthorizationError]),
+});
+
+export const WsProjectsDeleteAgentSecretRpc = Rpc.make(WS_METHODS.projectsDeleteAgentSecret, {
+  payload: ProjectAgentSecretDeleteInput,
+  success: ProjectAgentSecretStatus,
+  error: Schema.Union([ProjectAgentFileOperationError, EnvironmentAuthorizationError]),
 });
 
 export const WsShellOpenInEditorRpc = Rpc.make(WS_METHODS.shellOpenInEditor, {
@@ -467,6 +643,12 @@ export const WsVcsInitRpc = Rpc.make(WS_METHODS.vcsInit, {
   error: Schema.Union([VcsError, EnvironmentAuthorizationError]),
 });
 
+export const WsWorkspaceGitSnapshotRpc = Rpc.make(WS_METHODS.workspaceGitSnapshot, {
+  payload: WorkspaceGitSnapshotInput,
+  success: WorkspaceGitSnapshotResult,
+  error: Schema.Union([GitCommandError, EnvironmentAuthorizationError]),
+});
+
 /**
  * Ephemeral live diff preview for compact/mobile surfaces.
  * Not the persisted T3 Review model. Future review sessions should use
@@ -503,6 +685,11 @@ export const WsTerminalResizeRpc = Rpc.make(WS_METHODS.terminalResize, {
 
 export const WsTerminalClearRpc = Rpc.make(WS_METHODS.terminalClear, {
   payload: TerminalClearInput,
+  error: Schema.Union([TerminalError, EnvironmentAuthorizationError]),
+});
+
+export const WsTerminalKillRpc = Rpc.make(WS_METHODS.terminalKill, {
+  payload: TerminalKillInput,
   error: Schema.Union([TerminalError, EnvironmentAuthorizationError]),
 });
 
@@ -571,6 +758,38 @@ export const WsPreviewAutomationRespondRpc = Rpc.make(WS_METHODS.previewAutomati
 export const WsPreviewAutomationFocusHostRpc = Rpc.make(WS_METHODS.previewAutomationFocusHost, {
   payload: PreviewAutomationHostFocus,
   error: EnvironmentAuthorizationError,
+});
+
+export const WsPreviewAutomationReportOwnerRpc = Rpc.make(WS_METHODS.previewAutomationReportOwner, {
+  payload: PreviewAutomationOwner,
+  error: Schema.Union([PreviewAutomationError, EnvironmentAuthorizationError]),
+});
+
+export const WsPreviewAutomationClearOwnerRpc = Rpc.make(WS_METHODS.previewAutomationClearOwner, {
+  payload: PreviewAutomationOwnerIdentity,
+  error: Schema.Union([PreviewAutomationError, EnvironmentAuthorizationError]),
+});
+
+export const WsAppAutomationConnectRpc = Rpc.make(WS_METHODS.appAutomationConnect, {
+  payload: Schema.Struct({ clientId: Schema.String }),
+  success: AppAutomationRequest,
+  error: Schema.Union([AppAutomationError, EnvironmentAuthorizationError]),
+  stream: true,
+});
+
+export const WsAppAutomationRespondRpc = Rpc.make(WS_METHODS.appAutomationRespond, {
+  payload: AppAutomationResponse,
+  error: Schema.Union([AppAutomationError, EnvironmentAuthorizationError]),
+});
+
+export const WsAppAutomationReportOwnerRpc = Rpc.make(WS_METHODS.appAutomationReportOwner, {
+  payload: AppAutomationOwner,
+  error: Schema.Union([AppAutomationError, EnvironmentAuthorizationError]),
+});
+
+export const WsAppAutomationClearOwnerRpc = Rpc.make(WS_METHODS.appAutomationClearOwner, {
+  payload: Schema.Struct({ clientId: Schema.String }),
+  error: Schema.Union([AppAutomationError, EnvironmentAuthorizationError]),
 });
 
 export const WsSubscribePreviewEventsRpc = Rpc.make(WS_METHODS.subscribePreviewEvents, {
@@ -685,6 +904,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerGetConfigRpc,
   WsServerRefreshProvidersRpc,
   WsServerUpdateProviderRpc,
+  WsServerResetProviderRpc,
+  WsServerWriteProviderSkillConfigRpc,
   WsServerUpsertKeybindingRpc,
   WsServerRemoveKeybindingRpc,
   WsServerGetSettingsRpc,
@@ -694,6 +915,13 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerGetProcessDiagnosticsRpc,
   WsServerGetProcessResourceHistoryRpc,
   WsServerSignalProcessRpc,
+  WsServerRestartRuntimeRpc,
+  WsServerGetDevLaunchStateRpc,
+  WsServerLaunchDevAppRpc,
+  WsServerStopDevAppRpc,
+  WsServerListActiveDevLaunchesRpc,
+  WsServerBuildDevLaunchCollisionPromptRpc,
+  WsServerRegisterPushNotificationsRpc,
   WsCloudGetRelayClientStatusRpc,
   WsCloudInstallRelayClientRpc,
   WsSourceControlLookupRepositoryRpc,
@@ -703,6 +931,13 @@ export const WsRpcGroup = RpcGroup.make(
   WsProjectsReadFileRpc,
   WsProjectsSearchEntriesRpc,
   WsProjectsWriteFileRpc,
+  WsProjectsListAgentFilesRpc,
+  WsProjectsReadAgentFileRpc,
+  WsProjectsWriteAgentFileRpc,
+  WsProjectsDeleteAgentFileRpc,
+  WsProjectsScaffoldAgentHarnessRpc,
+  WsProjectsWriteAgentSecretRpc,
+  WsProjectsDeleteAgentSecretRpc,
   WsShellOpenInEditorRpc,
   WsFilesystemBrowseRpc,
   WsAssetsCreateUrlRpc,
@@ -718,12 +953,14 @@ export const WsRpcGroup = RpcGroup.make(
   WsVcsCreateRefRpc,
   WsVcsSwitchRefRpc,
   WsVcsInitRpc,
+  WsWorkspaceGitSnapshotRpc,
   WsReviewGetDiffPreviewRpc,
   WsTerminalOpenRpc,
   WsTerminalAttachRpc,
   WsTerminalWriteRpc,
   WsTerminalResizeRpc,
   WsTerminalClearRpc,
+  WsTerminalKillRpc,
   WsTerminalRestartRpc,
   WsTerminalCloseRpc,
   WsSubscribeTerminalEventsRpc,
@@ -738,6 +975,12 @@ export const WsRpcGroup = RpcGroup.make(
   WsPreviewAutomationConnectRpc,
   WsPreviewAutomationRespondRpc,
   WsPreviewAutomationFocusHostRpc,
+  WsPreviewAutomationReportOwnerRpc,
+  WsPreviewAutomationClearOwnerRpc,
+  WsAppAutomationConnectRpc,
+  WsAppAutomationRespondRpc,
+  WsAppAutomationReportOwnerRpc,
+  WsAppAutomationClearOwnerRpc,
   WsSubscribePreviewEventsRpc,
   WsSubscribeDiscoveredLocalServersRpc,
   WsSubscribeServerConfigRpc,

@@ -289,3 +289,5 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(CheckpointDiffQuery, make);
+
+export type CheckpointDiffQueryShape = CheckpointDiffQuery["Service"];

@@ -7,6 +7,7 @@ import {
   type OrchestrationThreadActivity,
   type OrchestrationProposedPlanId,
   ProviderDriverKind,
+  type ServerProvider,
   type ToolLifecycleItemType,
   type UserInputQuestion,
   type ThreadId,
@@ -53,6 +54,105 @@ export const PROVIDER_OPTIONS: Array<{
   },
 ];
 
+export type ProviderHeaderStatusPresentation = {
+  state: "ready" | "warning" | "error" | "disabled" | "unavailable";
+  label: string;
+  tooltip: string;
+  dotClass: string;
+  pulse: boolean;
+};
+
+const PROVIDER_HEADER_STATUS_DOT_CLASSES: Record<
+  ProviderHeaderStatusPresentation["state"],
+  string
+> = {
+  ready: "bg-success",
+  warning: "bg-warning",
+  error: "bg-destructive",
+  disabled: "bg-muted-foreground",
+  unavailable: "bg-muted-foreground",
+};
+
+function getProviderHeaderDisplayName(provider: Pick<ServerProvider, "displayName" | "driver">) {
+  const configuredName = provider.displayName?.trim();
+  if (configuredName) return configuredName;
+  return (
+    PROVIDER_OPTIONS.find((option) => option.value === provider.driver)?.label ??
+    String(provider.driver)
+  );
+}
+
+function getProviderHeaderStatusDetail(provider: ServerProvider): string | null {
+  if (provider.availability === "unavailable") {
+    return (
+      provider.unavailableReason ??
+      provider.message ??
+      "This provider instance is configured, but its driver is unavailable."
+    );
+  }
+  if (!provider.enabled || provider.status === "disabled") {
+    return provider.message ?? "This provider is disabled for new sessions.";
+  }
+  if (!provider.installed) {
+    return provider.message ?? "Provider CLI not detected on PATH.";
+  }
+  if (provider.auth.status === "unauthenticated") {
+    return provider.message ?? "Sign in via the CLI to authenticate again.";
+  }
+  if (provider.status === "warning") {
+    return provider.message ?? "The provider reported limited availability.";
+  }
+  if (provider.status === "error") {
+    return provider.message ?? "The provider failed its startup checks.";
+  }
+  if (provider.message) {
+    return provider.message;
+  }
+  if (provider.auth.status === "authenticated") {
+    const authLabel = provider.auth.label ?? provider.auth.type;
+    return authLabel ? `Authenticated · ${authLabel}` : "Authenticated";
+  }
+  if (provider.auth.status === "unknown") {
+    return "Authentication status unknown.";
+  }
+  return null;
+}
+
+export function resolveProviderHeaderStatusPresentation(
+  provider: ServerProvider | null | undefined,
+): ProviderHeaderStatusPresentation | null {
+  if (!provider) return null;
+
+  const state: ProviderHeaderStatusPresentation["state"] =
+    provider.availability === "unavailable"
+      ? "unavailable"
+      : !provider.enabled
+        ? "disabled"
+        : provider.status;
+  const providerName = getProviderHeaderDisplayName(provider);
+  const label =
+    state === "ready"
+      ? `${providerName} ready`
+      : state === "warning"
+        ? `${providerName} needs attention`
+        : state === "error"
+          ? `${providerName} unavailable`
+          : state === "disabled"
+            ? `${providerName} disabled`
+            : `${providerName} driver unavailable`;
+  const detail = getProviderHeaderStatusDetail(provider);
+
+  return {
+    state,
+    label,
+    tooltip: detail
+      ? `Provider connection · ${label} · ${detail}`
+      : `Provider connection · ${label}`,
+    dotClass: PROVIDER_HEADER_STATUS_DOT_CLASSES[state],
+    pulse: state === "ready",
+  };
+}
+
 export type WorkLogToolLifecycleStatus =
   | "inProgress"
   | "completed"
@@ -84,6 +184,14 @@ interface DerivedWorkLogEntry extends WorkLogEntry {
   activityKind: OrchestrationThreadActivity["kind"];
   collapseKey?: string;
   toolCallId?: string;
+}
+
+interface ProviderReconnectRetryPayload {
+  source: "codex";
+  kind: "provider-reconnect";
+  attempt?: number;
+  maxAttempts?: number;
+  willRetry: boolean;
 }
 
 export interface PendingApproval {
@@ -679,6 +787,7 @@ function toDerivedWorkLogEntry(activity: OrchestrationThreadActivity): DerivedWo
     activity.payload && typeof activity.payload === "object"
       ? (activity.payload as Record<string, unknown>)
       : null;
+  const reconnectRetry = extractProviderReconnectRetry(payload);
   const commandPreview = extractToolCommand(payload);
   const changedFiles = extractChangedFiles(payload);
   const title = extractToolTitle(payload);
@@ -708,7 +817,7 @@ function toDerivedWorkLogEntry(activity: OrchestrationThreadActivity): DerivedWo
     id: activity.id,
     createdAt: activity.createdAt,
     turnId: activity.turnId,
-    label: taskLabel || activity.summary,
+    label: formatProviderReconnectLabel(reconnectRetry) ?? (taskLabel || activity.summary),
     tone:
       activity.kind === "task.progress"
         ? "thinking"
@@ -760,6 +869,10 @@ function toDerivedWorkLogEntry(activity: OrchestrationThreadActivity): DerivedWo
   if (collapseKey) {
     entry.collapseKey = collapseKey;
   }
+  const providerReconnectCollapseKey = deriveProviderReconnectCollapseKey(activity, reconnectRetry);
+  if (providerReconnectCollapseKey) {
+    entry.collapseKey = providerReconnectCollapseKey;
+  }
   return entry;
 }
 
@@ -769,6 +882,10 @@ function collapseDerivedWorkLogEntries(
   const collapsed: DerivedWorkLogEntry[] = [];
   for (const entry of entries) {
     const previous = collapsed.at(-1);
+    if (previous && shouldCollapseProviderReconnectEntries(previous, entry)) {
+      collapsed[collapsed.length - 1] = mergeDerivedWorkLogEntries(previous, entry);
+      continue;
+    }
     if (previous && shouldCollapseToolLifecycleEntries(previous, entry)) {
       collapsed[collapsed.length - 1] = mergeDerivedWorkLogEntries(previous, entry);
       continue;
@@ -776,6 +893,64 @@ function collapseDerivedWorkLogEntries(
     collapsed.push(entry);
   }
   return collapsed;
+}
+
+function extractProviderReconnectRetry(
+  payload: Record<string, unknown> | null,
+): ProviderReconnectRetryPayload | null {
+  const retry = asRecord(payload?.retry);
+  if (
+    retry?.source !== "codex" ||
+    retry.kind !== "provider-reconnect" ||
+    typeof retry.willRetry !== "boolean"
+  ) {
+    return null;
+  }
+  const attempt = asNumber(retry.attempt);
+  const maxAttempts = asNumber(retry.maxAttempts);
+  return {
+    source: "codex",
+    kind: "provider-reconnect",
+    willRetry: retry.willRetry,
+    ...(attempt !== null && attempt >= 0 ? { attempt } : {}),
+    ...(maxAttempts !== null && maxAttempts >= 0 ? { maxAttempts } : {}),
+  };
+}
+
+function formatProviderReconnectLabel(retry: ProviderReconnectRetryPayload | null): string | null {
+  if (!retry) {
+    return null;
+  }
+  if (retry.attempt !== undefined && retry.maxAttempts !== undefined) {
+    return `Codex reconnecting (${retry.attempt}/${retry.maxAttempts})`;
+  }
+  if (retry.attempt !== undefined) {
+    return `Codex reconnecting (${retry.attempt})`;
+  }
+  return "Codex reconnecting";
+}
+
+function deriveProviderReconnectCollapseKey(
+  activity: OrchestrationThreadActivity,
+  retry: ProviderReconnectRetryPayload | null,
+): string | undefined {
+  if (activity.kind !== "runtime.warning" || !retry) {
+    return undefined;
+  }
+  return `provider-reconnect:${retry.source}:${activity.turnId ?? "thread"}`;
+}
+
+function shouldCollapseProviderReconnectEntries(
+  previous: DerivedWorkLogEntry,
+  next: DerivedWorkLogEntry,
+): boolean {
+  return (
+    previous.activityKind === "runtime.warning" &&
+    next.activityKind === "runtime.warning" &&
+    previous.collapseKey !== undefined &&
+    previous.collapseKey === next.collapseKey &&
+    previous.collapseKey.startsWith("provider-reconnect:")
+  );
 }
 
 function shouldCollapseToolLifecycleEntries(
