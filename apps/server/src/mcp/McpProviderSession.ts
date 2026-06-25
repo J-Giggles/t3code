@@ -1,5 +1,13 @@
 import type { EnvironmentId, ProviderInstanceId, ThreadId } from "@t3tools/contracts";
 
+export interface ExternalMcpProviderSessionConfig {
+  readonly id: string;
+  readonly name: string;
+  readonly command: string;
+  readonly args: ReadonlyArray<string>;
+  readonly env?: Readonly<Record<string, string>>;
+}
+
 export interface McpProviderSessionConfig {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
@@ -7,6 +15,7 @@ export interface McpProviderSessionConfig {
   readonly providerInstanceId: ProviderInstanceId;
   readonly endpoint: string;
   readonly authorizationHeader: string;
+  readonly externalMcps: ReadonlyArray<ExternalMcpProviderSessionConfig>;
 }
 
 const sessionsByThread = new Map<ThreadId, McpProviderSessionConfig>();

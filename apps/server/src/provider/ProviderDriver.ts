@@ -25,6 +25,10 @@ import type {
   ProviderDriverKind,
   ProviderInstanceEnvironment,
   ProviderInstanceId,
+  ServerProviderSkillConfigWriteError,
+  ServerProviderSkillConfigWriteInput,
+  ServerProviderSkillConfigWriteResult,
+  ServerProviderNativeResetResult,
 } from "@t3tools/contracts";
 import type * as Effect from "effect/Effect";
 import type * as Schema from "effect/Schema";
@@ -70,7 +74,14 @@ export interface ProviderInstance {
   readonly enabled: boolean;
   readonly snapshot: ServerProviderShape;
   readonly adapter: ProviderAdapterShape<ProviderAdapterError>;
-  readonly textGeneration: TextGeneration.TextGeneration["Service"];
+  readonly textGeneration: TextGeneration.TextGenerationShape;
+  readonly writeSkillConfig?: (
+    input: Omit<ServerProviderSkillConfigWriteInput, "instanceId">,
+  ) => Effect.Effect<
+    Pick<ServerProviderSkillConfigWriteResult, "effectiveEnabled">,
+    ServerProviderSkillConfigWriteError
+  >;
+  readonly resetNativeProviderState?: () => Effect.Effect<ServerProviderNativeResetResult, Error>;
 }
 
 export interface ProviderContinuationIdentity {

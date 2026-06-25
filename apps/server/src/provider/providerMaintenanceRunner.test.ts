@@ -1,5 +1,6 @@
 import { describe, it, assert } from "@effect/vitest";
 import {
+  DEFAULT_SERVER_SETTINGS,
   ProviderDriverKind,
   ProviderInstanceId,
   type ServerProvider,
@@ -189,6 +190,18 @@ function makeRegistry(
       getProviders: Ref.get(providersRef),
       refresh: () => Ref.get(providersRef),
       refreshInstance: () => Ref.get(providersRef),
+      writeProviderSkillConfig: (input) =>
+        Ref.get(providersRef).pipe(
+          Effect.map((providers) => ({ effectiveEnabled: input.enabled, providers })),
+        ),
+      resetProvider: () =>
+        Ref.get(providersRef).pipe(
+          Effect.map((providers) => ({
+            providers,
+            settings: DEFAULT_SERVER_SETTINGS,
+            nativeReset: { status: "skipped" as const },
+          })),
+        ),
       getProviderMaintenanceCapabilitiesForInstance: (_instanceId, provider) =>
         Effect.succeed(lifecycleFor(provider)),
       setProviderMaintenanceActionState,

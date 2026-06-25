@@ -358,13 +358,42 @@ export type OpenCodeSettings = typeof OpenCodeSettings.Type;
 export const ObservabilitySettings = Schema.Struct({
   otlpTracesUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
   otlpMetricsUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  otlpLogsUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
 });
 export type ObservabilitySettings = typeof ObservabilitySettings.Type;
+
+export const T3ProviderAccessMcpId = Schema.Literal("jira-local");
+export type T3ProviderAccessMcpId = typeof T3ProviderAccessMcpId.Type;
+
+export const T3ProviderAccessMcpSettings = Schema.Struct({
+  enabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+});
+export type T3ProviderAccessMcpSettings = typeof T3ProviderAccessMcpSettings.Type;
+
+export const T3ProviderAccessSettings = Schema.Struct({
+  mcps: Schema.Record(T3ProviderAccessMcpId, T3ProviderAccessMcpSettings).pipe(
+    Schema.withDecodingDefault(
+      Effect.succeed({
+        "jira-local": { enabled: false },
+      }),
+    ),
+  ),
+});
+export type T3ProviderAccessSettings = typeof T3ProviderAccessSettings.Type;
+
+export const PromptOverride = Schema.Struct({
+  content: Schema.String,
+  defaultHash: Schema.optional(Schema.String),
+});
+export type PromptOverride = typeof PromptOverride.Type;
+
+export const PromptOverrides = Schema.Record(TrimmedNonEmptyString, PromptOverride);
+export type PromptOverrides = typeof PromptOverrides.Type;
 
 export const DEFAULT_AUTOMATIC_GIT_FETCH_INTERVAL = Duration.seconds(30);
 
 export const ServerSettings = Schema.Struct({
-  enableAssistantStreaming: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  enableAssistantStreaming: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   enableProviderUpdateChecks: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   automaticGitFetchInterval: Schema.DurationFromMillis.pipe(
     Schema.withDecodingDefault(
@@ -408,7 +437,9 @@ export const ServerSettings = Schema.Struct({
   providerInstances: Schema.Record(ProviderInstanceId, ProviderInstanceConfig).pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
+  t3ProviderAccess: T3ProviderAccessSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   observability: ObservabilitySettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+  promptOverrides: PromptOverrides.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
 });
 export type ServerSettings = typeof ServerSettings.Type;
 
@@ -501,6 +532,17 @@ const OpenCodeSettingsPatch = Schema.Struct({
   customModels: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 
+const T3ProviderAccessSettingsPatch = Schema.Struct({
+  mcps: Schema.optionalKey(
+    Schema.Record(
+      T3ProviderAccessMcpId,
+      Schema.Struct({
+        enabled: Schema.optionalKey(Schema.Boolean),
+      }),
+    ),
+  ),
+});
+
 export const ServerSettingsPatch = Schema.Struct({
   // Server settings
   enableAssistantStreaming: Schema.optionalKey(Schema.Boolean),
@@ -514,6 +556,7 @@ export const ServerSettingsPatch = Schema.Struct({
     Schema.Struct({
       otlpTracesUrl: Schema.optionalKey(TrimmedString),
       otlpMetricsUrl: Schema.optionalKey(TrimmedString),
+      otlpLogsUrl: Schema.optionalKey(TrimmedString),
     }),
   ),
   providers: Schema.optionalKey(
@@ -530,6 +573,10 @@ export const ServerSettingsPatch = Schema.Struct({
   // patches risk leaving driver-specific config in a half-merged state.
   // The web UI sends a fully-formed map every time it edits this field.
   providerInstances: Schema.optionalKey(Schema.Record(ProviderInstanceId, ProviderInstanceConfig)),
+  t3ProviderAccess: Schema.optionalKey(T3ProviderAccessSettingsPatch),
+  // Whole-map replacement. Storing only user overrides keeps source defaults
+  // live, so upstream prompt changes become the default for uncustomized prompts.
+  promptOverrides: Schema.optionalKey(PromptOverrides),
 });
 export type ServerSettingsPatch = typeof ServerSettingsPatch.Type;
 

@@ -568,11 +568,22 @@ export function makeGrokAdapter(grokSettings: GrokSettings, options?: GrokAdapte
             provider: PROVIDER,
             threadId: input.threadId,
           });
+          const sessionEnvironment = {
+            ...(options?.environment ?? process.env),
+            ...input.environment,
+          };
 
           const mcpSession = McpProviderSession.readMcpProviderSession(input.threadId);
+          const externalMcpServers =
+            mcpSession?.externalMcps.map((server) => ({
+              name: server.name,
+              command: server.command,
+              args: server.args,
+              env: Object.entries(server.env ?? {}).map(([name, value]) => ({ name, value })),
+            })) ?? [];
           const acp = yield* makeGrokAcpRuntime({
             grokSettings,
-            ...(options?.environment ? { environment: options.environment } : {}),
+            environment: sessionEnvironment,
             childProcessSpawner,
             cwd,
             ...(resumeSessionId ? { resumeSessionId } : {}),
@@ -591,6 +602,7 @@ export function makeGrokAdapter(grokSettings: GrokSettings, options?: GrokAdapte
                         },
                       ],
                     },
+                    ...externalMcpServers,
                   ],
                 }
               : {}),

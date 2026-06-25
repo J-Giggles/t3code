@@ -10,6 +10,12 @@ import type {
   ProviderInstanceId,
   ProviderDriverKind,
   ServerProvider,
+  ServerProviderSkillConfigWriteError,
+  ServerProviderSkillConfigWriteInput,
+  ServerProviderSkillConfigWriteResult,
+  ServerProviderResetError,
+  ServerProviderResetInput,
+  ServerProviderResetResult,
   ServerProviderUpdateState,
 } from "@t3tools/contracts";
 import * as Context from "effect/Context";
@@ -47,6 +53,14 @@ export interface ProviderRegistryShape {
   readonly refreshInstance: (
     instanceId: ProviderInstanceId,
   ) => Effect.Effect<ReadonlyArray<ServerProvider>>;
+
+  readonly writeProviderSkillConfig: (
+    input: ServerProviderSkillConfigWriteInput,
+  ) => Effect.Effect<ServerProviderSkillConfigWriteResult, ServerProviderSkillConfigWriteError>;
+
+  readonly resetProvider: (
+    input: ServerProviderResetInput,
+  ) => Effect.Effect<ServerProviderResetResult, ServerProviderResetError>;
 
   /**
    * Resolve the maintenance capabilities owned by one live provider instance.

@@ -15,9 +15,11 @@ import {
   RuntimeMode,
   ThreadId,
   TurnId,
+  type PromptOverrides,
 } from "@t3tools/contracts";
 import { resolveSpawnCommand } from "@t3tools/shared/shell";
 import { normalizeModelSlug } from "@t3tools/shared/model";
+import { PROMPT_IDS, resolvePromptContent } from "@t3tools/shared/prompts";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
@@ -37,13 +39,10 @@ import * as EffectCodexSchema from "effect-codex-app-server/schema";
 
 import { buildCodexInitializeParams } from "./CodexProvider.ts";
 import { expandHomePath } from "../../pathExpansion.ts";
-import {
-  CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
-  CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS,
-} from "../CodexDeveloperInstructions.ts";
 const decodeV2TurnStartResponse = Schema.decodeUnknownEffect(EffectCodexSchema.V2TurnStartResponse);
 
 const PROVIDER = ProviderDriverKind.make("codex");
+const isCodexAppServerRequestError = Schema.is(CodexErrors.CodexAppServerRequestError);
 
 const ANSI_ESCAPE_CHAR = String.fromCharCode(27);
 const ANSI_ESCAPE_REGEX = new RegExp(`${ANSI_ESCAPE_CHAR}\\[[0-9;]*m`, "g");
@@ -61,6 +60,7 @@ const RECOVERABLE_THREAD_RESUME_ERROR_SNIPPETS = [
   "unknown thread",
   "does not exist",
 ];
+const ACTIVE_TURN_ID_MISMATCH_REGEX = /expected active turn id (\S+) but found (\S+)/;
 
 export function hasConfiguredMcpServer(appServerArgs: ReadonlyArray<string> | undefined): boolean {
   return appServerArgs?.some((argument) => argument.includes("mcp_servers.")) === true;
@@ -119,6 +119,7 @@ export interface CodexSessionRuntimeSendTurnInput {
   readonly serviceTier?: CodexServiceTier | undefined;
   readonly effort?: EffectCodexSchema.V2TurnStartParams__ReasoningEffort | undefined;
   readonly interactionMode?: ProviderInteractionMode;
+  readonly promptOverrides?: PromptOverrides | undefined;
 }
 
 export interface CodexThreadTurnSnapshot {
@@ -326,6 +327,7 @@ function buildCodexCollaborationMode(input: {
   readonly interactionMode?: ProviderInteractionMode;
   readonly model?: string;
   readonly effort?: EffectCodexSchema.V2TurnStartParams__ReasoningEffort;
+  readonly promptOverrides?: PromptOverrides | undefined;
 }): EffectCodexSchema.V2TurnStartParams__CollaborationMode | undefined {
   if (input.interactionMode === undefined) {
     return undefined;
@@ -336,10 +338,12 @@ function buildCodexCollaborationMode(input: {
     settings: {
       model,
       reasoning_effort: input.effort ?? "medium",
-      developer_instructions:
+      developer_instructions: resolvePromptContent(
         input.interactionMode === "plan"
-          ? CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS
-          : CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
+          ? PROMPT_IDS.codexPlanDeveloperInstructions
+          : PROMPT_IDS.codexDefaultDeveloperInstructions,
+        input.promptOverrides,
+      ),
     },
   };
 }
@@ -356,6 +360,7 @@ export function buildTurnStartParams(input: {
   readonly serviceTier?: CodexServiceTier;
   readonly effort?: EffectCodexSchema.V2TurnStartParams__ReasoningEffort;
   readonly interactionMode?: ProviderInteractionMode;
+  readonly promptOverrides?: PromptOverrides | undefined;
 }): Effect.Effect<
   CodexTurnStartParamsWithCollaborationMode,
   CodexErrors.CodexAppServerProtocolParseError
@@ -376,6 +381,7 @@ export function buildTurnStartParams(input: {
     ...(input.interactionMode ? { interactionMode: input.interactionMode } : {}),
     ...(input.model ? { model: input.model } : {}),
     ...(input.effort ? { effort: input.effort } : {}),
+    ...(input.promptOverrides ? { promptOverrides: input.promptOverrides } : {}),
   });
 
   return decodeCodexTurnStartParamsWithCollaborationMode({
@@ -424,6 +430,26 @@ export function isRecoverableThreadResumeError(error: unknown): boolean {
     return false;
   }
   return RECOVERABLE_THREAD_RESUME_ERROR_SNIPPETS.some((snippet) => message.includes(snippet));
+}
+
+export function resolveActiveTurnIdAfterTurnStartResponse(input: {
+  readonly currentActiveTurnId: TurnId | undefined;
+  readonly responseTurnId: TurnId;
+}): TurnId {
+  return input.currentActiveTurnId ?? input.responseTurnId;
+}
+
+export function parseCodexActiveTurnIdMismatch(
+  errorMessage: string,
+): { readonly expectedTurnId: TurnId; readonly actualTurnId: TurnId } | null {
+  const match = ACTIVE_TURN_ID_MISMATCH_REGEX.exec(errorMessage);
+  const expected = match?.[1];
+  const actual = match?.[2];
+  if (!expected || !actual) return null;
+  return {
+    expectedTurnId: TurnId.make(expected),
+    actualTurnId: TurnId.make(actual),
+  };
 }
 
 type CodexThreadOpenResponse =
@@ -1286,6 +1312,7 @@ export const makeCodexSessionRuntime = (
             ...(input.serviceTier ? { serviceTier: input.serviceTier } : {}),
             ...(input.effort ? { effort: input.effort } : {}),
             ...(input.interactionMode ? { interactionMode: input.interactionMode } : {}),
+            ...(input.promptOverrides ? { promptOverrides: input.promptOverrides } : {}),
           });
           const rawResponse = yield* client.raw.request("turn/start", params);
           const response = yield* decodeV2TurnStartResponse(rawResponse).pipe(
@@ -1298,9 +1325,13 @@ export const makeCodexSessionRuntime = (
             ),
           );
           const turnId = TurnId.make(response.turn.id);
+          const currentSession = yield* Ref.get(sessionRef);
           yield* updateSession(sessionRef, {
             status: "running",
-            activeTurnId: turnId,
+            activeTurnId: resolveActiveTurnIdAfterTurnStartResponse({
+              currentActiveTurnId: currentSession.activeTurnId,
+              responseTurnId: turnId,
+            }),
             ...(normalizedModel ? { model: normalizedModel } : {}),
           });
           const resumedProviderThreadId = currentProviderThreadId(yield* Ref.get(sessionRef));
@@ -1320,10 +1351,26 @@ export const makeCodexSessionRuntime = (
           if (!effectiveTurnId) {
             return;
           }
-          yield* client.request("turn/interrupt", {
-            threadId: providerThreadId,
-            turnId: effectiveTurnId,
-          });
+          const requestInterrupt = (activeTurnId: TurnId) =>
+            client.request("turn/interrupt", {
+              threadId: providerThreadId,
+              turnId: activeTurnId,
+            });
+          yield* requestInterrupt(effectiveTurnId).pipe(
+            Effect.catch((error) => {
+              if (!isCodexAppServerRequestError(error)) {
+                return Effect.fail(error);
+              }
+              const mismatch = parseCodexActiveTurnIdMismatch(error.errorMessage);
+              if (!mismatch || mismatch.expectedTurnId !== effectiveTurnId) {
+                return Effect.fail(error);
+              }
+              return updateSession(sessionRef, {
+                status: "running",
+                activeTurnId: mismatch.actualTurnId,
+              }).pipe(Effect.andThen(requestInterrupt(mismatch.actualTurnId)));
+            }),
+          );
         }),
       readThread: Effect.gen(function* () {
         const providerThreadId = yield* readProviderThreadId;

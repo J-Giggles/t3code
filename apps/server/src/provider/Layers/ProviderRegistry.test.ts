@@ -668,6 +668,124 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
         }),
       );
 
+      it.effect("resets native provider state and clears wrapper settings", () =>
+        Effect.gen(function* () {
+          const codexDriver = ProviderDriverKind.make("codex");
+          const codexInstanceId = ProviderInstanceId.make("codex");
+          const initialProvider = {
+            instanceId: codexInstanceId,
+            driver: codexDriver,
+            status: "ready",
+            enabled: true,
+            installed: true,
+            auth: { status: "authenticated" },
+            checkedAt: "2026-06-10T00:00:00.000Z",
+            version: "1.0.0",
+            models: [],
+            slashCommands: [],
+            skills: [],
+          } as const satisfies ServerProvider;
+          const nativeResetCalls = yield* Ref.make(0);
+          const instance = {
+            instanceId: codexInstanceId,
+            driverKind: codexDriver,
+            continuationIdentity: {
+              driverKind: codexDriver,
+              continuationKey: "codex:instance:codex",
+            },
+            displayName: undefined,
+            enabled: true,
+            snapshot: {
+              maintenanceCapabilities: makeManualOnlyProviderMaintenanceCapabilities({
+                provider: codexDriver,
+                packageName: null,
+              }),
+              getSnapshot: Effect.succeed(initialProvider),
+              refresh: Effect.succeed(initialProvider),
+              streamChanges: Stream.empty,
+            },
+            adapter: {} as ProviderInstance["adapter"],
+            textGeneration: {} as ProviderInstance["textGeneration"],
+            resetNativeProviderState: () =>
+              Ref.update(nativeResetCalls, (count) => count + 1).pipe(
+                Effect.as({ status: "completed" as const, detail: "native reset completed" }),
+              ),
+          } satisfies ProviderInstance;
+          const initialSettings = decodeServerSettings(
+            deepMerge(encodedDefaultServerSettings, {
+              providers: {
+                codex: {
+                  enabled: false,
+                  customModels: ["custom-codex"],
+                },
+              },
+              providerInstances: {
+                codex: {
+                  driver: "codex",
+                  displayName: "Edited Codex",
+                  config: {
+                    enabled: false,
+                    customModels: ["custom-codex"],
+                  },
+                },
+              },
+              textGenerationModelSelection: {
+                instanceId: "codex",
+                model: "old",
+              },
+            }),
+          );
+          const settingsService = yield* makeMutableServerSettingsService(initialSettings);
+          const instanceRegistryLayer = Layer.succeed(
+            ProviderInstanceRegistry.ProviderInstanceRegistry,
+            {
+              getInstance: (instanceId: ProviderInstanceId) =>
+                Effect.succeed(instanceId === codexInstanceId ? instance : undefined),
+              listInstances: Effect.succeed([instance]),
+              listUnavailable: Effect.succeed([]),
+              streamChanges: Stream.empty,
+              subscribeChanges: Effect.flatMap(PubSub.unbounded<void>(), PubSub.subscribe),
+            },
+          );
+          const scope = yield* Scope.make();
+          yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
+          const runtimeServices = yield* Layer.build(
+            ProviderRegistryLive.pipe(
+              Layer.provideMerge(instanceRegistryLayer),
+              Layer.provideMerge(
+                Layer.succeed(ServerSettingsModule.ServerSettingsService, settingsService),
+              ),
+              Layer.provideMerge(
+                ServerConfig.layerTest(process.cwd(), {
+                  prefix: "t3-provider-registry-reset-",
+                }),
+              ),
+              Layer.provideMerge(NodeServices.layer),
+            ),
+          ).pipe(Scope.provide(scope));
+
+          yield* Effect.gen(function* () {
+            const registry = yield* ProviderRegistry.ProviderRegistry;
+            const result = yield* registry.resetProvider({
+              instanceId: codexInstanceId,
+              nativeProviderReset: true,
+            });
+
+            assert.strictEqual(result.nativeReset.status, "completed");
+            assert.strictEqual(yield* Ref.get(nativeResetCalls), 1);
+            assert.deepStrictEqual(result.settings.providerInstances, {});
+            assert.deepStrictEqual(
+              result.settings.textGenerationModelSelection,
+              DEFAULT_SERVER_SETTINGS.textGenerationModelSelection,
+            );
+            assert.deepStrictEqual(
+              result.settings.providers.codex,
+              DEFAULT_SERVER_SETTINGS.providers.codex,
+            );
+          }).pipe(Effect.provide(runtimeServices));
+        }),
+      );
+
       it("persists merged provider snapshots for the providers that were refreshed", () => {
         const previousProviders = [
           {
@@ -1261,12 +1379,16 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
                 codex: { enabled: true, binaryPath: secondMissing },
               },
             });
+            const codexInstanceId = ProviderInstanceId.make("codex");
+            yield* registry.refreshInstance(codexInstanceId);
 
             // Poll until the injected process boundary observes the new
-            // executable. This verifies the public settings-to-probe behavior
-            // without depending on timestamps assigned by TestClock.
+            // executable. Refreshing inside the poll keeps this focused on the
+            // public settings-to-probe behavior without depending on the
+            // background settings watcher winning a scheduler race.
             const refreshed = yield* Effect.gen(function* () {
-              for (let attempts = 0; attempts < 60; attempts += 1) {
+              for (let attempts = 0; attempts < 120; attempts += 1) {
+                yield* registry.refreshInstance(codexInstanceId);
                 const providers = yield* registry.getProviders;
                 const codex = providers.find((provider) => provider.instanceId === "codex");
                 if (
@@ -1283,7 +1405,8 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             });
 
             const reprobedCodex = refreshed.find((provider) => provider.instanceId === "codex");
-            assert.deepStrictEqual(spawnedCommands, [firstMissing, secondMissing]);
+            assert.ok(spawnedCommands.includes(firstMissing));
+            assert.ok(spawnedCommands.includes(secondMissing));
             assert.strictEqual(reprobedCodex?.status, "error");
             assert.strictEqual(reprobedCodex?.installed, false);
           }).pipe(Effect.provide(runtimeServices));

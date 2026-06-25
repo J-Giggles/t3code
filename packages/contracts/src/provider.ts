@@ -27,6 +27,7 @@ const ProviderSessionStatus = Schema.Literals([
   "connecting",
   "ready",
   "running",
+  "paused",
   "error",
   "closed",
 ]);
@@ -50,6 +51,9 @@ export const ProviderSession = Schema.Struct({
 });
 export type ProviderSession = typeof ProviderSession.Type;
 
+export const ProviderSessionEnvironment = Schema.Record(TrimmedNonEmptyString, Schema.String);
+export type ProviderSessionEnvironment = typeof ProviderSessionEnvironment.Type;
+
 export const ProviderSessionStartInput = Schema.Struct({
   threadId: ThreadId,
   provider: Schema.optional(ProviderDriverKind),
@@ -60,6 +64,7 @@ export const ProviderSessionStartInput = Schema.Struct({
   resumeCursor: Schema.optional(Schema.Unknown),
   approvalPolicy: Schema.optional(ProviderApprovalPolicy),
   sandboxMode: Schema.optional(ProviderSandboxMode),
+  environment: Schema.optional(ProviderSessionEnvironment),
   runtimeMode: RuntimeMode,
 });
 export type ProviderSessionStartInput = typeof ProviderSessionStartInput.Type;

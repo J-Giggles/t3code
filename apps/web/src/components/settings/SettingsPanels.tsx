@@ -488,6 +488,8 @@ export function GeneralSettingsPanel() {
     otlpTracesUrl: observability?.otlpTracesUrl,
     otlpMetricsEnabled: observability?.otlpMetricsEnabled ?? false,
     otlpMetricsUrl: observability?.otlpMetricsUrl,
+    otlpLogsEnabled: observability?.otlpLogsEnabled ?? false,
+    otlpLogsUrl: observability?.otlpLogsUrl,
   });
 
   const textGenerationModelSelection = resolveAppModelSelectionState(settings, serverProviders);
@@ -1416,6 +1418,58 @@ export function ProviderSettingsPanel() {
       {isAddInstanceDialogOpen ? (
         <AddProviderInstanceDialog open onOpenChange={setIsAddInstanceDialogOpen} />
       ) : null}
+    </SettingsPageContainer>
+  );
+}
+
+export function T3AccessSettingsPanel() {
+  const settings = usePrimarySettings();
+  const updateSettings = useUpdatePrimarySettings();
+  const jiraEnabled = settings.t3ProviderAccess.mcps["jira-local"]?.enabled ?? false;
+  const defaultJiraEnabled =
+    DEFAULT_UNIFIED_SETTINGS.t3ProviderAccess.mcps["jira-local"]?.enabled ?? false;
+
+  return (
+    <SettingsPageContainer>
+      <SettingsSection title="MCP access">
+        <SettingsRow
+          title="Jira local MCP"
+          description="Allow the T3 provider to use the local Jira MCP server."
+          resetAction={
+            jiraEnabled !== defaultJiraEnabled ? (
+              <SettingResetButton
+                label="Jira local MCP access"
+                onClick={() =>
+                  updateSettings({
+                    t3ProviderAccess: {
+                      mcps: {
+                        ...settings.t3ProviderAccess.mcps,
+                        "jira-local": { enabled: defaultJiraEnabled },
+                      },
+                    },
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <Switch
+              checked={jiraEnabled}
+              onCheckedChange={(checked) =>
+                updateSettings({
+                  t3ProviderAccess: {
+                    mcps: {
+                      ...settings.t3ProviderAccess.mcps,
+                      "jira-local": { enabled: Boolean(checked) },
+                    },
+                  },
+                })
+              }
+              aria-label="Enable Jira local MCP access"
+            />
+          }
+        />
+      </SettingsSection>
     </SettingsPageContainer>
   );
 }

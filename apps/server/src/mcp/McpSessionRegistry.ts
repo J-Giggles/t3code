@@ -7,13 +7,15 @@ import * as Layer from "effect/Layer";
 import * as SynchronizedRef from "effect/SynchronizedRef";
 import { HttpServer } from "effect/unstable/http";
 
-import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import { ServerEnvironment } from "../environment/Services/ServerEnvironment.ts";
+import { ServerConfig } from "../config.ts";
 import * as McpInvocationContext from "./McpInvocationContext.ts";
 import * as McpProviderSession from "./McpProviderSession.ts";
 
 export interface McpCredentialRequest {
   readonly threadId: ThreadId;
   readonly providerInstanceId: ProviderInstanceId;
+  readonly externalMcps?: ReadonlyArray<McpProviderSession.ExternalMcpProviderSessionConfig>;
 }
 
 export interface McpIssuedCredential {
@@ -75,7 +77,8 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
   options: McpSessionRegistryOptions = {},
 ) {
   const crypto = yield* Crypto.Crypto;
-  const environment = yield* ServerEnvironment.ServerEnvironment;
+  const environment = yield* ServerEnvironment;
+  const config = yield* ServerConfig;
   const environmentId = yield* environment.getEnvironmentId;
   const httpServer = yield* HttpServer.HttpServer;
   const state = yield* SynchronizedRef.make<RegistryState>({ records: new Map() });
@@ -109,12 +112,16 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
       const rawToken = yield* crypto.randomBytes(32).pipe(Effect.map(tokenFromBytes), Effect.orDie);
       const tokenHash = yield* hashToken(rawToken);
       const expiresAt = issuedAt + maximumLifetimeMs;
+      const capabilities: McpInvocationContext.McpCapability[] = ["preview"];
+      if (config.mode === "desktop" && config.desktopBootstrapToken !== undefined) {
+        capabilities.push("desktop-shell");
+      }
       const scope: McpInvocationContext.McpInvocationScope = {
         environmentId,
         threadId: ThreadId.make(request.threadId),
         providerSessionId,
         providerInstanceId: ProviderInstanceId.make(request.providerInstanceId),
-        capabilities: new Set(["preview"]),
+        capabilities: new Set(capabilities),
         issuedAt,
         expiresAt,
       };
@@ -131,6 +138,7 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
           providerInstanceId: scope.providerInstanceId,
           endpoint,
           authorizationHeader: `Bearer ${rawToken}`,
+          externalMcps: request.externalMcps ?? [],
         },
         expiresAt,
       };
@@ -191,7 +199,11 @@ const make = Effect.acquireRelease(
     }),
 );
 
-export const layer = Layer.effect(McpSessionRegistry, make);
+export const layer: Layer.Layer<
+  McpSessionRegistry,
+  never,
+  Crypto.Crypto | ServerEnvironment | HttpServer.HttpServer | ServerConfig
+> = Layer.effect(McpSessionRegistry, make);
 
 export const issueActiveMcpCredential = (
   request: McpCredentialRequest,

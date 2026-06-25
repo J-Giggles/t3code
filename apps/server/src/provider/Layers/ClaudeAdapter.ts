@@ -3065,6 +3065,10 @@ export const makeClaudeAdapter = Effect.fn("makeClaudeAdapter")(function* (
           issue: `Expected provider '${PROVIDER}' but received '${input.provider}'.`,
         });
       }
+      const sessionEnvironment = {
+        ...claudeEnvironment,
+        ...input.environment,
+      };
 
       const existingContext = sessions.get(input.threadId);
       if (existingContext) {
@@ -3462,7 +3466,7 @@ export const makeClaudeAdapter = Effect.fn("makeClaudeAdapter")(function* (
         ...(newSessionId ? { sessionId: newSessionId } : {}),
         includePartialMessages: true,
         canUseTool,
-        env: claudeEnvironment,
+        env: sessionEnvironment,
         ...(input.cwd ? { additionalDirectories: [input.cwd] } : {}),
         ...(Object.keys(extraArgs).length > 0 ? { extraArgs } : {}),
         ...(mcpSession
@@ -3475,6 +3479,17 @@ export const makeClaudeAdapter = Effect.fn("makeClaudeAdapter")(function* (
                     Authorization: mcpSession.authorizationHeader,
                   },
                 },
+                ...Object.fromEntries(
+                  mcpSession.externalMcps.map((server) => [
+                    server.name,
+                    {
+                      type: "stdio" as const,
+                      command: server.command,
+                      args: server.args,
+                      ...(server.env ? { env: server.env } : {}),
+                    },
+                  ]),
+                ),
               },
             }
           : {}),

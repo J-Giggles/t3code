@@ -1038,6 +1038,10 @@ export function makeOpenCodeAdapter(
         }
 
         const started = yield* Effect.gen(function* () {
+          const sessionEnvironment = {
+            ...(options?.environment ?? process.env),
+            ...input.environment,
+          };
           const sessionScope = yield* Scope.make();
           const startedExit = yield* Effect.exit(
             Effect.gen(function* () {
@@ -1047,7 +1051,7 @@ export function makeOpenCodeAdapter(
               const server = yield* openCodeRuntime.connectToOpenCodeServer({
                 binaryPath,
                 serverUrl,
-                ...(options?.environment ? { environment: options.environment } : {}),
+                environment: sessionEnvironment,
               });
               const client = openCodeRuntime.createOpenCodeSdkClient({
                 baseUrl: server.url,
@@ -1069,6 +1073,18 @@ export function makeOpenCodeAdapter(
                     },
                   }),
                 );
+                for (const externalMcp of mcpSession.externalMcps) {
+                  yield* runOpenCodeSdk("mcp.add", () =>
+                    client.mcp.add({
+                      name: externalMcp.name,
+                      config: {
+                        type: "local",
+                        command: [externalMcp.command, ...externalMcp.args],
+                        enabled: true,
+                      },
+                    }),
+                  );
+                }
               }
               const openCodeSession = yield* runOpenCodeSdk("session.create", () =>
                 client.session.create({

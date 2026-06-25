@@ -4,7 +4,8 @@ import { it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { describe } from "vite-plus/test";
-import { ThreadId } from "@t3tools/contracts";
+import { ThreadId, TurnId } from "@t3tools/contracts";
+import { PROMPT_IDS, getPromptDefaultHash } from "@t3tools/shared/prompts";
 import * as CodexErrors from "effect-codex-app-server/errors";
 import * as CodexRpc from "effect-codex-app-server/rpc";
 
@@ -17,8 +18,11 @@ import {
   hasConfiguredMcpServer,
   isRecoverableThreadResumeError,
   openCodexThread,
+  parseCodexActiveTurnIdMismatch,
+  resolveActiveTurnIdAfterTurnStartResponse,
 } from "./CodexSessionRuntime.ts";
 const isCodexAppServerRequestError = Schema.is(CodexErrors.CodexAppServerRequestError);
+const runPureEffect = Effect.runSync;
 
 describe("CodexSessionRuntimeIdentifierGenerationError", () => {
   it("retains identifier purpose and the random source failure", () => {
@@ -192,10 +196,33 @@ describe("buildTurnStartParams", () => {
       ],
     });
   });
+
+  it("uses customized collaboration developer instructions", () => {
+    const params = runPureEffect(
+      buildTurnStartParams({
+        threadId: "provider-thread-1",
+        runtimeMode: "full-access",
+        prompt: "Make a plan",
+        model: "gpt-5.3-codex",
+        interactionMode: "plan",
+        promptOverrides: {
+          [PROMPT_IDS.codexPlanDeveloperInstructions]: {
+            content: "Custom plan instructions",
+            defaultHash: getPromptDefaultHash(PROMPT_IDS.codexPlanDeveloperInstructions),
+          },
+        },
+      }),
+    );
+
+    NodeAssert.equal(
+      params.collaborationMode?.settings.developer_instructions,
+      "Custom plan instructions",
+    );
+  });
 });
 
 describe("T3 browser developer instructions", () => {
-  it("prefers the product-native preview tools in both collaboration modes", () => {
+  it("prefers product-native preview and app tools in both collaboration modes", () => {
     for (const instructions of [
       CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
       CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS,
@@ -203,7 +230,9 @@ describe("T3 browser developer instructions", () => {
       NodeAssert.match(instructions, /t3-code/);
       NodeAssert.match(instructions, /preview_status/);
       NodeAssert.match(instructions, /preview_open/);
-      NodeAssert.match(instructions, /Do not switch to global browser skills/);
+      NodeAssert.match(instructions, /app_status/);
+      NodeAssert.match(instructions, /app_snapshot/);
+      NodeAssert.match(instructions, /Do not use raw CDP/);
     }
   });
 });
@@ -263,6 +292,46 @@ describe("isRecoverableThreadResumeError", () => {
       ),
       false,
     );
+  });
+});
+
+describe("active turn reconciliation", () => {
+  it("does not replace an existing active turn with a turn/start response id", () => {
+    const currentActiveTurnId = TurnId.make("turn-active");
+    const responseTurnId = TurnId.make("turn-next");
+
+    NodeAssert.equal(
+      resolveActiveTurnIdAfterTurnStartResponse({
+        currentActiveTurnId,
+        responseTurnId,
+      }),
+      currentActiveTurnId,
+    );
+  });
+
+  it("uses the turn/start response id when no active turn is known", () => {
+    const responseTurnId = TurnId.make("turn-first");
+
+    NodeAssert.equal(
+      resolveActiveTurnIdAfterTurnStartResponse({
+        currentActiveTurnId: undefined,
+        responseTurnId,
+      }),
+      responseTurnId,
+    );
+  });
+
+  it("parses Codex active-turn mismatch errors", () => {
+    NodeAssert.deepStrictEqual(
+      parseCodexActiveTurnIdMismatch(
+        "expected active turn id 019ed996-c65b-7be1-9c69-6d65c7de29c8 but found 019ed993-7d0f-7fb1-8a72-a3a21f0a0faf",
+      ),
+      {
+        expectedTurnId: TurnId.make("019ed996-c65b-7be1-9c69-6d65c7de29c8"),
+        actualTurnId: TurnId.make("019ed993-7d0f-7fb1-8a72-a3a21f0a0faf"),
+      },
+    );
+    NodeAssert.equal(parseCodexActiveTurnIdMismatch("permission denied"), null);
   });
 });
 
@@ -338,7 +407,9 @@ describe("openCodexThread", () => {
         resumeThreadId: "stale-thread",
       }).pipe(Effect.flip);
 
-      NodeAssert.ok(isCodexAppServerRequestError(error));
+      if (!isCodexAppServerRequestError(error)) {
+        NodeAssert.fail(`Expected CodexAppServerRequestError, got ${String(error)}`);
+      }
       NodeAssert.equal(error.errorMessage, "timed out waiting for server");
     }),
   );

@@ -23,8 +23,11 @@
  * @module ProviderRegistryLive
  */
 import {
+  DEFAULT_SERVER_SETTINGS,
   defaultInstanceIdForDriver,
   ProviderDriverKind,
+  ServerProviderResetError,
+  ServerProviderSkillConfigWriteError,
   type ProviderInstanceId,
   type ServerProvider,
   type ServerProviderUpdateState,
@@ -41,6 +44,7 @@ import * as Stream from "effect/Stream";
 import * as Semaphore from "effect/Semaphore";
 
 import { ServerConfig } from "../../config.ts";
+import { ServerSettingsService } from "../../serverSettings.ts";
 import { ProviderInstanceRegistry } from "../Services/ProviderInstanceRegistry.ts";
 import { ProviderRegistry, type ProviderRegistryShape } from "../Services/ProviderRegistry.ts";
 import {
@@ -188,6 +192,7 @@ export const ProviderRegistryLive = Layer.effect(
   ProviderRegistry,
   Effect.gen(function* () {
     const instanceRegistry = yield* ProviderInstanceRegistry;
+    const serverSettings = yield* ServerSettingsService;
     const config = yield* ServerConfig;
     const fileSystem = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
@@ -474,6 +479,51 @@ export const ProviderRegistryLive = Layer.effect(
       return yield* refreshOneSource(providerSource);
     });
 
+    const writeProviderSkillConfig: ProviderRegistryShape["writeProviderSkillConfig"] = Effect.fn(
+      "writeProviderSkillConfig",
+    )(function* (input) {
+      const instance = yield* instanceRegistry.getInstance(input.instanceId);
+      if (!instance) {
+        return yield* new ServerProviderSkillConfigWriteError({
+          instanceId: input.instanceId,
+          reason: "Provider instance was not found.",
+        });
+      }
+      if (!instance.writeSkillConfig) {
+        return yield* new ServerProviderSkillConfigWriteError({
+          instanceId: input.instanceId,
+          reason: "This provider does not support skill configuration writes.",
+        });
+      }
+      if (!input.name && !input.path) {
+        return yield* new ServerProviderSkillConfigWriteError({
+          instanceId: input.instanceId,
+          reason: "A skill name or path is required.",
+        });
+      }
+
+      const result = yield* instance
+        .writeSkillConfig({
+          enabled: input.enabled,
+          ...(input.name ? { name: input.name } : {}),
+          ...(input.path ? { path: input.path } : {}),
+        })
+        .pipe(
+          Effect.mapError(
+            (cause) =>
+              new ServerProviderSkillConfigWriteError({
+                instanceId: input.instanceId,
+                reason: cause instanceof Error ? cause.message : "Provider write failed.",
+                cause,
+              }),
+          ),
+        );
+      const providers = yield* refreshInstance(input.instanceId).pipe(
+        Effect.catchCause(recoverRefreshFailure),
+      );
+      return { effectiveEnabled: result.effectiveEnabled, providers };
+    });
+
     const getProviderMaintenanceCapabilitiesForInstance = Effect.fn(
       "getProviderMaintenanceCapabilitiesForInstance",
     )(function* (instanceId: ProviderInstanceId, provider: ProviderDriverKind) {
@@ -682,12 +732,109 @@ export const ProviderRegistryLive = Layer.effect(
       return yield* Ref.get(providersRef);
     });
 
+    const resetProvider: ProviderRegistryShape["resetProvider"] = Effect.fn("resetProvider")(
+      function* (input) {
+        const instance = yield* instanceRegistry.getInstance(input.instanceId);
+        const settings = yield* serverSettings.getSettings.pipe(
+          Effect.mapError(
+            (cause) =>
+              new ServerProviderResetError({
+                instanceId: input.instanceId,
+                reason: "Failed to read provider settings.",
+                cause,
+              }),
+          ),
+        );
+        const configuredInstance = settings.providerInstances[input.instanceId];
+        const driverKind = instance?.driverKind ?? configuredInstance?.driver;
+        if (!driverKind) {
+          return yield* new ServerProviderResetError({
+            instanceId: input.instanceId,
+            reason: "Provider instance was not found.",
+          });
+        }
+
+        const nativeReset =
+          input.nativeProviderReset === false
+            ? ({ status: "skipped", detail: "Native provider reset was not requested." } as const)
+            : instance?.resetNativeProviderState
+              ? yield* instance.resetNativeProviderState().pipe(
+                  Effect.mapError(
+                    (cause) =>
+                      new ServerProviderResetError({
+                        instanceId: input.instanceId,
+                        reason:
+                          cause instanceof Error ? cause.message : "Native provider reset failed.",
+                        cause,
+                      }),
+                  ),
+                )
+              : ({
+                  status: "unsupported",
+                  detail: "This provider does not support native reset yet.",
+                } as const);
+
+        const defaultInstanceId = defaultInstanceIdForDriver(driverKind);
+        const isDefaultInstance = input.instanceId === defaultInstanceId;
+        const nextProviderInstances = { ...settings.providerInstances };
+        delete nextProviderInstances[input.instanceId];
+        const resetTextGeneration =
+          settings.textGenerationModelSelection.instanceId === input.instanceId
+            ? { textGenerationModelSelection: DEFAULT_SERVER_SETTINGS.textGenerationModelSelection }
+            : {};
+
+        const nextSettings = isDefaultInstance
+          ? yield* serverSettings
+              .updateSettings({
+                providers: {
+                  ...settings.providers,
+                  [driverKind]: (DEFAULT_SERVER_SETTINGS.providers as Record<string, unknown>)[
+                    driverKind
+                  ],
+                } as typeof settings.providers,
+                providerInstances: nextProviderInstances,
+                ...resetTextGeneration,
+              })
+              .pipe(
+                Effect.mapError(
+                  (cause) =>
+                    new ServerProviderResetError({
+                      instanceId: input.instanceId,
+                      reason: "Failed to reset provider settings.",
+                      cause,
+                    }),
+                ),
+              )
+          : yield* serverSettings
+              .updateSettings({
+                providerInstances: nextProviderInstances,
+                ...resetTextGeneration,
+              })
+              .pipe(
+                Effect.mapError(
+                  (cause) =>
+                    new ServerProviderResetError({
+                      instanceId: input.instanceId,
+                      reason: "Failed to reset provider settings.",
+                      cause,
+                    }),
+                ),
+              );
+
+        yield* Effect.yieldNow;
+        const providers = yield* refreshAll().pipe(Effect.catchCause(recoverRefreshFailure));
+        return { providers, settings: nextSettings, nativeReset };
+      },
+    );
+
     return {
       getProviders: Ref.get(providersRef),
       refresh: (provider?: ProviderDriverKind) =>
         refresh(provider).pipe(Effect.catchCause(recoverRefreshFailure)),
       refreshInstance: (instanceId: ProviderInstanceId) =>
         refreshInstance(instanceId).pipe(Effect.catchCause(recoverRefreshFailure)),
+      writeProviderSkillConfig,
+      resetProvider,
       getProviderMaintenanceCapabilitiesForInstance,
       setProviderMaintenanceActionState,
       get streamChanges() {

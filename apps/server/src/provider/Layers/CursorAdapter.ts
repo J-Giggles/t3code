@@ -530,11 +530,22 @@ export function makeCursorAdapter(
           const effectiveCursorSettings = options?.resolveSettings
             ? yield* options.resolveSettings
             : cursorSettings;
+          const sessionEnvironment = {
+            ...(options?.environment ?? process.env),
+            ...input.environment,
+          };
 
           const mcpSession = McpProviderSession.readMcpProviderSession(input.threadId);
+          const externalMcpServers =
+            mcpSession?.externalMcps.map((server) => ({
+              name: server.name,
+              command: server.command,
+              args: server.args,
+              env: Object.entries(server.env ?? {}).map(([name, value]) => ({ name, value })),
+            })) ?? [];
           const acp = yield* makeCursorAcpRuntime({
             cursorSettings: effectiveCursorSettings,
-            ...(options?.environment ? { environment: options.environment } : {}),
+            environment: sessionEnvironment,
             childProcessSpawner,
             cwd,
             ...(resumeSessionId ? { resumeSessionId } : {}),
@@ -553,6 +564,7 @@ export function makeCursorAdapter(
                         },
                       ],
                     },
+                    ...externalMcpServers,
                   ],
                 }
               : {}),

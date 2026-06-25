@@ -5,6 +5,7 @@ import { ProviderInstanceId } from "./providerInstance.ts";
 import {
   ClientSettingsSchema,
   DEFAULT_SERVER_SETTINGS,
+  PromptOverride,
   ServerSettings,
   ServerSettingsPatch,
 } from "./settings.ts";
@@ -13,6 +14,7 @@ const decodeClientSettings = Schema.decodeUnknownSync(ClientSettingsSchema);
 const decodeServerSettings = Schema.decodeUnknownSync(ServerSettings);
 const decodeServerSettingsPatch = Schema.decodeUnknownSync(ServerSettingsPatch);
 const encodeServerSettings = Schema.encodeSync(ServerSettings);
+const decodePromptOverride = Schema.decodeUnknownSync(PromptOverride);
 
 describe("ClientSettings word wrap", () => {
   it("defaults word wrap on", () => {
@@ -32,8 +34,27 @@ describe("ClientSettings word wrap", () => {
 });
 
 describe("ServerSettings.providerInstances (slice-2 invariant)", () => {
+  it("enables live assistant output by default", () => {
+    expect(DEFAULT_SERVER_SETTINGS.enableAssistantStreaming).toBe(true);
+    expect(decodeServerSettings({}).enableAssistantStreaming).toBe(true);
+  });
+
   it("defaults to an empty record so legacy configs without the key still decode", () => {
     expect(DEFAULT_SERVER_SETTINGS.providerInstances).toEqual({});
+  });
+
+  it("defaults prompt overrides to an empty record", () => {
+    expect(DEFAULT_SERVER_SETTINGS.promptOverrides).toEqual({});
+    expect(decodeServerSettings({}).promptOverrides).toEqual({});
+  });
+
+  it("defaults T3 provider access MCPs to disabled", () => {
+    expect(DEFAULT_SERVER_SETTINGS.t3ProviderAccess.mcps["jira-local"]).toEqual({
+      enabled: false,
+    });
+    expect(decodeServerSettings({}).t3ProviderAccess.mcps["jira-local"]).toEqual({
+      enabled: false,
+    });
   });
 
   it("decodes a fully empty config (legacy on-disk shape) without complaint", () => {
@@ -87,15 +108,28 @@ describe("ServerSettings.providerInstances (slice-2 invariant)", () => {
   });
 });
 
-describe("ServerSettings worktree defaults", () => {
-  it("defaults start-from-origin off for legacy configs", () => {
-    expect(decodeServerSettings({}).newWorktreesStartFromOrigin).toBe(false);
+describe("ServerSettings.promptOverrides", () => {
+  it("preserves prompt override whitespace exactly", () => {
+    const override = decodePromptOverride({
+      content: "  line one\n\nline two  ",
+      defaultHash: "fnv1a32:abc12345",
+    });
+
+    expect(override.content).toBe("  line one\n\nline two  ");
+    expect(override.defaultHash).toBe("fnv1a32:abc12345");
   });
 
-  it("accepts start-from-origin updates", () => {
-    expect(
-      decodeServerSettingsPatch({ newWorktreesStartFromOrigin: true }).newWorktreesStartFromOrigin,
-    ).toBe(true);
+  it("decodes prompt override maps from persisted settings", () => {
+    const decoded = decodeServerSettings({
+      promptOverrides: {
+        "composer.fixBug": {
+          content: "Custom fix prompt: ",
+          defaultHash: "fnv1a32:abc12345",
+        },
+      },
+    });
+
+    expect(decoded.promptOverrides["composer.fixBug"]?.content).toBe("Custom fix prompt: ");
   });
 });
 
@@ -127,6 +161,19 @@ describe("ServerSettingsPatch.providerInstances", () => {
     const ollamaId = ProviderInstanceId.make("ollama_local");
     expect(patch.providerInstances?.[ollamaId]?.driver).toBe("ollama");
   });
+
+  it("decodes promptOverrides as an optional whole-map replacement", () => {
+    const patch = decodeServerSettingsPatch({
+      promptOverrides: {
+        "composer.review": {
+          content: "Review this patch.",
+          defaultHash: "fnv1a32:12345678",
+        },
+      },
+    });
+
+    expect(patch.promptOverrides?.["composer.review"]?.content).toBe("Review this patch.");
+  });
 });
 
 describe("ServerSettingsPatch string normalization", () => {
@@ -136,6 +183,7 @@ describe("ServerSettingsPatch string normalization", () => {
       textGenerationModelSelection: { model: "  gpt-5.4-mini  " },
       observability: {
         otlpTracesUrl: "  http://localhost:4318/v1/traces  ",
+        otlpLogsUrl: "  http://localhost:4318/v1/logs  ",
       },
       providers: {
         codex: {
@@ -155,6 +203,7 @@ describe("ServerSettingsPatch string normalization", () => {
     expect(patch.addProjectBaseDirectory).toBe("~/Development");
     expect(patch.textGenerationModelSelection?.model).toBe("gpt-5.4-mini");
     expect(patch.observability?.otlpTracesUrl).toBe("http://localhost:4318/v1/traces");
+    expect(patch.observability?.otlpLogsUrl).toBe("http://localhost:4318/v1/logs");
     expect(patch.providers?.codex?.binaryPath).toBe("/opt/homebrew/bin/codex");
     expect(patch.providers?.codex?.homePath).toBe("~/.codex");
     expect(patch.providerInstances?.[ProviderInstanceId.make("codex_personal")]?.driver).toBe(
