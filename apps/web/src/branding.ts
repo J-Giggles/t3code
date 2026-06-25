@@ -1,6 +1,20 @@
 import type { DesktopAppBranding } from "@t3tools/contracts";
 import { formatAppDisplayName } from "./branding.logic";
 
+function readTrimmedEnvValue(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+}
+
+function basenameFromPath(path: string | undefined): string | null {
+  const trimmed = readTrimmedEnvValue(path);
+  if (trimmed === null) {
+    return null;
+  }
+  const segments = trimmed.split(/[\\/]+/).filter((segment) => segment.length > 0);
+  return segments.at(-1) ?? null;
+}
+
 function readInjectedDesktopAppBranding(): DesktopAppBranding | null {
   if (typeof window === "undefined") {
     return null;
@@ -11,8 +25,14 @@ function readInjectedDesktopAppBranding(): DesktopAppBranding | null {
 
 const injectedDesktopAppBranding = readInjectedDesktopAppBranding();
 const hostedAppChannel = import.meta.env.VITE_HOSTED_APP_CHANNEL?.trim().toLowerCase();
-const devWorktreeName = import.meta.env.VITE_DEV_WORKTREE_NAME?.trim();
-const devBranchName = import.meta.env.VITE_DEV_BRANCH_NAME?.trim();
+const devWorktreeName =
+  readTrimmedEnvValue(import.meta.env.VITE_DEV_WORKTREE_NAME) ??
+  basenameFromPath(import.meta.env.VITE_T3_WORKTREE_PATH) ??
+  readTrimmedEnvValue(import.meta.env.VITE_T3_WORKTREE_ROLE) ??
+  readTrimmedEnvValue(import.meta.env.VITE_T3_DEV_INSTANCE);
+const devBranchName =
+  readTrimmedEnvValue(import.meta.env.VITE_DEV_BRANCH_NAME) ??
+  readTrimmedEnvValue(import.meta.env.VITE_T3_GIT_BRANCH);
 
 export const HOSTED_APP_CHANNEL =
   hostedAppChannel === "latest" || hostedAppChannel === "nightly" ? hostedAppChannel : null;

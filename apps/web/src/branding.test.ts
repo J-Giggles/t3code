@@ -85,6 +85,18 @@ describe("branding", () => {
     expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (staging / feature/pairing-label)");
   });
 
+  it("uses launcher worktree and branch metadata when available", async () => {
+    vi.stubEnv("VITE_T3_WORKTREE_PATH", "/repo/t3code/.worktrees/staging");
+    vi.stubEnv("VITE_T3_WORKTREE_ROLE", "staging");
+    vi.stubEnv("VITE_T3_GIT_BRANCH", "staging");
+
+    const branding = await import("./branding");
+
+    expect(branding.DEV_APP_STAGE_LABEL).toBe("staging / staging");
+    expect(branding.APP_STAGE_LABEL).toBe("staging / staging");
+    expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (staging / staging)");
+  });
+
   it("falls back to the static dev label when dev checkout metadata is unavailable", async () => {
     const branding = await import("./branding");
 

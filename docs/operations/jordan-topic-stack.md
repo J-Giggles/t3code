@@ -25,8 +25,9 @@ upstream refreshes can be rebuilt and verified without rewriting protected
      route.
 3. `feat(runtime): preserve worktree context and controlled recovery`
    - Owns worktree/branch context, session recovery, controlled backend restart
-     flows, visible sidebar/browser labels, reconnect coalescing, provider
-     startup recovery, and push lifecycle state.
+     flows, visible sidebar/browser labels, launcher-provided dev identity
+     precedence over generic package-channel labels, reconnect coalescing,
+     provider startup recovery, and push lifecycle state.
 4. `feat(project-git): add project Git dashboard and VCS reconciliation`
    - Owns workspace Git snapshots, dashboard UI, shared Git helpers, and VCS
      refresh reconciliation.

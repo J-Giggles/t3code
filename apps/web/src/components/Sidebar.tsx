@@ -74,7 +74,7 @@ import {
 import { isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
 import { useDesktopLocalBootstraps } from "../connection/useDesktopLocalBootstraps";
 import { isElectron } from "../env";
-import { APP_STAGE_LABEL } from "../branding";
+import { APP_STAGE_LABEL, DEV_APP_STAGE_LABEL } from "../branding";
 import { useOpenPrLink } from "../lib/openPullRequestLink";
 import { isTerminalFocused } from "../lib/terminalFocus";
 import { isMacPlatform } from "../lib/utils";
@@ -2785,6 +2785,7 @@ function useSidebarStageLabel() {
   return resolveSidebarStageBadgeLabel({
     primaryServerVersion,
     fallbackStageLabel: APP_STAGE_LABEL,
+    devStageLabel: DEV_APP_STAGE_LABEL,
   });
 }
 

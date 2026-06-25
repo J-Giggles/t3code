@@ -294,14 +294,16 @@ The stack adds running app context to local review surfaces.
 Important implementation areas:
 
 - `apps/web/src/components/Sidebar.tsx` reads the server cwd and primary
-  environment git status, then renders a compact `worktree / branch` pill in
-  the sidebar header when either value exists.
+  launcher-injected dev identity, then renders a compact `worktree / branch`
+  pill in the sidebar header when local worktree metadata exists.
 - `apps/web/vite.config.ts` injects dev worktree and branch metadata from
   explicit env or Git discovery for browser-based Vite review.
-- `apps/web/src/branding.ts` uses that dev metadata for the web display name
-  when desktop-injected branding or hosted channel branding is not present.
+- `apps/web/src/branding.ts` uses legacy `VITE_DEV_*` values and the current
+  `VITE_T3_*` launcher identity for the web display name and sidebar stage
+  badge, deriving the worktree label from `VITE_T3_WORKTREE_PATH` when needed.
 - `apps/web/src/components/Sidebar.logic.ts` keeps sidebar label normalization
-  in testable helpers.
+  in testable helpers and preserves explicit local dev labels over generic
+  nightly package-channel detection.
 - `apps/web/src/components/Sidebar.logic.test.ts` and
   `apps/web/src/branding.test.ts` cover branch-label trimming, empty-ref
   handling, dev metadata precedence, and fallback behavior.
@@ -310,15 +312,16 @@ Important implementation areas:
 
 The sidebar header is visible in both Electron and browser-based Vite review,
 so it is the lowest-friction place to show the running context. Those values
-come from server config and the primary environment git status because those
-are the runtime facts the UI already consumes; the component does not parse
-paths or shell out itself.
+come from launcher-injected browser env values because those are the runtime
+facts already selected by the worktree launcher; the component does not shell
+out or infer a different identity from the hosted URL.
 
 The browser display name covers the other common review cue: window titles and
 tabs. Vite computes that metadata at startup from explicit env values or Git. In
 dev builds, the web app prefers that explicit worktree/branch metadata ahead of
-generic desktop `Dev` branding; hosted builds without local dev metadata continue
-to use their hosted release-channel labels.
+generic desktop `Dev` branding and ahead of nightly server-version detection;
+hosted builds without local dev metadata continue to use their hosted
+release-channel labels.
 
 The sidebar label is deliberately compact. It replaces the generic stage badge
 in this spot because the worktree and branch are more useful during staging
@@ -334,8 +337,8 @@ Reviewers should check:
 - Long worktree and branch names truncate without resizing the sidebar header.
 - The tooltip exposes the full worktree path and branch when available.
 - Vite/browser display names use dev checkout metadata ahead of generic desktop
-  `Dev` branding while preserving hosted release-channel labels when dev
-  metadata is absent.
+  `Dev` branding and nightly server-version labels while preserving hosted
+  release-channel labels when dev metadata is absent.
 - Hosted or connected windows without local cwd/ref data do not present guessed
   local context.
 

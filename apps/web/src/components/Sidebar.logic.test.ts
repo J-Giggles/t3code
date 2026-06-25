@@ -73,6 +73,16 @@ describe("resolveSidebarStageBadgeLabel", () => {
       }),
     ).toBe("Alpha");
   });
+
+  it("preserves local dev stage labels over nightly server versions", () => {
+    expect(
+      resolveSidebarStageBadgeLabel({
+        primaryServerVersion: "0.0.28-nightly.20260616.12",
+        fallbackStageLabel: "staging / staging",
+        devStageLabel: "staging / staging",
+      }),
+    ).toBe("staging / staging");
+  });
 });
 
 function makeLatestTurn(overrides?: {
