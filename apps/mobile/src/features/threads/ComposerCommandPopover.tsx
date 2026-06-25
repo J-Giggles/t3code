@@ -102,8 +102,6 @@ function groupLabel(triggerKind: ComposerTriggerKind | null): string | null {
   switch (triggerKind) {
     case "slash-command":
       return "Commands";
-    case "skill":
-      return "Skills";
     case "path":
       return "Files";
     default:
@@ -118,8 +116,6 @@ function emptyText(triggerKind: ComposerTriggerKind | null, isLoading: boolean):
   switch (triggerKind) {
     case "path":
       return "No matching files or folders.";
-    case "skill":
-      return "No skills found.";
     case "slash-command":
       return "No matching commands.";
     default:

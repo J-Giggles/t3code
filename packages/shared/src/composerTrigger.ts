@@ -1,4 +1,4 @@
-export type ComposerTriggerKind = "path" | "slash-command" | "slash-model" | "skill";
+export type ComposerTriggerKind = "path" | "slash-command" | "slash-model";
 export type ComposerSlashCommand = "model" | "plan" | "default";
 
 export interface ComposerTrigger {
@@ -9,6 +9,7 @@ export interface ComposerTrigger {
 }
 
 const SIMPLE_MENTION_PATH_REGEX = /^[^\s@"\\]+$/;
+const THREAD_REFERENCE_PREFIX = "thread:";
 
 export function serializeComposerMentionPath(path: string): string {
   if (SIMPLE_MENTION_PATH_REGEX.test(path)) {
@@ -40,6 +41,36 @@ export function serializeComposerFileLink(path: string): string {
   return `[${label}](${encodeMarkdownLinkDestination(path)})`;
 }
 
+export interface ComposerThreadReference {
+  readonly environmentId: string;
+  readonly threadId: string;
+}
+
+export function serializeComposerThreadReference(input: ComposerThreadReference): string {
+  return `${THREAD_REFERENCE_PREFIX}${encodeURIComponent(input.environmentId)}:${encodeURIComponent(input.threadId)}`;
+}
+
+export function parseComposerThreadReference(value: string): ComposerThreadReference | null {
+  if (!value.startsWith(THREAD_REFERENCE_PREFIX)) {
+    return null;
+  }
+  const rest = value.slice(THREAD_REFERENCE_PREFIX.length);
+  const separatorIndex = rest.indexOf(":");
+  if (separatorIndex <= 0 || separatorIndex === rest.length - 1) {
+    return null;
+  }
+  try {
+    const environmentId = decodeURIComponent(rest.slice(0, separatorIndex));
+    const threadId = decodeURIComponent(rest.slice(separatorIndex + 1));
+    if (!environmentId || !threadId) {
+      return null;
+    }
+    return { environmentId, threadId };
+  } catch {
+    return null;
+  }
+}
+
 function clampCursor(text: string, cursor: number): number {
   if (!Number.isFinite(cursor)) return text.length;
   return Math.max(0, Math.min(text.length, Math.floor(cursor)));
@@ -50,7 +81,7 @@ function isWhitespace(char: string): boolean {
 }
 
 /**
- * Detect an active trigger (@path, $skill, /command) at the cursor position.
+ * Detect an active trigger (@path or /command) at the cursor position.
  *
  * Accepts an optional `isWhitespaceChar` override so callers with inline
  * placeholder characters (e.g. terminal context chips on web) can treat
@@ -62,40 +93,6 @@ export function detectComposerTrigger(
   isWhitespaceChar?: (char: string) => boolean,
 ): ComposerTrigger | null {
   const cursor = clampCursor(text, cursorInput);
-  const lineStart = text.lastIndexOf("\n", Math.max(0, cursor - 1)) + 1;
-  const linePrefix = text.slice(lineStart, cursor);
-
-  if (linePrefix.startsWith("/")) {
-    const commandMatch = /^\/(\S*)$/.exec(linePrefix);
-    if (commandMatch) {
-      const commandQuery = commandMatch[1] ?? "";
-      if (commandQuery.toLowerCase() === "model") {
-        return {
-          kind: "slash-model",
-          query: "",
-          rangeStart: lineStart,
-          rangeEnd: cursor,
-        };
-      }
-      return {
-        kind: "slash-command",
-        query: commandQuery,
-        rangeStart: lineStart,
-        rangeEnd: cursor,
-      };
-    }
-
-    const modelMatch = /^\/model(?:\s+(.*))?$/.exec(linePrefix);
-    if (modelMatch) {
-      return {
-        kind: "slash-model",
-        query: (modelMatch[1] ?? "").trim(),
-        rangeStart: lineStart,
-        rangeEnd: cursor,
-      };
-    }
-  }
-
   const wsCheck = isWhitespaceChar ?? isWhitespace;
   let tokenIdx = cursor - 1;
   while (tokenIdx >= 0 && !wsCheck(text[tokenIdx] ?? "")) {
@@ -104,10 +101,19 @@ export function detectComposerTrigger(
   const tokenStart = tokenIdx + 1;
 
   const token = text.slice(tokenStart, cursor);
-  if (token.startsWith("$")) {
+  if (token.startsWith("/")) {
+    const commandQuery = token.slice(1);
+    if (commandQuery.toLowerCase() === "model") {
+      return {
+        kind: "slash-model",
+        query: "",
+        rangeStart: tokenStart,
+        rangeEnd: cursor,
+      };
+    }
     return {
-      kind: "skill",
-      query: token.slice(1),
+      kind: "slash-command",
+      query: commandQuery,
       rangeStart: tokenStart,
       rangeEnd: cursor,
     };

@@ -87,7 +87,7 @@ describe("splitPromptIntoComposerSegments", () => {
     ]);
   });
 
-  it("splits skill tokens followed by whitespace into skill segments", () => {
+  it("splits dollar-prefixed skill tokens into skill segments", () => {
     expect(splitPromptIntoComposerSegments("Use $review-follow-up please")).toEqual([
       { type: "text", text: "Use " },
       { type: "skill", name: "review-follow-up" },
@@ -95,7 +95,7 @@ describe("splitPromptIntoComposerSegments", () => {
     ]);
   });
 
-  it("does not convert an incomplete trailing skill token", () => {
+  it("keeps incomplete trailing dollar-prefixed skill tokens as text", () => {
     expect(splitPromptIntoComposerSegments("Use $review-follow-up")).toEqual([
       { type: "text", text: "Use $review-follow-up" },
     ]);
@@ -126,7 +126,7 @@ describe("splitPromptIntoComposerSegments", () => {
     ]);
   });
 
-  it("keeps skill parsing alongside mentions and terminal placeholders", () => {
+  it("keeps dollar-prefixed skill segments alongside mentions and terminal placeholders", () => {
     expect(
       splitPromptIntoComposerSegments(
         `Inspect ${INLINE_TERMINAL_CONTEXT_PLACEHOLDER}$review-follow-up after @AGENTS.md `,

@@ -23,6 +23,7 @@ import {
   type TerminalClearInput,
   type TerminalCloseInput,
   type TerminalEvent,
+  type TerminalKillInput,
   type TerminalMetadataStreamEvent,
   type TerminalOpenInput,
   type TerminalResizeInput,
@@ -84,6 +85,9 @@ const DEFAULT_OPEN_ROWS = 30;
 const TERMINAL_ENV_BLOCKLIST = new Set(["PORT", "ELECTRON_RENDERER_PORT", "ELECTRON_RUN_AS_NODE"]);
 const nowIso = Effect.map(DateTime.now, DateTime.formatIso);
 const MAX_TERMINAL_LABEL_LENGTH = 128;
+const DEFAULT_TERMINAL_OWNER = { kind: "user" as const };
+const DEFAULT_TERMINAL_READ_ONLY = false;
+const DEFAULT_TERMINAL_BACKING = "pty" as const;
 
 class TerminalSubprocessCheckError extends Schema.TaggedErrorClass<TerminalSubprocessCheckError>()(
   "TerminalSubprocessCheckError",
@@ -151,6 +155,9 @@ export class TerminalManager extends Context.Service<
      * Clear terminal output history.
      */
     readonly clear: (input: TerminalClearInput) => Effect.Effect<void, TerminalError>;
+
+    /** Stop the active process for a terminal session while keeping its buffered history. */
+    readonly kill: (input: TerminalKillInput) => Effect.Effect<void, TerminalError>;
 
     /**
      * Restart a terminal session in place.
@@ -334,6 +341,9 @@ function snapshot(session: TerminalSessionState): TerminalSessionSnapshot {
     history: session.history,
     exitCode: session.exitCode,
     exitSignal: session.exitSignal,
+    owner: DEFAULT_TERMINAL_OWNER,
+    readOnly: DEFAULT_TERMINAL_READ_ONLY,
+    backing: DEFAULT_TERMINAL_BACKING,
     label: terminalWireLabel(session),
     updatedAt: session.updatedAt,
     sequence: session.eventSequence,
@@ -351,6 +361,9 @@ function summary(session: TerminalSessionState): TerminalSummary {
     exitCode: session.exitCode,
     exitSignal: session.exitSignal,
     hasRunningSubprocess: session.hasRunningSubprocess,
+    owner: DEFAULT_TERMINAL_OWNER,
+    readOnly: DEFAULT_TERMINAL_READ_ONLY,
+    backing: DEFAULT_TERMINAL_BACKING,
     label: terminalWireLabel(session),
     updatedAt: session.updatedAt,
   };
@@ -2505,6 +2518,15 @@ export const makeWithOptions = Effect.fn("TerminalManager.makeWithOptions")(func
       }),
     );
 
+  const kill: TerminalManager["Service"]["kill"] = (input) =>
+    withThreadLock(
+      input.threadId,
+      Effect.gen(function* () {
+        const session = yield* requireSession(input.threadId, input.terminalId);
+        yield* stopProcess(session);
+      }),
+    );
+
   const restart: TerminalManager["Service"]["restart"] = (input) =>
     withThreadLock(
       input.threadId,
@@ -2613,6 +2635,7 @@ export const makeWithOptions = Effect.fn("TerminalManager.makeWithOptions")(func
     write,
     resize,
     clear,
+    kill,
     restart,
     close,
     subscribe,
@@ -2621,3 +2644,5 @@ export const makeWithOptions = Effect.fn("TerminalManager.makeWithOptions")(func
 });
 
 export const layer = Layer.effect(TerminalManager, make()).pipe(Layer.provide(ProcessRunner.layer));
+
+export type TerminalManagerShape = TerminalManager["Service"];

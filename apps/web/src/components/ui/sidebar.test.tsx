@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  SidebarContent,
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuSubButton,
@@ -82,5 +83,41 @@ describe("sidebar interactive cursors", () => {
 
     expect(html).toContain('data-slot="sidebar-menu-sub-button"');
     expect(html).toContain("cursor-pointer");
+  });
+});
+
+describe("sidebar responsive triggers", () => {
+  it("renders the default trigger in the desktop server snapshot", () => {
+    const html = renderToStaticMarkup(
+      <SidebarProvider>
+        <SidebarTrigger />
+      </SidebarProvider>,
+    );
+
+    expect(html).toContain('data-slot="sidebar-trigger"');
+  });
+
+  it("keeps mobile-only triggers out of the desktop server snapshot", () => {
+    const html = renderToStaticMarkup(
+      <SidebarProvider>
+        <SidebarTrigger mobileOnly />
+      </SidebarProvider>,
+    );
+
+    expect(html).not.toContain('data-slot="sidebar-trigger"');
+  });
+});
+
+describe("sidebar content layout", () => {
+  it("can render a non-scrolling content section for local flex layouts", () => {
+    const html = renderToStaticMarkup(
+      <SidebarProvider>
+        <SidebarContent scrollable={false}>Projects</SidebarContent>
+      </SidebarProvider>,
+    );
+
+    expect(html).toContain('data-slot="sidebar-content"');
+    expect(html).toContain("min-h-0");
+    expect(html).toContain("Projects");
   });
 });

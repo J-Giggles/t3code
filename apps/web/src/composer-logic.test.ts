@@ -79,14 +79,33 @@ describe("detectComposerTrigger", () => {
     });
   });
 
-  it("detects $skill trigger at cursor", () => {
+  it("does not detect $skill trigger at cursor", () => {
     const text = "Use $gh-fi";
     const trigger = detectComposerTrigger(text, text.length);
 
+    expect(trigger).toBeNull();
+  });
+
+  it("detects slash command token in the middle of a line", () => {
+    const text = "Please /re";
+    const trigger = detectComposerTrigger(text, text.length);
+
     expect(trigger).toEqual({
-      kind: "skill",
-      query: "gh-fi",
-      rangeStart: "Use ".length,
+      kind: "slash-command",
+      query: "re",
+      rangeStart: "Please ".length,
+      rangeEnd: text.length,
+    });
+  });
+
+  it("detects slash command token on a later line", () => {
+    const text = "First line\nthen /";
+    const trigger = detectComposerTrigger(text, text.length);
+
+    expect(trigger).toEqual({
+      kind: "slash-command",
+      query: "",
+      rangeStart: "First line\nthen ".length,
       rangeEnd: text.length,
     });
   });
@@ -185,10 +204,10 @@ describe("expandCollapsedComposerCursor", () => {
     expect(detectComposerTrigger(text, expandedCursor)).toBeNull();
   });
 
-  it("maps collapsed skill cursor to expanded text cursor", () => {
+  it("maps collapsed skill cursors to expanded source offsets", () => {
     const text = "run $review-follow-up then";
-    const collapsedCursorAfterSkill = "run ".length + 2;
-    const expandedCursorAfterSkill = "run $review-follow-up ".length;
+    const collapsedCursorAfterSkill = "run ".length + 1;
+    const expandedCursorAfterSkill = "run $review-follow-up".length;
 
     expect(expandCollapsedComposerCursor(text, collapsedCursorAfterSkill)).toBe(
       expandedCursorAfterSkill,
@@ -240,10 +259,10 @@ describe("collapseExpandedComposerCursor", () => {
     expect(expandCollapsedComposerCursor(text, collapsedCursor)).toBe(expandedCursor);
   });
 
-  it("maps expanded skill cursor back to collapsed cursor", () => {
+  it("maps expanded skill cursors back to collapsed offsets", () => {
     const text = "run $review-follow-up then";
-    const collapsedCursorAfterSkill = "run ".length + 2;
-    const expandedCursorAfterSkill = "run $review-follow-up ".length;
+    const collapsedCursorAfterSkill = "run ".length + 1;
+    const expandedCursorAfterSkill = "run $review-follow-up".length;
 
     expect(collapseExpandedComposerCursor(text, expandedCursorAfterSkill)).toBe(
       collapsedCursorAfterSkill,
@@ -325,7 +344,7 @@ describe("isCollapsedCursorAdjacentToInlineToken", () => {
     expect(isCollapsedCursorAdjacentToInlineToken(text, tokenStart, "right")).toBe(true);
   });
 
-  it("treats skill pills as inline tokens for adjacency checks", () => {
+  it("treats dollar-prefixed skill text as an inline token", () => {
     const text = "run $review-follow-up next";
     const tokenStart = "run ".length;
     const tokenEnd = tokenStart + 1;

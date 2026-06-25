@@ -887,7 +887,7 @@ interface ComposerPromptEditorProps {
     terminalContextIds: string[],
   ) => void;
   onCommandKeyDown?: (
-    key: "ArrowDown" | "ArrowUp" | "Enter" | "Tab",
+    key: "ArrowDown" | "ArrowUp" | "ArrowLeft" | "Backspace" | "Escape" | "Enter" | "Tab",
     event: KeyboardEvent,
   ) => boolean;
   onPaste: React.ClipboardEventHandler<HTMLElement>;
@@ -896,7 +896,7 @@ interface ComposerPromptEditorProps {
 
 function ComposerCommandKeyPlugin(props: {
   onCommandKeyDown?: (
-    key: "ArrowDown" | "ArrowUp" | "Enter" | "Tab",
+    key: "ArrowDown" | "ArrowUp" | "ArrowLeft" | "Backspace" | "Escape" | "Enter" | "Tab",
     event: KeyboardEvent,
   ) => boolean;
 }) {
@@ -904,7 +904,7 @@ function ComposerCommandKeyPlugin(props: {
 
   useEffect(() => {
     const handleCommand = (
-      key: "ArrowDown" | "ArrowUp" | "Enter" | "Tab",
+      key: "ArrowDown" | "ArrowUp" | "ArrowLeft" | "Backspace" | "Escape" | "Enter" | "Tab",
       event: KeyboardEvent | null,
     ): boolean => {
       if (!props.onCommandKeyDown || !event) {
@@ -944,12 +944,36 @@ function ComposerCommandKeyPlugin(props: {
       (event) => handleCommand("Tab", event),
       COMMAND_PRIORITY_HIGH,
     );
+    const unregisterArrowLeft = editor.registerCommand(
+      KEY_ARROW_LEFT_COMMAND,
+      (event) => handleCommand("ArrowLeft", event),
+      COMMAND_PRIORITY_HIGH,
+    );
+    const unregisterBackspace = editor.registerCommand(
+      KEY_BACKSPACE_COMMAND,
+      (event) => handleCommand("Backspace", event),
+      COMMAND_PRIORITY_HIGH,
+    );
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      handleCommand("Escape", event);
+    };
+    let activeRootElement: HTMLElement | null = null;
+    const unregisterRootListener = editor.registerRootListener((rootElement, prevRootElement) => {
+      prevRootElement?.removeEventListener("keydown", onKeyDown);
+      rootElement?.addEventListener("keydown", onKeyDown);
+      activeRootElement = rootElement;
+    });
 
     return () => {
+      activeRootElement?.removeEventListener("keydown", onKeyDown);
+      unregisterRootListener();
       unregisterArrowDown();
       unregisterArrowUp();
       unregisterEnter();
       unregisterTab();
+      unregisterArrowLeft();
+      unregisterBackspace();
     };
   }, [editor, props]);
 

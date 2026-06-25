@@ -1,3 +1,4 @@
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { TrimmedNonEmptyString } from "./baseSchemas.ts";
 
@@ -73,6 +74,9 @@ export type TerminalResizeInput = Schema.Codec.Encoded<typeof TerminalResizeInpu
 export const TerminalClearInput = TerminalSessionInput;
 export type TerminalClearInput = Schema.Codec.Encoded<typeof TerminalClearInput>;
 
+export const TerminalKillInput = TerminalSessionInput;
+export type TerminalKillInput = Schema.Codec.Encoded<typeof TerminalKillInput>;
+
 export const TerminalRestartInput = Schema.Struct({
   ...TerminalSessionInput.fields,
   cwd: TrimmedNonEmptyStringSchema,
@@ -93,6 +97,36 @@ export type TerminalCloseInput = typeof TerminalCloseInput.Type;
 export const TerminalSessionStatus = Schema.Literals(["starting", "running", "exited", "error"]);
 export type TerminalSessionStatus = typeof TerminalSessionStatus.Type;
 
+export const TerminalSessionBacking = Schema.Literals(["pty", "virtual"]);
+export type TerminalSessionBacking = typeof TerminalSessionBacking.Type;
+
+const TerminalUserOwner = Schema.Struct({
+  kind: Schema.Literal("user"),
+});
+
+const TerminalAgentOwner = Schema.Struct({
+  kind: Schema.Literal("agent"),
+  source: Schema.Literals(["acp-terminal", "provider-runtime"]),
+  provider: Schema.optional(TrimmedNonEmptyStringSchema),
+  providerInstanceId: Schema.optional(TrimmedNonEmptyStringSchema),
+  turnId: Schema.optional(TrimmedNonEmptyStringSchema),
+  itemId: Schema.optional(TrimmedNonEmptyStringSchema),
+  command: Schema.optional(Schema.String.check(Schema.isMaxLength(512))),
+});
+
+export const TerminalSessionOwner = Schema.Union([TerminalUserOwner, TerminalAgentOwner]);
+export type TerminalSessionOwner = typeof TerminalSessionOwner.Type;
+
+const TerminalOwnerField = TerminalSessionOwner.pipe(
+  Schema.withDecodingDefault(Effect.succeed({ kind: "user" as const })),
+);
+const TerminalReadOnlyField = Schema.Boolean.pipe(
+  Schema.withDecodingDefault(Effect.succeed(false)),
+);
+const TerminalBackingField = TerminalSessionBacking.pipe(
+  Schema.withDecodingDefault(Effect.succeed("pty" as const)),
+);
+
 export const TerminalSessionSnapshot = Schema.Struct({
   threadId: Schema.String.check(Schema.isNonEmpty()),
   terminalId: Schema.String.check(Schema.isNonEmpty()),
@@ -103,6 +137,9 @@ export const TerminalSessionSnapshot = Schema.Struct({
   history: Schema.String,
   exitCode: Schema.NullOr(Schema.Int),
   exitSignal: Schema.NullOr(Schema.Int),
+  owner: TerminalOwnerField,
+  readOnly: TerminalReadOnlyField,
+  backing: TerminalBackingField,
   /** Server-computed display title (idle shell vs subprocess command). */
   label: Schema.String.check(Schema.isMaxLength(128)),
   updatedAt: Schema.String,
@@ -120,6 +157,9 @@ export const TerminalSummary = Schema.Struct({
   exitCode: Schema.NullOr(Schema.Int),
   exitSignal: Schema.NullOr(Schema.Int),
   hasRunningSubprocess: Schema.Boolean,
+  owner: TerminalOwnerField,
+  readOnly: TerminalReadOnlyField,
+  backing: TerminalBackingField,
   /** Server-computed display title (idle shell vs subprocess command). */
   label: Schema.String.check(Schema.isMaxLength(128)),
   updatedAt: Schema.String,
@@ -341,6 +381,31 @@ export class TerminalResizeError extends Schema.TaggedErrorClass<TerminalResizeE
   }
 }
 
+export class TerminalReadOnlyError extends Schema.TaggedErrorClass<TerminalReadOnlyError>()(
+  "TerminalReadOnlyError",
+  {
+    threadId: Schema.String,
+    terminalId: Schema.String,
+  },
+) {
+  override get message() {
+    return `Terminal is read-only for thread: ${this.threadId}, terminal: ${this.terminalId}`;
+  }
+}
+
+export class TerminalKillRejectedError extends Schema.TaggedErrorClass<TerminalKillRejectedError>()(
+  "TerminalKillRejectedError",
+  {
+    threadId: Schema.String,
+    terminalId: Schema.String,
+    reason: Schema.Literals(["notAgentOwned", "notPtyBacked", "notRunning"]),
+  },
+) {
+  override get message() {
+    return `Terminal kill rejected for thread: ${this.threadId}, terminal: ${this.terminalId}, reason: ${this.reason}`;
+  }
+}
+
 export const TerminalError = Schema.Union([
   TerminalCwdError,
   TerminalHistoryError,
@@ -348,5 +413,7 @@ export const TerminalError = Schema.Union([
   TerminalNotRunningError,
   TerminalWriteError,
   TerminalResizeError,
+  TerminalReadOnlyError,
+  TerminalKillRejectedError,
 ]);
 export type TerminalError = typeof TerminalError.Type;

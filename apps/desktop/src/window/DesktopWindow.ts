@@ -35,7 +35,7 @@ const DEVELOPMENT_RETRYABLE_LOAD_ERROR_CODES = new Set([
 
 type WindowTitleBarOptions = Pick<
   Electron.BrowserWindowConstructorOptions,
-  "titleBarOverlay" | "titleBarStyle" | "trafficLightPosition"
+  "frame" | "titleBarOverlay" | "titleBarStyle" | "trafficLightPosition"
 >;
 
 type DesktopWindowRuntimeServices =
@@ -138,6 +138,19 @@ export function isRetryableDevelopmentRendererLoadFailure(input: {
   );
 }
 
+export function resolveDesktopWindowApplicationUrl(
+  environment: Pick<
+    DesktopEnvironment.DesktopEnvironment["Service"],
+    "devServerUrl" | "isDevelopment"
+  >,
+): string {
+  if (environment.isDevelopment && Option.isSome(environment.devServerUrl)) {
+    return environment.devServerUrl.value.href;
+  }
+
+  return getDesktopUrl(false);
+}
+
 function getWindowTitleBarOptions(
   shouldUseDarkColors: boolean,
   platform: NodeJS.Platform,
@@ -146,6 +159,12 @@ function getWindowTitleBarOptions(
     return {
       titleBarStyle: "hiddenInset",
       trafficLightPosition: { x: 16, y: 18 },
+    };
+  }
+
+  if (platform === "linux") {
+    return {
+      frame: false,
     };
   }
 
@@ -246,7 +265,7 @@ export const make = Effect.gen(function* () {
     DesktopWindowError
   > {
     yield* previewManager.getBrowserSession();
-    const applicationUrl = getDesktopUrl(environment.isDevelopment);
+    const applicationUrl = resolveDesktopWindowApplicationUrl(environment);
     const iconPaths = yield* assets.iconPaths;
     const iconOption = getIconOption(iconPaths, environment.platform);
     const shouldUseDarkColors = yield* electronTheme.shouldUseDarkColors;
@@ -467,7 +486,7 @@ export const make = Effect.gen(function* () {
     });
 
     loadApplication();
-    if (environment.isDevelopment) {
+    if (environment.isDevelopment && environment.openDevToolsOnStartup) {
       window.webContents.openDevTools({ mode: "detach" });
     }
 

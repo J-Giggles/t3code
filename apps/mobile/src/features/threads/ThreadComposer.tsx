@@ -353,6 +353,9 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
 
     if (composerTrigger.kind === "slash-command") {
       const q = composerTrigger.query.toLowerCase();
+      const normalizedSkillQuery = normalizeSearchQuery(composerTrigger.query, {
+        trimLeadingPattern: /^\/+/,
+      });
       const allBuiltIn = [
         {
           id: "cmd:model",
@@ -390,90 +393,84 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
         });
       }
 
-      return [...builtIn, ...providerCommands];
-    }
-
-    if (composerTrigger.kind === "skill") {
       const enabledSkills = (selectedProviderStatus?.skills ?? []).filter((s) => s.enabled);
-      const normalizedQuery = normalizeSearchQuery(composerTrigger.query, {
-        trimLeadingPattern: /^\$+/,
-      });
+      const skillItems = !normalizedSkillQuery
+        ? enabledSkills.slice(0, 20).map((skill) => ({
+            id: `skill:${skill.name}`,
+            type: "skill" as const,
+            skill,
+            label: skill.displayName ?? skill.name,
+            description: skill.shortDescription ?? skill.description ?? "",
+          }))
+        : (() => {
+            const ranked: Array<{
+              item: (typeof enabledSkills)[number];
+              score: number;
+              tieBreaker: string;
+            }> = [];
+            for (const skill of enabledSkills) {
+              const displayLabel = (skill.displayName ?? skill.name).toLowerCase();
+              const scores = [
+                scoreQueryMatch({
+                  value: skill.name.toLowerCase(),
+                  query: normalizedSkillQuery,
+                  exactBase: 0,
+                  prefixBase: 2,
+                  boundaryBase: 4,
+                  includesBase: 6,
+                  fuzzyBase: 100,
+                  boundaryMarkers: ["-", "_", "/"],
+                }),
+                scoreQueryMatch({
+                  value: displayLabel,
+                  query: normalizedSkillQuery,
+                  exactBase: 1,
+                  prefixBase: 3,
+                  boundaryBase: 5,
+                  includesBase: 7,
+                  fuzzyBase: 110,
+                }),
+                scoreQueryMatch({
+                  value: skill.shortDescription?.toLowerCase() ?? "",
+                  query: normalizedSkillQuery,
+                  exactBase: 20,
+                  prefixBase: 22,
+                  boundaryBase: 24,
+                  includesBase: 26,
+                }),
+                scoreQueryMatch({
+                  value: skill.description?.toLowerCase() ?? "",
+                  query: normalizedSkillQuery,
+                  exactBase: 30,
+                  prefixBase: 32,
+                  boundaryBase: 34,
+                  includesBase: 36,
+                }),
+              ].filter((s): s is number => s !== null);
 
-      if (!normalizedQuery) {
-        return enabledSkills.slice(0, 20).map((skill) => ({
-          id: `skill:${skill.name}`,
-          type: "skill" as const,
-          skill,
-          label: skill.displayName ?? skill.name,
-          description: skill.shortDescription ?? skill.description ?? "",
-        }));
-      }
+              if (scores.length > 0) {
+                insertRankedSearchResult(
+                  ranked,
+                  {
+                    item: skill,
+                    score: Math.min(...scores),
+                    tieBreaker: `${displayLabel}\u0000${skill.name}`,
+                  },
+                  20,
+                );
+              }
+            }
 
-      const ranked: Array<{
-        item: (typeof enabledSkills)[number];
-        score: number;
-        tieBreaker: string;
-      }> = [];
-      for (const skill of enabledSkills) {
-        const displayLabel = (skill.displayName ?? skill.name).toLowerCase();
-        const scores = [
-          scoreQueryMatch({
-            value: skill.name.toLowerCase(),
-            query: normalizedQuery,
-            exactBase: 0,
-            prefixBase: 2,
-            boundaryBase: 4,
-            includesBase: 6,
-            fuzzyBase: 100,
-            boundaryMarkers: ["-", "_", "/"],
-          }),
-          scoreQueryMatch({
-            value: displayLabel,
-            query: normalizedQuery,
-            exactBase: 1,
-            prefixBase: 3,
-            boundaryBase: 5,
-            includesBase: 7,
-            fuzzyBase: 110,
-          }),
-          scoreQueryMatch({
-            value: skill.shortDescription?.toLowerCase() ?? "",
-            query: normalizedQuery,
-            exactBase: 20,
-            prefixBase: 22,
-            boundaryBase: 24,
-            includesBase: 26,
-          }),
-          scoreQueryMatch({
-            value: skill.description?.toLowerCase() ?? "",
-            query: normalizedQuery,
-            exactBase: 30,
-            prefixBase: 32,
-            boundaryBase: 34,
-            includesBase: 36,
-          }),
-        ].filter((s): s is number => s !== null);
+            return ranked.map(({ item: skill }) => ({
+              id: `skill:${skill.name}`,
+              type: "skill" as const,
+              skill,
+              label: skill.displayName ?? skill.name,
+              description: skill.shortDescription ?? skill.description ?? "",
+            }));
+          })();
 
-        if (scores.length > 0) {
-          insertRankedSearchResult(
-            ranked,
-            {
-              item: skill,
-              score: Math.min(...scores),
-              tieBreaker: `${displayLabel}\u0000${skill.name}`,
-            },
-            20,
-          );
-        }
-      }
-
-      return ranked.map(({ item: skill }) => ({
-        id: `skill:${skill.name}`,
-        type: "skill" as const,
-        skill,
-        label: skill.displayName ?? skill.name,
-        description: skill.shortDescription ?? skill.description ?? "",
-      }));
+      return [...builtIn, ...providerCommands, ...skillItems];
     }
 
     if (composerTrigger.kind === "path") {
@@ -542,7 +539,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
       if (item.type === "path") {
         replacement = `${serializeComposerFileLink(item.path)} `;
       } else if (item.type === "skill") {
-        replacement = `$${item.skill.name} `;
+        replacement = `/${item.skill.name} `;
       } else if (item.type === "slash-command") {
         replacement = `/${item.command} `;
       } else if (item.type === "provider-slash-command") {

@@ -1,4 +1,4 @@
-import { EnvironmentId, MessageId } from "@t3tools/contracts";
+import { CheckpointRef, EnvironmentId, MessageId, TurnId } from "@t3tools/contracts";
 import { createRef, type ReactNode, type Ref } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeAll, describe, expect, it, vi } from "vite-plus/test";
@@ -211,6 +211,31 @@ function buildUserTimelineEntry(text: string) {
       role: "user" as const,
       text,
       turnId: null,
+      createdAt: MESSAGE_CREATED_AT,
+      updatedAt: MESSAGE_CREATED_AT,
+      streaming: false,
+    },
+  };
+}
+
+function buildAssistantTimelineEntry({
+  messageId = MessageId.make("message-assistant-1"),
+  turnId = TurnId.make("turn-1"),
+  text = "Done.",
+}: {
+  messageId?: MessageId;
+  turnId?: TurnId;
+  text?: string;
+} = {}) {
+  return {
+    id: "entry-assistant-1",
+    kind: "message" as const,
+    createdAt: MESSAGE_CREATED_AT,
+    message: {
+      id: messageId,
+      role: "assistant" as const,
+      text,
+      turnId,
       createdAt: MESSAGE_CREATED_AT,
       updatedAt: MESSAGE_CREATED_AT,
       streaming: false,
@@ -457,6 +482,43 @@ describe("MessagesTimeline", () => {
 
     expect(markup).toContain("t3code/apps/web/src/session-logic.ts");
     expect(markup).not.toContain("C:/Users/mike/dev-stuff/t3code/apps/web/src/session-logic.ts");
+  });
+
+  it("starts assistant changed files collapsed by default", async () => {
+    const { MessagesTimeline } = await import("./MessagesTimeline");
+    const assistantMessageId = MessageId.make("message-assistant-1");
+    const turnId = TurnId.make("turn-1");
+    const markup = renderToStaticMarkup(
+      <MessagesTimeline
+        {...buildProps()}
+        timelineEntries={[buildAssistantTimelineEntry({ messageId: assistantMessageId, turnId })]}
+        turnDiffSummaryByAssistantMessageId={
+          new Map([
+            [
+              assistantMessageId,
+              {
+                turnId,
+                checkpointTurnCount: 1,
+                checkpointRef: CheckpointRef.make("checkpoint-1"),
+                status: "ready",
+                assistantMessageId,
+                completedAt: MESSAGE_CREATED_AT,
+                files: [
+                  { path: "apps/web/src/index.ts", kind: "modified", additions: 2, deletions: 1 },
+                  { path: "apps/web/src/main.ts", kind: "modified", additions: 3, deletions: 0 },
+                ],
+              },
+            ],
+          ])
+        }
+      />,
+    );
+
+    expect(markup).toContain("Changed files (2)");
+    expect(markup).toContain("Expand all");
+    expect(markup).toContain("apps/web/src");
+    expect(markup).not.toContain("index.ts");
+    expect(markup).not.toContain("main.ts");
   });
 
   it("renders review comment contexts as structured cards instead of raw tags", async () => {

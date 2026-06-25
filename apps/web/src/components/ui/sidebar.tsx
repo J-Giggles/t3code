@@ -316,9 +316,20 @@ function Sidebar({
   );
 }
 
-function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar();
+function SidebarTrigger({
+  className,
+  mobileOnly = false,
+  onClick,
+  ...props
+}: React.ComponentProps<typeof Button> & {
+  mobileOnly?: boolean;
+}) {
+  const { isMobile, toggleSidebar } = useSidebar();
   const isOpen = useSidebarVisibility();
+
+  if (mobileOnly && !isMobile) {
+    return null;
+  }
 
   return (
     <Button
@@ -676,19 +687,31 @@ function SidebarSeparator({ className, ...props }: React.ComponentProps<typeof S
   );
 }
 
-function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
+function SidebarContent({
+  className,
+  scrollable = true,
+  ...props
+}: React.ComponentProps<"div"> & {
+  scrollable?: boolean;
+}) {
+  const content = (
+    <div
+      className={cn(
+        "flex w-full min-w-0 flex-col gap-2 group-data-[collapsible=icon]:overflow-hidden",
+        !scrollable && "min-h-0 flex-1",
+        className,
+      )}
+      data-sidebar="content"
+      data-slot="sidebar-content"
+      {...props}
+    />
+  );
+  return scrollable ? (
     <ScrollArea hideScrollbars scrollFade className="h-auto min-h-0 flex-1">
-      <div
-        className={cn(
-          "flex w-full min-w-0 flex-col gap-2 group-data-[collapsible=icon]:overflow-hidden",
-          className,
-        )}
-        data-sidebar="content"
-        data-slot="sidebar-content"
-        {...props}
-      />
+      {content}
     </ScrollArea>
+  ) : (
+    content
   );
 }
 

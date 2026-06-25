@@ -56,4 +56,17 @@ describe("searchProviderSkills", () => {
 
     expect(searchProviderSkills(skills, "ui").map((skill) => skill.name)).toEqual([]);
   });
+
+  it("can include disabled skills for the slash menu", () => {
+    const skills = [
+      makeSkill({ name: "ui", displayName: "Ui", enabled: false }),
+      makeSkill({ name: "frontend-design", displayName: "Frontend Design" }),
+    ];
+
+    expect(
+      searchProviderSkills(skills, "/ui", Number.POSITIVE_INFINITY, {
+        includeDisabled: true,
+      }).map((skill) => skill.name),
+    ).toEqual(["ui"]);
+  });
 });

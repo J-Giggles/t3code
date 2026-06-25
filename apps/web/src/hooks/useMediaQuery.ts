@@ -82,6 +82,6 @@ export function useMediaQuery(query: BreakpointQuery | MediaQueryInput | (string
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-export function useIsMobile(): boolean {
-  return useMediaQuery("max-md");
+export function useIsMobile(maxWidthPx: number = BREAKPOINTS.md): boolean {
+  return useMediaQuery({ max: maxWidthPx });
 }

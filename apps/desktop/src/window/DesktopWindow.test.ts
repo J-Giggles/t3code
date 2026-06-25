@@ -108,6 +108,7 @@ const desktopServerExposureLayer = Layer.succeed(DesktopServerExposure.DesktopSe
     httpBaseUrl: new URL("http://127.0.0.1:3773"),
     tailscaleServeEnabled: false,
     tailscaleServePort: 443,
+    tailscaleServePath: "/t3code",
   }),
   configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
   setMode: () => Effect.die("unexpected setMode"),
@@ -135,24 +136,31 @@ const electronThemeLayer = Layer.succeed(ElectronTheme.ElectronTheme, {
   onUpdated: () => Effect.void,
 } satisfies ElectronTheme.ElectronTheme["Service"]);
 
-const desktopEnvironmentLayer = DesktopEnvironment.layer(environmentInput).pipe(
-  Layer.provide(
-    Layer.mergeAll(
-      NodeServices.layer,
-      DesktopConfig.layerTest({
-        T3CODE_PORT: "3773",
-        VITE_DEV_SERVER_URL: "http://127.0.0.1:5733",
-      }),
+const makeDesktopEnvironmentLayer = (
+  env: Readonly<Record<string, string | undefined>> = {},
+  environmentOverrides: Partial<DesktopEnvironment.MakeDesktopEnvironmentInput> = {},
+) =>
+  DesktopEnvironment.layer({ ...environmentInput, ...environmentOverrides }).pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        NodeServices.layer,
+        DesktopConfig.layerTest({
+          T3CODE_PORT: "3773",
+          VITE_DEV_SERVER_URL: "http://127.0.0.1:5733",
+          ...env,
+        }),
+      ),
     ),
-  ),
-);
+  );
 
 function makeTestLayer(input: {
   readonly window: Electron.BrowserWindow;
   readonly createCount: Ref.Ref<number>;
   readonly mainWindow: Ref.Ref<Option.Option<Electron.BrowserWindow>>;
   readonly createdWindowOptions?: Electron.BrowserWindowConstructorOptions[];
+  readonly environmentOverrides?: Partial<DesktopEnvironment.MakeDesktopEnvironmentInput>;
   readonly openedExternalUrls?: unknown[];
+  readonly desktopConfigEnv?: Readonly<Record<string, string | undefined>>;
 }) {
   const electronWindowLayer = Layer.succeed(ElectronWindow.ElectronWindow, {
     create: (options) =>
@@ -177,7 +185,7 @@ function makeTestLayer(input: {
     Layer.provide(
       Layer.mergeAll(
         desktopAssetsLayer,
-        desktopEnvironmentLayer,
+        makeDesktopEnvironmentLayer(input.desktopConfigEnv, input.environmentOverrides),
         desktopServerExposureLayer,
         DesktopState.layer,
         electronMenuLayer,
@@ -318,8 +326,26 @@ describe("DesktopWindow", () => {
     );
   });
 
-  it.effect("does not open a development window until the backend is ready", () =>
-    Effect.gen(function* () {
+  it("loads the Vite server directly in desktop development", () => {
+    assert.equal(
+      DesktopWindow.resolveDesktopWindowApplicationUrl({
+        isDevelopment: true,
+        devServerUrl: Option.some(new URL("http://127.0.0.1:5733/main/")),
+      }),
+      "http://127.0.0.1:5733/main/",
+    );
+    assert.equal(
+      DesktopWindow.resolveDesktopWindowApplicationUrl({
+        isDevelopment: false,
+        devServerUrl: Option.none(),
+      }),
+      "t3code://app/",
+    );
+  });
+
+  it.effect("does not open a development window until the backend is ready", () => {
+    vi.stubEnv("T3CODE_DESKTOP_OPEN_DEVTOOLS", "1");
+    return Effect.gen(function* () {
       const fakeWindow = makeFakeBrowserWindow();
       const createCount = yield* Ref.make(0);
       const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
@@ -340,8 +366,113 @@ describe("DesktopWindow", () => {
         assert.equal(yield* Ref.get(createCount), 1);
         assert.isTrue(createdWindowOptions[0]?.disableAutoHideCursor);
         assert.deepEqual(fakeWindow.setAutoHideCursor.mock.calls, [[false]]);
-        assert.deepEqual(fakeWindow.loadURL.mock.calls[0], ["t3code-dev://app/"]);
+        assert.deepEqual(fakeWindow.loadURL.mock.calls[0], ["http://127.0.0.1:5733/"]);
         assert.equal(fakeWindow.openDevTools.mock.calls.length, 1);
+      }).pipe(Effect.provide(layer));
+    }).pipe(Effect.ensuring(Effect.sync(() => vi.unstubAllEnvs())));
+  });
+
+  it.effect("honors the development DevTools startup opt-out", () =>
+    Effect.gen(function* () {
+      const fakeWindow = makeFakeBrowserWindow();
+      const createCount = yield* Ref.make(0);
+      const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
+      const layer = makeTestLayer({
+        window: fakeWindow.window,
+        createCount,
+        mainWindow,
+        desktopConfigEnv: {
+          T3CODE_DESKTOP_OPEN_DEVTOOLS: "0",
+        },
+      });
+
+      yield* Effect.gen(function* () {
+        const desktopWindow = yield* DesktopWindow.DesktopWindow;
+        yield* desktopWindow.handleBackendReady;
+        assert.deepEqual(fakeWindow.loadURL.mock.calls[0], ["http://127.0.0.1:5733/"]);
+        assert.equal(fakeWindow.openDevTools.mock.calls.length, 0);
+      }).pipe(Effect.provide(layer));
+    }),
+  );
+
+  it.effect("creates Linux windows without native window controls", () =>
+    Effect.gen(function* () {
+      const fakeWindow = makeFakeBrowserWindow();
+      const createCount = yield* Ref.make(0);
+      const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
+      const createdWindowOptions: Electron.BrowserWindowConstructorOptions[] = [];
+      const layer = makeTestLayer({
+        window: fakeWindow.window,
+        createCount,
+        mainWindow,
+        createdWindowOptions,
+        environmentOverrides: { platform: "linux" },
+      });
+
+      yield* Effect.gen(function* () {
+        const desktopWindow = yield* DesktopWindow.DesktopWindow;
+        yield* desktopWindow.handleBackendReady;
+        const options = createdWindowOptions[0];
+
+        assert.equal(options?.frame, false);
+        assert.equal(options?.titleBarStyle, undefined);
+        assert.equal(options?.titleBarOverlay, undefined);
+      }).pipe(Effect.provide(layer));
+    }),
+  );
+
+  it.effect("keeps macOS hidden inset traffic lights", () =>
+    Effect.gen(function* () {
+      const fakeWindow = makeFakeBrowserWindow();
+      const createCount = yield* Ref.make(0);
+      const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
+      const createdWindowOptions: Electron.BrowserWindowConstructorOptions[] = [];
+      const layer = makeTestLayer({
+        window: fakeWindow.window,
+        createCount,
+        mainWindow,
+        createdWindowOptions,
+        environmentOverrides: { platform: "darwin" },
+      });
+
+      yield* Effect.gen(function* () {
+        const desktopWindow = yield* DesktopWindow.DesktopWindow;
+        yield* desktopWindow.handleBackendReady;
+        const options = createdWindowOptions[0];
+
+        assert.equal(options?.frame, undefined);
+        assert.equal(options?.titleBarStyle, "hiddenInset");
+        assert.deepEqual(options?.trafficLightPosition, { x: 16, y: 18 });
+      }).pipe(Effect.provide(layer));
+    }),
+  );
+
+  it.effect("keeps Windows titlebar overlay controls", () =>
+    Effect.gen(function* () {
+      const fakeWindow = makeFakeBrowserWindow();
+      const createCount = yield* Ref.make(0);
+      const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
+      const createdWindowOptions: Electron.BrowserWindowConstructorOptions[] = [];
+      const layer = makeTestLayer({
+        window: fakeWindow.window,
+        createCount,
+        mainWindow,
+        createdWindowOptions,
+        environmentOverrides: { platform: "win32" },
+      });
+
+      yield* Effect.gen(function* () {
+        const desktopWindow = yield* DesktopWindow.DesktopWindow;
+        yield* desktopWindow.handleBackendReady;
+        const options = createdWindowOptions[0];
+
+        assert.equal(options?.frame, undefined);
+        assert.equal(options?.titleBarStyle, "hidden");
+        assert.deepEqual(options?.titleBarOverlay, {
+          color: "#01000000",
+          height: 40,
+          symbolColor: "#1f2937",
+        });
       }).pipe(Effect.provide(layer));
     }),
   );

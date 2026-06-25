@@ -46,6 +46,7 @@ import {
   ChevronRightIcon,
   CircleAlertIcon,
   EyeIcon,
+  EyeOffIcon,
   GlobeIcon,
   HammerIcon,
   MessageCircleIcon,
@@ -1231,7 +1232,7 @@ function AssistantChangedFilesSectionInner({
   onOpenTurnDiff: (turnId: TurnId, filePath?: string) => void;
 }) {
   const allDirectoriesExpanded = useUiStateStore(
-    (store) => store.threadChangedFilesExpandedById[routeThreadKey]?.[turnSummary.turnId] ?? true,
+    (store) => store.threadChangedFilesExpandedById[routeThreadKey]?.[turnSummary.turnId] ?? false,
   );
   const setExpanded = useUiStateStore((store) => store.setThreadChangedFilesExpanded);
   const summaryStat = summarizeTurnDiffStats(checkpointFiles);
@@ -1919,6 +1920,7 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
   const expandedBody = buildToolCallExpandedBody(workEntry, workspaceRoot);
   const canExpand = expandedBody !== null;
   const showFailedIndicator = workEntryIndicatesToolFailure(workEntry);
+  const isErrorEntry = showFailedIndicator || workEntry.sourceActivityKind === "runtime.error";
   const showDestructiveRowStyle =
     showFailedIndicator &&
     (workEntry.sourceActivityKind === "runtime.error" || !workLogEntryIsToolLike(workEntry));
@@ -1983,6 +1985,43 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-px text-muted-foreground/55">
+            {isErrorEntry && canExpand ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label={expanded ? "Hide error details" : "Show error details"}
+                      className="size-4 text-muted-foreground hover:text-foreground"
+                      onClick={(event) => {
+                        stopRowToggle(event);
+                        setExpanded((value) => !value);
+                      }}
+                      onPointerDown={stopRowToggle}
+                      size="icon-xs"
+                      type="button"
+                      variant="ghost"
+                    />
+                  }
+                >
+                  {expanded ? <EyeOffIcon className="size-3" /> : <EyeIcon className="size-3" />}
+                </TooltipTrigger>
+                <TooltipPopup side="top">
+                  {expanded ? "Hide error details" : "Show error details"}
+                </TooltipPopup>
+              </Tooltip>
+            ) : null}
+            {isErrorEntry ? (
+              <span onClick={stopRowToggle} onPointerDown={stopRowToggle}>
+                <MessageCopyButton
+                  ariaLabel="Copy raw error"
+                  className="size-4"
+                  size="icon-xs"
+                  text={expandedBody ?? displayText}
+                  tooltip="Copy raw error"
+                  variant="ghost"
+                />
+              </span>
+            ) : null}
             <span
               className="flex size-4 shrink-0 items-center justify-center"
               aria-hidden={!canExpand}
