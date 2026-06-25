@@ -1,3 +1,6 @@
+import type { PromptOverrides } from "@t3tools/contracts";
+import { PROMPT_IDS, renderPromptTemplate } from "@t3tools/shared/prompts";
+
 export function proposedPlanTitle(planMarkdown: string): string | null {
   const heading = planMarkdown.match(/^\s{0,3}#{1,6}\s+(.+)$/m)?.[1]?.trim();
   return heading && heading.length > 0 ? heading : null;
@@ -70,11 +73,22 @@ function sanitizePlanFileSegment(input: string): string {
   return sanitized.length > 0 ? sanitized : "plan";
 }
 
-export function buildPlanImplementationPrompt(planMarkdown: string): string {
-  return `PLEASE IMPLEMENT THIS PLAN:\n${planMarkdown.trim()}`;
+export function buildPlanImplementationPrompt(
+  planMarkdown: string,
+  promptOverrides?: PromptOverrides | undefined,
+): string {
+  return renderPromptTemplate(
+    PROMPT_IDS.planImplementation,
+    { planMarkdown: planMarkdown.trim() },
+    promptOverrides,
+  );
 }
 
-export function resolvePlanFollowUpSubmission(input: { draftText: string; planMarkdown: string }): {
+export function resolvePlanFollowUpSubmission(input: {
+  draftText: string;
+  planMarkdown: string;
+  promptOverrides?: PromptOverrides | undefined;
+}): {
   text: string;
   interactionMode: "default" | "plan";
 } {
@@ -87,7 +101,7 @@ export function resolvePlanFollowUpSubmission(input: { draftText: string; planMa
   }
 
   return {
-    text: buildPlanImplementationPrompt(input.planMarkdown),
+    text: buildPlanImplementationPrompt(input.planMarkdown, input.promptOverrides),
     interactionMode: "default",
   };
 }

@@ -10,20 +10,27 @@ import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
 function collapseOtelSignalsUrl(input: {
   readonly tracesUrl: string;
   readonly metricsUrl: string;
+  readonly logsUrl: string;
 }): string | null {
   const tracesSuffix = "/traces";
   const metricsSuffix = "/metrics";
-  if (!input.tracesUrl.endsWith(tracesSuffix) || !input.metricsUrl.endsWith(metricsSuffix)) {
+  const logsSuffix = "/logs";
+  if (
+    !input.tracesUrl.endsWith(tracesSuffix) ||
+    !input.metricsUrl.endsWith(metricsSuffix) ||
+    !input.logsUrl.endsWith(logsSuffix)
+  ) {
     return null;
   }
 
   const tracesBase = input.tracesUrl.slice(0, -tracesSuffix.length);
   const metricsBase = input.metricsUrl.slice(0, -metricsSuffix.length);
-  if (tracesBase !== metricsBase) {
+  const logsBase = input.logsUrl.slice(0, -logsSuffix.length);
+  if (tracesBase !== metricsBase || tracesBase !== logsBase) {
     return null;
   }
 
-  return `${tracesBase}/{traces,metrics}`;
+  return `${tracesBase}/{traces,metrics,logs}`;
 }
 
 export function formatDiagnosticsDescription(input: {
@@ -32,24 +39,28 @@ export function formatDiagnosticsDescription(input: {
   readonly otlpTracesUrl?: string | undefined;
   readonly otlpMetricsEnabled: boolean;
   readonly otlpMetricsUrl?: string | undefined;
+  readonly otlpLogsEnabled: boolean;
+  readonly otlpLogsUrl?: string | undefined;
 }): string {
   const mode = input.localTracingEnabled ? "Local trace file" : "Terminal logs only";
   const tracesUrl = input.otlpTracesEnabled ? input.otlpTracesUrl : undefined;
   const metricsUrl = input.otlpMetricsEnabled ? input.otlpMetricsUrl : undefined;
+  const logsUrl = input.otlpLogsEnabled ? input.otlpLogsUrl : undefined;
 
-  if (tracesUrl && metricsUrl) {
-    const collapsedUrl = collapseOtelSignalsUrl({ tracesUrl, metricsUrl });
+  if (tracesUrl && metricsUrl && logsUrl) {
+    const collapsedUrl = collapseOtelSignalsUrl({ tracesUrl, metricsUrl, logsUrl });
     return collapsedUrl
       ? `${mode}. Exporting OTEL to ${collapsedUrl}.`
-      : `${mode}. Exporting OTEL traces to ${tracesUrl} and metrics to ${metricsUrl}.`;
+      : `${mode}. Exporting OTEL traces to ${tracesUrl}, metrics to ${metricsUrl}, and logs to ${logsUrl}.`;
   }
 
-  if (tracesUrl) {
-    return `${mode}. Exporting OTEL traces to ${tracesUrl}.`;
-  }
-
-  if (metricsUrl) {
-    return `${mode}. Exporting OTEL metrics to ${metricsUrl}.`;
+  const signals = [
+    tracesUrl ? `traces to ${tracesUrl}` : undefined,
+    metricsUrl ? `metrics to ${metricsUrl}` : undefined,
+    logsUrl ? `logs to ${logsUrl}` : undefined,
+  ].filter((entry): entry is string => entry !== undefined);
+  if (signals.length > 0) {
+    return `${mode}. Exporting OTEL ${signals.join(", ")}.`;
   }
 
   return `${mode}.`;

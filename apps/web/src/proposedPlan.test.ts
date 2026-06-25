@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import { PROMPT_IDS, getPromptDefaultHash } from "@t3tools/shared/prompts";
 
 import {
   buildCollapsedProposedPlanPreviewMarkdown,
@@ -25,6 +26,17 @@ describe("buildPlanImplementationPrompt", () => {
     expect(buildPlanImplementationPrompt("## Ship it\n\n- step 1\n")).toBe(
       "PLEASE IMPLEMENT THIS PLAN:\n## Ship it\n\n- step 1",
     );
+  });
+
+  it("uses prompt overrides", () => {
+    expect(
+      buildPlanImplementationPrompt("## Ship it\n\n- step 1\n", {
+        [PROMPT_IDS.planImplementation]: {
+          content: "Implement this plan now:\n{{planMarkdown}}",
+          defaultHash: getPromptDefaultHash(PROMPT_IDS.planImplementation),
+        },
+      }),
+    ).toBe("Implement this plan now:\n## Ship it\n\n- step 1");
   });
 });
 
@@ -72,6 +84,24 @@ describe("resolvePlanFollowUpSubmission", () => {
       }),
     ).toEqual({
       text: "PLEASE IMPLEMENT THIS PLAN:\n## Ship it\n\n- step 1",
+      interactionMode: "default",
+    });
+  });
+
+  it("uses prompt overrides for implementation follow-up prompts", () => {
+    expect(
+      resolvePlanFollowUpSubmission({
+        draftText: "   ",
+        planMarkdown: "## Ship it\n\n- step 1\n",
+        promptOverrides: {
+          [PROMPT_IDS.planImplementation]: {
+            content: "Build:\n{{planMarkdown}}",
+            defaultHash: getPromptDefaultHash(PROMPT_IDS.planImplementation),
+          },
+        },
+      }),
+    ).toEqual({
+      text: "Build:\n## Ship it\n\n- step 1",
       interactionMode: "default",
     });
   });

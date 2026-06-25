@@ -272,6 +272,7 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
         stagedSummary: input.stagedSummary,
         stagedPatch: input.stagedPatch,
         includeBranch: input.includeBranch === true,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runClaudeJson({
@@ -299,6 +300,7 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
         commitSummary: input.commitSummary,
         diffSummary: input.diffSummary,
         diffPatch: input.diffPatch,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runClaudeJson({
@@ -320,6 +322,7 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
       const { prompt, outputSchema } = buildBranchNamePrompt({
         message: input.message,
         attachments: input.attachments,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runClaudeJson({
@@ -340,6 +343,7 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
       const { prompt, outputSchema } = buildThreadTitlePrompt({
         message: input.message,
         attachments: input.attachments,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runClaudeJson({

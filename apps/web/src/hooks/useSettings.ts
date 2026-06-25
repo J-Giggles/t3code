@@ -288,6 +288,9 @@ export function useUpdateClientSettings() {
   }, []);
 }
 
+export const useSettings = usePrimarySettings;
+export const useUpdateSettings = useUpdatePrimarySettings;
+
 export function __resetClientSettingsPersistenceForTests(): void {
   clientSettingsHydrationGeneration += 1;
   clientSettingsSnapshot = DEFAULT_CLIENT_SETTINGS;

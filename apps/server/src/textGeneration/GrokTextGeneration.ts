@@ -162,6 +162,7 @@ export const makeGrokTextGeneration = Effect.fn("makeGrokTextGeneration")(functi
         stagedSummary: input.stagedSummary,
         stagedPatch: input.stagedPatch,
         includeBranch: input.includeBranch === true,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runGrokJson({
@@ -189,6 +190,7 @@ export const makeGrokTextGeneration = Effect.fn("makeGrokTextGeneration")(functi
         commitSummary: input.commitSummary,
         diffSummary: input.diffSummary,
         diffPatch: input.diffPatch,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runGrokJson({
@@ -210,6 +212,7 @@ export const makeGrokTextGeneration = Effect.fn("makeGrokTextGeneration")(functi
       const { prompt, outputSchema } = buildBranchNamePrompt({
         message: input.message,
         attachments: input.attachments,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runGrokJson({
@@ -230,6 +233,7 @@ export const makeGrokTextGeneration = Effect.fn("makeGrokTextGeneration")(functi
       const { prompt, outputSchema } = buildThreadTitlePrompt({
         message: input.message,
         attachments: input.attachments,
+        promptOverrides: input.promptOverrides,
       });
 
       const generated = yield* runGrokJson({

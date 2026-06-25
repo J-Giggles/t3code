@@ -218,6 +218,7 @@ function fallbackTextGenerationProvider(settings: ServerSettings): ServerSetting
 // Values under these keys are compared as a whole — never stripped field-by-field.
 const ATOMIC_SETTINGS_KEYS: ReadonlySet<string> = new Set([
   "automaticGitFetchInterval",
+  "promptOverrides",
   "textGenerationModelSelection",
 ]);
 
@@ -600,3 +601,5 @@ const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(ServerSettingsService, make);
+
+export type ServerSettingsShape = ServerSettingsService["Service"];

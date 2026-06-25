@@ -7,14 +7,20 @@
  * @module textGenerationPrompts
  */
 import * as Schema from "effect/Schema";
-import type { ChatAttachment } from "@t3tools/contracts";
+import type { ChatAttachment, PromptOverrides } from "@t3tools/contracts";
+import { PROMPT_IDS, renderPromptTemplate } from "@t3tools/shared/prompts";
 
 import { limitSection } from "./TextGenerationUtils.ts";
 import type { TextGenerationPolicy } from "./TextGenerationPolicy.ts";
 
-function policyInstruction(instruction: string | undefined): ReadonlyArray<string> {
+function policyInstructionBetweenSections(instruction: string | undefined): string {
   const trimmed = instruction?.trim();
-  return trimmed ? ["", "Additional instructions:", limitSection(trimmed, 4_000)] : [];
+  return trimmed ? `\n\nAdditional instructions:\n${limitSection(trimmed, 4_000)}\n\n` : "\n\n";
+}
+
+function policyInstructionAfterMessage(instruction: string | undefined): string {
+  const trimmed = instruction?.trim();
+  return trimmed ? `\n\nAdditional instructions:\n${limitSection(trimmed, 4_000)}` : "";
 }
 
 // ---------------------------------------------------------------------------
@@ -27,33 +33,26 @@ export interface CommitMessagePromptInput {
   stagedPatch: string;
   includeBranch: boolean;
   policy?: TextGenerationPolicy | undefined;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 export function buildCommitMessagePrompt(input: CommitMessagePromptInput) {
   const wantsBranch = input.includeBranch;
 
-  const prompt = [
-    "You write concise git commit messages.",
-    wantsBranch
-      ? "Return a JSON object with keys: subject, body, branch."
-      : "Return a JSON object with keys: subject, body.",
-    "Rules:",
-    "- subject must be imperative, <= 72 chars, and no trailing period",
-    "- body can be empty string or short bullet points",
-    ...(wantsBranch
-      ? ["- branch must be a short semantic git branch fragment for this change"]
-      : []),
-    "- capture the primary user-visible or developer-visible change",
-    ...policyInstruction(input.policy?.commitInstructions),
-    "",
-    `Branch: ${input.branch ?? "(detached)"}`,
-    "",
-    "Staged files:",
-    limitSection(input.stagedSummary, 6_000),
-    "",
-    "Staged patch:",
-    limitSection(input.stagedPatch, 40_000),
-  ].join("\n");
+  const prompt = renderPromptTemplate(
+    PROMPT_IDS.textGenerationCommitMessage,
+    {
+      branchOutputKey: wantsBranch ? ", branch" : "",
+      branchRule: wantsBranch
+        ? "- branch must be a short semantic git branch fragment for this change\n"
+        : "",
+      policyInstructions: policyInstructionBetweenSections(input.policy?.commitInstructions),
+      branch: input.branch ?? "(detached)",
+      stagedSummary: limitSection(input.stagedSummary, 6_000),
+      stagedPatch: limitSection(input.stagedPatch, 40_000),
+    },
+    input.promptOverrides,
+  );
 
   if (wantsBranch) {
     return {
@@ -86,31 +85,22 @@ export interface PrContentPromptInput {
   diffSummary: string;
   diffPatch: string;
   policy?: TextGenerationPolicy | undefined;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 export function buildPrContentPrompt(input: PrContentPromptInput) {
-  const prompt = [
-    "You write GitHub pull request content.",
-    "Return a JSON object with keys: title, body.",
-    "Rules:",
-    "- title should be concise and specific",
-    "- body must be markdown and include headings '## Summary' and '## Testing'",
-    "- under Summary, provide short bullet points",
-    "- under Testing, include bullet points with concrete checks or 'Not run' where appropriate",
-    ...policyInstruction(input.policy?.changeRequestInstructions),
-    "",
-    `Base branch: ${input.baseBranch}`,
-    `Head branch: ${input.headBranch}`,
-    "",
-    "Commits:",
-    limitSection(input.commitSummary, 12_000),
-    "",
-    "Diff stat:",
-    limitSection(input.diffSummary, 12_000),
-    "",
-    "Diff patch:",
-    limitSection(input.diffPatch, 40_000),
-  ].join("\n");
+  const prompt = renderPromptTemplate(
+    PROMPT_IDS.textGenerationPullRequest,
+    {
+      policyInstructions: policyInstructionBetweenSections(input.policy?.changeRequestInstructions),
+      baseBranch: input.baseBranch,
+      headBranch: input.headBranch,
+      commitSummary: limitSection(input.commitSummary, 12_000),
+      diffSummary: limitSection(input.diffSummary, 12_000),
+      diffPatch: limitSection(input.diffPatch, 40_000),
+    },
+    input.promptOverrides,
+  );
 
   const outputSchema = Schema.Struct({
     title: Schema.String,
@@ -128,6 +118,7 @@ export interface BranchNamePromptInput {
   message: string;
   attachments?: ReadonlyArray<ChatAttachment> | undefined;
   policy?: TextGenerationPolicy | undefined;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 interface PromptFromMessageInput {
@@ -137,32 +128,33 @@ interface PromptFromMessageInput {
   message: string;
   attachments?: ReadonlyArray<ChatAttachment> | undefined;
   additionalInstructions?: string | undefined;
+  promptOverrides?: PromptOverrides | undefined;
+  promptId:
+    | typeof PROMPT_IDS.textGenerationBranchName
+    | typeof PROMPT_IDS.textGenerationThreadTitle;
 }
 
 function buildPromptFromMessage(input: PromptFromMessageInput): string {
   const attachmentLines = (input.attachments ?? []).map(
     (attachment) => `- ${attachment.name} (${attachment.mimeType}, ${attachment.sizeBytes} bytes)`,
   );
+  const attachmentSection =
+    attachmentLines.length > 0
+      ? `\n\nAttachment metadata:\n${limitSection(attachmentLines.join("\n"), 4_000)}`
+      : "";
 
-  const promptSections = [
-    input.instruction,
-    input.responseShape,
-    "Rules:",
-    ...input.rules.map((rule) => `- ${rule}`),
-    "",
-    "User message:",
-    limitSection(input.message, 8_000),
-    ...policyInstruction(input.additionalInstructions),
-  ];
-  if (attachmentLines.length > 0) {
-    promptSections.push(
-      "",
-      "Attachment metadata:",
-      limitSection(attachmentLines.join("\n"), 4_000),
-    );
-  }
-
-  return promptSections.join("\n");
+  return renderPromptTemplate(
+    input.promptId,
+    {
+      instruction: input.instruction,
+      responseShape: input.responseShape,
+      rules: input.rules.map((rule) => `- ${rule}`).join("\n"),
+      message: limitSection(input.message, 8_000),
+      policyInstructions: policyInstructionAfterMessage(input.additionalInstructions),
+      attachmentSection,
+    },
+    input.promptOverrides,
+  );
 }
 
 export function buildBranchNamePrompt(input: BranchNamePromptInput) {
@@ -178,6 +170,8 @@ export function buildBranchNamePrompt(input: BranchNamePromptInput) {
     message: input.message,
     attachments: input.attachments,
     additionalInstructions: input.policy?.branchInstructions,
+    promptOverrides: input.promptOverrides,
+    promptId: PROMPT_IDS.textGenerationBranchName,
   });
   const outputSchema = Schema.Struct({
     branch: Schema.String,
@@ -194,6 +188,7 @@ export interface ThreadTitlePromptInput {
   message: string;
   attachments?: ReadonlyArray<ChatAttachment> | undefined;
   policy?: TextGenerationPolicy | undefined;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 export function buildThreadTitlePrompt(input: ThreadTitlePromptInput) {
@@ -209,6 +204,8 @@ export function buildThreadTitlePrompt(input: ThreadTitlePromptInput) {
     message: input.message,
     attachments: input.attachments,
     additionalInstructions: input.policy?.threadTitleInstructions,
+    promptOverrides: input.promptOverrides,
+    promptId: PROMPT_IDS.textGenerationThreadTitle,
   });
   const outputSchema = Schema.Struct({
     title: Schema.String,

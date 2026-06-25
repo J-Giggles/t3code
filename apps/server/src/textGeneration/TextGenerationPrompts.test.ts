@@ -8,6 +8,7 @@ import {
 } from "./TextGenerationPrompts.ts";
 import { normalizeCliError, sanitizeThreadTitle } from "./TextGenerationUtils.ts";
 import { TextGenerationError } from "@t3tools/contracts";
+import { PROMPT_IDS, getPromptDefaultHash } from "@t3tools/shared/prompts";
 
 describe("buildCommitMessagePrompt", () => {
   it("includes staged patch and summary in the prompt", () => {
@@ -49,6 +50,23 @@ describe("buildCommitMessagePrompt", () => {
 
     expect(result.prompt).toContain("Branch: (detached)");
   });
+
+  it("uses prompt overrides", () => {
+    const result = buildCommitMessagePrompt({
+      branch: "main",
+      stagedSummary: "M a.ts",
+      stagedPatch: "diff",
+      includeBranch: false,
+      promptOverrides: {
+        [PROMPT_IDS.textGenerationCommitMessage]: {
+          content: "Commit {{branch}}:\n{{stagedSummary}}\n{{unknown}}",
+          defaultHash: getPromptDefaultHash(PROMPT_IDS.textGenerationCommitMessage),
+        },
+      },
+    });
+
+    expect(result.prompt).toBe("Commit main:\nM a.ts\n{{unknown}}");
+  });
 });
 
 describe("buildPrContentPrompt", () => {
@@ -69,6 +87,24 @@ describe("buildPrContentPrompt", () => {
     expect(result.prompt).toContain("3 files changed");
     expect(result.prompt).toContain("Diff patch:");
     expect(result.prompt).toContain("export function login()");
+  });
+
+  it("uses prompt overrides", () => {
+    const result = buildPrContentPrompt({
+      baseBranch: "main",
+      headBranch: "feature/auth",
+      commitSummary: "commit summary",
+      diffSummary: "diff summary",
+      diffPatch: "diff patch",
+      promptOverrides: {
+        [PROMPT_IDS.textGenerationPullRequest]: {
+          content: "PR {{baseBranch}} <- {{headBranch}}\n{{diffSummary}}",
+          defaultHash: getPromptDefaultHash(PROMPT_IDS.textGenerationPullRequest),
+        },
+      },
+    });
+
+    expect(result.prompt).toBe("PR main <- feature/auth\ndiff summary");
   });
 });
 
@@ -102,6 +138,20 @@ describe("buildBranchNamePrompt", () => {
     expect(result.prompt).toContain("image/png");
     expect(result.prompt).toContain("12345 bytes");
   });
+
+  it("uses prompt overrides", () => {
+    const result = buildBranchNamePrompt({
+      message: "Fix the login timeout bug",
+      promptOverrides: {
+        [PROMPT_IDS.textGenerationBranchName]: {
+          content: "Branch for {{message}}",
+          defaultHash: getPromptDefaultHash(PROMPT_IDS.textGenerationBranchName),
+        },
+      },
+    });
+
+    expect(result.prompt).toBe("Branch for Fix the login timeout bug");
+  });
 });
 
 describe("buildThreadTitlePrompt", () => {
@@ -133,6 +183,20 @@ describe("buildThreadTitlePrompt", () => {
     expect(result.prompt).toContain("thread.png");
     expect(result.prompt).toContain("image/png");
     expect(result.prompt).toContain("67890 bytes");
+  });
+
+  it("uses prompt overrides", () => {
+    const result = buildThreadTitlePrompt({
+      message: "Investigate reconnect regressions after session restore",
+      promptOverrides: {
+        [PROMPT_IDS.textGenerationThreadTitle]: {
+          content: "Title for {{message}}",
+          defaultHash: getPromptDefaultHash(PROMPT_IDS.textGenerationThreadTitle),
+        },
+      },
+    });
+
+    expect(result.prompt).toBe("Title for Investigate reconnect regressions after session restore");
   });
 });
 

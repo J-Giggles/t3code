@@ -1,4 +1,4 @@
-import { ServerSettings, type ServerSettingsPatch } from "@t3tools/contracts";
+import { ServerSettings, type PromptOverrides, type ServerSettingsPatch } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { deepMerge } from "./Struct.ts";
@@ -11,6 +11,7 @@ const decodeServerSettingsJson = Schema.decodeUnknownOption(ServerSettingsJson);
 export interface PersistedServerObservabilitySettings {
   readonly otlpTracesUrl: string | undefined;
   readonly otlpMetricsUrl: string | undefined;
+  readonly otlpLogsUrl: string | undefined;
 }
 
 export function normalizePersistedServerSettingString(
@@ -24,11 +25,13 @@ export function extractPersistedServerObservabilitySettings(input: {
   readonly observability?: {
     readonly otlpTracesUrl?: string;
     readonly otlpMetricsUrl?: string;
+    readonly otlpLogsUrl?: string;
   };
 }): PersistedServerObservabilitySettings {
   return {
     otlpTracesUrl: normalizePersistedServerSettingString(input.observability?.otlpTracesUrl),
     otlpMetricsUrl: normalizePersistedServerSettingString(input.observability?.otlpMetricsUrl),
+    otlpLogsUrl: normalizePersistedServerSettingString(input.observability?.otlpLogsUrl),
   };
 }
 
@@ -39,7 +42,18 @@ export function parsePersistedServerObservabilitySettings(
   if (Option.isSome(decoded)) {
     return extractPersistedServerObservabilitySettings(decoded.value);
   }
-  return { otlpTracesUrl: undefined, otlpMetricsUrl: undefined };
+  return { otlpTracesUrl: undefined, otlpMetricsUrl: undefined, otlpLogsUrl: undefined };
+}
+
+export function extractPersistedServerPromptOverrides(input: {
+  readonly promptOverrides?: PromptOverrides;
+}): PromptOverrides {
+  return input.promptOverrides ?? {};
+}
+
+export function parsePersistedServerPromptOverrides(raw: string): PromptOverrides {
+  const decoded = decodeServerSettingsJson(raw);
+  return Option.isSome(decoded) ? extractPersistedServerPromptOverrides(decoded.value) : {};
 }
 
 function shouldReplaceTextGenerationModelSelection(
@@ -76,7 +90,7 @@ export function applyServerSettingsPatch(
   patch: ServerSettingsPatch,
 ): ServerSettings {
   const selectionPatch = patch.textGenerationModelSelection;
-  const { automaticGitFetchInterval, ...patchForMerge } = patch;
+  const { automaticGitFetchInterval, promptOverrides, ...patchForMerge } = patch;
   const next = deepMerge(current, patchForMerge);
   const nextWithReplacements = {
     ...next,
@@ -84,6 +98,7 @@ export function applyServerSettingsPatch(
       ? { providerInstances: patch.providerInstances }
       : {}),
     ...(automaticGitFetchInterval !== undefined ? { automaticGitFetchInterval } : {}),
+    ...(promptOverrides !== undefined ? { promptOverrides } : {}),
   };
   if (!selectionPatch) {
     return nextWithReplacements;

@@ -19,8 +19,10 @@ describe("formatDiagnosticsDescription", () => {
         otlpTracesUrl: "http://localhost:4318/v1/traces",
         otlpMetricsEnabled: true,
         otlpMetricsUrl: "http://localhost:4318/v1/metrics",
+        otlpLogsEnabled: true,
+        otlpLogsUrl: "http://localhost:4318/v1/logs",
       }),
-    ).toBe("Local trace file. Exporting OTEL to http://localhost:4318/v1/{traces,metrics}.");
+    ).toBe("Local trace file. Exporting OTEL to http://localhost:4318/v1/{traces,metrics,logs}.");
   });
 
   it("keeps separate trace and metric URLs when their base paths differ", () => {
@@ -31,9 +33,11 @@ describe("formatDiagnosticsDescription", () => {
         otlpTracesUrl: "http://localhost:4318/v1/traces",
         otlpMetricsEnabled: true,
         otlpMetricsUrl: "http://localhost:9000/v1/metrics",
+        otlpLogsEnabled: true,
+        otlpLogsUrl: "http://localhost:4318/v1/logs",
       }),
     ).toBe(
-      "Local trace file. Exporting OTEL traces to http://localhost:4318/v1/traces and metrics to http://localhost:9000/v1/metrics.",
+      "Local trace file. Exporting OTEL traces to http://localhost:4318/v1/traces, metrics to http://localhost:9000/v1/metrics, and logs to http://localhost:4318/v1/logs.",
     );
   });
 
@@ -43,6 +47,7 @@ describe("formatDiagnosticsDescription", () => {
         localTracingEnabled: true,
         otlpTracesEnabled: false,
         otlpMetricsEnabled: false,
+        otlpLogsEnabled: false,
       }),
     ).toBe("Local trace file.");
   });

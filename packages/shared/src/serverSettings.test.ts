@@ -7,6 +7,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { createModelSelection } from "./model.ts";
 import {
   applyServerSettingsPatch,
+  parsePersistedServerPromptOverrides,
   extractPersistedServerObservabilitySettings,
   normalizePersistedServerSettingString,
   parsePersistedServerObservabilitySettings,
@@ -27,11 +28,13 @@ describe("serverSettings helpers", () => {
         observability: {
           otlpTracesUrl: "  http://localhost:4318/v1/traces  ",
           otlpMetricsUrl: "  http://localhost:4318/v1/metrics  ",
+          otlpLogsUrl: "  http://localhost:4318/v1/logs  ",
         },
       }),
     ).toEqual({
       otlpTracesUrl: "http://localhost:4318/v1/traces",
       otlpMetricsUrl: "http://localhost:4318/v1/metrics",
+      otlpLogsUrl: "http://localhost:4318/v1/logs",
     });
   });
 
@@ -42,12 +45,14 @@ describe("serverSettings helpers", () => {
           observability: {
             otlpTracesUrl: "http://localhost:4318/v1/traces",
             otlpMetricsUrl: "http://localhost:4318/v1/metrics",
+            otlpLogsUrl: "http://localhost:4318/v1/logs",
           },
         }),
       ),
     ).toEqual({
       otlpTracesUrl: "http://localhost:4318/v1/traces",
       otlpMetricsUrl: "http://localhost:4318/v1/metrics",
+      otlpLogsUrl: "http://localhost:4318/v1/logs",
     });
   });
 
@@ -55,7 +60,32 @@ describe("serverSettings helpers", () => {
     expect(parsePersistedServerObservabilitySettings("{")).toEqual({
       otlpTracesUrl: undefined,
       otlpMetricsUrl: undefined,
+      otlpLogsUrl: undefined,
     });
+  });
+
+  it("parses persisted prompt overrides", () => {
+    expect(
+      parsePersistedServerPromptOverrides(
+        JSON.stringify({
+          promptOverrides: {
+            "composer.fixBug": {
+              content: "Custom fix prompt: ",
+              defaultHash: "fnv1a32:abc12345",
+            },
+          },
+        }),
+      ),
+    ).toEqual({
+      "composer.fixBug": {
+        content: "Custom fix prompt: ",
+        defaultHash: "fnv1a32:abc12345",
+      },
+    });
+  });
+
+  it("falls back to empty prompt overrides when persisted settings are invalid", () => {
+    expect(parsePersistedServerPromptOverrides("{")).toEqual({});
   });
 
   it("replaces text generation selection when provider/model are provided", () => {
@@ -192,6 +222,29 @@ describe("serverSettings helpers", () => {
       displayName: "Codex Work",
       enabled: true,
       config: { homePath: "~/.codex" },
+    });
+  });
+
+  it("replaces promptOverrides maps so removed overrides are cleared", () => {
+    const current = {
+      ...DEFAULT_SERVER_SETTINGS,
+      promptOverrides: {
+        "composer.fixBug": { content: "Fix this: ", defaultHash: "fnv1a32:11111111" },
+        "composer.review": { content: "Review this.", defaultHash: "fnv1a32:22222222" },
+      },
+    };
+
+    expect(
+      applyServerSettingsPatch(current, {
+        promptOverrides: {
+          "composer.fixBug": { content: "Fix this carefully: ", defaultHash: "fnv1a32:33333333" },
+        },
+      }).promptOverrides,
+    ).toEqual({
+      "composer.fixBug": {
+        content: "Fix this carefully: ",
+        defaultHash: "fnv1a32:33333333",
+      },
     });
   });
 });

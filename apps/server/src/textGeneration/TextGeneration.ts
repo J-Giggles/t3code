@@ -1,11 +1,20 @@
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
-import type { ChatAttachment, ModelSelection, ProviderInstanceId } from "@t3tools/contracts";
+import { parsePersistedServerPromptOverrides } from "@t3tools/shared/serverSettings";
+import type {
+  ChatAttachment,
+  ModelSelection,
+  PromptOverrides,
+  ProviderInstanceId,
+} from "@t3tools/contracts";
 import { TextGenerationError } from "@t3tools/contracts";
 
 import * as ProviderInstanceRegistry from "../provider/Services/ProviderInstanceRegistry.ts";
+import type { ProviderInstanceRegistryShape } from "../provider/Services/ProviderInstanceRegistry.ts";
 import type { ProviderInstance } from "../provider/ProviderDriver.ts";
+import { ServerConfig } from "../config.ts";
 
 export type TextGenerationProvider = "codex" | "claudeAgent" | "cursor" | "grok" | "opencode";
 
@@ -18,6 +27,7 @@ export interface CommitMessageGenerationInput {
   includeBranch?: boolean;
   /** What model and provider to use for generation. */
   modelSelection: ModelSelection;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 export interface CommitMessageGenerationResult {
@@ -36,6 +46,7 @@ export interface PrContentGenerationInput {
   diffPatch: string;
   /** What model and provider to use for generation. */
   modelSelection: ModelSelection;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 export interface PrContentGenerationResult {
@@ -49,6 +60,7 @@ export interface BranchNameGenerationInput {
   attachments?: ReadonlyArray<ChatAttachment> | undefined;
   /** What model and provider to use for generation. */
   modelSelection: ModelSelection;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 export interface BranchNameGenerationResult {
@@ -61,6 +73,7 @@ export interface ThreadTitleGenerationInput {
   attachments?: ReadonlyArray<ChatAttachment> | undefined;
   /** What model and provider to use for generation. */
   modelSelection: ModelSelection;
+  promptOverrides?: PromptOverrides | undefined;
 }
 
 export interface ThreadTitleGenerationResult {
@@ -140,30 +153,63 @@ const resolveInstance = (
   );
 
 export const makeTextGenerationFromRegistry = (
-  registry: ProviderInstanceRegistry.ProviderInstanceRegistry["Service"],
-): TextGeneration["Service"] =>
-  TextGeneration.of({
-    generateCommitMessage: (input) =>
-      resolveInstance(registry, "generateCommitMessage", input.modelSelection.instanceId).pipe(
-        Effect.flatMap((textGeneration) => textGeneration.generateCommitMessage(input)),
+  registry: ProviderInstanceRegistryShape,
+  resolvePromptOverrides: Effect.Effect<PromptOverrides, never> = Effect.succeed({}),
+): TextGenerationShape => ({
+  generateCommitMessage: (input) =>
+    (input.promptOverrides ? Effect.succeed(input.promptOverrides) : resolvePromptOverrides).pipe(
+      Effect.flatMap((promptOverrides) =>
+        resolveInstance(registry, "generateCommitMessage", input.modelSelection.instanceId).pipe(
+          Effect.flatMap((textGeneration) =>
+            textGeneration.generateCommitMessage({ ...input, promptOverrides }),
+          ),
+        ),
       ),
-    generatePrContent: (input) =>
-      resolveInstance(registry, "generatePrContent", input.modelSelection.instanceId).pipe(
-        Effect.flatMap((textGeneration) => textGeneration.generatePrContent(input)),
+    ),
+  generatePrContent: (input) =>
+    (input.promptOverrides ? Effect.succeed(input.promptOverrides) : resolvePromptOverrides).pipe(
+      Effect.flatMap((promptOverrides) =>
+        resolveInstance(registry, "generatePrContent", input.modelSelection.instanceId).pipe(
+          Effect.flatMap((textGeneration) =>
+            textGeneration.generatePrContent({ ...input, promptOverrides }),
+          ),
+        ),
       ),
-    generateBranchName: (input) =>
-      resolveInstance(registry, "generateBranchName", input.modelSelection.instanceId).pipe(
-        Effect.flatMap((textGeneration) => textGeneration.generateBranchName(input)),
+    ),
+  generateBranchName: (input) =>
+    (input.promptOverrides ? Effect.succeed(input.promptOverrides) : resolvePromptOverrides).pipe(
+      Effect.flatMap((promptOverrides) =>
+        resolveInstance(registry, "generateBranchName", input.modelSelection.instanceId).pipe(
+          Effect.flatMap((textGeneration) =>
+            textGeneration.generateBranchName({ ...input, promptOverrides }),
+          ),
+        ),
       ),
-    generateThreadTitle: (input) =>
-      resolveInstance(registry, "generateThreadTitle", input.modelSelection.instanceId).pipe(
-        Effect.flatMap((textGeneration) => textGeneration.generateThreadTitle(input)),
+    ),
+  generateThreadTitle: (input) =>
+    (input.promptOverrides ? Effect.succeed(input.promptOverrides) : resolvePromptOverrides).pipe(
+      Effect.flatMap((promptOverrides) =>
+        resolveInstance(registry, "generateThreadTitle", input.modelSelection.instanceId).pipe(
+          Effect.flatMap((textGeneration) =>
+            textGeneration.generateThreadTitle({ ...input, promptOverrides }),
+          ),
+        ),
       ),
-  });
-
-export const make = Effect.gen(function* () {
-  const registry = yield* ProviderInstanceRegistry.ProviderInstanceRegistry;
-  return makeTextGenerationFromRegistry(registry);
+    ),
 });
 
-export const layer = Layer.effect(TextGeneration, make);
+export const layer = Layer.effect(
+  TextGeneration,
+  Effect.gen(function* () {
+    const registry = yield* ProviderInstanceRegistry.ProviderInstanceRegistry;
+    const fileSystem = yield* FileSystem.FileSystem;
+    const serverConfig = yield* ServerConfig;
+    return makeTextGenerationFromRegistry(
+      registry,
+      fileSystem.readFileString(serverConfig.settingsPath).pipe(
+        Effect.map(parsePersistedServerPromptOverrides),
+        Effect.orElseSucceed(() => ({})),
+      ),
+    );
+  }),
+);
