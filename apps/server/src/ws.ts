@@ -2161,67 +2161,73 @@ const makeWsRpcLayer = (
     }),
   );
 
-export const websocketRpcRouteLayer = Layer.unwrap(
-  Effect.gen(function* () {
-    const previewAutomationBroker = yield* PreviewAutomationBroker.PreviewAutomationBroker;
-    return HttpRouter.add(
-      "GET",
-      "/ws",
-      Effect.gen(function* () {
-        const request = yield* HttpServerRequest.HttpServerRequest;
-        const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
-        const sessions = yield* SessionStore.SessionStore;
-        const session = yield* serverAuth.authenticateWebSocketUpgrade(request).pipe(
-          Effect.catchIf(EnvironmentAuth.isServerAuthCredentialError, (error) =>
-            failEnvironmentAuthInvalid(EnvironmentAuth.serverAuthCredentialReason(error)),
-          ),
-          Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
-            failEnvironmentInternal("internal_error", error),
-          ),
-        );
-        const rpcWebSocketHttpEffect = yield* RpcServer.toHttpEffectWebsocket(WsRpcGroup, {
-          disableTracing: true,
-        }).pipe(
-          Effect.provide(
-            makeWsRpcLayer(session, previewAutomationBroker).pipe(
-              Layer.provideMerge(RpcSerialization.layerJson),
-              Layer.provide(AppAutomationBroker.layer),
-              Layer.provide(ProviderMaintenanceRunner.layer),
-              Layer.provide(
-                SourceControlDiscovery.layer.pipe(
-                  Layer.provide(
-                    SourceControlProviderRegistry.layer.pipe(
-                      Layer.provide(
-                        Layer.mergeAll(
-                          AzureDevOpsCli.layer,
-                          BitbucketApi.layer,
-                          GitHubCli.layer,
-                          GitLabCli.layer,
+const makeWebsocketRpcRouteLayer = (path: `/${string}`) =>
+  Layer.unwrap(
+    Effect.gen(function* () {
+      const previewAutomationBroker = yield* PreviewAutomationBroker.PreviewAutomationBroker;
+      return HttpRouter.add(
+        "GET",
+        path,
+        Effect.gen(function* () {
+          const request = yield* HttpServerRequest.HttpServerRequest;
+          const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
+          const sessions = yield* SessionStore.SessionStore;
+          const session = yield* serverAuth.authenticateWebSocketUpgrade(request).pipe(
+            Effect.catchIf(EnvironmentAuth.isServerAuthCredentialError, (error) =>
+              failEnvironmentAuthInvalid(EnvironmentAuth.serverAuthCredentialReason(error)),
+            ),
+            Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
+              failEnvironmentInternal("internal_error", error),
+            ),
+          );
+          const rpcWebSocketHttpEffect = yield* RpcServer.toHttpEffectWebsocket(WsRpcGroup, {
+            disableTracing: true,
+          }).pipe(
+            Effect.provide(
+              makeWsRpcLayer(session, previewAutomationBroker).pipe(
+                Layer.provideMerge(RpcSerialization.layerJson),
+                Layer.provide(AppAutomationBroker.layer),
+                Layer.provide(ProviderMaintenanceRunner.layer),
+                Layer.provide(
+                  SourceControlDiscovery.layer.pipe(
+                    Layer.provide(
+                      SourceControlProviderRegistry.layer.pipe(
+                        Layer.provide(
+                          Layer.mergeAll(
+                            AzureDevOpsCli.layer,
+                            BitbucketApi.layer,
+                            GitHubCli.layer,
+                            GitLabCli.layer,
+                          ),
+                        ),
+                        Layer.provideMerge(GitVcsDriver.layer),
+                        Layer.provide(
+                          VcsDriverRegistry.layer.pipe(Layer.provide(VcsProjectConfig.layer)),
                         ),
                       ),
-                      Layer.provideMerge(GitVcsDriver.layer),
-                      Layer.provide(
-                        VcsDriverRegistry.layer.pipe(Layer.provide(VcsProjectConfig.layer)),
-                      ),
                     ),
+                    Layer.provide(VcsProcess.layer),
                   ),
-                  Layer.provide(VcsProcess.layer),
                 ),
               ),
             ),
-          ),
-        );
-        return yield* Effect.acquireUseRelease(
-          sessions.markConnected(session.sessionId),
-          () => rpcWebSocketHttpEffect,
-          () => sessions.markDisconnected(session.sessionId),
-        );
-      }).pipe(
-        Effect.catchTags({
-          EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
-          EnvironmentInternalError: HttpServerRespondable.toResponse,
-        }),
-      ),
-    );
-  }),
-);
+          );
+          return yield* Effect.acquireUseRelease(
+            sessions.markConnected(session.sessionId),
+            () => rpcWebSocketHttpEffect,
+            () => sessions.markDisconnected(session.sessionId),
+          );
+        }).pipe(
+          Effect.catchTags({
+            EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
+            EnvironmentInternalError: HttpServerRespondable.toResponse,
+          }),
+        ),
+      );
+    }),
+  );
+
+export const websocketRpcRouteLayer = makeWebsocketRpcRouteLayer("/ws");
+
+export const makePublicPathWebsocketRpcRouteLayer = (publicPathPrefix: string) =>
+  makeWebsocketRpcRouteLayer(`${publicPathPrefix}/ws` as `/${string}`);

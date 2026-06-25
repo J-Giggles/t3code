@@ -9,12 +9,15 @@ import {
   otlpTracesProxyRouteLayer,
   otlpLogsProxyRouteLayer,
   assetRouteLayer,
+  makePublicPathOtlpTracesProxyRouteLayer,
+  makePublicPathOtlpLogsProxyRouteLayer,
+  makePublicPathAssetRouteLayer,
   serverEnvironmentHttpApiLayer,
   staticAndDevRouteLayer,
   browserApiCorsLayer,
 } from "./http.ts";
 import { fixPath } from "./os-jank.ts";
-import { websocketRpcRouteLayer } from "./ws.ts";
+import { makePublicPathWebsocketRpcRouteLayer, websocketRpcRouteLayer } from "./ws.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import { layerConfig as SqlitePersistenceLayerLive } from "./persistence/Layers/Sqlite.ts";
 import * as ServerLifecycleEvents from "./serverLifecycleEvents.ts";
@@ -455,23 +458,57 @@ const RuntimeServicesLive = ServerRuntimeStartup.layer.pipe(
   Layer.provideMerge(RuntimeDependenciesLive),
 );
 
-export const makeRoutesLayer = Layer.mergeAll(
-  Layer.mergeAll(
-    HttpApiBuilder.layer(EnvironmentHttpApi).pipe(
-      Layer.provide(authHttpApiLayer),
-      Layer.provide(connectHttpApiLayer),
-      Layer.provide(orchestrationHttpApiLayer),
-      Layer.provide(serverEnvironmentHttpApiLayer),
-      Layer.provide(environmentAuthenticatedAuthLayer),
-    ),
-    otlpTracesProxyRouteLayer,
-    otlpLogsProxyRouteLayer,
-    assetRouteLayer,
-    runtimeRestartNotificationRouteLayer,
-    staticAndDevRouteLayer,
-    websocketRpcRouteLayer,
-  ),
+const makeEnvironmentHttpApiRouteLayer = () =>
+  HttpApiBuilder.layer(EnvironmentHttpApi).pipe(
+    Layer.provide(authHttpApiLayer),
+    Layer.provide(connectHttpApiLayer),
+    Layer.provide(orchestrationHttpApiLayer),
+    Layer.provide(serverEnvironmentHttpApiLayer),
+    Layer.provide(environmentAuthenticatedAuthLayer),
+  );
+
+const baseRoutesLayer = Layer.mergeAll(
+  makeEnvironmentHttpApiRouteLayer(),
+  otlpTracesProxyRouteLayer,
+  otlpLogsProxyRouteLayer,
+  assetRouteLayer,
+  runtimeRestartNotificationRouteLayer,
+  staticAndDevRouteLayer,
+  websocketRpcRouteLayer,
   McpHttpServer.layer.pipe(Layer.provide(McpSessionRegistry.layer)),
+);
+
+const makePrefixedRouteRegistrationLayer = <A, E, R>(
+  routeLayer: Layer.Layer<A, E, R>,
+  publicPathPrefix: string,
+) =>
+  routeLayer.pipe(
+    Layer.provide(
+      Layer.effect(
+        HttpRouter.HttpRouter,
+        HttpRouter.HttpRouter.pipe(Effect.map((router) => router.prefixed(publicPathPrefix))),
+      ),
+    ),
+  );
+
+const makePublicPathRoutesLayer = (publicPathPrefix: string) =>
+  Layer.mergeAll(
+    makePrefixedRouteRegistrationLayer(makeEnvironmentHttpApiRouteLayer(), publicPathPrefix),
+    makePublicPathOtlpTracesProxyRouteLayer(publicPathPrefix),
+    makePublicPathOtlpLogsProxyRouteLayer(publicPathPrefix),
+    makePublicPathAssetRouteLayer(publicPathPrefix),
+    makePublicPathWebsocketRpcRouteLayer(publicPathPrefix),
+  );
+
+export const makeRoutesLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const config = yield* ServerConfig.ServerConfig;
+    if (!config.tailscaleServePath) {
+      return baseRoutesLayer;
+    }
+
+    return Layer.mergeAll(makePublicPathRoutesLayer(config.tailscaleServePath), baseRoutesLayer);
+  }),
 ).pipe(Layer.provide(PreviewAutomationBroker.layer), Layer.provide(browserApiCorsLayer));
 
 export const makeServerLayer = Layer.unwrap(

@@ -1625,6 +1625,25 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
+  it.effect("serves static assets under the configured Tailscale serve path", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const assetsDir = path.join(staticDir, "assets");
+      yield* fileSystem.makeDirectory(assetsDir);
+      yield* fileSystem.writeFileString(path.join(staticDir, "index.html"), "<html>shell</html>");
+      yield* fileSystem.writeFileString(path.join(assetsDir, "app.js"), "console.log('ok');");
+
+      yield* buildAppUnderTest({ config: { staticDir, tailscaleServePath: "/t3code" } });
+
+      const response = yield* HttpClient.get("/t3code/assets/app.js");
+      assert.equal(response.status, 200);
+      assert.match(response.headers["content-type"] ?? "", /javascript/u);
+      assert.equal(yield* response.text, "console.log('ok');");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
   it.effect("redirects to dev URL when configured", () =>
     Effect.gen(function* () {
       yield* buildAppUnderTest({

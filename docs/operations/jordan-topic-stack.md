@@ -117,6 +117,9 @@ For the remote-access topic, also verify the live reserved route:
   as `/staging/t3code-staging/...` are regressions.
 - Module script responses have JavaScript MIME types, not `text/html` fallback
   responses.
+- Public metadata and auth/API requests under `/staging/...` reach the same
+  backend handlers as their unprefixed routes, and the WebSocket path connects
+  under `/staging/ws`.
 - `tailscale serve status --json` maps `/main`, `/staging`, `/original`, and dev
   worktree routes to `http://127.0.0.1:<port>` loopback upstreams only.
 

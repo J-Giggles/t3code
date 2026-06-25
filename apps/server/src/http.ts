@@ -88,8 +88,14 @@ function prefixRootRelativeHtmlAttribute(
   publicPathPrefix: string,
 ): string {
   return html.replace(
-    new RegExp(`\\b${attribute}=("|')/(?!/)`, "gi"),
-    (_match, quote: string) => `${attribute}=${quote}${publicPathPrefix}/`,
+    new RegExp(`\\b${attribute}=("|')/(?!/)([^"']*)\\1`, "gi"),
+    (match, quote: string, path: string) => {
+      const rootPath = `/${path}`;
+      if (rootPath === publicPathPrefix || rootPath.startsWith(`${publicPathPrefix}/`)) {
+        return match;
+      }
+      return `${attribute}=${quote}${publicPathPrefix}/${path}${quote}`;
+    },
   );
 }
 
@@ -120,6 +126,21 @@ function maybeRewriteIndexHtml(html: Uint8Array, publicPathPrefix: string | unde
     publicPathPrefix,
   );
   return new TextEncoder().encode(rewritten);
+}
+
+function stripPublicPathPrefixFromUrl(url: URL, publicPathPrefix: string | undefined): URL {
+  if (!publicPathPrefix) {
+    return url;
+  }
+
+  if (url.pathname !== publicPathPrefix && !url.pathname.startsWith(`${publicPathPrefix}/`)) {
+    return url;
+  }
+
+  const nextUrl = new URL(url.toString());
+  nextUrl.pathname =
+    url.pathname === publicPathPrefix ? "/" : url.pathname.slice(publicPathPrefix.length);
+  return nextUrl;
 }
 
 const authenticateRawRouteWithScope = (
@@ -161,145 +182,167 @@ class DecodeOtlpTraceRecordsError extends Data.TaggedError("DecodeOtlpTraceRecor
   readonly bodyJson: OtlpTracer.TraceData;
 }> {}
 
-export const otlpTracesProxyRouteLayer = HttpRouter.add(
-  "POST",
-  OTLP_TRACES_PROXY_PATH,
-  Effect.gen(function* () {
-    yield* authenticateRawRouteWithScope(AuthOrchestrationOperateScope);
-    const request = yield* HttpServerRequest.HttpServerRequest;
-    const config = yield* ServerConfig.ServerConfig;
-    const otlpTracesUrl = config.otlpTracesUrl;
-    const browserTraceCollector = yield* BrowserTraceCollector.BrowserTraceCollector;
-    const httpClient = yield* HttpClient.HttpClient;
-    const bodyJson = cast<unknown, OtlpTracer.TraceData>(yield* request.json);
+const makeOtlpTracesProxyRouteLayer = (path: `/${string}`) =>
+  HttpRouter.add(
+    "POST",
+    path,
+    Effect.gen(function* () {
+      yield* authenticateRawRouteWithScope(AuthOrchestrationOperateScope);
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const config = yield* ServerConfig.ServerConfig;
+      const otlpTracesUrl = config.otlpTracesUrl;
+      const browserTraceCollector = yield* BrowserTraceCollector.BrowserTraceCollector;
+      const httpClient = yield* HttpClient.HttpClient;
+      const bodyJson = cast<unknown, OtlpTracer.TraceData>(yield* request.json);
 
-    yield* Effect.try({
-      try: () => decodeOtlpTraceRecords(bodyJson),
-      catch: (cause) => new DecodeOtlpTraceRecordsError({ cause, bodyJson }),
+      yield* Effect.try({
+        try: () => decodeOtlpTraceRecords(bodyJson),
+        catch: (cause) => new DecodeOtlpTraceRecordsError({ cause, bodyJson }),
+      }).pipe(
+        Effect.flatMap((records) => browserTraceCollector.record(records)),
+        Effect.catch((cause) =>
+          Effect.logWarning("Failed to decode browser OTLP traces", {
+            cause,
+            bodyJson,
+          }),
+        ),
+      );
+
+      if (otlpTracesUrl === undefined) {
+        return HttpServerResponse.empty({ status: 204 });
+      }
+
+      return yield* httpClient
+        .post(otlpTracesUrl, {
+          body: HttpBody.jsonUnsafe(bodyJson),
+        })
+        .pipe(
+          Effect.flatMap(HttpClientResponse.filterStatusOk),
+          Effect.as(HttpServerResponse.empty({ status: 204 })),
+          Effect.tapError((cause) =>
+            Effect.logWarning("Failed to export browser OTLP traces", {
+              cause,
+              otlpTracesUrl,
+            }),
+          ),
+          Effect.orElseSucceed(() =>
+            HttpServerResponse.text("Trace export failed.", { status: 502 }),
+          ),
+        );
     }).pipe(
-      Effect.flatMap((records) => browserTraceCollector.record(records)),
-      Effect.catch((cause) =>
-        Effect.logWarning("Failed to decode browser OTLP traces", {
-          cause,
-          bodyJson,
-        }),
-      ),
-    );
+      Effect.catchTags({
+        EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
+        EnvironmentInternalError: HttpServerRespondable.toResponse,
+        EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
+      }),
+    ),
+  );
 
-    if (otlpTracesUrl === undefined) {
-      return HttpServerResponse.empty({ status: 204 });
-    }
+export const otlpTracesProxyRouteLayer = makeOtlpTracesProxyRouteLayer(OTLP_TRACES_PROXY_PATH);
 
-    return yield* httpClient
-      .post(otlpTracesUrl, {
-        body: HttpBody.jsonUnsafe(bodyJson),
-      })
-      .pipe(
-        Effect.flatMap(HttpClientResponse.filterStatusOk),
-        Effect.as(HttpServerResponse.empty({ status: 204 })),
-        Effect.tapError((cause) =>
-          Effect.logWarning("Failed to export browser OTLP traces", {
-            cause,
-            otlpTracesUrl,
-          }),
-        ),
-        Effect.orElseSucceed(() =>
-          HttpServerResponse.text("Trace export failed.", { status: 502 }),
-        ),
+export const makePublicPathOtlpTracesProxyRouteLayer = (publicPathPrefix: string) =>
+  makeOtlpTracesProxyRouteLayer(`${publicPathPrefix}${OTLP_TRACES_PROXY_PATH}` as `/${string}`);
+
+const makeOtlpLogsProxyRouteLayer = (path: `/${string}`) =>
+  HttpRouter.add(
+    "POST",
+    path,
+    Effect.gen(function* () {
+      yield* authenticateRawRouteWithScope(AuthOrchestrationOperateScope);
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const config = yield* ServerConfig.ServerConfig;
+      const otlpLogsUrl = config.otlpLogsUrl;
+      const httpClient = yield* HttpClient.HttpClient;
+      const bodyJson = yield* request.json;
+
+      if (otlpLogsUrl === undefined) {
+        return HttpServerResponse.empty({ status: 204 });
+      }
+
+      return yield* httpClient
+        .post(otlpLogsUrl, {
+          body: HttpBody.jsonUnsafe(bodyJson),
+        })
+        .pipe(
+          Effect.flatMap(HttpClientResponse.filterStatusOk),
+          Effect.as(HttpServerResponse.empty({ status: 204 })),
+          Effect.tapError((cause) =>
+            Effect.logWarning("Failed to export browser OTLP logs", {
+              cause,
+              otlpLogsUrl,
+            }),
+          ),
+          Effect.orElseSucceed(() =>
+            HttpServerResponse.text("Log export failed.", { status: 502 }),
+          ),
+        );
+    }).pipe(
+      Effect.catchTags({
+        EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
+        EnvironmentInternalError: HttpServerRespondable.toResponse,
+        EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
+      }),
+    ),
+  );
+
+export const otlpLogsProxyRouteLayer = makeOtlpLogsProxyRouteLayer(OTLP_LOGS_PROXY_PATH);
+
+export const makePublicPathOtlpLogsProxyRouteLayer = (publicPathPrefix: string) =>
+  makeOtlpLogsProxyRouteLayer(`${publicPathPrefix}${OTLP_LOGS_PROXY_PATH}` as `/${string}`);
+
+const makeAssetRouteLayer = (routePrefix: `/${string}`) =>
+  HttpRouter.add(
+    "GET",
+    `${routePrefix}/*`,
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const url = HttpServerRequest.toURL(request);
+      if (Option.isNone(url)) {
+        return HttpServerResponse.text("Bad Request", { status: 400 });
+      }
+
+      const suffix = url.value.pathname.slice(`${routePrefix}/`.length);
+      const separatorIndex = suffix.indexOf("/");
+      if (separatorIndex <= 0) {
+        return HttpServerResponse.text("Not Found", { status: 404 });
+      }
+
+      const asset = yield* resolveAsset(
+        suffix.slice(0, separatorIndex),
+        suffix.slice(separatorIndex + 1),
       );
-  }).pipe(
-    Effect.catchTags({
-      EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
-      EnvironmentInternalError: HttpServerRespondable.toResponse,
-      EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
-    }),
-  ),
-);
+      if (!asset) {
+        return HttpServerResponse.text("Not Found", { status: 404 });
+      }
+      if (asset.kind === "project-favicon-fallback") {
+        return HttpServerResponse.text(FALLBACK_PROJECT_FAVICON_SVG, {
+          status: 200,
+          contentType: "image/svg+xml",
+          headers: {
+            "Cache-Control": "private, max-age=3600",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
+      }
 
-export const otlpLogsProxyRouteLayer = HttpRouter.add(
-  "POST",
-  OTLP_LOGS_PROXY_PATH,
-  Effect.gen(function* () {
-    yield* authenticateRawRouteWithScope(AuthOrchestrationOperateScope);
-    const request = yield* HttpServerRequest.HttpServerRequest;
-    const config = yield* ServerConfig.ServerConfig;
-    const otlpLogsUrl = config.otlpLogsUrl;
-    const httpClient = yield* HttpClient.HttpClient;
-    const bodyJson = yield* request.json;
-
-    if (otlpLogsUrl === undefined) {
-      return HttpServerResponse.empty({ status: 204 });
-    }
-
-    return yield* httpClient
-      .post(otlpLogsUrl, {
-        body: HttpBody.jsonUnsafe(bodyJson),
-      })
-      .pipe(
-        Effect.flatMap(HttpClientResponse.filterStatusOk),
-        Effect.as(HttpServerResponse.empty({ status: 204 })),
-        Effect.tapError((cause) =>
-          Effect.logWarning("Failed to export browser OTLP logs", {
-            cause,
-            otlpLogsUrl,
-          }),
-        ),
-        Effect.orElseSucceed(() => HttpServerResponse.text("Log export failed.", { status: 502 })),
-      );
-  }).pipe(
-    Effect.catchTags({
-      EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
-      EnvironmentInternalError: HttpServerRespondable.toResponse,
-      EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
-    }),
-  ),
-);
-
-export const assetRouteLayer = HttpRouter.add(
-  "GET",
-  `${ASSET_ROUTE_PREFIX}/*`,
-  Effect.gen(function* () {
-    const request = yield* HttpServerRequest.HttpServerRequest;
-    const url = HttpServerRequest.toURL(request);
-    if (Option.isNone(url)) {
-      return HttpServerResponse.text("Bad Request", { status: 400 });
-    }
-
-    const suffix = url.value.pathname.slice(`${ASSET_ROUTE_PREFIX}/`.length);
-    const separatorIndex = suffix.indexOf("/");
-    if (separatorIndex <= 0) {
-      return HttpServerResponse.text("Not Found", { status: 404 });
-    }
-
-    const asset = yield* resolveAsset(
-      suffix.slice(0, separatorIndex),
-      suffix.slice(separatorIndex + 1),
-    );
-    if (!asset) {
-      return HttpServerResponse.text("Not Found", { status: 404 });
-    }
-    if (asset.kind === "project-favicon-fallback") {
-      return HttpServerResponse.text(FALLBACK_PROJECT_FAVICON_SVG, {
+      return yield* HttpServerResponse.file(asset.path, {
         status: 200,
-        contentType: "image/svg+xml",
         headers: {
           "Cache-Control": "private, max-age=3600",
           "X-Content-Type-Options": "nosniff",
         },
-      });
-    }
+      }).pipe(
+        Effect.orElseSucceed(() =>
+          HttpServerResponse.text("Internal Server Error", { status: 500 }),
+        ),
+      );
+    }),
+  );
 
-    return yield* HttpServerResponse.file(asset.path, {
-      status: 200,
-      headers: {
-        "Cache-Control": "private, max-age=3600",
-        "X-Content-Type-Options": "nosniff",
-      },
-    }).pipe(
-      Effect.orElseSucceed(() => HttpServerResponse.text("Internal Server Error", { status: 500 })),
-    );
-  }),
-);
+export const assetRouteLayer = makeAssetRouteLayer(ASSET_ROUTE_PREFIX);
+
+export const makePublicPathAssetRouteLayer = (publicPathPrefix: string) =>
+  makeAssetRouteLayer(`${publicPathPrefix}${ASSET_ROUTE_PREFIX}` as `/${string}`);
 
 export const staticAndDevRouteLayer = HttpRouter.add(
   "GET",
@@ -313,8 +356,10 @@ export const staticAndDevRouteLayer = HttpRouter.add(
     }
 
     const config = yield* ServerConfig.ServerConfig;
-    if (config.devUrl && isLoopbackHostname(url.value.hostname)) {
-      return HttpServerResponse.redirect(resolveDevRedirectUrl(config.devUrl, url.value), {
+    const publicPathPrefix = config.tailscaleServePath;
+    const effectiveUrl = stripPublicPathPrefixFromUrl(url.value, publicPathPrefix);
+    if (config.devUrl && isLoopbackHostname(effectiveUrl.hostname)) {
+      return HttpServerResponse.redirect(resolveDevRedirectUrl(config.devUrl, effectiveUrl), {
         status: 302,
       });
     }
@@ -330,7 +375,7 @@ export const staticAndDevRouteLayer = HttpRouter.add(
     const fileSystem = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const staticRoot = path.resolve(staticDir);
-    const staticRequestPath = url.value.pathname === "/" ? "/index.html" : url.value.pathname;
+    const staticRequestPath = effectiveUrl.pathname === "/" ? "/index.html" : effectiveUrl.pathname;
     const rawStaticRelativePath = staticRequestPath.replace(/^[/\\]+/, "");
     const hasRawLeadingParentSegment = rawStaticRelativePath.startsWith("..");
     const staticRelativePath = path.normalize(rawStaticRelativePath).replace(/^[/\\]+/, "");
@@ -361,7 +406,6 @@ export const staticAndDevRouteLayer = HttpRouter.add(
       }
     }
 
-    const publicPathPrefix = config.tailscaleServePath;
     const fileInfo = yield* fileSystem.stat(filePath).pipe(Effect.orElseSucceed(() => null));
     if (!fileInfo || fileInfo.type !== "File") {
       const indexPath = path.resolve(staticRoot, "index.html");

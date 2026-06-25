@@ -137,6 +137,9 @@ Reviewers should check:
 - Pairing links do not accidentally include local-only origins when hosted
   access is available.
 - Web assets, HTTP API calls, and WebSocket connections use the same base path.
+- The backend handles the configured public path prefix for static files, HTTP
+  API routes, and WebSocket routes, because Tailscale Serve forwards the
+  external path prefix through to the local backend.
 - Existing localhost development still works when no hosted path is configured.
 - Tailscale route mutation is only performed by desktop/server code that owns
   that responsibility.
@@ -154,6 +157,9 @@ Reviewers should check:
   connection all load under the path prefix.
 - Inspect the first generated module script and confirm it returns JavaScript
   with a JavaScript MIME type, not the app HTML fallback.
+- Fetch a prefixed metadata/API route such as
+  `/staging/.well-known/t3/environment` and confirm it returns JSON, not the app
+  HTML fallback.
 
 ## Topic 2: Project App Launcher From Chat
 
