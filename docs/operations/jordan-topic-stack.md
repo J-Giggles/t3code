@@ -19,7 +19,8 @@ upstream refreshes can be rebuilt and verified without rewriting protected
 2. `feat(dev-launch): add durable worktree launch profiles`
    - Owns `.t3code/dev-apps.json`, dev launcher contracts/runtime, desktop and
      server launch managers, Omarchy launchers, launcher-owned Tailscale Serve
-     paths, port isolation, and manual restart policy.
+     paths, same-host Tailscale route reconciliation, port isolation, and manual
+     restart policy.
    - Owns dev-runner reserved-route preflight failures and dev-launch
      route-collision prompts when another backend already owns a Tailscale
      route.
@@ -113,7 +114,14 @@ T3CODE_E2E_ALLOW_TAILSCALE_MUTATION=1 node apps/desktop/scripts/run-e2e.mjs head
 
 For the remote-access topic, also verify the live reserved route:
 
-- `https://<machine>.<tailnet>.ts.net/staging/` boots the app, not a blank shell.
+- `https://<machine>.<tailnet>.ts.net/staging/` boots the app in a browser,
+  shows the project list, creates a new chat, sends `Hi`, and renders a
+  non-empty assistant response. `vp run verify:staging-public` enforces this for
+  the live staging route.
+- The verifier includes an interface-bound network preflight to the machine's
+  Tailscale IPv4 address. A loopback curl, clean-process browser check, or
+  screenshot of a non-error document is not sufficient because same-host
+  Tailscale routing can fail only in the desktop browser path.
 - Generated JavaScript and CSS assets use `/staging/...` exactly once; paths such
   as `/staging/t3code-staging/...` or `/staging/main/...` are regressions.
 - Module script responses have JavaScript MIME types, not `text/html` fallback
@@ -123,6 +131,12 @@ For the remote-access topic, also verify the live reserved route:
   under `/staging/ws`.
 - `tailscale serve status --json` maps `/main`, `/staging`, `/original`, and dev
   worktree routes to `http://127.0.0.1:<port>` loopback upstreams only.
+
+Keep public path fixes, WebSocket and asset URL fixes, Tailscale route repair,
+the strict staging verifier, and operations documentation in the remote-access
+topic when rebuilding on a fresh upstream `main`. If the Omarchy launcher helper
+changes, regenerate or verify `~/.local/bin/t3code-tailscale-reconcile` from
+`scripts/lib/omarchy-dev-launchers.ts` before running the public verifier.
 
 When rebuilding from an unsquashed source branch, verify no content was lost:
 

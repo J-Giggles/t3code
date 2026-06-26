@@ -139,6 +139,33 @@ the isolated home, logs, traces, and screenshots for inspection.
 Full tests skip external flows unless their preflight succeeds. Tailscale Serve
 route changes are only allowed when `T3CODE_E2E_ALLOW_TAILSCALE_MUTATION=1`.
 
+## Live Public Staging Gate
+
+The live Tailscale staging URL is not considered verified until a browser can
+use the app end to end. Run:
+
+```bash
+T3CODE_STAGING_PUBLIC_URL="https://giggabit.tailfb378a.ts.net/staging/" \
+vp run verify:staging-public
+```
+
+The command only passes after Chromium opens the public URL without a browser
+error page, renders a non-empty app shell, finds at least one visible project,
+creates a new chat from that project, sends `Hi`, and sees non-empty assistant
+text in a timeline row before the composer returns to the send state. Failure
+artifacts are written under `apps/desktop/test-results/staging-public/`.
+
+The verifier also runs a network preflight from the primary non-tailnet
+interface to the machine's Tailscale IPv4 address. This catches the same-host
+browser failure where loopback or clean process checks succeed but Brave or
+Chromium opens `https://giggabit.tailfb378a.ts.net/staging/` with
+`ERR_CONNECTION_TIMED_OUT`. If that preflight fails, inspect
+`network-preflight.json`, `ss -tnp`, and
+`ip route get <tailnet-ip> oif <primary-interface>`. The Omarchy launcher
+support script `~/.local/bin/t3code-tailscale-reconcile` repairs the expected
+local route with `pkexec ip route replace local <tailnet-ip>/32 dev
+<primary-interface> table local`.
+
 ## Current Scope Limit
 
 This staging workflow is for the SQLite-backed T3 Code desktop/server stack. The Convex promotion, dual-main launcher, Hermes, and Convex replication workflow are not included in this port.

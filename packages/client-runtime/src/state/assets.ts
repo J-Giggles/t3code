@@ -37,7 +37,13 @@ export function parseAssetCollectionKey(
 
 export function resolveAssetUrl(httpBaseUrl: string, relativeUrl: string): string | null {
   try {
-    return new URL(relativeUrl, httpBaseUrl).toString();
+    if (/^[a-z][a-z\d+.-]*:/iu.test(relativeUrl)) {
+      return new URL(relativeUrl).toString();
+    }
+    const baseUrl = new URL(httpBaseUrl);
+    baseUrl.pathname = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : `${baseUrl.pathname}/`;
+    const relativePath = relativeUrl.startsWith("/") ? relativeUrl.slice(1) : relativeUrl;
+    return new URL(relativePath, baseUrl).toString();
   } catch {
     return null;
   }

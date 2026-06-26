@@ -20,6 +20,7 @@ import {
   HttpBody,
   HttpClient,
   HttpClientResponse,
+  HttpClientRequest,
   HttpRouter,
   HttpServerResponse,
   HttpServerRequest,
@@ -78,11 +79,34 @@ export function isLoopbackHostname(hostname: string): boolean {
 }
 
 export function resolveDevRedirectUrl(devUrl: URL, requestUrl: URL): string {
+  const redirectUrl = resolveDevRequestUrl(devUrl, requestUrl);
+  return redirectUrl.toString();
+}
+
+function resolveDevRequestUrl(devUrl: URL, requestUrl: URL): URL {
   const redirectUrl = new URL(devUrl.toString());
-  redirectUrl.pathname = requestUrl.pathname;
+  const devBasePath = normalizePublicPathPrefix(devUrl.pathname);
+  redirectUrl.pathname = devBasePath
+    ? rewriteRootRelativePublicPath(requestUrl.pathname, devBasePath)
+    : requestUrl.pathname;
   redirectUrl.search = requestUrl.search;
   redirectUrl.hash = requestUrl.hash;
-  return redirectUrl.toString();
+  return redirectUrl;
+}
+
+function rewriteRootRelativePublicPath(rootPath: string, publicPathPrefix: string): string {
+  if (rootPath === publicPathPrefix || rootPath.startsWith(`${publicPathPrefix}/`)) {
+    return rootPath;
+  }
+
+  const stalePublicPathPrefix = readLocalPublicPathPrefixFromPathname(rootPath);
+  if (stalePublicPathPrefix) {
+    const suffix =
+      rootPath === stalePublicPathPrefix ? "/" : rootPath.slice(stalePublicPathPrefix.length);
+    return suffix === "/" ? publicPathPrefix : `${publicPathPrefix}${suffix}`;
+  }
+
+  return `${publicPathPrefix}${rootPath}`;
 }
 
 function prefixRootRelativeHtmlAttribute(
@@ -93,21 +117,8 @@ function prefixRootRelativeHtmlAttribute(
   return html.replace(
     new RegExp(`\\b${attribute}=("|')/(?!/)([^"']*)\\1`, "gi"),
     (match, quote: string, path: string) => {
-      const rootPath = `/${path}`;
-      if (rootPath === publicPathPrefix || rootPath.startsWith(`${publicPathPrefix}/`)) {
-        return match;
-      }
-
-      const stalePublicPathPrefix = readLocalPublicPathPrefixFromPathname(rootPath);
-      if (stalePublicPathPrefix) {
-        const suffix =
-          rootPath === stalePublicPathPrefix ? "/" : rootPath.slice(stalePublicPathPrefix.length);
-        return `${attribute}=${quote}${
-          suffix === "/" ? publicPathPrefix : `${publicPathPrefix}${suffix}`
-        }${quote}`;
-      }
-
-      return `${attribute}=${quote}${publicPathPrefix}/${path}${quote}`;
+      const rewritten = rewriteRootRelativePublicPath(`/${path}`, publicPathPrefix);
+      return rewritten === `/${path}` ? match : `${attribute}=${quote}${rewritten}${quote}`;
     },
   );
 }
@@ -129,6 +140,25 @@ export function rewriteHtmlForPublicPathPrefix(html: string, publicPathPrefix: s
   return rewritten;
 }
 
+export function rewriteCssForPublicPathPrefix(css: string, publicPathPrefix: string): string {
+  const normalizedPrefix = normalizePublicPathPrefix(publicPathPrefix);
+  if (!normalizedPrefix) {
+    return css;
+  }
+
+  return css.replace(
+    /url\(\s*(?:(["'])\/(?!\/)([^"')]+)\1|\/(?!\/)([^"')\s]+))\s*\)/gi,
+    (match, quote: string | undefined, quotedPath: string | undefined, unquotedPath: string) => {
+      const path = quotedPath ?? unquotedPath;
+      if (!path) {
+        return match;
+      }
+      const rewritten = rewriteRootRelativePublicPath(`/${path}`, normalizedPrefix);
+      return quote ? `url(${quote}${rewritten}${quote})` : `url(${rewritten})`;
+    },
+  );
+}
+
 function maybeRewriteIndexHtml(html: Uint8Array, publicPathPrefix: string | undefined): Uint8Array {
   if (!publicPathPrefix) {
     return html;
@@ -140,6 +170,22 @@ function maybeRewriteIndexHtml(html: Uint8Array, publicPathPrefix: string | unde
   );
   return new TextEncoder().encode(rewritten);
 }
+
+function maybeRewriteCss(css: Uint8Array, publicPathPrefix: string | undefined): Uint8Array {
+  if (!publicPathPrefix) {
+    return css;
+  }
+
+  const rewritten = rewriteCssForPublicPathPrefix(new TextDecoder().decode(css), publicPathPrefix);
+  return new TextEncoder().encode(rewritten);
+}
+
+const proxyDevRequest = Effect.fn("http.proxyDevRequest")(function* (devUrl: URL, requestUrl: URL) {
+  const httpClient = yield* HttpClient.HttpClient;
+  const targetUrl = resolveDevRequestUrl(devUrl, requestUrl);
+  const response = yield* httpClient.execute(HttpClientRequest.get(targetUrl));
+  return HttpServerResponse.fromClientResponse(response);
+});
 
 function stripPublicPathPrefixFromUrl(url: URL, publicPathPrefix: string | undefined): URL {
   if (!publicPathPrefix) {
@@ -377,11 +423,22 @@ export const staticAndDevRouteLayer = HttpRouter.add(
 
     const config = yield* ServerConfig.ServerConfig;
     const publicPathPrefix = config.tailscaleServePath;
-    const effectiveUrl = stripPublicPathPrefixFromUrl(url.value, publicPathPrefix);
+    const requestUrl = url.value;
+    const effectiveUrl = stripPublicPathPrefixFromUrl(requestUrl, publicPathPrefix);
     if (config.devUrl && isLoopbackHostname(effectiveUrl.hostname)) {
-      return HttpServerResponse.redirect(resolveDevRedirectUrl(config.devUrl, effectiveUrl), {
+      return HttpServerResponse.redirect(resolveDevRedirectUrl(config.devUrl, requestUrl), {
         status: 302,
       });
+    }
+    if (config.devUrl) {
+      return yield* proxyDevRequest(config.devUrl, requestUrl).pipe(
+        Effect.catch(() =>
+          Effect.logWarning("Failed to proxy request to Vite dev server", {
+            devUrl: config.devUrl?.toString(),
+            requestPath: requestUrl.pathname,
+          }).pipe(Effect.as(HttpServerResponse.text("Dev server unavailable.", { status: 502 }))),
+        ),
+      );
     }
 
     const staticDir =
@@ -450,7 +507,9 @@ export const staticAndDevRouteLayer = HttpRouter.add(
     const responseBody =
       contentType.startsWith("text/html") && publicPathPrefix
         ? maybeRewriteIndexHtml(data, publicPathPrefix)
-        : data;
+        : contentType.startsWith("text/css") && publicPathPrefix
+          ? maybeRewriteCss(data, publicPathPrefix)
+          : data;
 
     return HttpServerResponse.uint8Array(responseBody, {
       status: 200,

@@ -17,6 +17,11 @@ test("real provider prompt runs to ready when explicitly enabled @full", async (
   await page.keyboard.type("Reply with one short sentence for an E2E smoke check.");
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.getByRole("button", { name: /Stop/u })).toBeVisible({ timeout: 60_000 });
+  await expect(
+    page.locator('[data-message-role="assistant"]').filter({ hasText: /\S/u }),
+  ).toBeVisible({
+    timeout: 180_000,
+  });
   await expect(page.getByRole("button", { name: "Send message" })).toBeVisible({
     timeout: 180_000,
   });

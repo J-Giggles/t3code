@@ -28,6 +28,7 @@ import {
   resolveRestartNotificationEndpoint,
   shouldNotifyForViteWatchEvent,
 } from "./src/lib/devRestartNotification";
+import { resolveDevProxyRoutes } from "./src/devProxyPaths";
 
 const repoEnv = loadRepoEnv();
 const webPackageRoot = NodePath.dirname(NodeURL.fileURLToPath(import.meta.url));
@@ -98,6 +99,24 @@ const buildSourcemap: boolean | "hidden" =
     : sourcemapEnv === "hidden"
       ? "hidden"
       : true;
+
+const diffsWorkerAssetBasePath = "/__t3-vendor/diffs-worker";
+const diffsWorkerPortablePath = NodeURL.fileURLToPath(
+  import.meta.resolve("@pierre/diffs/worker/worker-portable.js"),
+);
+const diffsWorkerDirectory = NodePath.dirname(diffsWorkerPortablePath);
+const diffsWorkerAssets = [
+  {
+    fileName: "worker-portable.js",
+    sourcePath: diffsWorkerPortablePath,
+    contentType: "application/javascript; charset=utf-8",
+  },
+  {
+    fileName: "wasm-qE0LgnY3.js",
+    sourcePath: NodePath.join(diffsWorkerDirectory, "wasm-qE0LgnY3.js"),
+    contentType: "application/javascript; charset=utf-8",
+  },
+] as const;
 
 const unitTestProject = {
   extends: true,
@@ -235,6 +254,58 @@ function manualRestartNotificationPlugin({
   };
 }
 
+function diffsWorkerAssetsPlugin(): Plugin {
+  const normalizedViteBase = viteBase === "/" ? "" : viteBase.replace(/\/$/u, "");
+  const assetByRequestPath = new Map(
+    diffsWorkerAssets.map((asset) => [`${diffsWorkerAssetBasePath}/${asset.fileName}`, asset]),
+  );
+
+  return {
+    name: "t3code-diffs-worker-assets",
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const rawUrl = request.url;
+        if (!rawUrl) {
+          next();
+          return;
+        }
+
+        let requestPath: string;
+        try {
+          requestPath = decodeURIComponent(new URL(rawUrl, "http://t3code.local").pathname);
+        } catch {
+          next();
+          return;
+        }
+
+        if (normalizedViteBase && requestPath.startsWith(`${normalizedViteBase}/`)) {
+          requestPath = requestPath.slice(normalizedViteBase.length);
+        }
+
+        const asset = assetByRequestPath.get(requestPath);
+        if (!asset) {
+          next();
+          return;
+        }
+
+        response.statusCode = 200;
+        response.setHeader("Content-Type", asset.contentType);
+        response.setHeader("Cache-Control", "no-cache");
+        NodeFS.createReadStream(asset.sourcePath).once("error", next).pipe(response);
+      });
+    },
+    generateBundle() {
+      for (const asset of diffsWorkerAssets) {
+        this.emitFile({
+          type: "asset",
+          fileName: `${diffsWorkerAssetBasePath.slice(1)}/${asset.fileName}`,
+          source: NodeFS.readFileSync(asset.sourcePath),
+        });
+      }
+    },
+  };
+}
+
 export default defineConfig(() => {
   return {
     base: viteBase,
@@ -250,6 +321,7 @@ export default defineConfig(() => {
         presets: [reactCompilerPreset()],
       }),
       tailwindcss(),
+      diffsWorkerAssetsPlugin(),
       manualRestartNotificationPlugin({
         enabled: manualDevChangePolicy,
         httpBaseUrl: configuredHttpUrl,
@@ -263,7 +335,6 @@ export default defineConfig(() => {
         "@pierre/diffs",
         "@pierre/diffs/editor",
         "@pierre/diffs/react",
-        "@pierre/diffs/worker/worker.js",
         "effect/Array",
         "effect/Order",
         "react-dom/client",
@@ -310,20 +381,16 @@ export default defineConfig(() => {
       strictPort: true,
       ...(devProxyTarget
         ? {
-            proxy: {
-              "/.well-known": {
-                target: devProxyTarget,
-                changeOrigin: true,
-              },
-              "/api": {
-                target: devProxyTarget,
-                changeOrigin: true,
-              },
-              "/attachments": {
-                target: devProxyTarget,
-                changeOrigin: true,
-              },
-            },
+            proxy: Object.fromEntries(
+              resolveDevProxyRoutes(configuredPublicBasePath).map((route) => [
+                route.path,
+                {
+                  target: devProxyTarget,
+                  changeOrigin: true,
+                  ...(route.websocket ? { ws: true } : {}),
+                },
+              ]),
+            ),
           }
         : {}),
       hmr: {

@@ -34,6 +34,9 @@ function scriptContent(
 describe("omarchy-dev-launchers", () => {
   it("renders all launcher names", () => {
     const files = renderOmarchyDevLauncherFiles({ homeDir: "/home/tester" });
+    expect(files.filter((file) => file.kind === "support-script").map((file) => file.path)).toEqual(
+      ["/home/tester/.local/bin/t3code-tailscale-reconcile"],
+    );
     expect(files.filter((file) => file.kind === "script").map((file) => file.path)).toEqual([
       "/home/tester/.local/bin/t3code-dev-original",
       "/home/tester/.local/bin/t3code-dev-main",
@@ -60,6 +63,7 @@ describe("omarchy-dev-launchers", () => {
       expect(content).toMatch(/export T3CODE_DEV_CHANGE_POLICY="manual"/u);
       expect(content).toMatch(/export T3CODE_DESKTOP_DISABLE_RESTART_ON_CHANGE="1"/u);
       expect(content).toMatch(/export T3CODE_DESKTOP_RESTART_ON_EXIT="1"/u);
+      expect(content).toMatch(/t3code-tailscale-reconcile --watch "\$dev_pid"/u);
     }
   });
 
@@ -89,7 +93,7 @@ describe("omarchy-dev-launchers", () => {
     const homeDir = makeTempHome();
     try {
       for (const file of renderOmarchyDevLauncherFiles({ homeDir }).filter(
-        (candidate) => candidate.kind === "script",
+        (candidate) => candidate.kind === "script" || candidate.kind === "support-script",
       )) {
         const scriptPath = NodePath.join(homeDir, NodePath.basename(file.path));
         NodeFS.writeFileSync(scriptPath, file.content);
@@ -106,6 +110,20 @@ describe("omarchy-dev-launchers", () => {
     }
   });
 
+  it("renders the Tailscale reconcile helper with same-host route repair", () => {
+    const file = renderOmarchyDevLauncherFiles({ homeDir: "/home/tester", target: "staging" }).find(
+      (candidate) => candidate.kind === "support-script",
+    );
+    if (!file) {
+      throw new Error("Missing support script");
+    }
+
+    expect(file.content).toMatch(/ensure_same_host_tailscale_route\(\)/u);
+    expect(file.content).toMatch(/pkexec ip route replace local "\$\{tailnet_ip\}\/32"/u);
+    expect(file.content).toMatch(/--set-path="\$path"/u);
+    expect(file.content).toMatch(/serve_path "\/staging" "\$STAGING_PORT"/u);
+  });
+
   it("dry-run reports intended paths without writing target paths", () => {
     const homeDir = makeTempHome();
     try {
@@ -115,7 +133,7 @@ describe("omarchy-dev-launchers", () => {
         validateWorktrees: false,
       });
 
-      expect(result.entries).toHaveLength(8);
+      expect(result.entries).toHaveLength(9);
       for (const entry of result.entries) {
         expect(entry.action).toBe("create");
         expect(entry.written).toBe(false);
@@ -137,8 +155,12 @@ describe("omarchy-dev-launchers", () => {
         now,
         validateWorktrees: false,
       });
-      expect(first.entries.map((entry) => entry.action)).toEqual(["create", "create"]);
-      expect(first.entries.map((entry) => entry.backupPath)).toEqual([undefined, undefined]);
+      expect(first.entries.map((entry) => entry.action)).toEqual(["create", "create", "create"]);
+      expect(first.entries.map((entry) => entry.backupPath)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+      ]);
 
       const second = installOmarchyDevLaunchers({
         mode: "write",
@@ -147,7 +169,11 @@ describe("omarchy-dev-launchers", () => {
         now,
         validateWorktrees: false,
       });
-      expect(second.entries.map((entry) => entry.action)).toEqual(["unchanged", "unchanged"]);
+      expect(second.entries.map((entry) => entry.action)).toEqual([
+        "unchanged",
+        "unchanged",
+        "unchanged",
+      ]);
 
       const scriptPath = NodePath.join(homeDir, ".local", "bin", "t3code-dev-main");
       NodeFS.writeFileSync(scriptPath, "#!/usr/bin/env bash\nexit 0\n");

@@ -13,6 +13,16 @@ describe("formatPreviewUrl", () => {
     ).toBe("Local environment · architecture brief.pdf");
   });
 
+  it("formats signed asset URLs under a path-prefixed environment", () => {
+    expect(
+      formatPreviewUrl({
+        url: "https://desktop.tail.ts.net/staging/api/assets/token/report.pdf",
+        environmentLabel: "Staging",
+        environmentHttpBaseUrl: "https://desktop.tail.ts.net/staging/",
+      }),
+    ).toBe("Staging · report.pdf");
+  });
+
   it("does not alias assets from another origin", () => {
     expect(
       formatPreviewUrl({

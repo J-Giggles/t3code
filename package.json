@@ -27,6 +27,7 @@
     "test:desktop-smoke": "vp run --filter @t3tools/desktop smoke-test",
     "test:desktop-e2e:smoke": "vp run --filter @t3tools/desktop e2e:smoke",
     "test:desktop-e2e:headed": "vp run --filter @t3tools/desktop e2e:headed",
+    "verify:staging-public": "vp run --filter @t3tools/desktop verify:staging-public",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "build:contracts": "vp run --filter @t3tools/contracts build",

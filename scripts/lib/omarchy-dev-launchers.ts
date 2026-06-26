@@ -8,7 +8,8 @@ export const OMARCHY_DEV_LAUNCHER_TARGETS = ["original", "main", "staging", "man
 export type OmarchyDevLauncherTarget = (typeof OMARCHY_DEV_LAUNCHER_TARGETS)[number];
 export type OmarchyDevLauncherTargetSelection = OmarchyDevLauncherTarget | "all";
 export type OmarchyDevLauncherInstallMode = "dry-run" | "write";
-export type OmarchyDevLauncherFileKind = "script" | "desktop-entry";
+export type OmarchyDevLauncherFileTarget = OmarchyDevLauncherTarget | "shared";
+export type OmarchyDevLauncherFileKind = "script" | "desktop-entry" | "support-script";
 export type OmarchyDevLauncherInstallAction = "create" | "update" | "unchanged";
 
 export interface OmarchyDevLauncherDefinition {
@@ -32,7 +33,7 @@ export interface OmarchyDevLauncherDefinition {
 }
 
 export interface RenderedOmarchyDevLauncherFile {
-  readonly target: OmarchyDevLauncherTarget;
+  readonly target: OmarchyDevLauncherFileTarget;
   readonly kind: OmarchyDevLauncherFileKind;
   readonly path: string;
   readonly content: string;
@@ -48,7 +49,7 @@ export interface OmarchyDevLauncherInstallOptions {
 }
 
 export interface OmarchyDevLauncherInstallResultEntry {
-  readonly target: OmarchyDevLauncherTarget;
+  readonly target: OmarchyDevLauncherFileTarget;
   readonly kind: OmarchyDevLauncherFileKind;
   readonly path: string;
   readonly action: OmarchyDevLauncherInstallAction;
@@ -172,6 +173,10 @@ function launcherPath(target: OmarchyDevLauncherTarget, homeDir: string): string
 
 function desktopEntryPath(target: OmarchyDevLauncherTarget, homeDir: string): string {
   return NodePath.join(homeDir, ".local", "share", "applications", `t3code-dev-${target}.desktop`);
+}
+
+function tailscaleReconcilePath(homeDir: string): string {
+  return NodePath.join(homeDir, ".local", "bin", "t3code-tailscale-reconcile");
 }
 
 function renderPathMatcher(target: OmarchyDevLauncherTarget): string {
@@ -372,6 +377,7 @@ export function renderOmarchyDevLauncherScript(definition: OmarchyDevLauncherDef
     "run_supervised_dev_command() {",
     '  local dev_pid=""',
     '  local monitor_pid=""',
+    '  local tailscale_reconcile_pid=""',
     "  local shutdown_requested=0",
     "  local restart_delay_seconds=2",
     "",
@@ -380,6 +386,9 @@ export function renderOmarchyDevLauncherScript(definition: OmarchyDevLauncherDef
     "    trap - INT TERM HUP",
     '    if [[ -n "$monitor_pid" ]]; then',
     '      kill "$monitor_pid" 2>/dev/null || true',
+    "    fi",
+    '    if [[ -n "$tailscale_reconcile_pid" ]]; then',
+    '      kill "$tailscale_reconcile_pid" 2>/dev/null || true',
     "    fi",
     '    if [[ -n "$dev_pid" ]]; then',
     "      stop_existing_dev",
@@ -418,6 +427,10 @@ export function renderOmarchyDevLauncherScript(definition: OmarchyDevLauncherDef
     '    dev_pid="$!"',
     '    monitor_electron_lifetime "$dev_pid" &',
     '    monitor_pid="$!"',
+    "    if command -v t3code-tailscale-reconcile >/dev/null 2>&1; then",
+    '      t3code-tailscale-reconcile --watch "$dev_pid" &',
+    '      tailscale_reconcile_pid="$!"',
+    "    fi",
     "",
     '    wait "$dev_pid" || true',
     "",
@@ -425,6 +438,11 @@ export function renderOmarchyDevLauncherScript(definition: OmarchyDevLauncherDef
     '      kill "$monitor_pid" 2>/dev/null || true',
     '      wait "$monitor_pid" 2>/dev/null || true',
     '      monitor_pid=""',
+    "    fi",
+    '    if [[ -n "$tailscale_reconcile_pid" ]]; then',
+    '      kill "$tailscale_reconcile_pid" 2>/dev/null || true',
+    '      wait "$tailscale_reconcile_pid" 2>/dev/null || true',
+    '      tailscale_reconcile_pid=""',
     "    fi",
     '    dev_pid=""',
     "",
@@ -477,6 +495,140 @@ export function renderOmarchyDevLauncherScript(definition: OmarchyDevLauncherDef
   ].join("\n");
 }
 
+export function renderTailscaleReconcileScript(): string {
+  return [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    "",
+    'HTTPS_PORT="443"',
+    'HTTP_PORT="80"',
+    'MAIN_PORT="13793"',
+    'ORIGINAL_PORT="13773"',
+    'STAGING_PORT="13833"',
+    'INTERVAL_SECONDS="${T3CODE_TAILSCALE_RECONCILE_INTERVAL_SECONDS:-15}"',
+    "",
+    "has_command() {",
+    '  command -v "$1" >/dev/null 2>&1',
+    "}",
+    "",
+    "tailnet_ipv4() {",
+    "  tailscale status --json 2>/dev/null |",
+    "    node -e '",
+    'const fs = require("node:fs");',
+    'const parsed = JSON.parse(fs.readFileSync(0, "utf8"));',
+    "const ips = parsed?.Self?.TailscaleIPs;",
+    "if (!Array.isArray(ips)) process.exit(1);",
+    "for (const ip of ips) {",
+    '  if (typeof ip !== "string") continue;',
+    '  const parts = ip.split(".").map((part) => Number.parseInt(part, 10));',
+    "  if (",
+    "    parts.length === 4 &&",
+    "    parts.every((part) => Number.isInteger(part)) &&",
+    "    parts[0] === 100 &&",
+    "    parts[1] >= 64 &&",
+    "    parts[1] <= 127",
+    "  ) {",
+    "    console.log(ip);",
+    "    process.exit(0);",
+    "  }",
+    "}",
+    "process.exit(1);",
+    "'",
+    "}",
+    "",
+    "primary_ipv4_interface() {",
+    "  ip -4 route show default table main 2>/dev/null |",
+    "    awk '$5 !~ /^(tailscale|docker|br-|nord|wg)/ {print $5; exit}'",
+    "}",
+    "",
+    "ensure_same_host_tailscale_route() {",
+    "  has_command ip || return 0",
+    "  has_command pkexec || return 0",
+    "",
+    "  local tailnet_ip",
+    "  local interface_name",
+    "  local route",
+    "",
+    '  tailnet_ip="$(tailnet_ipv4 || true)"',
+    '  interface_name="$(primary_ipv4_interface || true)"',
+    '  if [[ -z "$tailnet_ip" || -z "$interface_name" ]]; then',
+    "    return 0",
+    "  fi",
+    "",
+    '  route="$(ip route get "$tailnet_ip" oif "$interface_name" 2>/dev/null || true)"',
+    '  if [[ "$route" == local\\ * && "$route" == *"src $tailnet_ip"* ]]; then',
+    "    return 0",
+    "  fi",
+    "",
+    '  pkexec ip route replace local "${tailnet_ip}/32" dev "$interface_name" table local >/dev/null 2>&1 || true',
+    "}",
+    "",
+    "port_open() {",
+    '  local port="$1"',
+    '  timeout 2 bash -c ":</dev/tcp/127.0.0.1/${port}" >/dev/null 2>&1',
+    "}",
+    "",
+    "serve_path() {",
+    '  local path="$1"',
+    '  local local_port="$2"',
+    "",
+    '  if [[ "$path" == "/" ]]; then',
+    '    tailscale serve --bg --https="$HTTPS_PORT" "http://127.0.0.1:${local_port}" >/dev/null',
+    "  else",
+    '    tailscale serve --bg --https="$HTTPS_PORT" --set-path="$path" "http://127.0.0.1:${local_port}" >/dev/null',
+    "  fi",
+    "}",
+    "",
+    "serve_http_path() {",
+    '  local path="$1"',
+    '  local local_port="$2"',
+    "",
+    '  if [[ "$path" == "/" ]]; then',
+    '    tailscale serve --bg --http="$HTTP_PORT" "http://127.0.0.1:${local_port}" >/dev/null',
+    "  else",
+    '    tailscale serve --bg --http="$HTTP_PORT" --set-path="$path" "http://127.0.0.1:${local_port}" >/dev/null',
+    "  fi",
+    "}",
+    "",
+    "reconcile_once() {",
+    "  has_command tailscale || return 0",
+    "",
+    '  if port_open "$MAIN_PORT"; then',
+    '    serve_path "/main" "$MAIN_PORT"',
+    '    serve_http_path "/main" "$MAIN_PORT"',
+    "  fi",
+    "",
+    '  if port_open "$ORIGINAL_PORT"; then',
+    '    serve_path "/original" "$ORIGINAL_PORT"',
+    '    serve_http_path "/original" "$ORIGINAL_PORT"',
+    "  fi",
+    "",
+    '  if port_open "$STAGING_PORT"; then',
+    '    serve_path "/staging" "$STAGING_PORT"',
+    "  fi",
+    "",
+    "  ensure_same_host_tailscale_route",
+    "}",
+    "",
+    'if [[ "${1:-}" == "--watch" ]]; then',
+    '  supervised_pid="${2:-}"',
+    '  if [[ -z "$supervised_pid" ]]; then',
+    '    echo "Usage: $0 --watch <pid>" >&2',
+    "    exit 2",
+    "  fi",
+    "",
+    '  while kill -0 "$supervised_pid" 2>/dev/null; do',
+    "    reconcile_once || true",
+    '    sleep "$INTERVAL_SECONDS"',
+    "  done",
+    "  exit 0",
+    "fi",
+    "",
+    "reconcile_once",
+    "",
+  ].join("\n");
+}
+
 export function renderOmarchyDevLauncherDesktopEntry(
   definition: OmarchyDevLauncherDefinition,
   homeDir = NodeOS.homedir(),
@@ -515,22 +667,33 @@ export function renderOmarchyDevLauncherFiles(
   } = {},
 ): ReadonlyArray<RenderedOmarchyDevLauncherFile> {
   const homeDir = input.homeDir ?? NodeOS.homedir();
-  return selectedDefinitions(input.target).flatMap((definition) => [
+  return [
     {
-      target: definition.target,
-      kind: "script",
-      path: launcherPath(definition.target, homeDir),
-      content: renderOmarchyDevLauncherScript(definition),
+      target: "shared",
+      kind: "support-script",
+      path: tailscaleReconcilePath(homeDir),
+      content: renderTailscaleReconcileScript(),
       mode: 0o755,
     },
-    {
-      target: definition.target,
-      kind: "desktop-entry",
-      path: desktopEntryPath(definition.target, homeDir),
-      content: renderOmarchyDevLauncherDesktopEntry(definition, homeDir),
-      mode: 0o644,
-    },
-  ]);
+    ...selectedDefinitions(input.target).flatMap(
+      (definition): ReadonlyArray<RenderedOmarchyDevLauncherFile> => [
+        {
+          target: definition.target,
+          kind: "script",
+          path: launcherPath(definition.target, homeDir),
+          content: renderOmarchyDevLauncherScript(definition),
+          mode: 0o755,
+        },
+        {
+          target: definition.target,
+          kind: "desktop-entry",
+          path: desktopEntryPath(definition.target, homeDir),
+          content: renderOmarchyDevLauncherDesktopEntry(definition, homeDir),
+          mode: 0o644,
+        },
+      ],
+    ),
+  ];
 }
 
 function backupTimestamp(now: Date): string {

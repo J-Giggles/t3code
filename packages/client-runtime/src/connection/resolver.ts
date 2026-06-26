@@ -32,6 +32,7 @@ import type {
 } from "./model.ts";
 import { ConnectionBlockedError, type ConnectionAttemptError } from "./model.ts";
 import * as ConnectionProfileStore from "./profileStore.ts";
+import { resolveWsRpcSocketUrl } from "../wsRpcProtocol.ts";
 
 export class ConnectionResolver extends Context.Service<
   ConnectionResolver,
@@ -47,11 +48,7 @@ const isSshProfile = Schema.is(SshConnectionProfile);
 const isBearerCredential = Schema.is(BearerConnectionCredential);
 
 function primarySocketUrl(target: PrimaryConnectionTarget): string {
-  const url = new URL(target.wsBaseUrl);
-  if (url.pathname === "" || url.pathname === "/") {
-    url.pathname = "/ws";
-  }
-  return url.toString();
+  return resolveWsRpcSocketUrl(target.wsBaseUrl);
 }
 
 const makePrimaryBroker = Effect.fn("clientRuntime.connection.broker.makePrimary")(function* () {

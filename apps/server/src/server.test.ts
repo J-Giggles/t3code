@@ -1,7 +1,9 @@
+// @effect-diagnostics nodeBuiltinImport:off - Raw HTTP is only used to connect to the in-process test server with an external Host header.
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeSocket from "@effect/platform-node/NodeSocket";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeCrypto from "node:crypto";
+import * as NodeHttp from "node:http";
 import { HostProcessPlatform } from "@t3tools/shared/hostProcess";
 
 import {
@@ -428,6 +430,7 @@ const buildAppUnderTest = (options?: {
     relayClient?: Partial<RelayClient.RelayClientShape>;
     cloudCliTokenManager?: Partial<CloudCliTokenManager.CloudCliTokenManagerShape>;
     serverDevAppLaunchManager?: Partial<ServerDevAppLaunchManagerShape>;
+    httpClientLayer?: Layer.Layer<HttpClient.HttpClient>;
   };
 }) =>
   Effect.gen(function* () {
@@ -1014,7 +1017,7 @@ const buildAppUnderTest = (options?: {
       Layer.provideMerge(makeAuthTestLayer()),
       Layer.provideMerge(ServerSecretStore.layer),
       Layer.provide(workspaceAndProjectServicesLayer),
-      Layer.provideMerge(FetchHttpClient.layer),
+      Layer.provideMerge(options?.layers?.httpClientLayer ?? FetchHttpClient.layer),
       Layer.provide(layerConfig),
     );
 
@@ -1075,6 +1078,49 @@ const getHttpServerUrl = (pathname = "") =>
     const server = yield* HttpServer.HttpServer;
     const address = server.address as HttpServer.TcpAddress;
     return `http://127.0.0.1:${address.port}${pathname}`;
+  });
+
+const rawHttpGetEffect = (input: {
+  readonly pathname: string;
+  readonly headers?: NodeHttp.OutgoingHttpHeaders;
+}) =>
+  Effect.gen(function* () {
+    const server = yield* HttpServer.HttpServer;
+    const address = server.address as HttpServer.TcpAddress;
+    return yield* Effect.tryPromise({
+      try: () =>
+        new Promise<{
+          readonly status: number;
+          readonly headers: NodeHttp.IncomingHttpHeaders;
+          readonly body: string;
+        }>((resolve, reject) => {
+          const request = NodeHttp.request(
+            {
+              host: "127.0.0.1",
+              port: address.port,
+              method: "GET",
+              path: input.pathname,
+              headers: input.headers,
+            },
+            (response) => {
+              const chunks: Array<Buffer> = [];
+              response.on("data", (chunk: Buffer | string) => {
+                chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+              });
+              response.on("end", () => {
+                resolve({
+                  status: response.statusCode ?? 0,
+                  headers: response.headers,
+                  body: Buffer.concat(chunks).toString("utf8"),
+                });
+              });
+            },
+          );
+          request.on("error", reject);
+          request.end();
+        }),
+      catch: (cause) => new TestHttpRequestError({ cause }),
+    });
   });
 
 const bootstrapBrowserSession = (
@@ -1672,6 +1718,28 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
+  it.effect("rewrites static CSS URLs under the configured Tailscale serve path", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const assetsDir = path.join(staticDir, "assets");
+      yield* fileSystem.makeDirectory(assetsDir);
+      yield* fileSystem.writeFileString(path.join(staticDir, "index.html"), "<html>shell</html>");
+      yield* fileSystem.writeFileString(
+        path.join(assetsDir, "app.css"),
+        "@font-face{src:url(/main/assets/font.woff2)}",
+      );
+
+      yield* buildAppUnderTest({ config: { staticDir, tailscaleServePath: "/staging" } });
+
+      const response = yield* HttpClient.get("/staging/assets/app.css");
+      assert.equal(response.status, 200);
+      assert.match(response.headers["content-type"] ?? "", /text\/css/u);
+      assert.equal(yield* response.text, "@font-face{src:url(/staging/assets/font.woff2)}");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
   it.effect("redirects to dev URL when configured", () =>
     Effect.gen(function* () {
       yield* buildAppUnderTest({
@@ -1683,6 +1751,62 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
       assert.equal(response.status, 302);
       assert.equal(response.headers.location, "http://127.0.0.1:5173/foo/bar?token=test-token");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("redirects loopback public-path dev assets to the Vite base path", () =>
+    Effect.gen(function* () {
+      yield* buildAppUnderTest({
+        config: {
+          devUrl: new URL("http://127.0.0.1:5793/staging/"),
+          tailscaleServePath: "/staging",
+        },
+      });
+
+      const url = yield* getHttpServerUrl("/staging/src/main.tsx?t=123");
+      const response = yield* fetchEffect(url, { redirect: "manual" });
+
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.location, "http://127.0.0.1:5793/staging/src/main.tsx?t=123");
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("proxies non-loopback public-path dev assets through the backend", () =>
+    Effect.gen(function* () {
+      let proxiedUrl: string | undefined;
+      const httpClientLayer = Layer.succeed(
+        HttpClient.HttpClient,
+        HttpClient.make((request, url) => {
+          proxiedUrl = url.toString();
+          return Effect.succeed(
+            HttpClientResponse.fromWeb(
+              request,
+              new Response("console.log('vite');", {
+                status: 200,
+                headers: { "content-type": "text/javascript" },
+              }),
+            ),
+          );
+        }),
+      );
+
+      yield* buildAppUnderTest({
+        config: {
+          devUrl: new URL("http://127.0.0.1:5793/staging/"),
+          tailscaleServePath: "/staging",
+        },
+        layers: { httpClientLayer },
+      });
+
+      const response = yield* rawHttpGetEffect({
+        pathname: "/staging/src/main.tsx?t=123",
+        headers: { host: "giggabit.tailfb378a.ts.net" },
+      });
+
+      assert.equal(proxiedUrl, "http://127.0.0.1:5793/staging/src/main.tsx?t=123");
+      assert.equal(response.status, 200);
+      assert.match(String(response.headers["content-type"] ?? ""), /javascript/u);
+      assert.equal(response.body, "console.log('vite');");
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 

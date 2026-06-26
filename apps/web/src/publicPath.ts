@@ -48,23 +48,26 @@ function readPublicPathPrefixFromLocation(): string | undefined {
   return readPublicPathPrefixFromPathname(pathname);
 }
 
-export function readBrowserPublicPathPrefix(): string | undefined {
-  const fromEnv = readConfiguredPublicPathPrefix();
-  if (fromEnv !== undefined) {
-    return fromEnv;
-  }
-
+function readPublicPathPrefixFromDocument(): string | undefined {
   if (typeof document === "undefined") {
-    return readPublicPathPrefixFromLocation();
+    return undefined;
   }
 
   const meta = document.querySelector?.(PUBLIC_PATH_PREFIX_META_SELECTOR);
-  const fromMeta = normalizePublicPathPrefix(meta?.getAttribute("content"));
-  if (fromMeta !== undefined) {
-    return fromMeta;
+  return normalizePublicPathPrefix(meta?.getAttribute("content"));
+}
+
+function readServedPublicPathPrefix(): string | undefined {
+  return readPublicPathPrefixFromDocument() ?? readPublicPathPrefixFromLocation();
+}
+
+export function readBrowserPublicPathPrefix(): string | undefined {
+  const fromServedBrowser = readServedPublicPathPrefix();
+  if (fromServedBrowser !== undefined) {
+    return fromServedBrowser;
   }
 
-  return readPublicPathPrefixFromLocation();
+  return readConfiguredPublicPathPrefix();
 }
 
 export function resolveBrowserPublicPath(pathname: string): string {
@@ -72,6 +75,13 @@ export function resolveBrowserPublicPath(pathname: string): string {
 }
 
 export function resolveBrowserPublicBaseUrl(): string {
+  const servedBrowserPathPrefix = readServedPublicPathPrefix();
+  if (servedBrowserPathPrefix !== undefined && typeof window !== "undefined") {
+    const baseUrl = new URL(window.location.origin);
+    baseUrl.pathname = `${servedBrowserPathPrefix}/`;
+    return baseUrl.toString();
+  }
+
   const configuredBaseUrl = readConfiguredPublicBaseUrl();
   if (configuredBaseUrl !== undefined) {
     const baseUrl = new URL(configuredBaseUrl);

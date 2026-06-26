@@ -1,9 +1,17 @@
 import { WorkerPoolContextProvider, useWorkerPool } from "@pierre/diffs/react";
-import DiffsWorker from "@pierre/diffs/worker/worker.js?worker";
 import * as Schema from "effect/Schema";
 import { useEffect, useMemo, type ReactNode } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { resolveDiffThemeName, type DiffThemeName } from "../lib/diffRendering";
+import { resolveBrowserPublicPath } from "../publicPath";
+
+const DIFFS_WORKER_SCRIPT_PATH = "/__t3-vendor/diffs-worker/worker-portable.js";
+
+const createDiffsWorker = () =>
+  new Worker(resolveBrowserPublicPath(DIFFS_WORKER_SCRIPT_PATH), {
+    type: "module",
+    name: "t3-diffs-worker",
+  });
 
 export class DiffWorkerError extends Schema.TaggedErrorClass<DiffWorkerError>()("DiffWorkerError", {
   operation: Schema.Literals(["create-worker", "get-render-options", "set-render-options"]),
@@ -59,7 +67,7 @@ export function DiffWorkerPoolProvider({ children }: { children?: ReactNode }) {
       poolOptions={{
         workerFactory: () => {
           try {
-            return new DiffsWorker();
+            return createDiffsWorker();
           } catch (cause) {
             throw new DiffWorkerError({
               operation: "create-worker",

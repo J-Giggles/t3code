@@ -8,6 +8,10 @@
 - Prefer visible T3 Code Staging Electron verification for UI changes. Use the controlled workflow in
   `docs/operations/headed-staging.md`, keep its isolated `T3CODE_HOME`, and use the documented CDP port for
   screenshots/inspection.
+- For the live staging URL, `https://giggabit.tailfb378a.ts.net/staging/`, a verification pass requires
+  `vp run verify:staging-public`. Do not accept loopback-only curls, blank-page screenshots, or a shallow HTTP
+  status check as proof. The verifier must prove the public HTTPS path reaches the app, shows projects, creates a
+  chat with `Hi`, and receives a non-empty assistant response.
 
 ## Local Worktree Topology
 
@@ -44,6 +48,9 @@
   correctly established, and connect through the HTTPS URL from a separate browser context.
 - If the HTTPS forwarding feature can change the exposed URL or trailing route, include an E2E variant that changes
   the route and then reconnects through the updated HTTPS URL.
+- Remote-access topic commits must carry their own public-path and verifier coverage. When a fix touches Tailscale
+  Serve, Vite base paths, public asset URLs, WebSocket paths, pairing URLs, or same-host route repair, keep the code,
+  focused tests, verifier update, and operations docs in the same replayable topic.
 - Keep topic commits narrow: one feature/fix plus its tests, docs, and required migration/config updates. Avoid
   mixing multiple replayable topics into one commit.
 - The `original` mirror should be synced from upstream and tested nightly so replayable local topics can be checked
@@ -208,6 +215,11 @@ Source commits intentionally not replayed as new follow-up commits:
   `~/.local/share/applications/t3code-dev-staging.desktop`. It launches `.worktrees/staging` on web port `5793`,
   server port `13833`, and desktop debugging port `9232`. Its app data lives in
   `~/.local/share/t3code-dev/staging`, and its config lives in `~/.config/t3code-dev/staging`.
+- `~/.local/bin/t3code-tailscale-reconcile` is the shared support script installed by
+  `pnpm run omarchy:install-dev-launchers -- --write`. It keeps Tailscale Serve routes current and repairs the
+  same-host route for the machine's 100.x tailnet IP on the primary interface. If Brave/Chromium times out on the
+  public URL, inspect `apps/desktop/test-results/staging-public/*/network-preflight.json`, `ss -tnp`, and
+  `ip route get <tailnet-ip> oif <primary-interface>` before claiming staging is healthy.
 - The `original` sync automation may reset files inside `.worktrees/original`, but it must never delete or reset
   `~/.local/share/t3code-dev/original` or `~/.config/t3code-dev/original`.
 

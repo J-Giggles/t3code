@@ -34,6 +34,13 @@ contracts. Observability and headed Electron checks then verify the whole local
 stack. `docs/operations/jordan-topic-stack.md` is the authoritative rebuild and
 tree-equality workflow for future upstream refreshes.
 
+The June 26 follow-up topic
+`fix(remote-access): harden public staging verification` should be reviewed with
+the remote-access and durable-launcher topics. On future upstream rebuilds, fold
+the web/server/verifier pieces into remote access and the generated
+`t3code-tailscale-reconcile` helper into durable launchers, or replay the
+follow-up only after both base topics exist.
+
 ## Required Verification
 
 Every change in this stack must pass:
@@ -105,6 +112,9 @@ Important implementation areas:
   already-taken routes.
 - `apps/web/src/components/settings/pairingUrls.ts` keeps pairing URLs aligned
   with the clean public origin.
+- `apps/desktop/scripts/verify-staging-public.mjs` is the live staging gate. It
+  verifies the primary-interface network path, loads the public URL, opens a
+  project, sends `Hi`, and waits for a non-empty assistant response.
 - Mobile remote-environment registry changes preserve the advertised endpoint
   seen by paired mobile clients.
 
@@ -154,8 +164,16 @@ Reviewers should check:
 - Confirm Settings shows the hosted Tailscale URL with the expected path.
 - Copy a pairing link and verify it contains the HTTPS origin and path exactly
   once.
-- Open the hosted URL in a browser and confirm assets, API calls, and WebSocket
-  connection all load under the path prefix.
+- Open the hosted URL in a browser and confirm projects are visible, a new chat
+  can send `Hi`, and a non-empty assistant response renders. For live staging,
+  run `vp run verify:staging-public`.
+- Confirm the verifier's `network-preflight.json` used the primary interface and
+  resolved the tailnet host to the machine's Tailscale IPv4 address. If the
+  desktop browser times out while loopback checks pass, inspect `ss -tnp` and
+  `ip route get <tailnet-ip> oif <primary-interface>` before accepting the
+  route.
+- Confirm assets, API calls, and WebSocket connection all load under the path
+  prefix.
 - Inspect the first generated module script and confirm it returns JavaScript
   with a JavaScript MIME type, not the app HTML fallback.
 - Confirm the shell HTML rewrites stale reserved prefixes to the active route;
@@ -824,9 +842,10 @@ from a typed source of truth.
 Important implementation areas:
 
 - `scripts/lib/omarchy-dev-launchers.ts` renders launcher scripts and desktop
-  entries for `original`, `main`, and `staging`.
+  entries for `original`, `main`, and `staging`, plus the shared
+  `t3code-tailscale-reconcile` helper.
 - `scripts/lib/omarchy-dev-launchers.test.ts` verifies generated paths, ports,
-  process names, and dry-run behavior.
+  process names, route repair behavior, shell syntax, and dry-run behavior.
 - `scripts/install-omarchy-dev-launchers.ts` is the CLI entry point exposed by
   `pnpm omarchy:install-dev-launchers`.
 - `docs/operations/omarchy-dev-launchers.md` records install, dry-run, and
@@ -837,6 +856,8 @@ Important implementation areas:
 Reviewers should check:
 
 - Generated launchers target the documented worktrees and ports.
+- Tailscale Serve path refresh and same-host tailnet route repair are generated
+  from source, not hand-edited only in `~/.local/bin`.
 - Machine-local scripts remain outside the repo under `~/.local/bin` and
   `~/.local/share/applications`.
 - Dry-run output is safe by default and install requires an explicit action.

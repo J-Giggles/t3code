@@ -223,6 +223,23 @@ describe("ConnectionResolver", () => {
     }),
   );
 
+  it.effect("appends the websocket endpoint under a path-prefixed primary environment", () =>
+    Effect.gen(function* () {
+      const brokerLayer = yield* makeDependencies();
+      const broker = yield* ConnectionResolver.ConnectionResolver.pipe(Effect.provide(brokerLayer));
+      const target = new PrimaryConnectionTarget({
+        environmentId: ENVIRONMENT_ID,
+        label: "Primary",
+        httpBaseUrl: "https://desktop.tail.ts.net/staging/",
+        wsBaseUrl: "wss://desktop.tail.ts.net/staging/",
+      });
+
+      expect(yield* broker.prepare(catalogEntry(target))).toMatchObject({
+        socketUrl: "wss://desktop.tail.ts.net/staging/ws",
+      });
+    }),
+  );
+
   it.effect("authorizes a desktop primary environment with its platform bearer token", () =>
     Effect.gen(function* () {
       const bearerInputs = yield* Ref.make<ReadonlyArray<string>>([]);

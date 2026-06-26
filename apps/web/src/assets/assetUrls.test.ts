@@ -6,6 +6,12 @@ describe("resolveAssetUrl", () => {
   it("resolves an environment-relative asset URL", () => {
     expect(
       resolveAssetUrl("https://environment.example/base/", "/api/assets/signed-token/favicon.png"),
+    ).toBe("https://environment.example/base/api/assets/signed-token/favicon.png");
+  });
+
+  it("keeps root-hosted asset URLs at the origin root", () => {
+    expect(
+      resolveAssetUrl("https://environment.example/", "/api/assets/signed-token/favicon.png"),
     ).toBe("https://environment.example/api/assets/signed-token/favicon.png");
   });
 

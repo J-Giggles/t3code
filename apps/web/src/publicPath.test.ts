@@ -1,14 +1,33 @@
 import { joinPublicPathPrefix } from "@t3tools/shared/publicPath";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  readBrowserPublicPathPrefix,
   readConfiguredPublicBaseUrl,
   readConfiguredPublicOrigin,
   readConfiguredPublicPathPrefix,
   readPublicPathPrefixFromPathname,
+  resolveBrowserPublicBaseUrl,
 } from "./publicPath.ts";
 
+function installBrowser(input: { readonly url: string; readonly metaPublicPath?: string }) {
+  vi.stubGlobal("window", {
+    location: new URL(input.url),
+  });
+  vi.stubGlobal("document", {
+    querySelector: (selector: string) =>
+      selector === 'meta[name="t3code-public-path-prefix"]' && input.metaPublicPath
+        ? { getAttribute: () => input.metaPublicPath }
+        : null,
+  });
+}
+
 describe("publicPath", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
   it("detects known local Tailscale path prefixes from pathnames", () => {
     expect(readPublicPathPrefixFromPathname("/main/pair")).toBe("/main");
     expect(readPublicPathPrefixFromPathname("/staging/pair")).toBe("/staging");
@@ -47,5 +66,26 @@ describe("publicPath", () => {
         VITE_T3CODE_PUBLIC_BASE_URL: "https://example.ts.net/project/worktree/app/",
       }),
     ).toBe("https://example.ts.net/project/worktree/app/");
+  });
+
+  it("prefers the served browser path over stale compiled environment values", () => {
+    vi.stubEnv("VITE_T3CODE_PUBLIC_BASE_PATH", "/main");
+    vi.stubEnv("VITE_T3CODE_PUBLIC_BASE_URL", "http://127.0.0.1:8833/main/");
+    installBrowser({ url: "https://giggabit.tailfb378a.ts.net/staging/" });
+
+    expect(readBrowserPublicPathPrefix()).toBe("/staging");
+    expect(resolveBrowserPublicBaseUrl()).toBe("https://giggabit.tailfb378a.ts.net/staging/");
+  });
+
+  it("uses the rewritten public path meta tag before stale browser pathnames", () => {
+    vi.stubEnv("VITE_T3CODE_PUBLIC_BASE_PATH", "/main");
+    vi.stubEnv("VITE_T3CODE_PUBLIC_BASE_URL", "http://127.0.0.1:8833/main/");
+    installBrowser({
+      url: "https://giggabit.tailfb378a.ts.net/main/settings",
+      metaPublicPath: "/staging",
+    });
+
+    expect(readBrowserPublicPathPrefix()).toBe("/staging");
+    expect(resolveBrowserPublicBaseUrl()).toBe("https://giggabit.tailfb378a.ts.net/staging/");
   });
 });
