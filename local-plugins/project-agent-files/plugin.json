@@ -1,24 +1,84 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "project-agent-files",
   "title": "Project agent file schemas, CRUD, and scaffold safety",
-  "topicCommits": ["2068feb0dd69076677136bb57d7539033a50102b"],
+  "topicKind": "mixed",
+  "topicCommits": ["a4018fb808c108e43aa333244ea9bb99a1456d72"],
   "ownedPaths": [
-    "apps/server/src/project/Layers/ProjectAgentFiles.ts",
-    "apps/server/src/project/Layers/ProjectAgentHarnessResolver.ts",
-    "apps/web/src/components/projectAgentFiles",
-    "packages/contracts/src/projectAgentFiles.ts",
-    "docs/operations"
+    {
+      "path": "apps/server/src/project/Layers/ProjectAgentFiles.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/server/src/project/Layers/ProjectAgentHarnessResolver.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/components/projectAgentFiles",
+      "role": "source"
+    },
+    {
+      "path": "packages/contracts/src/projectAgentFiles.ts",
+      "role": "source"
+    },
+    {
+      "path": "docs/operations",
+      "role": "docs"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/projectAgentFiles/index.ts",
-    "apps/server/src/localTopics/projectAgentFiles/index.ts",
-    "packages/contracts/src/localTopics/projectAgentFiles/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/projectAgentFiles/index.ts",
-    "apps/server/src/localTopics/projectAgentFiles/index.ts",
-    "packages/contracts/src/localTopics/projectAgentFiles/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/contracts/src/localTopics/projectAgentFiles/index.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "apps/server/src/localTopics/projectAgentFiles/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/projectAgentFiles/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/server/src/project/Layers/ProjectAgentFiles.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/server/src/project/Layers/ProjectAgentHarnessResolver.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/components/projectAgentFiles",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/contracts/src/projectAgentFiles.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "docs/operations",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/contracts/src/localTopics/projectAgentFiles/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/server/src/localTopics/projectAgentFiles/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/projectAgentFiles/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck"]
 }

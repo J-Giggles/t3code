@@ -9,11 +9,13 @@ import {
 interface ParsedValidateArgs {
   readonly rootDir: string;
   readonly help: boolean;
+  readonly strict: boolean;
 }
 
 function parseValidateArgs(args: ReadonlyArray<string>): ParsedValidateArgs {
   let rootDir = process.cwd();
   let help = false;
+  let strict = true;
 
   for (let index = 0; index < args.length; index++) {
     const arg = args[index]!;
@@ -21,6 +23,8 @@ function parseValidateArgs(args: ReadonlyArray<string>): ParsedValidateArgs {
       continue;
     } else if (arg === "--help" || arg === "-h") {
       help = true;
+    } else if (arg === "--permissive") {
+      strict = false;
     } else if (arg === "--root") {
       rootDir = args[++index] ?? rootDir;
     } else if (arg.startsWith("--root=")) {
@@ -33,14 +37,16 @@ function parseValidateArgs(args: ReadonlyArray<string>): ParsedValidateArgs {
   return {
     rootDir: NodePath.resolve(rootDir),
     help,
+    strict,
   };
 }
 
 function helpText(): string {
   return [
-    "Usage: pnpm run topic-plugins:check -- [--root <repo-root>]",
+    "Usage: pnpm run topic-plugins:check -- [--root <repo-root>] [--permissive]",
     "",
     "Validates docs/operations/jordan-topic-stack.manifest.json and local-plugins/* metadata.",
+    "Strict mode is the default and rejects v1 or pending componentization metadata.",
     "",
   ].join("\n");
 }
@@ -51,7 +57,7 @@ if (import.meta.main) {
     if (args.help) {
       process.stdout.write(helpText());
     } else {
-      const result = validateLocalTopicPlugins(args.rootDir);
+      const result = validateLocalTopicPlugins(args.rootDir, { strict: args.strict });
       process.stdout.write(formatLocalTopicPluginValidationResult(result));
       if (!result.ok) {
         process.exitCode = 1;

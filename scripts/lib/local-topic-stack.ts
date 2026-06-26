@@ -34,7 +34,35 @@ export interface LocalTopicManifest {
   readonly topics: ReadonlyArray<LocalTopicManifestTopic>;
 }
 
-export interface LocalTopicPlugin {
+export type LocalTopicKind = "code" | "mixed" | "test" | "docs";
+export type LocalTopicOwnedPathRole = "source" | "test" | "docs" | "config" | "script";
+export type LocalTopicComponentStatus = "pending" | "complete" | "not-applicable";
+export type LocalTopicComponentKind = "source" | "test" | "docs";
+export type LocalTopicPublicSurface = "facade" | "internal" | "test";
+export type LocalTopicIntegrationPointRole = "thin-wiring" | "public-facade" | "consumer";
+
+export interface LocalTopicOwnedPath {
+  readonly path: string;
+  readonly role: LocalTopicOwnedPathRole;
+}
+
+export interface LocalTopicComponentEntrypoint {
+  readonly path: string;
+  readonly kind: LocalTopicComponentKind;
+  readonly publicSurface: LocalTopicPublicSurface;
+}
+
+export interface LocalTopicComponentization {
+  readonly status: LocalTopicComponentStatus;
+  readonly entrypoints: ReadonlyArray<LocalTopicComponentEntrypoint>;
+}
+
+export interface LocalTopicIntegrationPoint {
+  readonly path: string;
+  readonly role: LocalTopicIntegrationPointRole;
+}
+
+export interface LocalTopicPluginV1 {
   readonly schemaVersion: 1;
   readonly id: string;
   readonly title: string;
@@ -43,6 +71,24 @@ export interface LocalTopicPlugin {
   readonly componentEntrypoints: ReadonlyArray<string>;
   readonly pendingComponentEntrypoints?: ReadonlyArray<string>;
   readonly verification: ReadonlyArray<string>;
+}
+
+export interface LocalTopicPluginV2 {
+  readonly schemaVersion: 2;
+  readonly id: string;
+  readonly title: string;
+  readonly topicKind: LocalTopicKind;
+  readonly topicCommits: ReadonlyArray<string>;
+  readonly ownedPaths: ReadonlyArray<LocalTopicOwnedPath>;
+  readonly componentization: LocalTopicComponentization;
+  readonly integrationPoints: ReadonlyArray<LocalTopicIntegrationPoint>;
+  readonly verification: ReadonlyArray<string>;
+}
+
+export type LocalTopicPlugin = LocalTopicPluginV1 | LocalTopicPluginV2;
+
+export interface ValidateLocalTopicPluginsOptions {
+  readonly strict?: boolean;
 }
 
 export interface LocalTopicPluginValidationResult {
@@ -103,11 +149,50 @@ function readOptionalStringArrayField(
   return readStringArrayField(input, field, sourcePath);
 }
 
-function readSchemaVersion(input: Record<string, unknown>, sourcePath: string): 1 {
+function readManifestSchemaVersion(input: Record<string, unknown>, sourcePath: string): 1 {
   if (input.schemaVersion !== 1) {
     throw new Error(`${sourcePath} field "schemaVersion" must be 1.`);
   }
   return 1;
+}
+
+function readPluginSchemaVersion(input: Record<string, unknown>, sourcePath: string): 1 | 2 {
+  if (input.schemaVersion !== 1 && input.schemaVersion !== 2) {
+    throw new Error(`${sourcePath} field "schemaVersion" must be 1 or 2.`);
+  }
+  return input.schemaVersion;
+}
+
+function readEnumField<const T extends string>(
+  input: Record<string, unknown>,
+  field: string,
+  allowed: ReadonlyArray<T>,
+  sourcePath: string,
+): T {
+  const value = input[field];
+  if (typeof value !== "string" || !allowed.includes(value as T)) {
+    throw new Error(`${sourcePath} field "${field}" must be one of: ${allowed.join(", ")}.`);
+  }
+  return value as T;
+}
+
+function readObjectArrayField<T>(
+  input: Record<string, unknown>,
+  field: string,
+  sourcePath: string,
+  readEntry: (entry: Record<string, unknown>, index: number) => T,
+): ReadonlyArray<T> {
+  const value = input[field];
+  if (!Array.isArray(value)) {
+    throw new Error(`${sourcePath} field "${field}" must be an array.`);
+  }
+
+  return value.map((entry, index) => {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      throw new Error(`${sourcePath} field "${field}" entry ${index} must be an object.`);
+    }
+    return readEntry(entry as Record<string, unknown>, index);
+  });
 }
 
 function parseManifestJson(raw: string, sourcePath: string): LocalTopicManifest {
@@ -118,7 +203,7 @@ function parseManifestJson(raw: string, sourcePath: string): LocalTopicManifest 
   }
 
   return {
-    schemaVersion: readSchemaVersion(input, sourcePath),
+    schemaVersion: readManifestSchemaVersion(input, sourcePath),
     topics: topics.map((topic, index) => {
       if (typeof topic !== "object" || topic === null || Array.isArray(topic)) {
         throw new Error(`${sourcePath} topic at index ${index} must be an object.`);
@@ -134,8 +219,7 @@ function parseManifestJson(raw: string, sourcePath: string): LocalTopicManifest 
   };
 }
 
-function parsePluginJson(raw: string, sourcePath: string): LocalTopicPlugin {
-  const input = parseJsonObject(raw, sourcePath);
+function parsePluginJsonV1(input: Record<string, unknown>, sourcePath: string): LocalTopicPluginV1 {
   const pendingComponentEntrypoints = readOptionalStringArrayField(
     input,
     "pendingComponentEntrypoints",
@@ -143,7 +227,7 @@ function parsePluginJson(raw: string, sourcePath: string): LocalTopicPlugin {
   );
 
   return {
-    schemaVersion: readSchemaVersion(input, sourcePath),
+    schemaVersion: 1,
     id: readStringField(input, "id", sourcePath),
     title: readStringField(input, "title", sourcePath),
     topicCommits: readStringArrayField(input, "topicCommits", sourcePath),
@@ -152,6 +236,78 @@ function parsePluginJson(raw: string, sourcePath: string): LocalTopicPlugin {
     ...(pendingComponentEntrypoints === undefined ? {} : { pendingComponentEntrypoints }),
     verification: readStringArrayField(input, "verification", sourcePath),
   };
+}
+
+function readOwnedPathsV2(
+  input: Record<string, unknown>,
+  sourcePath: string,
+): ReadonlyArray<LocalTopicOwnedPath> {
+  return readObjectArrayField(input, "ownedPaths", sourcePath, (entry) => ({
+    path: readStringField(entry, "path", sourcePath),
+    role: readEnumField(entry, "role", ["source", "test", "docs", "config", "script"], sourcePath),
+  }));
+}
+
+function readComponentizationV2(
+  input: Record<string, unknown>,
+  sourcePath: string,
+): LocalTopicComponentization {
+  const value = input.componentization;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${sourcePath} field "componentization" must be an object.`);
+  }
+
+  const componentization = value as Record<string, unknown>;
+  return {
+    status: readEnumField(
+      componentization,
+      "status",
+      ["pending", "complete", "not-applicable"],
+      sourcePath,
+    ),
+    entrypoints: readObjectArrayField(componentization, "entrypoints", sourcePath, (entry) => ({
+      path: readStringField(entry, "path", sourcePath),
+      kind: readEnumField(entry, "kind", ["source", "test", "docs"], sourcePath),
+      publicSurface: readEnumField(
+        entry,
+        "publicSurface",
+        ["facade", "internal", "test"],
+        sourcePath,
+      ),
+    })),
+  };
+}
+
+function readIntegrationPointsV2(
+  input: Record<string, unknown>,
+  sourcePath: string,
+): ReadonlyArray<LocalTopicIntegrationPoint> {
+  return readObjectArrayField(input, "integrationPoints", sourcePath, (entry) => ({
+    path: readStringField(entry, "path", sourcePath),
+    role: readEnumField(entry, "role", ["thin-wiring", "public-facade", "consumer"], sourcePath),
+  }));
+}
+
+function parsePluginJsonV2(input: Record<string, unknown>, sourcePath: string): LocalTopicPluginV2 {
+  return {
+    schemaVersion: 2,
+    id: readStringField(input, "id", sourcePath),
+    title: readStringField(input, "title", sourcePath),
+    topicKind: readEnumField(input, "topicKind", ["code", "mixed", "test", "docs"], sourcePath),
+    topicCommits: readStringArrayField(input, "topicCommits", sourcePath),
+    ownedPaths: readOwnedPathsV2(input, sourcePath),
+    componentization: readComponentizationV2(input, sourcePath),
+    integrationPoints: readIntegrationPointsV2(input, sourcePath),
+    verification: readStringArrayField(input, "verification", sourcePath),
+  };
+}
+
+function parsePluginJson(raw: string, sourcePath: string): LocalTopicPlugin {
+  const input = parseJsonObject(raw, sourcePath);
+  const schemaVersion = readPluginSchemaVersion(input, sourcePath);
+  return schemaVersion === 1
+    ? parsePluginJsonV1(input, sourcePath)
+    : parsePluginJsonV2(input, sourcePath);
 }
 
 function readFileIfExists(path: string): string | undefined {
@@ -193,6 +349,7 @@ function validateManifest(manifest: LocalTopicManifest): ReadonlyArray<string> {
 function validatePluginFiles(
   rootDir: string,
   topic: LocalTopicManifestTopic,
+  options: Required<ValidateLocalTopicPluginsOptions>,
 ): ReadonlyArray<string> {
   const errors: Array<string> = [];
   const pluginDir = NodePath.join(rootDir, topic.pluginPath);
@@ -231,6 +388,11 @@ function validatePluginFiles(
     return errors;
   }
 
+  if (options.strict && plugin.schemaVersion !== 2) {
+    errors.push(`Plugin "${topic.id}" plugin.json must use schemaVersion 2.`);
+    return errors;
+  }
+
   if (plugin.id !== topic.id) {
     errors.push(`Plugin "${topic.id}" plugin.json id is "${plugin.id}".`);
   }
@@ -249,24 +411,71 @@ function validatePluginFiles(
     }
   }
 
-  const pendingEntrypoints = new Set(plugin.pendingComponentEntrypoints ?? []);
-  if (plugin.componentEntrypoints.length === 0 && pendingEntrypoints.size === 0) {
+  if (plugin.schemaVersion === 1) {
+    const pendingEntrypoints = new Set(plugin.pendingComponentEntrypoints ?? []);
+    if (plugin.componentEntrypoints.length === 0 && pendingEntrypoints.size === 0) {
+      errors.push(
+        `Plugin "${topic.id}" must list componentEntrypoints or pendingComponentEntrypoints.`,
+      );
+    }
+
+    for (const entrypoint of plugin.componentEntrypoints) {
+      const absoluteEntrypoint = NodePath.join(rootDir, entrypoint);
+      if (!NodeFS.existsSync(absoluteEntrypoint) && !pendingEntrypoints.has(entrypoint)) {
+        errors.push(`Plugin "${topic.id}" component entrypoint does not exist: ${entrypoint}.`);
+      }
+    }
+    return errors;
+  }
+
+  if (plugin.ownedPaths.length === 0) {
+    errors.push(`Plugin "${topic.id}" must list ownedPaths.`);
+  }
+
+  if (plugin.integrationPoints.length === 0) {
+    errors.push(`Plugin "${topic.id}" must list integrationPoints.`);
+  }
+
+  if (plugin.topicKind !== "docs" && plugin.componentization.status === "not-applicable") {
+    errors.push(`Plugin "${topic.id}" componentization cannot be not-applicable.`);
+  }
+
+  if (plugin.topicKind === "docs" && plugin.componentization.status !== "not-applicable") {
+    errors.push(`Plugin "${topic.id}" docs topic must use componentization.status not-applicable.`);
+  }
+
+  if (options.strict && plugin.componentization.status === "pending") {
+    errors.push(`Plugin "${topic.id}" componentization.status must not be pending in strict mode.`);
+  }
+
+  const requiresEntrypoints =
+    plugin.topicKind === "code" || plugin.topicKind === "mixed" || plugin.topicKind === "test";
+  if (requiresEntrypoints && plugin.componentization.entrypoints.length === 0) {
     errors.push(
-      `Plugin "${topic.id}" must list componentEntrypoints or pendingComponentEntrypoints.`,
+      `Plugin "${topic.id}" must list componentization entrypoints for ${plugin.topicKind} topics.`,
     );
   }
 
-  for (const entrypoint of plugin.componentEntrypoints) {
-    const absoluteEntrypoint = NodePath.join(rootDir, entrypoint);
-    if (!NodeFS.existsSync(absoluteEntrypoint) && !pendingEntrypoints.has(entrypoint)) {
-      errors.push(`Plugin "${topic.id}" component entrypoint does not exist: ${entrypoint}.`);
+  for (const entrypoint of plugin.componentization.entrypoints) {
+    if (entrypoint.path.trim().length === 0) {
+      errors.push(`Plugin "${topic.id}" component entrypoint path must not be empty.`);
+      continue;
+    }
+    if (!NodeFS.existsSync(NodePath.join(rootDir, entrypoint.path))) {
+      errors.push(`Plugin "${topic.id}" component entrypoint does not exist: ${entrypoint.path}.`);
     }
   }
 
   return errors;
 }
 
-export function validateLocalTopicPlugins(rootDir: string): LocalTopicPluginValidationResult {
+export function validateLocalTopicPlugins(
+  rootDir: string,
+  options: ValidateLocalTopicPluginsOptions = {},
+): LocalTopicPluginValidationResult {
+  const resolvedOptions: Required<ValidateLocalTopicPluginsOptions> = {
+    strict: options.strict ?? true,
+  };
   let manifest: LocalTopicManifest;
   try {
     manifest = readLocalTopicManifest(rootDir);
@@ -283,7 +492,7 @@ export function validateLocalTopicPlugins(rootDir: string): LocalTopicPluginVali
 
   const errors = [
     ...validateManifest(manifest),
-    ...manifest.topics.flatMap((topic) => validatePluginFiles(rootDir, topic)),
+    ...manifest.topics.flatMap((topic) => validatePluginFiles(rootDir, topic, resolvedOptions)),
   ];
 
   return {

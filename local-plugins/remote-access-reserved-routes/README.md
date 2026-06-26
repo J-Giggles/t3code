@@ -6,7 +6,7 @@ Ensure reserved routes such as `/staging/`, `/main/`, and `/original/` come from
 
 ## Current Commits
 
-- `a49f0ee77fabbfd2f46b2adb7ef6206595f57a85` `fix(remote-access): keep reserved staging routes authoritative`
+- `c57b5caf3cd50a915901994bad7f183009ff0cdf` `fix(remote-access): keep reserved staging routes authoritative`
 
 ## Squash / Replay History
 
@@ -30,10 +30,11 @@ This is a June 26 remote-access follow-up. Fold it into the base remote-access t
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/remoteAccessReservedRoutes/index.ts`
-- `apps/desktop/src/localTopics/remoteAccessReservedRoutes/index.ts`
+- `packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts` (source, internal)
+- `apps/web/src/localTopics/remoteAccess/reservedRoutes.ts` (source, internal)
+- `apps/desktop/src/localTopics/remoteAccess/reservedRoutes.ts` (source, internal)
 
 ## Integration Points
 
@@ -43,19 +44,25 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/desktop/src/backend/DesktopServerExposure.ts`
+`packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts`
 
 ```ts
-const launcherRoute = readLauncherReservedRoute(env);
-const persistedRoute = readDesktopSettingsRoute();
-return launcherRoute ?? persistedRoute;
+export {
+  normalizePublicPathPrefix,
+  readLocalPublicPathPrefixFromPathname,
+  resolveWorkspacePublicPathPrefix,
+} from "./publicPath.ts";
 ```
 
-`apps/web/src/publicPath.ts`
+`apps/web/src/localTopics/remoteAccess/reservedRoutes.ts`
 
 ```ts
-resolveActivePublicPath({ launcherPath, runtimePath });
-normalizePublicPathPrefix(activePath);
+export {
+  readBrowserPublicPathPrefix,
+  readPublicPathPrefixFromPathname,
+  resolveBrowserPublicBaseUrl,
+  resolveBrowserPublicPath,
+} from "./publicPath.ts";
 ```
 
 ## Replay Notes
@@ -70,4 +77,4 @@ When rebuilding, fold this with remote-access unless replaying current staging h
 
 ## Known Follow-Up Work
 
-- Move reserved-route precedence helpers into the remote-access topic module.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

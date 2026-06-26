@@ -6,7 +6,7 @@ Allow prompt defaults and overrides to be configured through shared settings and
 
 ## Current Commits
 
-- `a5aa5e450ddf02bc21108880da2a37f928fa13be` `feat(prompt-settings): add configurable prompt settings`
+- `d155601a9ce30789399200c8b817ee84577bcfa0` `feat(prompt-settings): add configurable prompt settings`
 
 ## Squash / Replay History
 
@@ -33,11 +33,11 @@ This is the prompt settings topic from the June 25 replay stack.
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/promptSettings/index.ts`
-- `apps/server/src/localTopics/promptSettings/index.ts`
-- `packages/shared/src/localTopics/promptSettings/index.ts`
+- `packages/shared/src/localTopics/promptSettings/index.ts` (source, facade)
+- `apps/server/src/localTopics/promptSettings/index.ts` (source, internal)
+- `apps/web/src/localTopics/promptSettings/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -48,19 +48,18 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`packages/shared/src/prompts`
+`packages/shared/src/localTopics/promptSettings/index.ts`
 
 ```ts
-resolvePromptSettings(serverSettings);
-buildProviderSystemPrompt({ defaults, overrides });
+export * from "../../prompts.ts";
+export * from "../../serverSettings.ts";
 ```
 
-`packages/contracts/src/settings.ts`
+`apps/server/src/localTopics/promptSettings/index.ts`
 
 ```ts
-PromptSettings;
-PromptOverride;
-ServerSettingsPatch;
+export * from "../../provider/CodexDeveloperInstructions.ts";
+export * from "../../textGeneration/TextGenerationPrompts.ts";
 ```
 
 ## Replay Notes
@@ -74,4 +73,4 @@ Replay after composer so prompt configuration can apply to the enriched composer
 
 ## Known Follow-Up Work
 
-- Extract prompt setting controls and provider prompt adapters behind topic modules.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

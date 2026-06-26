@@ -35,8 +35,18 @@ function writeTopicFixture(
     readonly omitReadme?: boolean;
     readonly omitHeading?: string;
     readonly pluginCommits?: ReadonlyArray<string>;
+    readonly topicKind?: "code" | "mixed" | "test" | "docs";
+    readonly componentStatus?: "pending" | "complete" | "not-applicable";
+    readonly componentEntrypoints?: ReadonlyArray<string>;
+    readonly omitEntrypointsOnDisk?: boolean;
+    readonly verification?: ReadonlyArray<string>;
   } = {},
 ): void {
+  const topicKind = options.topicKind ?? "code";
+  const componentStatus = options.componentStatus ?? "complete";
+  const componentEntrypoints =
+    options.componentEntrypoints ??
+    (componentStatus === "not-applicable" ? [] : ["apps/web/src/localTopics/testTopic/index.ts"]);
   writeJson(NodePath.join(root, LOCAL_TOPIC_MANIFEST_PATH), {
     schemaVersion: 1,
     topics: [
@@ -57,15 +67,30 @@ function writeTopicFixture(
       readmeWithHeadings(options.omitHeading),
     );
   }
+  if (options.omitEntrypointsOnDisk !== true) {
+    for (const entrypoint of componentEntrypoints) {
+      const absoluteEntrypoint = NodePath.join(root, entrypoint);
+      NodeFS.mkdirSync(NodePath.dirname(absoluteEntrypoint), { recursive: true });
+      NodeFS.writeFileSync(absoluteEntrypoint, "export const testTopic = true;\n");
+    }
+  }
   writeJson(NodePath.join(pluginDir, "plugin.json"), {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: "test-topic",
     title: "Test Topic",
+    topicKind,
     topicCommits: options.pluginCommits ?? ["1111111111111111111111111111111111111111"],
-    ownedPaths: ["apps/web/src/test-topic.ts"],
-    componentEntrypoints: ["apps/web/src/localTopics/testTopic/index.ts"],
-    pendingComponentEntrypoints: ["apps/web/src/localTopics/testTopic/index.ts"],
-    verification: ["vp check", "vp run typecheck"],
+    ownedPaths: [{ path: "apps/web/src/test-topic.ts", role: "source" }],
+    componentization: {
+      status: componentStatus,
+      entrypoints: componentEntrypoints.map((path) => ({
+        path,
+        kind: topicKind === "test" ? "test" : "source",
+        publicSurface: topicKind === "test" ? "test" : "internal",
+      })),
+    },
+    integrationPoints: [{ path: "apps/web/src/test-topic.ts", role: "thin-wiring" }],
+    verification: options.verification ?? ["vp check", "vp run typecheck"],
   });
 }
 
@@ -88,6 +113,15 @@ describe("local topic plugin validation", () => {
       ok: true,
       errors: [],
     });
+  });
+
+  it("parses v2 plugin metadata", () => {
+    const root = tempRoot();
+    writeTopicFixture(root);
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, true);
   });
 
   it("fails when README.md is missing", () => {
@@ -120,5 +154,67 @@ describe("local topic plugin validation", () => {
 
     assert.equal(result.ok, false);
     assert.ok(result.errors.some((error) => error.includes("topicCommits")));
+  });
+
+  it("fails when a code topic component entrypoint is missing", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { omitEntrypointsOnDisk: true });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("component entrypoint does not exist")));
+  });
+
+  it("accepts docs topics with not-applicable componentization", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, {
+      topicKind: "docs",
+      componentStatus: "not-applicable",
+      componentEntrypoints: [],
+    });
+
+    assert.deepStrictEqual(validateLocalTopicPlugins(root), {
+      ok: true,
+      errors: [],
+    });
+  });
+
+  it("fails when componentization is pending in strict mode", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { componentStatus: "pending" });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("pending in strict mode")));
+  });
+
+  it("fails when verification commands are empty", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { verification: [] });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("verification")));
+  });
+
+  it("rejects v1 metadata in strict mode but accepts it in permissive mode", () => {
+    const root = tempRoot();
+    writeTopicFixture(root);
+    writeJson(NodePath.join(root, "local-plugins", "test-topic", "plugin.json"), {
+      schemaVersion: 1,
+      id: "test-topic",
+      title: "Test Topic",
+      topicCommits: ["1111111111111111111111111111111111111111"],
+      ownedPaths: ["apps/web/src/test-topic.ts"],
+      componentEntrypoints: ["apps/web/src/localTopics/testTopic/index.ts"],
+      pendingComponentEntrypoints: ["apps/web/src/localTopics/testTopic/index.ts"],
+      verification: ["vp check", "vp run typecheck"],
+    });
+
+    assert.equal(validateLocalTopicPlugins(root).ok, false);
+    assert.equal(validateLocalTopicPlugins(root, { strict: false }).ok, true);
   });
 });

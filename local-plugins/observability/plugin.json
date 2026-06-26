@@ -1,24 +1,84 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "observability",
   "title": "Local observability hub, Grafana provisioning, and digest metrics",
-  "topicCommits": ["83b570b88ac033adaa2d642fae79c14c0bca76be"],
+  "topicKind": "mixed",
+  "topicCommits": ["943c71b562ae10b225ef2844557d516786d08457"],
   "ownedPaths": [
-    "apps/desktop/src/backend/DesktopBackendOutputLog.ts",
-    "apps/server/src/mcp/toolkits/observability",
-    "docs/operations/observability.md",
-    "scripts/local-observability.ts",
-    "scripts/observability-digest.ts"
+    {
+      "path": "apps/desktop/src/backend/DesktopBackendOutputLog.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/server/src/mcp/toolkits/observability",
+      "role": "source"
+    },
+    {
+      "path": "docs/operations/observability.md",
+      "role": "docs"
+    },
+    {
+      "path": "scripts/local-observability.ts",
+      "role": "script"
+    },
+    {
+      "path": "scripts/observability-digest.ts",
+      "role": "script"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/server/src/localTopics/observability/index.ts",
-    "apps/desktop/src/localTopics/observability/index.ts",
-    "scripts/localTopics/observability/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/server/src/localTopics/observability/index.ts",
-    "apps/desktop/src/localTopics/observability/index.ts",
-    "scripts/localTopics/observability/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "scripts/localTopics/observability/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/server/src/localTopics/observability/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/desktop/src/localTopics/observability/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/desktop/src/backend/DesktopBackendOutputLog.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/server/src/mcp/toolkits/observability",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "docs/operations/observability.md",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/local-observability.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/observability-digest.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/localTopics/observability/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/server/src/localTopics/observability/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/desktop/src/localTopics/observability/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck"]
 }

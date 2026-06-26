@@ -6,7 +6,7 @@ Keep the visible staging identity stable in sidebar and runtime labels even when
 
 ## Current Commits
 
-- `4147e3b4ad2f1afb6d567c433ef1bbdc156d951c` `fix(runtime): preserve staging identity in sidebar`
+- `ce8abb78d51c8161daf4ec6abd8f22b411757e8c` `fix(runtime): preserve staging identity in sidebar`
 
 ## Squash / Replay History
 
@@ -30,10 +30,10 @@ This is a June 26 runtime follow-up. Fold it into the runtime topic during the n
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/runtimeStagingIdentity/index.ts`
-- `packages/shared/src/localTopics/runtimeStagingIdentity/index.ts`
+- `apps/web/src/localTopics/runtime/stagingIdentity.ts` (source, internal)
+- `scripts/localTopics/runtime/stagingIdentity.ts` (source, internal)
 
 ## Integration Points
 
@@ -43,19 +43,17 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`scripts/dev-runner.ts`
+`apps/web/src/localTopics/runtime/stagingIdentity.ts`
 
 ```ts
-const checkoutEnv = loadDotEnvLocal(repoRoot);
-const inheritedEnv = baseEnv;
-return preferCheckoutIdentity(checkoutEnv, inheritedEnv);
+export const STAGING_WORKTREE_ROLE = "staging";
+export const STAGING_PUBLIC_PATH_PREFIX = "/staging";
 ```
 
-`apps/web/src/components/sidebar`
+`scripts/localTopics/runtime/stagingIdentity.ts`
 
-```tsx
-const label = resolveWorktreeLabel(runtimeIdentity);
-return <SidebarWorkspaceLabel label={label} />;
+```ts
+export { createWorktreeIdentityEnvPatch, inferT3WorktreeRole } from "../../dev-runner.ts";
 ```
 
 ## Replay Notes
@@ -69,4 +67,4 @@ Replay after runtime if kept separate; otherwise fold into runtime identity hand
 
 ## Known Follow-Up Work
 
-- Move staging-label precedence into the runtime topic entrypoint.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

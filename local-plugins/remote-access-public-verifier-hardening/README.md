@@ -6,7 +6,7 @@ Make public staging verification prove the real HTTPS path reaches the app and c
 
 ## Current Commits
 
-- `b790fe732c4c8d35cf56cf2f21f04fc73842cade` `fix(remote-access): harden public staging verification`
+- `5aadf3c563191f2c449a30d31b3ed57a9e6ccf1c` `fix(remote-access): harden public staging verification`
 
 ## Squash / Replay History
 
@@ -32,10 +32,10 @@ This is the June 26 remote-access hardening follow-up currently at the tip of st
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/desktop/scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts`
-- `scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts`
+- `apps/desktop/src/localTopics/remoteAccess/publicVerifierHardening.ts` (source, internal)
+- `scripts/localTopics/devLaunch/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -46,20 +46,18 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/desktop/scripts/verify-staging-public.mjs`
-
-```js
-await runNetworkPreflight(publicUrl);
-await openProjectList(page);
-await createChatAndSend(page, "Hi");
-await expectNonEmptyAssistantResponse(page);
-```
-
-`scripts/lib/omarchy-dev-launchers.ts`
+`apps/desktop/src/localTopics/remoteAccess/publicVerifierHardening.ts`
 
 ```ts
-renderTailscaleReconcileScript(targets);
-repairSameHostTailnetRoute(interfaceName, tailnetIp);
+export const STAGING_PUBLIC_VERIFIER_DEFAULT_MESSAGE = "Hi";
+export const STAGING_PUBLIC_VERIFIER_NETWORK_PREFLIGHT_ARTIFACT = "network-preflight.json";
+```
+
+`scripts/localTopics/devLaunch/index.ts`
+
+```ts
+export * from "../../dev-runner.ts";
+export * from "../../lib/omarchy-dev-launchers.ts";
 ```
 
 ## Replay Notes
@@ -74,4 +72,4 @@ When replaying current staging history as-is, apply this after remote-access and
 
 ## Known Follow-Up Work
 
-- Move verifier preflight helpers into topic-owned script modules.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

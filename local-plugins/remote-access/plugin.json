@@ -1,27 +1,117 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "remote-access",
   "title": "Remote access through Tailscale HTTPS links",
-  "topicCommits": ["10285aa14227fd1d727679429ec81e6bc2204b10"],
+  "topicKind": "mixed",
+  "topicCommits": ["3d7656e8952955f87204e4c44c1354a5961811ba"],
   "ownedPaths": [
-    "apps/desktop/src/backend/DesktopServerExposure.ts",
-    "apps/desktop/src/backend/tailscaleEndpointProvider.ts",
-    "apps/desktop/scripts/verify-staging-public.mjs",
-    "apps/server/src/http.ts",
-    "apps/web/src/publicPath.ts",
-    "packages/shared/src/publicPath.ts",
-    "packages/shared/src/advertisedEndpoint.ts",
-    "packages/tailscale/src/tailscale.ts"
+    {
+      "path": "apps/desktop/src/backend/DesktopServerExposure.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/desktop/src/backend/tailscaleEndpointProvider.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/desktop/scripts/verify-staging-public.mjs",
+      "role": "script"
+    },
+    {
+      "path": "apps/server/src/http.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/publicPath.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/publicPath.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/advertisedEndpoint.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/tailscale/src/tailscale.ts",
+      "role": "source"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/remoteAccess/index.ts",
-    "apps/server/src/localTopics/remoteAccess/index.ts",
-    "packages/client-runtime/src/localTopics/remoteAccess/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/remoteAccess/index.ts",
-    "apps/server/src/localTopics/remoteAccess/index.ts",
-    "packages/client-runtime/src/localTopics/remoteAccess/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/shared/src/localTopics/remoteAccess/publicPath.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "apps/web/src/localTopics/remoteAccess/publicPath.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "apps/server/src/localTopics/remoteAccess/httpRouting.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/desktop/src/localTopics/remoteAccess/exposure.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/desktop/src/backend/DesktopServerExposure.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/src/backend/tailscaleEndpointProvider.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/scripts/verify-staging-public.mjs",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/server/src/http.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/publicPath.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/publicPath.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/advertisedEndpoint.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/tailscale/src/tailscale.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/localTopics/remoteAccess/publicPath.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/remoteAccess/publicPath.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/server/src/localTopics/remoteAccess/httpRouting.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/desktop/src/localTopics/remoteAccess/exposure.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
 }

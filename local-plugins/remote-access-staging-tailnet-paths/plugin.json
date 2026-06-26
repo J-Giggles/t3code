@@ -1,20 +1,68 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "remote-access-staging-tailnet-paths",
   "title": "Staging tailnet path serving",
-  "topicCommits": ["b840026a3b637db965a061c4db1eb5304d0e0179"],
+  "topicKind": "mixed",
+  "topicCommits": ["f95d294840b90a9c7d7e6bb92b6c2406f35d6c11"],
   "ownedPaths": [
-    "apps/server/src/http.ts",
-    "apps/web/src/localApi.ts",
-    "packages/shared/src/publicPath.ts"
+    {
+      "path": "apps/server/src/http.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/localApi.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/publicPath.ts",
+      "role": "source"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/server/src/localTopics/remoteAccessStagingTailnetPaths/index.ts",
-    "apps/web/src/localTopics/remoteAccessStagingTailnetPaths/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/server/src/localTopics/remoteAccessStagingTailnetPaths/index.ts",
-    "apps/web/src/localTopics/remoteAccessStagingTailnetPaths/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/shared/src/localTopics/remoteAccess/stagingTailnetPaths.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/server/src/localTopics/remoteAccess/stagingTailnetPaths.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/remoteAccess/stagingTailnetPaths.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/server/src/http.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/localApi.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/shared/src/publicPath.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/localTopics/remoteAccess/stagingTailnetPaths.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/server/src/localTopics/remoteAccess/stagingTailnetPaths.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/remoteAccess/stagingTailnetPaths.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
 }

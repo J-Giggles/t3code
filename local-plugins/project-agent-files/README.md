@@ -6,7 +6,7 @@ Provide project-scoped agent file management with typed schemas, safe CRUD, and 
 
 ## Current Commits
 
-- `2068feb0dd69076677136bb57d7539033a50102b` `feat(project-agent-files): add schemas, CRUD, and scaffold safety`
+- `a4018fb808c108e43aa333244ea9bb99a1456d72` `feat(project-agent-files): add schemas, CRUD, and scaffold safety`
 
 ## Squash / Replay History
 
@@ -33,11 +33,11 @@ This topic combines schemas, server operations, UI sheet behavior, secret handli
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/projectAgentFiles/index.ts`
-- `apps/server/src/localTopics/projectAgentFiles/index.ts`
-- `packages/contracts/src/localTopics/projectAgentFiles/index.ts`
+- `packages/contracts/src/localTopics/projectAgentFiles/index.ts` (source, facade)
+- `apps/server/src/localTopics/projectAgentFiles/index.ts` (source, internal)
+- `apps/web/src/localTopics/projectAgentFiles/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -48,21 +48,31 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/server/src/project/Layers/ProjectAgentFiles.ts`
+`packages/contracts/src/localTopics/projectAgentFiles/index.ts`
 
 ```ts
-listProjectAgentFiles(projectId);
-readProjectAgentFile(input);
-writeProjectAgentFile(input);
-scaffoldProjectAgentHarness(input);
+export {
+  ProjectAgentFileDeleteInput,
+  ProjectAgentFileDeleteResult,
+  ProjectAgentFileDescriptor,
+  ProjectAgentFileKind,
+  ProjectAgentFileOperationError,
+  ProjectAgentFileProvider,
+  ProjectAgentFileReadInput,
+  ProjectAgentFileReadResult,
+  ProjectAgentFilesListInput,
+  ProjectAgentFilesListResult,
+  ProjectAgentFileStatus,
 ```
 
-`packages/contracts/src/projectAgentFiles.ts`
+`apps/server/src/localTopics/projectAgentFiles/index.ts`
 
 ```ts
-ProjectAgentFileDescriptor;
-ProjectAgentHarnessManifest;
-ProjectAgentHarnessScaffoldResult;
+export * from "../../project/Layers/ProjectAgentFiles.ts";
+export * from "../../project/Layers/ProjectAgentHarnessResolver.ts";
+export * from "../../project/Services/ProjectAgentFiles.ts";
+export * from "../../project/Services/ProjectAgentHarnessResolver.ts";
+export * from "../../project/projectAgentSecretKeys.ts";
 ```
 
 ## Replay Notes
@@ -76,4 +86,4 @@ Replay after app-automation so browser sheet coverage can use the headed automat
 
 ## Known Follow-Up Work
 
-- Extract Agent Files sheet state and server layer wiring into topic-owned modules.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

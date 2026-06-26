@@ -1,24 +1,84 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "composer",
   "title": "Composer mentions, slash menus, chat context, and worktree naming",
-  "topicCommits": ["f7cb0dba2d95dde576ba82fba5367f6e8b39cbb4"],
+  "topicKind": "mixed",
+  "topicCommits": ["eeb495a826cf0cdf5a3833d0d6131c12e118b4ee"],
   "ownedPaths": [
-    "apps/web/src/components/chat",
-    "apps/web/src/components/composer",
-    "apps/mobile/src/features",
-    "packages/client-runtime/src/state",
-    "packages/contracts/src/chat.ts"
+    {
+      "path": "apps/web/src/components/chat",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/components/composer",
+      "role": "source"
+    },
+    {
+      "path": "apps/mobile/src/features",
+      "role": "source"
+    },
+    {
+      "path": "packages/client-runtime/src/state",
+      "role": "source"
+    },
+    {
+      "path": "packages/contracts/src/chat.ts",
+      "role": "source"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/composer/index.ts",
-    "apps/mobile/src/localTopics/composer/index.ts",
-    "packages/client-runtime/src/localTopics/composer/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/composer/index.ts",
-    "apps/mobile/src/localTopics/composer/index.ts",
-    "packages/client-runtime/src/localTopics/composer/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "apps/web/src/localTopics/composer/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/mobile/src/localTopics/composer/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "packages/client-runtime/src/localTopics/composer/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/web/src/components/chat",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/components/composer",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/mobile/src/features",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/client-runtime/src/state",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/contracts/src/chat.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "apps/web/src/localTopics/composer/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/mobile/src/localTopics/composer/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "packages/client-runtime/src/localTopics/composer/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck", "vp run lint:mobile"]
 }

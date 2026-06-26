@@ -1,22 +1,75 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "remote-access-public-verifier-hardening",
   "title": "Public staging verifier hardening",
-  "topicCommits": ["b790fe732c4c8d35cf56cf2f21f04fc73842cade"],
+  "topicKind": "mixed",
+  "topicCommits": ["5aadf3c563191f2c449a30d31b3ed57a9e6ccf1c"],
   "ownedPaths": [
-    "apps/desktop/scripts/verify-staging-public.mjs",
-    "apps/desktop/test-results/staging-public",
-    "scripts/lib/omarchy-dev-launchers.ts",
-    "docs/operations/jordan-topic-stack.md",
-    "docs/operations/staging-review-guide.md"
+    {
+      "path": "apps/desktop/scripts/verify-staging-public.mjs",
+      "role": "script"
+    },
+    {
+      "path": "apps/desktop/test-results/staging-public",
+      "role": "test"
+    },
+    {
+      "path": "scripts/lib/omarchy-dev-launchers.ts",
+      "role": "script"
+    },
+    {
+      "path": "docs/operations/jordan-topic-stack.md",
+      "role": "docs"
+    },
+    {
+      "path": "docs/operations/staging-review-guide.md",
+      "role": "docs"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/desktop/scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts",
-    "scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/desktop/scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts",
-    "scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "apps/desktop/src/localTopics/remoteAccess/publicVerifierHardening.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/localTopics/devLaunch/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/desktop/scripts/verify-staging-public.mjs",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/test-results/staging-public",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/lib/omarchy-dev-launchers.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "docs/operations/jordan-topic-stack.md",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "docs/operations/staging-review-guide.md",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/src/localTopics/remoteAccess/publicVerifierHardening.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "scripts/localTopics/devLaunch/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
 }

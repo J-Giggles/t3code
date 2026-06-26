@@ -1,24 +1,84 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "project-git",
   "title": "Project Git dashboard and VCS reconciliation",
-  "topicCommits": ["caee2ec7bad7b8b722e43ab206f3d332a474fd57"],
+  "topicKind": "code",
+  "topicCommits": ["32342110d042f76e43b8c4bcd127d845a096c690"],
   "ownedPaths": [
-    "apps/server/src/workspaceGit",
-    "apps/server/src/vcs",
-    "apps/web/src/components/projectGit",
-    "packages/contracts/src/project.ts",
-    "packages/shared/src/git.ts"
+    {
+      "path": "apps/server/src/workspaceGit",
+      "role": "source"
+    },
+    {
+      "path": "apps/server/src/vcs",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/components/projectGit",
+      "role": "source"
+    },
+    {
+      "path": "packages/contracts/src/project.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/git.ts",
+      "role": "source"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/projectGit/index.ts",
-    "apps/server/src/localTopics/projectGit/index.ts",
-    "packages/shared/src/localTopics/projectGit/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/projectGit/index.ts",
-    "apps/server/src/localTopics/projectGit/index.ts",
-    "packages/shared/src/localTopics/projectGit/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/shared/src/localTopics/projectGit/index.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "apps/server/src/localTopics/projectGit/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/projectGit/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/server/src/workspaceGit",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/server/src/vcs",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/components/projectGit",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/contracts/src/project.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/git.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/localTopics/projectGit/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/server/src/localTopics/projectGit/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/projectGit/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck"]
 }

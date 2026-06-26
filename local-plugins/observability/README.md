@@ -6,7 +6,7 @@ Run a local observability hub for logs, traces, metrics, Grafana dashboards, and
 
 ## Current Commits
 
-- `83b570b88ac033adaa2d642fae79c14c0bca76be` `feat(observability): add local hub, Grafana provisioning, and digest metrics`
+- `943c71b562ae10b225ef2844557d516786d08457` `feat(observability): add local hub, Grafana provisioning, and digest metrics`
 
 ## Squash / Replay History
 
@@ -33,11 +33,11 @@ This topic folds local OTel/LGTM startup, Grafana provisioning, digest metrics, 
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/server/src/localTopics/observability/index.ts`
-- `apps/desktop/src/localTopics/observability/index.ts`
-- `scripts/localTopics/observability/index.ts`
+- `scripts/localTopics/observability/index.ts` (source, internal)
+- `apps/server/src/localTopics/observability/index.ts` (source, internal)
+- `apps/desktop/src/localTopics/observability/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -48,19 +48,20 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`scripts/observability-digest.ts`
+`scripts/localTopics/observability/index.ts`
 
 ```ts
-fetchRecentLogs(query);
-fetchTraceSummary(traceId);
-formatDigest({ logs, traces, metrics });
+export * from "../../local-observability.ts";
+export * from "../../observability-digest.ts";
 ```
 
-`scripts/local-observability.ts`
+`apps/server/src/localTopics/observability/index.ts`
 
 ```ts
-startLocalObservability();
-renderLocalObservabilityStatus();
+export * from "../../mcp/toolkits/observability/handlers.ts";
+export * from "../../mcp/toolkits/observability/tools.ts";
+export * from "../../observability/Attributes.ts";
+export * from "../../observability/Metrics.ts";
 ```
 
 ## Replay Notes
@@ -74,4 +75,4 @@ Replay after project-agent-files because this topic adds broad runtime instrumen
 
 ## Known Follow-Up Work
 
-- Extract observability CLI helpers and MCP handlers into topic-owned modules.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

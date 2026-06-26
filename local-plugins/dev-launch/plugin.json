@@ -1,30 +1,150 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "dev-launch",
   "title": "Durable worktree launch profiles",
-  "topicCommits": ["3337bbc2d6dfabe4cc763a9865680136cbd770d1"],
+  "topicKind": "mixed",
+  "topicCommits": ["3489ca07ab766b41b700d2f46be40745346a3715"],
   "ownedPaths": [
-    ".t3code/dev-apps.json",
-    "apps/desktop/src/backend/DesktopDevAppLaunchManager.ts",
-    "apps/server/src/devLaunch/ServerDevAppLaunchManager.ts",
-    "apps/server/src/project/Layers/ProjectDevLaunchResolver.ts",
-    "apps/web/src/components/chat/ThreadDevLaunchControl.tsx",
-    "packages/contracts/src/devLaunch.ts",
-    "packages/shared/src/devAppLaunchRuntime.ts",
-    "packages/shared/src/devLaunch.ts",
-    "scripts/dev-runner.ts",
-    "scripts/install-omarchy-dev-launchers.ts",
-    "scripts/lib/omarchy-dev-launchers.ts"
+    {
+      "path": ".t3code/dev-apps.json",
+      "role": "config"
+    },
+    {
+      "path": "apps/desktop/src/backend/DesktopDevAppLaunchManager.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/server/src/devLaunch/ServerDevAppLaunchManager.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/server/src/project/Layers/ProjectDevLaunchResolver.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/components/chat/ThreadDevLaunchControl.tsx",
+      "role": "source"
+    },
+    {
+      "path": "packages/contracts/src/devLaunch.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/devAppLaunchRuntime.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/devLaunch.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "script"
+    },
+    {
+      "path": "scripts/install-omarchy-dev-launchers.ts",
+      "role": "script"
+    },
+    {
+      "path": "scripts/lib/omarchy-dev-launchers.ts",
+      "role": "script"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/devLaunch/index.ts",
-    "apps/server/src/localTopics/devLaunch/index.ts",
-    "packages/shared/src/localTopics/devLaunch/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/devLaunch/index.ts",
-    "apps/server/src/localTopics/devLaunch/index.ts",
-    "packages/shared/src/localTopics/devLaunch/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/shared/src/localTopics/devLaunch/index.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "apps/server/src/localTopics/devLaunch/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/desktop/src/localTopics/devLaunch/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/devLaunch/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/localTopics/devLaunch/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": ".t3code/dev-apps.json",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/src/backend/DesktopDevAppLaunchManager.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/server/src/devLaunch/ServerDevAppLaunchManager.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/server/src/project/Layers/ProjectDevLaunchResolver.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/components/chat/ThreadDevLaunchControl.tsx",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/contracts/src/devLaunch.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/devAppLaunchRuntime.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/devLaunch.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/install-omarchy-dev-launchers.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/lib/omarchy-dev-launchers.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/shared/src/localTopics/devLaunch/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/server/src/localTopics/devLaunch/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/desktop/src/localTopics/devLaunch/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/devLaunch/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "scripts/localTopics/devLaunch/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck"]
 }

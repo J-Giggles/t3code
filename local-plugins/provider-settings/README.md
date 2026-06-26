@@ -6,7 +6,7 @@ Add provider settings for usage limits, provider-native reset behavior, and T3 a
 
 ## Current Commits
 
-- `83477a4fa73a729abf65a6ca29adba05aa62d376` `feat(provider-settings): add usage, reset, and T3 access controls`
+- `cbabcf08e13af412f9feb57afbcc583b63f87f06` `feat(provider-settings): add usage, reset, and T3 access controls`
 
 ## Squash / Replay History
 
@@ -33,10 +33,10 @@ This is the provider settings topic from the June 25 replay stack.
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/providerSettings/index.ts`
-- `apps/server/src/localTopics/providerSettings/index.ts`
+- `apps/server/src/localTopics/providerSettings/index.ts` (source, internal)
+- `apps/web/src/localTopics/providerSettings/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -47,19 +47,22 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/server/src/provider/providerMaintenance.ts`
+`apps/server/src/localTopics/providerSettings/index.ts`
 
 ```ts
-getProviderUsage(providerId);
-resetProviderSession(providerId);
-interruptProviderTurn(sessionId);
+export * from "../../provider/Drivers/CodexNativeReset.ts";
+export * from "../../provider/providerMaintenance.ts";
+export * from "../../provider/providerMaintenanceCommandCoordinator.ts";
+export * from "../../provider/providerMaintenanceRunner.ts";
 ```
 
-`apps/web/src/components/settings`
+`apps/web/src/localTopics/providerSettings/index.ts`
 
-```tsx
-<ProviderUsagePanel />
-<ProviderResetControl />
+```ts
+export * from "../../components/chat/ProviderUsagePopover.tsx";
+export * from "../../components/settings/ProviderInstanceCard.tsx";
+export * from "../../components/settings/ProviderSettingsForm.tsx";
+export * from "../../components/settings/providerStatus.ts";
 ```
 
 ## Replay Notes
@@ -73,4 +76,4 @@ Replay after project-git and before composer because composer provider menus con
 
 ## Known Follow-Up Work
 
-- Extract provider settings panels and provider maintenance routing into topic-owned modules.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

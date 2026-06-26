@@ -6,7 +6,7 @@ Expose reliable project Git state and reconcile VCS refreshes without blocking c
 
 ## Current Commits
 
-- `caee2ec7bad7b8b722e43ab206f3d332a474fd57` `feat(project-git): add project Git dashboard and VCS reconciliation`
+- `32342110d042f76e43b8c4bcd127d845a096c690` `feat(project-git): add project Git dashboard and VCS reconciliation`
 
 ## Squash / Replay History
 
@@ -33,11 +33,11 @@ This is the project Git topic from the June 25 replay stack.
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/projectGit/index.ts`
-- `apps/server/src/localTopics/projectGit/index.ts`
-- `packages/shared/src/localTopics/projectGit/index.ts`
+- `packages/shared/src/localTopics/projectGit/index.ts` (source, facade)
+- `apps/server/src/localTopics/projectGit/index.ts` (source, internal)
+- `apps/web/src/localTopics/projectGit/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -48,20 +48,18 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`
+`packages/shared/src/localTopics/projectGit/index.ts`
 
 ```ts
-readWorkspaceGitSnapshot(workspacePath);
-statusEntries;
-branchName;
-remoteSummary;
+export * from "../../git.ts";
 ```
 
-`apps/web/src/components/projectGit`
+`apps/server/src/localTopics/projectGit/index.ts`
 
 ```ts
-renderBranchSummary(snapshot);
-renderChangedFiles(snapshot.statusEntries);
+export * from "../../workspaceGit/WorkspaceGitSnapshot.ts";
+export * from "../../vcs/GitVcsDriver.ts";
+export * from "../../vcs/VcsStatusBroadcaster.ts";
 ```
 
 ## Replay Notes
@@ -75,4 +73,4 @@ Replay after runtime so snapshots are associated with the correct worktree ident
 
 ## Known Follow-Up Work
 
-- Extract dashboard state shaping into `localTopics/projectGit` modules.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

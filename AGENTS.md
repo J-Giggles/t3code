@@ -66,8 +66,8 @@
   the replay commit. These are not installable Codex plugins and must not use `.codex-plugin/plugin.json`.
 - New local topic code should be componentized behind package-local topic modules such as
   `apps/web/src/localTopics/<topic>/index.ts` or `apps/server/src/localTopics/<topic>/index.ts`, then imported from
-  main files as thin wiring. Existing legacy topics may remain unextracted until touched, but their plugin README
-  must record the pending component entrypoints.
+  main files as thin wiring. Local plugin metadata uses schema v2; code, mixed, and test topics must have
+  complete componentization with existing entrypoints, while docs-only topics use `not-applicable`.
 - Whenever topic commits are added, squashed, split, renamed, dropped, or promoted, update this ledger and
   `docs/operations/staging-review-guide.md`, `docs/operations/jordan-topic-stack.manifest.json`, and the matching
   `local-plugins/<topic>/` folder in the same branch before promotion. If the topic changes public contracts,

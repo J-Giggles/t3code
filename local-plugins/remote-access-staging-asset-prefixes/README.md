@@ -6,7 +6,7 @@ Prevent duplicated staging prefixes in generated asset URLs and static HTML resp
 
 ## Current Commits
 
-- `05fd01bb211cc34d3fd1ac5ec0c05fe5075ab85d` `fix(remote-access): canonicalize staging asset prefixes`
+- `d0410647ab5f161259b1fcca0f41144eaebf8fd2` `fix(remote-access): canonicalize staging asset prefixes`
 
 ## Squash / Replay History
 
@@ -30,10 +30,11 @@ This is a June 26 remote-access follow-up. Fold it into the base remote-access t
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/server/src/localTopics/remoteAccessStagingAssetPrefixes/index.ts`
-- `apps/web/src/localTopics/remoteAccessStagingAssetPrefixes/index.ts`
+- `packages/shared/src/localTopics/remoteAccess/stagingAssetPrefixes.ts` (source, internal)
+- `apps/server/src/localTopics/remoteAccess/stagingAssetPrefixes.ts` (source, internal)
+- `apps/web/src/localTopics/remoteAccess/stagingAssetPrefixes.ts` (source, internal)
 
 ## Integration Points
 
@@ -43,19 +44,16 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/server/src/http.ts`
+`packages/shared/src/localTopics/remoteAccess/stagingAssetPrefixes.ts`
 
 ```ts
-const html = rewriteReservedAssetPrefixes(shellHtml, publicPath);
-sendHtml(html);
-assertJavaScriptMimeForModuleAssets(assetPath);
+export { joinPublicPathPrefix, normalizePublicPathPrefix } from "./publicPath.ts";
 ```
 
-`apps/web/src/publicPath.ts`
+`apps/server/src/localTopics/remoteAccess/stagingAssetPrefixes.ts`
 
 ```ts
-const assetBase = normalizePublicPathPrefix(importMetaBase);
-resolveAssetPath(assetBase, href);
+export { rewriteCssForPublicPathPrefix, rewriteHtmlForPublicPathPrefix } from "./httpRouting.ts";
 ```
 
 ## Replay Notes
@@ -70,4 +68,4 @@ Keep this with remote-access when replaying against a new upstream main.
 
 ## Known Follow-Up Work
 
-- Consolidate asset prefix rewrites under the remote-access topic entrypoint.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

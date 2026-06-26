@@ -6,7 +6,7 @@ Document the local replay stack, promotion rules, and staging review order for f
 
 ## Current Commits
 
-- `3e28d5ae8d8f99c8f1ff6753bb72a9ed190e5861` `docs(operations): document Jordan patch-stack maintenance workflow`
+- `1700400eeef985e3f4c16473dbb7b95357de3c48` `docs(operations): document Jordan patch-stack maintenance workflow`
 
 ## Squash / Replay History
 
@@ -32,9 +32,7 @@ This docs topic stays late in the replay stack because it records the preceding 
 
 ## Component Entrypoints
 
-Pending legacy extraction:
-
-- `docs/operations/localTopics/operationsDocs/index.md`
+Componentization status: `not-applicable`. This topic is documentation-only and owns no runtime entrypoint.
 
 ## Integration Points
 
@@ -47,23 +45,11 @@ Pending legacy extraction:
 `docs/operations/jordan-topic-stack.md`
 
 ```md
-## Topic Order
+Current topic order:
 
-## Rebuild On Latest Upstream
-
-## Verification
-
-## Promotion
-```
-
-`AGENTS.md`
-
-```md
-## Local Worktree Topology
-
-## Topic Commits And Headed E2E
-
-## Current Topical Stack Ledger
+1. remote-access
+2. dev-launch
+   ...
 ```
 
 ## Replay Notes
@@ -77,4 +63,4 @@ Replay after all product and test topics so the ledger can describe the final st
 
 ## Known Follow-Up Work
 
-- Keep this plugin README and the manifest synchronized whenever the docs topic is rewritten.
+- Keep this plugin README and manifest synchronized whenever the docs topic is rewritten.

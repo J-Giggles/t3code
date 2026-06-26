@@ -4,103 +4,103 @@
     {
       "id": "remote-access",
       "pluginPath": "local-plugins/remote-access",
-      "commits": ["10285aa14227fd1d727679429ec81e6bc2204b10"],
+      "commits": ["3d7656e8952955f87204e4c44c1354a5961811ba"],
       "subject": "feat(remote-access): manage Tailscale and routed browser access"
     },
     {
       "id": "dev-launch",
       "pluginPath": "local-plugins/dev-launch",
-      "commits": ["3337bbc2d6dfabe4cc763a9865680136cbd770d1"],
+      "commits": ["3489ca07ab766b41b700d2f46be40745346a3715"],
       "subject": "feat(dev-launch): add durable worktree launch profiles"
     },
     {
       "id": "runtime",
       "pluginPath": "local-plugins/runtime",
-      "commits": ["acaad0b2d957167520ae4044d149480ffa06e105"],
+      "commits": ["51b0cf31cb17e6d7ce9e672a97ad98e4bd365584"],
       "subject": "feat(runtime): preserve worktree context and controlled recovery"
     },
     {
       "id": "project-git",
       "pluginPath": "local-plugins/project-git",
-      "commits": ["caee2ec7bad7b8b722e43ab206f3d332a474fd57"],
+      "commits": ["32342110d042f76e43b8c4bcd127d845a096c690"],
       "subject": "feat(project-git): add project Git dashboard and VCS reconciliation"
     },
     {
       "id": "provider-settings",
       "pluginPath": "local-plugins/provider-settings",
-      "commits": ["83477a4fa73a729abf65a6ca29adba05aa62d376"],
+      "commits": ["cbabcf08e13af412f9feb57afbcc583b63f87f06"],
       "subject": "feat(provider-settings): add usage, reset, and T3 access controls"
     },
     {
       "id": "composer",
       "pluginPath": "local-plugins/composer",
-      "commits": ["f7cb0dba2d95dde576ba82fba5367f6e8b39cbb4"],
+      "commits": ["eeb495a826cf0cdf5a3833d0d6131c12e118b4ee"],
       "subject": "feat(composer): add mentions, slash menus, chat context, and worktree naming"
     },
     {
       "id": "prompt-settings",
       "pluginPath": "local-plugins/prompt-settings",
-      "commits": ["a5aa5e450ddf02bc21108880da2a37f928fa13be"],
+      "commits": ["d155601a9ce30789399200c8b817ee84577bcfa0"],
       "subject": "feat(prompt-settings): add configurable prompt settings"
     },
     {
       "id": "app-automation",
       "pluginPath": "local-plugins/app-automation",
-      "commits": ["c6d040d029a94b493d558e0dca87ee548cebd6ef"],
+      "commits": ["997062c1d2105bab3d1c923749ef8edb0fe9f6d9"],
       "subject": "feat(app-automation): add desktop shell MCP controls"
     },
     {
       "id": "project-agent-files",
       "pluginPath": "local-plugins/project-agent-files",
-      "commits": ["2068feb0dd69076677136bb57d7539033a50102b"],
+      "commits": ["a4018fb808c108e43aa333244ea9bb99a1456d72"],
       "subject": "feat(project-agent-files): add schemas, CRUD, and scaffold safety"
     },
     {
       "id": "observability",
       "pluginPath": "local-plugins/observability",
-      "commits": ["83b570b88ac033adaa2d642fae79c14c0bca76be"],
+      "commits": ["943c71b562ae10b225ef2844557d516786d08457"],
       "subject": "feat(observability): add local hub, Grafana provisioning, and digest metrics"
     },
     {
       "id": "desktop-tests",
       "pluginPath": "local-plugins/desktop-tests",
-      "commits": ["c97af3737267cfa974c9d4c05aa88f3f5122d16d"],
+      "commits": ["57ef11c7fad9d06afb43677d583bb46a4351c965"],
       "subject": "test(desktop): add headed desktop verification coverage"
     },
     {
       "id": "operations-docs",
       "pluginPath": "local-plugins/operations-docs",
-      "commits": ["3e28d5ae8d8f99c8f1ff6753bb72a9ed190e5861"],
+      "commits": ["1700400eeef985e3f4c16473dbb7b95357de3c48"],
       "subject": "docs(operations): document Jordan patch-stack maintenance workflow"
     },
     {
       "id": "remote-access-reserved-routes",
       "pluginPath": "local-plugins/remote-access-reserved-routes",
-      "commits": ["a49f0ee77fabbfd2f46b2adb7ef6206595f57a85"],
+      "commits": ["c57b5caf3cd50a915901994bad7f183009ff0cdf"],
       "subject": "fix(remote-access): keep reserved staging routes authoritative"
     },
     {
       "id": "remote-access-staging-tailnet-paths",
       "pluginPath": "local-plugins/remote-access-staging-tailnet-paths",
-      "commits": ["b840026a3b637db965a061c4db1eb5304d0e0179"],
+      "commits": ["f95d294840b90a9c7d7e6bb92b6c2406f35d6c11"],
       "subject": "fix(remote-access): serve staging tailnet paths"
     },
     {
       "id": "runtime-staging-identity",
       "pluginPath": "local-plugins/runtime-staging-identity",
-      "commits": ["4147e3b4ad2f1afb6d567c433ef1bbdc156d951c"],
+      "commits": ["ce8abb78d51c8161daf4ec6abd8f22b411757e8c"],
       "subject": "fix(runtime): preserve staging identity in sidebar"
     },
     {
       "id": "remote-access-staging-asset-prefixes",
       "pluginPath": "local-plugins/remote-access-staging-asset-prefixes",
-      "commits": ["05fd01bb211cc34d3fd1ac5ec0c05fe5075ab85d"],
+      "commits": ["d0410647ab5f161259b1fcca0f41144eaebf8fd2"],
       "subject": "fix(remote-access): canonicalize staging asset prefixes"
     },
     {
       "id": "remote-access-public-verifier-hardening",
       "pluginPath": "local-plugins/remote-access-public-verifier-hardening",
-      "commits": ["b790fe732c4c8d35cf56cf2f21f04fc73842cade"],
+      "commits": ["5aadf3c563191f2c449a30d31b3ed57a9e6ccf1c"],
       "subject": "fix(remote-access): harden public staging verification"
     }
   ]

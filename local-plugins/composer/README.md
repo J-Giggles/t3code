@@ -6,7 +6,7 @@ Make the composer a richer command surface for mentions, slash actions, context 
 
 ## Current Commits
 
-- `f7cb0dba2d95dde576ba82fba5367f6e8b39cbb4` `feat(composer): add mentions, slash menus, chat context, and worktree naming`
+- `eeb495a826cf0cdf5a3833d0d6131c12e118b4ee` `feat(composer): add mentions, slash menus, chat context, and worktree naming`
 
 ## Squash / Replay History
 
@@ -33,11 +33,11 @@ This topic folds composer menu, pasted chat context, semantic worktree naming, a
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/composer/index.ts`
-- `apps/mobile/src/localTopics/composer/index.ts`
-- `packages/client-runtime/src/localTopics/composer/index.ts`
+- `apps/web/src/localTopics/composer/index.ts` (source, internal)
+- `apps/mobile/src/localTopics/composer/index.ts` (source, internal)
+- `packages/client-runtime/src/localTopics/composer/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -48,19 +48,23 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/web/src/components/composer`
-
-```tsx
-const menuItems = buildComposerMenuItems(context);
-const mentionItems = buildMentionResults(input);
-submitComposerMessage({ attachments, prompt });
-```
-
-`packages/client-runtime/src/state`
+`apps/web/src/localTopics/composer/index.ts`
 
 ```ts
-persistComposerDraft(threadId, draft);
-restoreComposerSelections(threadId);
+export * from "../../components/chat/ChatComposer.tsx";
+export * from "../../components/chat/ComposerCommandMenu.tsx";
+export * from "../../components/chat/ComposerPrimaryActions.tsx";
+export * from "../../components/chat/composerProviderState.tsx";
+```
+
+`apps/mobile/src/localTopics/composer/index.ts`
+
+```ts
+export * from "../../components/ComposerAttachmentStrip.tsx";
+export * from "../../components/ComposerEditor.tsx";
+export * from "../../features/threads/ComposerCommandPopover.tsx";
+export * from "../../features/threads/ThreadComposer.tsx";
+export * from "../../state/use-thread-composer-state.ts";
 ```
 
 ## Replay Notes
@@ -75,4 +79,4 @@ Replay after provider-settings so provider-aware menu items and resets see stabl
 
 ## Known Follow-Up Work
 
-- Extract composer menu builders and worktree naming glue into topic-owned entrypoints.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

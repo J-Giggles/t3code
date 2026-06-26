@@ -6,7 +6,7 @@ Preserve the active worktree identity across restarts, reconnects, sidebar label
 
 ## Current Commits
 
-- `acaad0b2d957167520ae4044d149480ffa06e105` `feat(runtime): preserve worktree context and controlled recovery`
+- `51b0cf31cb17e6d7ce9e672a97ad98e4bd365584` `feat(runtime): preserve worktree context and controlled recovery`
 
 ## Squash / Replay History
 
@@ -34,11 +34,11 @@ This is the runtime and recovery topic from the June 25 replay stack.
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/runtime/index.ts`
-- `apps/server/src/localTopics/runtime/index.ts`
-- `packages/client-runtime/src/localTopics/runtime/index.ts`
+- `packages/client-runtime/src/localTopics/runtime/index.ts` (source, internal)
+- `apps/server/src/localTopics/runtime/index.ts` (source, internal)
+- `apps/web/src/localTopics/runtime/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -50,19 +50,22 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`scripts/dev-runner.ts`
+`packages/client-runtime/src/localTopics/runtime/index.ts`
 
 ```ts
-inferT3WorktreeRole(cwd);
-createWorktreeIdentityEnvPatch({ cwd, baseEnv });
-loadDevRunnerBootstrapEnv({ repoRoot, baseEnv });
+export * from "../../connection/presentation.ts";
+export * from "../../connection/supervisor.ts";
+export * from "../../reconnectBackoff.ts";
+export * from "../../state/runtime.ts";
+export * from "../../wsTransport.ts";
 ```
 
-`apps/web/src/connection`
+`apps/server/src/localTopics/runtime/index.ts`
 
 ```ts
-connectionSnapshot.worktree;
-runtimeRecoveryState.restartPolicy;
+export * from "../../serverRuntimeRestart.ts";
+export * from "../../provider/Layers/ProviderSessionStartupRecovery.ts";
+export * from "../../provider/Services/ProviderSessionStartupRecovery.ts";
 ```
 
 ## Replay Notes
@@ -76,4 +79,4 @@ Replay after dev-launch because launcher-provided environment is the preferred i
 
 ## Known Follow-Up Work
 
-- Move runtime identity derivation and recovery projection into package-local topic entrypoints.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

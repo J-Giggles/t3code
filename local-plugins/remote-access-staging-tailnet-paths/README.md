@@ -6,7 +6,7 @@ Serve staging assets, API routes, and WebSocket paths correctly when the public 
 
 ## Current Commits
 
-- `b840026a3b637db965a061c4db1eb5304d0e0179` `fix(remote-access): serve staging tailnet paths`
+- `f95d294840b90a9c7d7e6bb92b6c2406f35d6c11` `fix(remote-access): serve staging tailnet paths`
 
 ## Squash / Replay History
 
@@ -30,10 +30,11 @@ This is a June 26 remote-access follow-up. Fold it into the base remote-access t
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/server/src/localTopics/remoteAccessStagingTailnetPaths/index.ts`
-- `apps/web/src/localTopics/remoteAccessStagingTailnetPaths/index.ts`
+- `packages/shared/src/localTopics/remoteAccess/stagingTailnetPaths.ts` (source, internal)
+- `apps/server/src/localTopics/remoteAccess/stagingTailnetPaths.ts` (source, internal)
+- `apps/web/src/localTopics/remoteAccess/stagingTailnetPaths.ts` (source, internal)
 
 ## Integration Points
 
@@ -43,19 +44,24 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/server/src/http.ts`
+`packages/shared/src/localTopics/remoteAccess/stagingTailnetPaths.ts`
 
 ```ts
-const strippedPath = stripPublicPathPrefix(publicPath, request.url);
-routeStaticAsset(strippedPath);
-routeApiRequest(strippedPath);
+export {
+  joinPublicPathPrefix,
+  normalizePublicPathPrefix,
+  readLocalPublicPathPrefixFromPathname,
+} from "./publicPath.ts";
 ```
 
-`apps/web/src/localApi.ts`
+`apps/server/src/localTopics/remoteAccess/stagingTailnetPaths.ts`
 
 ```ts
-const apiUrl = joinPublicPath(publicPath, "/api/local");
-const wsUrl = joinPublicPath(publicPath, "/ws");
+export {
+  resolveDevRedirectUrl,
+  resolveDevRequestUrl,
+  stripPublicPathPrefixFromUrl,
+} from "./httpRouting.ts";
 ```
 
 ## Replay Notes
@@ -70,4 +76,4 @@ Replay after the base remote-access and dev-launch topics if kept as a separate 
 
 ## Known Follow-Up Work
 
-- Extract prefixed-route server helpers into the remote-access server topic module.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

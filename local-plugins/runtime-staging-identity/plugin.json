@@ -1,20 +1,59 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "runtime-staging-identity",
   "title": "Staging identity preservation in sidebar",
-  "topicCommits": ["4147e3b4ad2f1afb6d567c433ef1bbdc156d951c"],
+  "topicKind": "code",
+  "topicCommits": ["ce8abb78d51c8161daf4ec6abd8f22b411757e8c"],
   "ownedPaths": [
-    "apps/web/src/components/sidebar",
-    "packages/shared/src/worktreeIdentity.ts",
-    "scripts/dev-runner.ts"
+    {
+      "path": "apps/web/src/components/sidebar",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/worktreeIdentity.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "script"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/runtimeStagingIdentity/index.ts",
-    "packages/shared/src/localTopics/runtimeStagingIdentity/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/runtimeStagingIdentity/index.ts",
-    "packages/shared/src/localTopics/runtimeStagingIdentity/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "apps/web/src/localTopics/runtime/stagingIdentity.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/localTopics/runtime/stagingIdentity.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/web/src/components/sidebar",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/shared/src/worktreeIdentity.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/localTopics/runtime/stagingIdentity.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "scripts/localTopics/runtime/stagingIdentity.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck"]
 }

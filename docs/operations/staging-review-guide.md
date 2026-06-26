@@ -12,8 +12,8 @@ surface area, and decide whether the behavior is correct.
 The authoritative replay list is
 `docs/operations/jordan-topic-stack.manifest.json`. Each manifest topic has a
 matching repo-internal plugin folder under `local-plugins/<topic>/` with owned
-paths, pending or extracted component entrypoints, focused implementation
-snippets, replay notes, and verification commands. Run
+paths, schema v2 componentization metadata, focused implementation snippets,
+replay notes, and verification commands. Run
 `pnpm run topic-plugins:check` when reviewing a stack metadata change.
 
 ## Review Order

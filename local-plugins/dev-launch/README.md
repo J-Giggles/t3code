@@ -6,7 +6,7 @@ Let T3 Code launch project apps from declared worktree profiles with predictable
 
 ## Current Commits
 
-- `3337bbc2d6dfabe4cc763a9865680136cbd770d1` `feat(dev-launch): add durable worktree launch profiles`
+- `3489ca07ab766b41b700d2f46be40745346a3715` `feat(dev-launch): add durable worktree launch profiles`
 
 ## Squash / Replay History
 
@@ -17,27 +17,33 @@ This topic collects the durable launch profile implementation and Omarchy launch
 - `.t3code/dev-apps.json` launch profile discovery.
 - Desktop and server launch managers for project app processes.
 - Omarchy launcher generation and same-host Tailscale route reconciliation.
+- Dev runner reserved-route preflights prevent non-owning branches/worktrees from claiming `/main`, `/original`, or
+  `/staging`.
 
 ## Added UI
 
-- Chat launch controls show setup, launch, status, errors, and open URL actions.
+- Chat launch controls show setup, launch, status, route conflicts, errors, and open URL actions.
 
 ## Added Server And Runtime Behavior
 
 - Launch profile resolution runs against the active project workspace.
 - Child process environment and port selection are isolated per worktree.
+- Route conflicts are reported as launch collisions with the existing and expected Tailscale proxy targets.
 
 ## Added Tests
 
-- Launch profile parsing, dev-runner environment, Omarchy renderer, and launcher runtime tests.
+- Launch profile parsing, dev-runner environment and reserved-route guards, Omarchy renderer, route-collision prompts,
+  and launcher runtime tests.
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/web/src/localTopics/devLaunch/index.ts`
-- `apps/server/src/localTopics/devLaunch/index.ts`
-- `packages/shared/src/localTopics/devLaunch/index.ts`
+- `packages/shared/src/localTopics/devLaunch/index.ts` (source, facade)
+- `apps/server/src/localTopics/devLaunch/index.ts` (source, internal)
+- `apps/desktop/src/localTopics/devLaunch/index.ts` (source, internal)
+- `apps/web/src/localTopics/devLaunch/index.ts` (source, internal)
+- `scripts/localTopics/devLaunch/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -49,24 +55,38 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`packages/shared/src/devLaunch.ts`
+`packages/shared/src/localTopics/devLaunch/index.ts`
 
 ```ts
-ProjectDevLaunchManifest;
-ProjectDevLaunchProfile;
-parseProjectDevLaunchManifest(raw);
+import {
+  type DesktopDevLaunchCollision,
+  type DesktopDevLaunchRecord,
+  type DesktopDevLaunchSetupInput,
+  type PromptOverrides,
+  type ProjectDevLaunchManifest,
+  type ProjectDevLaunchProfile,
+  ProjectDevLaunchManifest as ProjectDevLaunchManifestSchema,
+} from "@t3tools/contracts";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
+import { PROMPT_IDS, renderPromptTemplate } from "../../prompts.ts";
+export function buildDevLaunchCollisionPrompt(input: {
+  collision: DesktopDevLaunchCollision;
+  projectName: string;
 ```
 
-`scripts/dev-runner.ts`
+`apps/server/src/localTopics/devLaunch/index.ts`
 
 ```ts
-loadDevRunnerBootstrapEnv({ repoRoot, baseEnv });
-createDevRunnerEnv({ mode, cwd, baseEnv });
+export * from "../../devLaunch/ServerDevAppLaunchManager.ts";
+export * from "../../project/Layers/ProjectDevLaunchResolver.ts";
+export * from "../../project/Services/ProjectDevLaunchResolver.ts";
 ```
 
 ## Replay Notes
 
-Replay after remote-access so hosted app URLs inherit the public route rules. Keep reconcile helper changes with this topic when folding follow-ups.
+Replay after remote-access so hosted app URLs inherit the public route rules. Keep dev-runner reserved-route launch
+failures, route-collision prompt handling, and reconcile helper changes with this topic when folding follow-ups.
 
 ## Verification
 
@@ -75,4 +95,4 @@ Replay after remote-access so hosted app URLs inherit the public route rules. Ke
 
 ## Known Follow-Up Work
 
-- Extract launcher UI and runtime glue into `localTopics/devLaunch` modules when those files are next modified.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.

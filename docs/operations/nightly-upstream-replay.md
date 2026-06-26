@@ -27,7 +27,8 @@ Each plugin folder must keep `plugin.json` and `README.md` synchronized with the
 manifest. The README snippets should stay focused and name the source file
 paths they describe. When commits are squashed, split, renamed, dropped, or
 materially changed, update the manifest and matching plugin README in the same
-branch.
+branch. `plugin.json` uses schema v2, and `pnpm run topic-plugins:check` is
+strict by default.
 
 Validate metadata with:
 
@@ -46,9 +47,10 @@ apps/server/src/localTopics/remoteAccess/index.ts
 packages/client-runtime/src/localTopics/remoteAccess/index.ts
 ```
 
-Existing topics can remain in legacy locations until touched. Mark pending
-entrypoints in `plugin.json` and the plugin README so future refactors have an
-explicit target.
+Code, mixed, and test topics must list existing package-local component
+entrypoints with `componentization.status = "complete"`. Docs-only topics use
+`componentization.status = "not-applicable"`. Do not add public package exports
+for `localTopics`; existing public files should stay as façades or thin wiring.
 
 ## Dry Run
 

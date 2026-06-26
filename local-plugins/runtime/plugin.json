@@ -1,26 +1,100 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "runtime",
   "title": "Worktree context and controlled recovery",
-  "topicCommits": ["acaad0b2d957167520ae4044d149480ffa06e105"],
+  "topicKind": "code",
+  "topicCommits": ["51b0cf31cb17e6d7ce9e672a97ad98e4bd365584"],
   "ownedPaths": [
-    "apps/server/src/devSupervisor.ts",
-    "apps/server/src/provider",
-    "apps/web/src/connection",
-    "apps/web/src/components/sidebar",
-    "packages/client-runtime/src",
-    "packages/shared/src/worktreeIdentity.ts",
-    "scripts/dev-runner.ts"
+    {
+      "path": "apps/server/src/devSupervisor.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/server/src/provider",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/connection",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/components/sidebar",
+      "role": "source"
+    },
+    {
+      "path": "packages/client-runtime/src",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/worktreeIdentity.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "script"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/runtime/index.ts",
-    "apps/server/src/localTopics/runtime/index.ts",
-    "packages/client-runtime/src/localTopics/runtime/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/runtime/index.ts",
-    "apps/server/src/localTopics/runtime/index.ts",
-    "packages/client-runtime/src/localTopics/runtime/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/client-runtime/src/localTopics/runtime/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/server/src/localTopics/runtime/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/runtime/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/server/src/devSupervisor.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/server/src/provider",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/connection",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/components/sidebar",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/client-runtime/src",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/worktreeIdentity.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/client-runtime/src/localTopics/runtime/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/server/src/localTopics/runtime/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/runtime/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck"]
 }

@@ -85,14 +85,15 @@ For new local work, put topic-owned code in package-local modules and wire it
 from the main files with thin imports. Examples:
 
 ```text
-apps/web/src/localTopics/remoteAccess/index.ts
-apps/server/src/localTopics/remoteAccess/index.ts
-packages/client-runtime/src/localTopics/remoteAccess/index.ts
+packages/shared/src/localTopics/remoteAccess/publicPath.ts
+apps/server/src/localTopics/remoteAccess/httpRouting.ts
+apps/web/src/localTopics/composer/index.ts
 ```
 
-Existing topics do not need a risky full extraction during this documentation
-pass. Their plugin READMEs record pending component entrypoints so extraction
-can happen gradually when the owning code is touched.
+`plugin.json` uses schema v2. Code, mixed, and test topics must list existing
+component entrypoints with `componentization.status = "complete"`. Docs-only
+topics use `componentization.status = "not-applicable"`. `pnpm run
+topic-plugins:check` is strict by default and rejects v1 or pending metadata.
 
 ## Rebuild On Latest Upstream
 

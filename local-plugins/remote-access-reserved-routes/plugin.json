@@ -1,20 +1,68 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "remote-access-reserved-routes",
   "title": "Authoritative reserved staging routes",
-  "topicCommits": ["a49f0ee77fabbfd2f46b2adb7ef6206595f57a85"],
+  "topicKind": "mixed",
+  "topicCommits": ["c57b5caf3cd50a915901994bad7f183009ff0cdf"],
   "ownedPaths": [
-    "apps/desktop/src/backend/DesktopServerExposure.ts",
-    "apps/web/src/publicPath.ts",
-    "packages/shared/src/publicPath.ts"
+    {
+      "path": "apps/desktop/src/backend/DesktopServerExposure.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/publicPath.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/publicPath.ts",
+      "role": "source"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/remoteAccessReservedRoutes/index.ts",
-    "apps/desktop/src/localTopics/remoteAccessReservedRoutes/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/remoteAccessReservedRoutes/index.ts",
-    "apps/desktop/src/localTopics/remoteAccessReservedRoutes/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/remoteAccess/reservedRoutes.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/desktop/src/localTopics/remoteAccess/reservedRoutes.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/desktop/src/backend/DesktopServerExposure.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/publicPath.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/publicPath.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/remoteAccess/reservedRoutes.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/desktop/src/localTopics/remoteAccess/reservedRoutes.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
 }

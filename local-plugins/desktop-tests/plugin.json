@@ -1,14 +1,50 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "desktop-tests",
   "title": "Headed desktop verification coverage",
-  "topicCommits": ["c97af3737267cfa974c9d4c05aa88f3f5122d16d"],
+  "topicKind": "test",
+  "topicCommits": ["57ef11c7fad9d06afb43677d583bb46a4351c965"],
   "ownedPaths": [
-    "apps/desktop/e2e",
-    "apps/desktop/package.json",
-    "docs/operations/headed-staging.md"
+    {
+      "path": "apps/desktop/e2e",
+      "role": "test"
+    },
+    {
+      "path": "apps/desktop/package.json",
+      "role": "config"
+    },
+    {
+      "path": "docs/operations/headed-staging.md",
+      "role": "docs"
+    }
   ],
-  "componentEntrypoints": ["apps/desktop/e2e/localTopics/desktopTests/index.ts"],
-  "pendingComponentEntrypoints": ["apps/desktop/e2e/localTopics/desktopTests/index.ts"],
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "apps/desktop/e2e/localTopics/desktopTests/index.ts",
+        "kind": "test",
+        "publicSurface": "test"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/desktop/e2e",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/package.json",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "docs/operations/headed-staging.md",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/e2e/localTopics/desktopTests/index.ts",
+      "role": "consumer"
+    }
+  ],
   "verification": ["vp check", "vp run typecheck", "vp run test:desktop-e2e:smoke"]
 }

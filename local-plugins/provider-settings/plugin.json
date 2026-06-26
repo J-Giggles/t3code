@@ -1,21 +1,67 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "provider-settings",
   "title": "Provider usage, reset, and T3 access controls",
-  "topicCommits": ["83477a4fa73a729abf65a6ca29adba05aa62d376"],
+  "topicKind": "code",
+  "topicCommits": ["cbabcf08e13af412f9feb57afbcc583b63f87f06"],
   "ownedPaths": [
-    "apps/server/src/provider",
-    "apps/web/src/components/settings",
-    "packages/contracts/src/provider.ts",
-    "packages/contracts/src/settings.ts"
+    {
+      "path": "apps/server/src/provider",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/components/settings",
+      "role": "source"
+    },
+    {
+      "path": "packages/contracts/src/provider.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/contracts/src/settings.ts",
+      "role": "source"
+    }
   ],
-  "componentEntrypoints": [
-    "apps/web/src/localTopics/providerSettings/index.ts",
-    "apps/server/src/localTopics/providerSettings/index.ts"
-  ],
-  "pendingComponentEntrypoints": [
-    "apps/web/src/localTopics/providerSettings/index.ts",
-    "apps/server/src/localTopics/providerSettings/index.ts"
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "apps/server/src/localTopics/providerSettings/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/providerSettings/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/server/src/provider",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/components/settings",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/contracts/src/provider.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "packages/contracts/src/settings.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "apps/server/src/localTopics/providerSettings/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/web/src/localTopics/providerSettings/index.ts",
+      "role": "consumer"
+    }
   ],
   "verification": ["vp check", "vp run typecheck"]
 }

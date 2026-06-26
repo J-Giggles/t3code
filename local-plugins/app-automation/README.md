@@ -6,7 +6,7 @@ Expose controlled desktop shell and preview automation through MCP tools for hea
 
 ## Current Commits
 
-- `c6d040d029a94b493d558e0dca87ee548cebd6ef` `feat(app-automation): add desktop shell MCP controls`
+- `997062c1d2105bab3d1c923749ef8edb0fe9f6d9` `feat(app-automation): add desktop shell MCP controls`
 
 ## Squash / Replay History
 
@@ -33,10 +33,10 @@ This is the app automation topic from the June 25 replay stack.
 
 ## Component Entrypoints
 
-Pending legacy extraction:
+Componentization status: `complete`.
 
-- `apps/desktop/src/localTopics/appAutomation/index.ts`
-- `apps/server/src/localTopics/appAutomation/index.ts`
+- `apps/desktop/src/localTopics/appAutomation/index.ts` (source, internal)
+- `apps/server/src/localTopics/appAutomation/index.ts` (source, internal)
 
 ## Integration Points
 
@@ -47,20 +47,22 @@ Pending legacy extraction:
 
 ## Focused Implementation Snippets
 
-`apps/server/src/mcp`
+`apps/desktop/src/localTopics/appAutomation/index.ts`
 
 ```ts
-registerAppAutomationTools(server);
-routeAppStatus(request);
-routeAppSnapshot(request);
+export * from "../../appAutomation/AppAutomationManager.ts";
+export * from "../../ipc/methods/appAutomation.ts";
+export * from "../../ipc/methods/preview.ts";
+export * from "../../preview/Manager.ts";
 ```
 
-`apps/desktop/src/appAutomation`
+`apps/server/src/localTopics/appAutomation/index.ts`
 
 ```ts
-app_status();
-app_snapshot();
-app_click(locator);
+export * from "../../mcp/AppAutomationBroker.ts";
+export * from "../../mcp/PreviewAutomationBroker.ts";
+export * from "../../mcp/toolkits/preview/handlers.ts";
+export * from "../../mcp/toolkits/preview/tools.ts";
 ```
 
 ## Replay Notes
@@ -74,4 +76,4 @@ Replay before project-agent-files and observability so later tests can use contr
 
 ## Known Follow-Up Work
 
-- Extract MCP handler registration into `localTopics/appAutomation` modules.
+- No pending component entrypoints remain for this topic. Keep owned paths, snippets, and verification commands synchronized when the topic changes.
