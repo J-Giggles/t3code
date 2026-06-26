@@ -1,0 +1,2 @@
+export const STAGING_PUBLIC_VERIFIER_DEFAULT_MESSAGE = "Hi";
+export const STAGING_PUBLIC_VERIFIER_NETWORK_PREFLIGHT_ARTIFACT = "network-preflight.json";
