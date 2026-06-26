@@ -27,6 +27,7 @@ __screenshots__/
 squashfs-root/
 .vercel
 .gstack/
+.t3code-nightly-runs/
 dist-electron/
 .electron-runtime/
 node_modules/

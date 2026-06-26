@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "project-agent-files",
+  "title": "Project agent file schemas, CRUD, and scaffold safety",
+  "topicCommits": ["2068feb0dd69076677136bb57d7539033a50102b"],
+  "ownedPaths": [
+    "apps/server/src/project/Layers/ProjectAgentFiles.ts",
+    "apps/server/src/project/Layers/ProjectAgentHarnessResolver.ts",
+    "apps/web/src/components/projectAgentFiles",
+    "packages/contracts/src/projectAgentFiles.ts",
+    "docs/operations"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/projectAgentFiles/index.ts",
+    "apps/server/src/localTopics/projectAgentFiles/index.ts",
+    "packages/contracts/src/localTopics/projectAgentFiles/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/projectAgentFiles/index.ts",
+    "apps/server/src/localTopics/projectAgentFiles/index.ts",
+    "packages/contracts/src/localTopics/projectAgentFiles/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}

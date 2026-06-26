@@ -24,9 +24,13 @@
   asks for an emergency repair; use a separate `dev-` worktree for normal work.
 - `/home/jgigg/code/t3code/.worktrees/original` is reserved for the `original` branch. It is the clean upstream
   mirror of `upstream/main` from `git@github.com:pingdotgg/t3code.git` and may be hard-reset by local sync
-  automation. Do not make product changes there.
+  automation after a backup ref and stash are created for dirty or divergent state. Do not make product changes
+  there.
 - `/home/jgigg/code/t3code/.worktrees/staging` is reserved for the `staging` branch and the staging promotion lane.
   Do not check out feature branches in this path.
+- `/home/jgigg/code/t3code/.worktrees/nightly-local` is the rolling upstream replay candidate worktree. It is owned
+  by `pnpm run topic-stack:nightly -- --apply`; if it is dirty, nightly replay must fail closed instead of resetting
+  it.
 - Do all new implementation work in a separate worktree whose directory name starts with `dev-`, for example
   `.worktrees/dev-provider-usage-popover`.
 - Keep each `dev-` worktree on its own feature branch with coherent commits. Do not pile unrelated changes into
@@ -54,11 +58,21 @@
 - Keep topic commits narrow: one feature/fix plus its tests, docs, and required migration/config updates. Avoid
   mixing multiple replayable topics into one commit.
 - The `original` mirror should be synced from upstream and tested nightly so replayable local topics can be checked
-  against the latest upstream base.
+  against the latest upstream base. Use `pnpm run topic-stack:nightly -- --dry-run` to inspect the plan and
+  `pnpm run topic-stack:nightly -- --apply` to fetch `upstream`, back up and reset `original`, rebuild
+  `.worktrees/nightly-local`, and run verification. The nightly script never promotes to `staging`.
+- Local replay topics are documented as repo-internal plugins under `local-plugins/<topic>/`. Keep each
+  `plugin.json`, topic `README.md`, and `docs/operations/jordan-topic-stack.manifest.json` entry synchronized with
+  the replay commit. These are not installable Codex plugins and must not use `.codex-plugin/plugin.json`.
+- New local topic code should be componentized behind package-local topic modules such as
+  `apps/web/src/localTopics/<topic>/index.ts` or `apps/server/src/localTopics/<topic>/index.ts`, then imported from
+  main files as thin wiring. Existing legacy topics may remain unextracted until touched, but their plugin README
+  must record the pending component entrypoints.
 - Whenever topic commits are added, squashed, split, renamed, dropped, or promoted, update this ledger and
-  `docs/operations/staging-review-guide.md` in the same branch before promotion. If the topic changes public
-  contracts, RPC/IPC shapes, MCP tools, browser/app automation controls, launch behavior, or operator workflows,
-  update the relevant API/reference/operations documentation in that same branch.
+  `docs/operations/staging-review-guide.md`, `docs/operations/jordan-topic-stack.manifest.json`, and the matching
+  `local-plugins/<topic>/` folder in the same branch before promotion. If the topic changes public contracts,
+  RPC/IPC shapes, MCP tools, browser/app automation controls, launch behavior, or operator workflows, update the
+  relevant API/reference/operations documentation in that same branch.
 - Promoting `staging` to `main` requires an explicit user request, clean staging and main worktrees, backup refs for
   both branches, green `vp check` and `vp run typecheck`, applicable lint/E2E verification, and either a
   fast-forward update or a documented non-rewrite reconciliation.
@@ -92,12 +106,15 @@ Current topic order:
 11. `test(desktop): add headed desktop verification coverage`
 12. `docs(operations): document Jordan patch-stack maintenance workflow`
 
-When upstream changes, rebuild by starting a fresh
-`dev/jordan-topic-stack-YYYYMMDD` branch at the fetched `upstream/main`, then
-cherry-pick those topic commits in order. Resolve conflicts in the owning topic,
-run the verification commands from `docs/operations/jordan-topic-stack.md`, and
-compare the final stack against the unsquashed source branch with `git diff`.
-Promotion to `staging` remains a separate explicit user-requested step.
+When upstream changes, prefer the scripted nightly workflow in
+`docs/operations/nightly-upstream-replay.md`. It fetches upstream, backs up and
+resets `original`, creates or reuses `.worktrees/nightly-local`, creates
+`dev/nightly-topic-stack-YYYYMMDD`, cherry-picks the manifest topics in order,
+and writes artifacts under `.t3code-nightly-runs/`. Resolve conflicts in the
+owning topic, run the verification commands from
+`docs/operations/jordan-topic-stack.md`, and compare the final stack against the
+unsquashed source branch with `git diff` when applicable. Promotion to
+`staging` remains a separate explicit user-requested step.
 
 Current staging includes the June 26 follow-up topic
 `fix(remote-access): harden public staging verification`.

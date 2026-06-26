@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "composer",
+  "title": "Composer mentions, slash menus, chat context, and worktree naming",
+  "topicCommits": ["f7cb0dba2d95dde576ba82fba5367f6e8b39cbb4"],
+  "ownedPaths": [
+    "apps/web/src/components/chat",
+    "apps/web/src/components/composer",
+    "apps/mobile/src/features",
+    "packages/client-runtime/src/state",
+    "packages/contracts/src/chat.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/composer/index.ts",
+    "apps/mobile/src/localTopics/composer/index.ts",
+    "packages/client-runtime/src/localTopics/composer/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/composer/index.ts",
+    "apps/mobile/src/localTopics/composer/index.ts",
+    "packages/client-runtime/src/localTopics/composer/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck", "vp run lint:mobile"]
+}

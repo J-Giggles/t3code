@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "observability",
+  "title": "Local observability hub, Grafana provisioning, and digest metrics",
+  "topicCommits": ["83b570b88ac033adaa2d642fae79c14c0bca76be"],
+  "ownedPaths": [
+    "apps/desktop/src/backend/DesktopBackendOutputLog.ts",
+    "apps/server/src/mcp/toolkits/observability",
+    "docs/operations/observability.md",
+    "scripts/local-observability.ts",
+    "scripts/observability-digest.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/server/src/localTopics/observability/index.ts",
+    "apps/desktop/src/localTopics/observability/index.ts",
+    "scripts/localTopics/observability/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/server/src/localTopics/observability/index.ts",
+    "apps/desktop/src/localTopics/observability/index.ts",
+    "scripts/localTopics/observability/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}

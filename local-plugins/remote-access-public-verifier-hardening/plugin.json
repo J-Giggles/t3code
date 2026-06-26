@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "remote-access-public-verifier-hardening",
+  "title": "Public staging verifier hardening",
+  "topicCommits": ["b790fe732c4c8d35cf56cf2f21f04fc73842cade"],
+  "ownedPaths": [
+    "apps/desktop/scripts/verify-staging-public.mjs",
+    "apps/desktop/test-results/staging-public",
+    "scripts/lib/omarchy-dev-launchers.ts",
+    "docs/operations/jordan-topic-stack.md",
+    "docs/operations/staging-review-guide.md"
+  ],
+  "componentEntrypoints": [
+    "apps/desktop/scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts",
+    "scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/desktop/scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts",
+    "scripts/localTopics/remoteAccessPublicVerifierHardening/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+}

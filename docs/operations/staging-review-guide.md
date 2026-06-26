@@ -9,6 +9,13 @@ The stack is intentionally split into topic commits. Reviewers should be able
 to read one commit at a time, understand the user problem, inspect the relevant
 surface area, and decide whether the behavior is correct.
 
+The authoritative replay list is
+`docs/operations/jordan-topic-stack.manifest.json`. Each manifest topic has a
+matching repo-internal plugin folder under `local-plugins/<topic>/` with owned
+paths, pending or extracted component entrypoints, focused implementation
+snippets, replay notes, and verification commands. Run
+`pnpm run topic-plugins:check` when reviewing a stack metadata change.
+
 ## Review Order
 
 Review in this order:
@@ -41,6 +48,11 @@ the web/server/verifier pieces into remote access and the generated
 `t3code-tailscale-reconcile` helper into durable launchers, or replay the
 follow-up only after both base topics exist.
 
+Routine upstream refreshes should use
+`docs/operations/nightly-upstream-replay.md`. The nightly script rebuilds
+`.worktrees/nightly-local` only; promotion to `.worktrees/staging` is manual and
+requires a clean fast-forward or an explicitly resolved reconciliation.
+
 ## Required Verification
 
 Every change in this stack must pass:
@@ -48,6 +60,7 @@ Every change in this stack must pass:
 ```bash
 vp check
 vp run typecheck
+pnpm run topic-plugins:check
 ```
 
 Because this stack touches mobile runtime code, also run:

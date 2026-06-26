@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "remote-access-staging-asset-prefixes",
+  "title": "Canonical staging asset prefixes",
+  "topicCommits": ["05fd01bb211cc34d3fd1ac5ec0c05fe5075ab85d"],
+  "ownedPaths": [
+    "apps/server/src/http.ts",
+    "apps/web/src/publicPath.ts",
+    "packages/shared/src/publicPath.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/server/src/localTopics/remoteAccessStagingAssetPrefixes/index.ts",
+    "apps/web/src/localTopics/remoteAccessStagingAssetPrefixes/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/server/src/localTopics/remoteAccessStagingAssetPrefixes/index.ts",
+    "apps/web/src/localTopics/remoteAccessStagingAssetPrefixes/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime-staging-identity",
+  "title": "Staging identity preservation in sidebar",
+  "topicCommits": ["4147e3b4ad2f1afb6d567c433ef1bbdc156d951c"],
+  "ownedPaths": [
+    "apps/web/src/components/sidebar",
+    "packages/shared/src/worktreeIdentity.ts",
+    "scripts/dev-runner.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/runtimeStagingIdentity/index.ts",
+    "packages/shared/src/localTopics/runtimeStagingIdentity/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/runtimeStagingIdentity/index.ts",
+    "packages/shared/src/localTopics/runtimeStagingIdentity/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}

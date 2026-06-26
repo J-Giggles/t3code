@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "desktop-tests",
+  "title": "Headed desktop verification coverage",
+  "topicCommits": ["c97af3737267cfa974c9d4c05aa88f3f5122d16d"],
+  "ownedPaths": [
+    "apps/desktop/e2e",
+    "apps/desktop/package.json",
+    "docs/operations/headed-staging.md"
+  ],
+  "componentEntrypoints": ["apps/desktop/e2e/localTopics/desktopTests/index.ts"],
+  "pendingComponentEntrypoints": ["apps/desktop/e2e/localTopics/desktopTests/index.ts"],
+  "verification": ["vp check", "vp run typecheck", "vp run test:desktop-e2e:smoke"]
+}

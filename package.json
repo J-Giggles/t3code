@@ -42,7 +42,9 @@
     "release:smoke": "node scripts/release-smoke.ts",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist apps/*/dist-electron packages/*/dist .vite-plus apps/*/.vite-plus packages/*/.vite-plus",
     "omarchy:install-dev-launchers": "node scripts/install-omarchy-dev-launchers.ts",
-    "sync:repos": "node scripts/sync-reference-repos.ts"
+    "sync:repos": "node scripts/sync-reference-repos.ts",
+    "topic-stack:nightly": "node scripts/rebuild-nightly-topic-stack.ts",
+    "topic-plugins:check": "node scripts/validate-local-topic-plugins.ts"
   },
   "devDependencies": {
     "@babel/plugin-transform-react-jsx": "7.28.6",

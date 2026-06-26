@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "project-git",
+  "title": "Project Git dashboard and VCS reconciliation",
+  "topicCommits": ["caee2ec7bad7b8b722e43ab206f3d332a474fd57"],
+  "ownedPaths": [
+    "apps/server/src/workspaceGit",
+    "apps/server/src/vcs",
+    "apps/web/src/components/projectGit",
+    "packages/contracts/src/project.ts",
+    "packages/shared/src/git.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/projectGit/index.ts",
+    "apps/server/src/localTopics/projectGit/index.ts",
+    "packages/shared/src/localTopics/projectGit/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/projectGit/index.ts",
+    "apps/server/src/localTopics/projectGit/index.ts",
+    "packages/shared/src/localTopics/projectGit/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}

@@ -5,6 +5,12 @@ This document records the June 25, 2026 Jordan patch stack on top of
 upstream refreshes can be rebuilt and verified without rewriting protected
 `main`, `original`, or `staging` worktrees.
 
+The machine-readable replay order lives in
+`docs/operations/jordan-topic-stack.manifest.json`. Each manifest entry points
+to a repo-internal plugin folder under `local-plugins/<topic>/` with ownership,
+componentization, replay, and verification notes. These folders are not
+installable Codex plugins.
+
 ## Topic Order
 
 1. `feat(remote-access): manage Tailscale and routed browser access`
@@ -58,28 +64,55 @@ upstream refreshes can be rebuilt and verified without rewriting protected
 12. `docs(operations): document Jordan patch-stack maintenance workflow`
     - Owns this ledger, staging review workflow, promotion rules, repo hygiene,
       and future rebuild instructions.
+13. `fix(remote-access): keep reserved staging routes authoritative`
+    - Follow-up for launcher-owned reserved route precedence.
+14. `fix(remote-access): serve staging tailnet paths`
+    - Follow-up for public staging path-prefixed static/API/WebSocket serving.
+15. `fix(runtime): preserve staging identity in sidebar`
+    - Follow-up for visible staging identity precedence.
+16. `fix(remote-access): canonicalize staging asset prefixes`
+    - Follow-up for generated asset prefixes under `/staging/`.
+17. `fix(remote-access): harden public staging verification`
+    - Follow-up for strict public verifier and same-host Tailscale preflight.
+
+## Local Topic Plugins
+
+Local topics must be maintained through `local-plugins/<topic>/` and the
+manifest. A plugin folder contains `plugin.json` plus a focused README with the
+required headings checked by `pnpm run topic-plugins:check`.
+
+For new local work, put topic-owned code in package-local modules and wire it
+from the main files with thin imports. Examples:
+
+```text
+apps/web/src/localTopics/remoteAccess/index.ts
+apps/server/src/localTopics/remoteAccess/index.ts
+packages/client-runtime/src/localTopics/remoteAccess/index.ts
+```
+
+Existing topics do not need a risky full extraction during this documentation
+pass. Their plugin READMEs record pending component entrypoints so extraction
+can happen gradually when the owning code is touched.
 
 ## Rebuild On Latest Upstream
 
-Use a dev worktree. Do not perform this workflow in the root `main`, reserved
-`original`, or reserved `staging` worktree.
+Use the nightly workflow for routine upstream refreshes:
 
 ```bash
-git fetch upstream --prune
-git switch -c dev/jordan-topic-stack-YYYYMMDD upstream/main
-git cherry-pick <remote-access-topic>
-git cherry-pick <dev-launch-topic>
-git cherry-pick <runtime-topic>
-git cherry-pick <project-git-topic>
-git cherry-pick <provider-settings-topic>
-git cherry-pick <composer-topic>
-git cherry-pick <prompt-settings-topic>
-git cherry-pick <app-automation-topic>
-git cherry-pick <project-agent-files-topic>
-git cherry-pick <observability-topic>
-git cherry-pick <desktop-tests-topic>
-git cherry-pick <docs-topic>
+pnpm run topic-stack:nightly -- --dry-run
+pnpm run topic-stack:nightly -- --apply
 ```
+
+The detailed workflow lives in `docs/operations/nightly-upstream-replay.md`.
+It fetches `upstream`, backs up dirty or divergent `original`, resets
+`.worktrees/original` exactly to `upstream/main`, creates or reuses the rolling
+`.worktrees/nightly-local` candidate worktree, creates
+`dev/nightly-topic-stack-YYYYMMDD`, and cherry-picks manifest topics in order.
+Artifacts are written under
+`.worktrees/nightly-local/.t3code-nightly-runs/YYYYMMDD-HHMMSS/`.
+
+The script never promotes to `staging`. Use a separate manual promotion after
+the nightly candidate is repaired and verified.
 
 Resolve conflicts in the topic that owns the subsystem. Avoid carrying a
 conflict fix into a later topic unless the later topic is the owner.
@@ -105,6 +138,7 @@ Run the standard source and final-stack checks:
 ```bash
 vp check
 vp run typecheck
+pnpm run topic-plugins:check
 vp run lint:mobile
 vp test
 vp run test:desktop-smoke
@@ -156,6 +190,21 @@ and rerun the checks above. Promote by fast-forwarding or cherry-picking the
 proven topic stack into the reserved staging worktree. Do not promote directly
 to `main` unless the user explicitly asks for a main promotion and the main
 checkout is clean and not actively running.
+
+Manual promotion from the nightly candidate:
+
+```bash
+cd /home/jgigg/code/t3code/.worktrees/staging
+git status --short
+git update-ref refs/backup/staging-before-nightly-promote/$(date +%Y%m%d-%H%M%S) staging
+git merge --ff-only dev/nightly-topic-stack-YYYYMMDD
+vp check
+vp run typecheck
+vp run verify:staging-public
+```
+
+If fast-forward fails, stop and resolve manually. Do not force-update staging
+from the nightly script.
 
 ## Empty Or Redundant Commits
 

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "dev-launch",
+  "title": "Durable worktree launch profiles",
+  "topicCommits": ["3337bbc2d6dfabe4cc763a9865680136cbd770d1"],
+  "ownedPaths": [
+    ".t3code/dev-apps.json",
+    "apps/desktop/src/backend/DesktopDevAppLaunchManager.ts",
+    "apps/server/src/devLaunch/ServerDevAppLaunchManager.ts",
+    "apps/server/src/project/Layers/ProjectDevLaunchResolver.ts",
+    "apps/web/src/components/chat/ThreadDevLaunchControl.tsx",
+    "packages/contracts/src/devLaunch.ts",
+    "packages/shared/src/devAppLaunchRuntime.ts",
+    "packages/shared/src/devLaunch.ts",
+    "scripts/dev-runner.ts",
+    "scripts/install-omarchy-dev-launchers.ts",
+    "scripts/lib/omarchy-dev-launchers.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/devLaunch/index.ts",
+    "apps/server/src/localTopics/devLaunch/index.ts",
+    "packages/shared/src/localTopics/devLaunch/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/devLaunch/index.ts",
+    "apps/server/src/localTopics/devLaunch/index.ts",
+    "packages/shared/src/localTopics/devLaunch/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}

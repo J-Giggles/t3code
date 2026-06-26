@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "prompt-settings",
+  "title": "Configurable prompt settings",
+  "topicCommits": ["a5aa5e450ddf02bc21108880da2a37f928fa13be"],
+  "ownedPaths": [
+    "apps/server/src/provider",
+    "apps/web/src/components/settings",
+    "packages/contracts/src/settings.ts",
+    "packages/shared/src/prompts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/promptSettings/index.ts",
+    "apps/server/src/localTopics/promptSettings/index.ts",
+    "packages/shared/src/localTopics/promptSettings/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/promptSettings/index.ts",
+    "apps/server/src/localTopics/promptSettings/index.ts",
+    "packages/shared/src/localTopics/promptSettings/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}

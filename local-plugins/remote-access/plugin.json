@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "remote-access",
+  "title": "Remote access through Tailscale HTTPS links",
+  "topicCommits": ["10285aa14227fd1d727679429ec81e6bc2204b10"],
+  "ownedPaths": [
+    "apps/desktop/src/backend/DesktopServerExposure.ts",
+    "apps/desktop/src/backend/tailscaleEndpointProvider.ts",
+    "apps/desktop/scripts/verify-staging-public.mjs",
+    "apps/server/src/http.ts",
+    "apps/web/src/publicPath.ts",
+    "packages/shared/src/publicPath.ts",
+    "packages/shared/src/advertisedEndpoint.ts",
+    "packages/tailscale/src/tailscale.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/remoteAccess/index.ts",
+    "apps/server/src/localTopics/remoteAccess/index.ts",
+    "packages/client-runtime/src/localTopics/remoteAccess/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/remoteAccess/index.ts",
+    "apps/server/src/localTopics/remoteAccess/index.ts",
+    "packages/client-runtime/src/localTopics/remoteAccess/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+}

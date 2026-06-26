@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "remote-access-reserved-routes",
+  "title": "Authoritative reserved staging routes",
+  "topicCommits": ["a49f0ee77fabbfd2f46b2adb7ef6206595f57a85"],
+  "ownedPaths": [
+    "apps/desktop/src/backend/DesktopServerExposure.ts",
+    "apps/web/src/publicPath.ts",
+    "packages/shared/src/publicPath.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/remoteAccessReservedRoutes/index.ts",
+    "apps/desktop/src/localTopics/remoteAccessReservedRoutes/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/remoteAccessReservedRoutes/index.ts",
+    "apps/desktop/src/localTopics/remoteAccessReservedRoutes/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+}

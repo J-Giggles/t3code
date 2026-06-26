@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "remote-access-staging-tailnet-paths",
+  "title": "Staging tailnet path serving",
+  "topicCommits": ["b840026a3b637db965a061c4db1eb5304d0e0179"],
+  "ownedPaths": [
+    "apps/server/src/http.ts",
+    "apps/web/src/localApi.ts",
+    "packages/shared/src/publicPath.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/server/src/localTopics/remoteAccessStagingTailnetPaths/index.ts",
+    "apps/web/src/localTopics/remoteAccessStagingTailnetPaths/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/server/src/localTopics/remoteAccessStagingTailnetPaths/index.ts",
+    "apps/web/src/localTopics/remoteAccessStagingTailnetPaths/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "operations-docs",
+  "title": "Jordan patch-stack maintenance workflow",
+  "topicCommits": ["3e28d5ae8d8f99c8f1ff6753bb72a9ed190e5861"],
+  "ownedPaths": [
+    "AGENTS.md",
+    "docs/operations/jordan-topic-stack.md",
+    "docs/operations/staging-review-guide.md"
+  ],
+  "componentEntrypoints": ["docs/operations/localTopics/operationsDocs/index.md"],
+  "pendingComponentEntrypoints": ["docs/operations/localTopics/operationsDocs/index.md"],
+  "verification": ["vp check", "vp run typecheck"]
+}

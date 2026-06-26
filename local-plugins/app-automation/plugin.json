@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "app-automation",
+  "title": "Desktop shell MCP automation controls",
+  "topicCommits": ["c6d040d029a94b493d558e0dca87ee548cebd6ef"],
+  "ownedPaths": [
+    "apps/desktop/src/appAutomation",
+    "apps/desktop/src/preview",
+    "apps/server/src/mcp",
+    "docs/operations/headed-staging.md",
+    "packages/contracts/src/preview.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/desktop/src/localTopics/appAutomation/index.ts",
+    "apps/server/src/localTopics/appAutomation/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/desktop/src/localTopics/appAutomation/index.ts",
+    "apps/server/src/localTopics/appAutomation/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}

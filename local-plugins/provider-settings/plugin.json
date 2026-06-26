@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "provider-settings",
+  "title": "Provider usage, reset, and T3 access controls",
+  "topicCommits": ["83477a4fa73a729abf65a6ca29adba05aa62d376"],
+  "ownedPaths": [
+    "apps/server/src/provider",
+    "apps/web/src/components/settings",
+    "packages/contracts/src/provider.ts",
+    "packages/contracts/src/settings.ts"
+  ],
+  "componentEntrypoints": [
+    "apps/web/src/localTopics/providerSettings/index.ts",
+    "apps/server/src/localTopics/providerSettings/index.ts"
+  ],
+  "pendingComponentEntrypoints": [
+    "apps/web/src/localTopics/providerSettings/index.ts",
+    "apps/server/src/localTopics/providerSettings/index.ts"
+  ],
+  "verification": ["vp check", "vp run typecheck"]
+}
