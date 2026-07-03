@@ -102,6 +102,15 @@
       "pluginPath": "local-plugins/remote-access-public-verifier-hardening",
       "commits": ["5aadf3c563191f2c449a30d31b3ed57a9e6ccf1c"],
       "subject": "fix(remote-access): harden public staging verification"
+    },
+    {
+      "id": "topic-replay-safeguards",
+      "pluginPath": "local-plugins/topic-replay-safeguards",
+      "commits": [
+        "d292cde42f471bcdb8f438f6e12da9a8f5b54889",
+        "fd66c5832f481020ad813b8815c1f31dfd22be6b"
+      ],
+      "subject": "feat(topic-stack): add replay checklist and audit safeguards"
     }
   ]
 }

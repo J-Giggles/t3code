@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "id": "topic-replay-safeguards",
+  "title": "Topic replay checklist and audit safeguards",
+  "topicKind": "mixed",
+  "topicCommits": [
+    "d292cde42f471bcdb8f438f6e12da9a8f5b54889",
+    "fd66c5832f481020ad813b8815c1f31dfd22be6b"
+  ],
+  "ownedPaths": [
+    {
+      "path": "CONTEXT.md",
+      "role": "docs"
+    },
+    {
+      "path": "local-plugins",
+      "role": "docs"
+    },
+    {
+      "path": "scripts/lib/local-topic-stack.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/local-topic-stack.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "scripts/lib/nightly-topic-stack.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/nightly-topic-stack.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "docs/operations/nightly-upstream-replay.md",
+      "role": "docs"
+    }
+  ],
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "scripts/lib/local-topic-stack.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/nightly-topic-stack.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/local-topic-stack.test.ts",
+        "kind": "test",
+        "publicSurface": "test"
+      },
+      {
+        "path": "scripts/lib/nightly-topic-stack.test.ts",
+        "kind": "test",
+        "publicSurface": "test"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "scripts/validate-local-topic-plugins.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "scripts/rebuild-nightly-topic-stack.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "local-plugins/README.md",
+      "role": "consumer"
+    },
+    {
+      "path": "docs/operations/jordan-topic-stack.md",
+      "role": "consumer"
+    },
+    {
+      "path": "docs/operations/nightly-upstream-replay.md",
+      "role": "consumer"
+    },
+    {
+      "path": "docs/operations/staging-review-guide.md",
+      "role": "consumer"
+    },
+    {
+      "path": "AGENTS.md",
+      "role": "consumer"
+    }
+  ],
+  "verification": [
+    "vp check",
+    "vp run typecheck",
+    "pnpm run topic-plugins:check",
+    "vp test run scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts"
+  ]
+}

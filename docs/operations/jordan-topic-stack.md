@@ -74,6 +74,9 @@ installable Codex plugins.
     - Follow-up for generated asset prefixes under `/staging/`.
 17. `fix(remote-access): harden public staging verification`
     - Follow-up for strict public verifier and same-host Tailscale preflight.
+18. `feat(topic-stack): add replay checklist and audit safeguards`
+    - Follow-up for machine-enforced Replay Checklist Items, run-specific
+      `topic-audit.md` creation, and promotion sign-off documentation.
 
 ## Local Topic Plugins
 

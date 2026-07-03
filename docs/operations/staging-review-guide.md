@@ -36,6 +36,7 @@ Review in this order:
 10. Local observability hub, Grafana provisioning, and digest metrics.
 11. Headed desktop verification coverage.
 12. Patch-stack maintenance workflow and promotion governance.
+13. Topic replay checklist and audit safeguards.
 
 The order matters because later topics reuse earlier infrastructure. The app
 launcher depends on correct advertised endpoints. Runtime recovery and project

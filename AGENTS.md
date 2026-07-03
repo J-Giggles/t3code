@@ -109,6 +109,10 @@ Current topic order:
 10. `feat(observability): add local hub, Grafana provisioning, and digest metrics`
 11. `test(desktop): add headed desktop verification coverage`
 12. `docs(operations): document Jordan patch-stack maintenance workflow`
+13. `feat(topic-stack): add replay checklist and audit safeguards`
+
+- Includes machine-enforced Replay Checklist Items for local plugin READMEs, `topic-audit.md` run artifacts, and
+  human promotion sign-off documentation.
 
 When upstream changes, prefer the scripted nightly workflow in
 `docs/operations/nightly-upstream-replay.md`. It fetches upstream, backs up and
@@ -123,6 +127,8 @@ unsquashed source branch with `git diff` when applicable. Promotion to
 
 Current staging includes the June 26 follow-up topic
 `fix(remote-access): harden public staging verification`.
+Current staging also includes the replay-safeguards topic that keeps checklist enforcement and run-audit generation in
+the manifest.
 
 When the remote-access topic is replayed after an upstream update, also run the focused public-path tests and
 `vp run verify:staging-public` from the rebuilt stack. If a local browser reports DNS, timeout, or blank-page errors
