@@ -6,6 +6,7 @@ import { assert, describe, it } from "vitest";
 import {
   LOCAL_TOPIC_MANIFEST_PATH,
   readLocalTopicManifest,
+  REQUIRED_REPLAY_CHECKLIST_HEADINGS,
   REQUIRED_TOPIC_README_HEADINGS,
   validateLocalTopicPlugins,
 } from "./local-topic-stack.ts";
@@ -19,12 +20,54 @@ function writeJson(path: string, value: unknown): void {
   NodeFS.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function readmeWithHeadings(omitHeading?: string): string {
+type ReplayChecklistFixtureMode =
+  | "valid"
+  | "not-applicable"
+  | "missing-item"
+  | "unchecked"
+  | "missing-evidence"
+  | "missing-evidence-path"
+  | "too-few-non-na";
+
+function replayChecklistLineForHeading(heading: string, mode: ReplayChecklistFixtureMode): string {
+  if (mode === "missing-item" && heading === "## Added UI") {
+    return "Test content.";
+  }
+  if (mode === "not-applicable") {
+    return "- [x] Not applicable: this fixture section has no topic-owned behavior.";
+  }
+  if (mode === "too-few-non-na" && heading !== "## Added Features") {
+    return "- [x] Not applicable: this fixture section has no topic-owned behavior.";
+  }
+  if (mode === "unchecked" && heading === "## Added Features") {
+    return "- [ ] Fixture behavior is covered by the topic module (`apps/web/src/localTopics/testTopic/index.ts`).";
+  }
+  if (mode === "missing-evidence" && heading === "## Added Features") {
+    return "- [x] Fixture behavior is covered by the topic module.";
+  }
+  if (mode === "missing-evidence-path" && heading === "## Added Features") {
+    return "- [x] Fixture behavior is covered by a stale topic module (`apps/web/src/localTopics/testTopic/missing.ts`).";
+  }
+  return `- [x] ${heading.slice("## Added ".length)} fixture behavior is covered by the topic module (\`apps/web/src/localTopics/testTopic/index.ts\`).`;
+}
+
+function readmeWithHeadings(
+  omitHeading?: string,
+  replayChecklistMode: ReplayChecklistFixtureMode = "valid",
+): string {
   return [
     "# Test Topic",
     "",
     ...REQUIRED_TOPIC_README_HEADINGS.filter((heading) => heading !== omitHeading).flatMap(
-      (heading) => [heading, "Test content.", ""],
+      (heading) => [
+        heading,
+        REQUIRED_REPLAY_CHECKLIST_HEADINGS.includes(
+          heading as (typeof REQUIRED_REPLAY_CHECKLIST_HEADINGS)[number],
+        )
+          ? replayChecklistLineForHeading(heading, replayChecklistMode)
+          : "Test content.",
+        "",
+      ],
     ),
   ].join("\n");
 }
@@ -40,6 +83,7 @@ function writeTopicFixture(
     readonly componentEntrypoints?: ReadonlyArray<string>;
     readonly omitEntrypointsOnDisk?: boolean;
     readonly verification?: ReadonlyArray<string>;
+    readonly replayChecklistMode?: ReplayChecklistFixtureMode;
   } = {},
 ): void {
   const topicKind = options.topicKind ?? "code";
@@ -64,7 +108,10 @@ function writeTopicFixture(
   if (options.omitReadme !== true) {
     NodeFS.writeFileSync(
       NodePath.join(pluginDir, "README.md"),
-      readmeWithHeadings(options.omitHeading),
+      readmeWithHeadings(
+        options.omitHeading,
+        options.replayChecklistMode ?? (topicKind === "docs" ? "not-applicable" : "valid"),
+      ),
     );
   }
   if (options.omitEntrypointsOnDisk !== true) {
@@ -142,6 +189,56 @@ describe("local topic plugin validation", () => {
 
     assert.equal(result.ok, false);
     assert.ok(result.errors.some((error) => error.includes("## Replay Notes")));
+  });
+
+  it("fails when an Added section has no Replay Checklist Item", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { replayChecklistMode: "missing-item" });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("Replay Checklist Item")));
+  });
+
+  it("fails when a Replay Checklist Item is unchecked", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { replayChecklistMode: "unchecked" });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("must be checked")));
+  });
+
+  it("fails when a non-N/A Replay Checklist Item has no evidence", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { replayChecklistMode: "missing-evidence" });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("backticked evidence")));
+  });
+
+  it("fails when Replay Checklist Item path evidence is stale", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { replayChecklistMode: "missing-evidence-path" });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("evidence path does not exist")));
+  });
+
+  it("fails when a code topic has too few non-N/A Replay Checklist Items", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { replayChecklistMode: "too-few-non-na" });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("non-N/A Replay Checklist Items")));
   });
 
   it("fails when plugin commits do not match manifest commits", () => {

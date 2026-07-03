@@ -14,21 +14,22 @@ This is the June 26 remote-access hardening follow-up currently at the tip of st
 
 ## Added Features
 
-- Interface-bound network preflight for same-host Tailscale routing.
-- Verifier requires project listing, new chat creation, `Hi`, and a non-empty assistant response.
-- Failure artifacts capture network preflight details.
+- [x] Public verifier performs an interface-bound network preflight for same-host Tailscale routing (`apps/desktop/scripts/verify-staging-public.mjs`).
+- [x] Public verifier requires project listing, new chat creation, `Hi`, and a non-empty assistant response (`apps/desktop/scripts/verify-staging-public.mjs`).
+- [x] Failure artifacts capture network preflight details for route diagnosis (`apps/desktop/scripts/verify-staging-public.mjs`).
 
 ## Added UI
 
-- No product UI; verifier behavior exercises the public staging UI.
+- [x] Public staging verification exercises the visible hosted app flow rather than a shallow status check (`apps/desktop/scripts/verify-staging-public.mjs`, `/staging/`).
 
 ## Added Server And Runtime Behavior
 
-- Tailscale same-host route repair guidance and launcher reconcile behavior are documented with verifier expectations.
+- [x] Tailscale same-host route repair guidance is tied to public verifier expectations (`docs/operations/jordan-topic-stack.md`, `docs/operations/staging-review-guide.md`).
+- [x] Launcher reconcile behavior remains associated with durable launch support (`scripts/lib/omarchy-dev-launchers.ts`, `scripts/localTopics/devLaunch/index.ts`).
 
 ## Added Tests
 
-- Strict public staging verifier coverage.
+- [x] Strict public staging verification is enforced through the staging public verifier command (`apps/desktop/scripts/verify-staging-public.mjs`, `vp run verify:staging-public`).
 
 ## Component Entrypoints
 

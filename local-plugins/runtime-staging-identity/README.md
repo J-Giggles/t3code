@@ -14,19 +14,19 @@ This is a June 26 runtime follow-up. Fold it into the runtime topic during the n
 
 ## Added Features
 
-- Staging identity precedence for visible worktree labels.
+- [x] Staging identity takes precedence for visible worktree labels (`apps/web/src/localTopics/runtime/stagingIdentity.ts`, `scripts/dev-runner.ts`).
 
 ## Added UI
 
-- Sidebar labels continue to show staging instead of inherited parent identity.
+- [x] Sidebar labels continue to show staging instead of inherited parent identity (`apps/web/src/localTopics/runtime/stagingIdentity.ts`, `apps/web/src/components/sidebar`).
 
 ## Added Server And Runtime Behavior
 
-- Dev-runner identity resolution prefers checkout-local identity over inherited app-launch values.
+- [x] Dev-runner identity resolution prefers checkout-local identity over inherited app-launch values (`scripts/localTopics/runtime/stagingIdentity.ts`, `scripts/dev-runner.ts`).
 
 ## Added Tests
 
-- Worktree identity and dev-runner environment tests.
+- [x] Worktree identity and dev-runner environment behavior are covered by focused tests (`scripts/dev-runner.test.ts`, `scripts/dev-runner.test.ts`).
 
 ## Component Entrypoints
 
@@ -38,7 +38,7 @@ Componentization status: `complete`.
 ## Integration Points
 
 - `apps/web/src/components/sidebar`
-- `packages/shared/src/worktreeIdentity.ts`
+- `scripts/dev-runner.ts`
 - `scripts/dev-runner.ts`
 
 ## Focused Implementation Snippets

@@ -14,26 +14,24 @@ This topic collects the durable launch profile implementation and Omarchy launch
 
 ## Added Features
 
-- `.t3code/dev-apps.json` launch profile discovery.
-- Desktop and server launch managers for project app processes.
-- Omarchy launcher generation and same-host Tailscale route reconciliation.
-- Dev runner reserved-route preflights prevent non-owning branches/worktrees from claiming `/main`, `/original`, or
-  `/staging`.
+- [x] Worktree launch profiles are discovered from repo metadata (`.t3code/dev-apps.json`, `packages/shared/src/localTopics/devLaunch/index.ts`).
+- [x] Desktop and server launch managers own project app processes (`apps/desktop/src/backend/DesktopDevAppLaunchManager.ts`, `apps/server/src/devLaunch/ServerDevAppLaunchManager.ts`).
+- [x] Omarchy launcher generation and same-host Tailscale route reconciliation are scripted (`scripts/lib/omarchy-dev-launchers.ts`, `scripts/localTopics/devLaunch/index.ts`).
+- [x] Dev runner reserved-route preflights block non-owning branches from `/main`, `/original`, and `/staging` (`scripts/dev-runner.ts`, `packages/shared/src/localTopics/devLaunch/index.ts`).
 
 ## Added UI
 
-- Chat launch controls show setup, launch, status, route conflicts, errors, and open URL actions.
+- [x] Chat launch controls show setup, launch, status, route conflicts, errors, and open URL actions (`apps/web/src/components/chat/ThreadDevLaunchControl.tsx`).
 
 ## Added Server And Runtime Behavior
 
-- Launch profile resolution runs against the active project workspace.
-- Child process environment and port selection are isolated per worktree.
-- Route conflicts are reported as launch collisions with the existing and expected Tailscale proxy targets.
+- [x] Launch profile resolution runs against the active project workspace (`apps/server/src/project/Layers/ProjectDevLaunchResolver.ts`).
+- [x] Child process environment and port selection are isolated per worktree (`packages/shared/src/devAppLaunchRuntime.ts`, `scripts/dev-runner.ts`).
+- [x] Route conflicts report existing and expected Tailscale proxy targets (`packages/shared/src/localTopics/devLaunch/index.ts`, `apps/web/src/components/chat/ThreadDevLaunchControl.tsx`).
 
 ## Added Tests
 
-- Launch profile parsing, dev-runner environment and reserved-route guards, Omarchy renderer, route-collision prompts,
-  and launcher runtime tests.
+- [x] Launch parsing, dev-runner guards, Omarchy rendering, and launch UI behavior are covered by focused tests (`packages/shared/src/devLaunch.test.ts`, `scripts/dev-runner.test.ts`, `scripts/lib/omarchy-dev-launchers.test.ts`, `apps/web/src/components/chat/ThreadDevLaunchControl.test.ts`).
 
 ## Component Entrypoints
 

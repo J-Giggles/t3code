@@ -14,22 +14,23 @@ This is the app automation topic from the June 25 replay stack.
 
 ## Added Features
 
-- `app_*` MCP controls for the Electron shell.
-- Preview automation broker separation.
-- Ownership rules for app-shell versus browser-preview automation.
+- [x] Electron shell control is exposed through app automation surfaces (`packages/contracts/src/appAutomation.ts`, `apps/desktop/src/localTopics/appAutomation/index.ts`).
+- [x] Preview automation stays separated from app-shell automation (`packages/contracts/src/previewAutomation.ts`, `apps/server/src/mcp/toolkits/preview/tools.ts`).
+- [x] Automation ownership rules route app control through desktop/server brokers (`apps/server/src/mcp/AppAutomationBroker.ts`, `apps/desktop/src/appAutomation/AppAutomationManager.ts`).
 
 ## Added UI
 
-- No primary user UI; this topic exposes operator and automation surfaces.
+- [x] Not applicable: this topic exposes operator automation surfaces rather than primary product UI.
 
 ## Added Server And Runtime Behavior
 
-- Desktop automation RPC and IPC contracts are registered with the app shell.
-- MCP tool routing separates T3 Code app control from browser preview control.
+- [x] Desktop automation RPC and IPC contracts are registered with the app shell (`apps/desktop/src/ipc/methods/appAutomation.ts`, `packages/contracts/src/appAutomation.ts`).
+- [x] MCP routing separates T3 Code app control from browser preview control (`apps/server/src/mcp/AppAutomationBroker.ts`, `apps/server/src/mcp/toolkits/preview/handlers.ts`).
 
 ## Added Tests
 
-- App automation contract, broker, and headed staging control tests.
+- [x] App automation broker behavior is covered by focused MCP tests (`apps/server/src/mcp/AppAutomationBroker.test.ts`).
+- [x] Preview automation routing remains covered separately from app-shell control (`apps/server/src/mcp/toolkits/preview/tools.test.ts`, `apps/desktop/src/ipc/methods/preview.test.ts`).
 
 ## Component Entrypoints
 

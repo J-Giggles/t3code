@@ -14,19 +14,21 @@ This is a June 26 remote-access follow-up. Fold it into the base remote-access t
 
 ## Added Features
 
-- Reserved route precedence over persisted desktop exposure settings.
+- [x] Reserved route precedence overrides stale persisted desktop exposure settings (`apps/desktop/src/localTopics/remoteAccess/reservedRoutes.ts`, `apps/desktop/src/backend/DesktopServerExposure.ts`).
+- [x] Reserved `/main`, `/original`, and `/staging` ownership is checked against actual branch/worktree identity (`packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts`).
 
 ## Added UI
 
-- Settings and copied URLs reflect the launcher-owned route.
+- [x] Settings and copied URLs reflect the launcher-owned route after reserved-route resolution (`apps/web/src/localTopics/remoteAccess/reservedRoutes.ts`, `apps/web/src/publicPath.ts`).
 
 ## Added Server And Runtime Behavior
 
-- Hosted route selection avoids doubled or cross-worktree prefixes.
+- [x] Hosted route selection avoids doubled or cross-worktree prefixes (`packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts`, `apps/web/src/localTopics/remoteAccess/reservedRoutes.ts`).
+- [x] Desktop exposure refuses route ownership when the actual checkout does not match the reservation (`apps/desktop/src/localTopics/remoteAccess/reservedRoutes.ts`, `apps/desktop/src/backend/DesktopServerExposure.ts`).
 
 ## Added Tests
 
-- Focused route precedence and public path tests.
+- [x] Focused route precedence and public path behavior are covered by shared/web/desktop route tests (`packages/shared/src/publicPath.test.ts`, `apps/web/src/publicPath.test.ts`, `apps/desktop/src/backend/DesktopServerExposure.test.ts`).
 
 ## Component Entrypoints
 

@@ -14,19 +14,21 @@ This is a June 26 remote-access follow-up. Fold it into the base remote-access t
 
 ## Added Features
 
-- Canonical asset prefix rewriting for staging public paths.
+- [x] Staging asset prefix rewriting keeps generated asset URLs under the active public route (`packages/shared/src/localTopics/remoteAccess/stagingAssetPrefixes.ts`).
+- [x] Stale reserved prefixes are canonicalized instead of nested under `/staging` (`apps/web/src/localTopics/remoteAccess/stagingAssetPrefixes.ts`, `/staging/assets/`).
 
 ## Added UI
 
-- No direct UI beyond fixing blank or partially loaded staging pages.
+- [x] Public staging pages avoid blank or partially loaded shells caused by doubled asset prefixes (`apps/web/src/localTopics/remoteAccess/stagingAssetPrefixes.ts`, `/staging/`).
 
 ## Added Server And Runtime Behavior
 
-- Static shell HTML and generated asset paths use `/staging/...` exactly once.
+- [x] Static shell HTML and generated asset paths use `/staging/...` exactly once (`apps/server/src/localTopics/remoteAccess/stagingAssetPrefixes.ts`, `apps/server/src/http.ts`).
+- [x] Module script responses keep JavaScript MIME types instead of HTML fallbacks (`apps/server/src/localTopics/remoteAccess/stagingAssetPrefixes.ts`, `apps/server/src/http.ts`).
 
 ## Added Tests
 
-- Asset prefix and MIME verification through focused tests and the staging public verifier.
+- [x] Asset prefix and MIME behavior are verified by focused path tests and the public staging verifier (`apps/web/src/publicPath.test.ts`, `apps/desktop/scripts/verify-staging-public.mjs`).
 
 ## Component Entrypoints
 

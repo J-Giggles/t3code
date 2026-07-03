@@ -14,22 +14,22 @@ This is the provider settings topic from the June 25 replay stack.
 
 ## Added Features
 
-- Provider usage and Codex limit display.
-- Provider-native reset controls.
-- T3 provider access settings and MCP catalog wiring.
+- [x] Provider usage and Codex limit state are exposed through provider settings modules (`apps/web/src/localTopics/providerSettings/index.ts`, `apps/server/src/localTopics/providerSettings/index.ts`).
+- [x] Provider-native reset controls are wired through typed server operations (`apps/server/src/provider/Drivers/CodexNativeReset.ts`, `apps/server/src/provider/providerMaintenance.ts`).
+- [x] T3 provider access settings and MCP catalog wiring are represented in contracts and settings surfaces (`packages/contracts/src/provider.ts`, `packages/contracts/src/settings.ts`).
 
 ## Added UI
 
-- Settings panels for usage, reset actions, and T3 access toggles.
+- [x] Settings panels expose usage, reset actions, and T3 access toggles (`apps/web/src/routes/settings.providers.tsx`, `apps/web/src/localTopics/providerSettings/index.ts`).
 
 ## Added Server And Runtime Behavior
 
-- Provider maintenance operations are exposed through typed contracts.
-- Provider hang and interrupt handling is stabilized around reset flows.
+- [x] Provider maintenance operations are exposed through typed contracts (`apps/server/src/provider/providerMaintenance.ts`, `packages/contracts/src/provider.ts`).
+- [x] Provider hang and interrupt handling stays stable around reset flows (`apps/server/src/provider/providerMaintenanceRunner.ts`, `apps/server/src/provider/providerConnection.ts`).
 
 ## Added Tests
 
-- Provider usage ordering, reset behavior, settings contract, and provider maintenance tests.
+- [x] Provider usage ordering, reset behavior, settings contracts, and provider maintenance are covered by focused tests (`apps/server/src/provider/providerMaintenance.test.ts`, `apps/server/src/provider/Drivers/CodexNativeReset.test.ts`, `packages/contracts/src/provider.test.ts`).
 
 ## Component Entrypoints
 

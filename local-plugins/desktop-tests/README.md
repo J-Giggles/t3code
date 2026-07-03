@@ -14,22 +14,22 @@ This is the desktop verification topic from the June 25 replay stack.
 
 ## Added Features
 
-- Playwright fixtures and helpers for headed Electron verification.
-- Smoke wiring for desktop staging workflows.
-- The Electron harness scrubs outer launcher route/identity environment so dev worktree smoke tests cannot inherit a
-  reserved `/main`, `/original`, or `/staging` route from another running app.
+- [x] Headed Electron verification fixtures are grouped under desktop test entrypoints (`apps/desktop/e2e/localTopics/desktopTests/index.ts`).
+- [x] Desktop smoke wiring exercises staging workflows through the desktop package scripts (`apps/desktop/package.json`, `apps/desktop/scripts/run-e2e.mjs`).
+- [x] The Electron harness scrubs inherited route and identity environment for isolated smoke runs (`apps/desktop/e2e/localTopics/desktopTests/index.ts`).
 
 ## Added UI
 
-- No product UI; this topic tests visible Electron behavior.
+- [x] Not applicable: this topic tests visible Electron behavior but adds no product UI surface.
 
 ## Added Server And Runtime Behavior
 
-- Test harness launches isolated desktop state, ports, route identity, and app/preview automation.
+- [x] Test harness startup isolates desktop state, ports, route identity, and automation channels (`apps/desktop/e2e/localTopics/desktopTests/index.ts`).
 
 ## Added Tests
 
-- Headed desktop smoke specs, fixtures, and CI/package script wiring.
+- [x] Desktop smoke specs cover composer, connections, workspace Git, and recovery lifecycle behavior (`apps/desktop/e2e/specs/composer.spec.ts`, `apps/desktop/e2e/specs/recovery-lifecycle.spec.ts`).
+- [x] Headed staging instructions are maintained with the desktop smoke workflow (`docs/operations/headed-staging.md`).
 
 ## Component Entrypoints
 

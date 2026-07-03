@@ -14,19 +14,21 @@ This is a June 26 remote-access follow-up. Fold it into the base remote-access t
 
 ## Added Features
 
-- Tailnet path handling for staging-prefixed public requests.
+- [x] Tailnet path handling supports staging-prefixed public requests (`packages/shared/src/localTopics/remoteAccess/stagingTailnetPaths.ts`, `/staging/`).
+- [x] Browser local API paths preserve the active public prefix (`apps/web/src/localTopics/remoteAccess/stagingTailnetPaths.ts`, `apps/web/src/localApi.ts`).
 
 ## Added UI
 
-- No direct UI beyond fixing public staging load behavior.
+- [x] Public staging load behavior works through the visible hosted route (`apps/web/src/localTopics/remoteAccess/stagingTailnetPaths.ts`, `/staging/`).
 
 ## Added Server And Runtime Behavior
 
-- Server routes accept staging-prefixed static, metadata, API, and WebSocket requests.
+- [x] Server routes accept staging-prefixed static and metadata requests (`apps/server/src/localTopics/remoteAccess/stagingTailnetPaths.ts`, `apps/server/src/http.ts`).
+- [x] Server routes accept staging-prefixed API and WebSocket requests (`apps/server/src/localTopics/remoteAccess/stagingTailnetPaths.ts`, `/staging/ws`).
 
 ## Added Tests
 
-- Focused prefixed route tests and public staging verifier coverage.
+- [x] Prefixed route behavior and public staging coverage are verified by focused tests and the public verifier (`packages/shared/src/publicPath.test.ts`, `apps/desktop/scripts/verify-staging-public.mjs`).
 
 ## Component Entrypoints
 

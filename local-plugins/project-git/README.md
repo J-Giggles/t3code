@@ -14,22 +14,22 @@ This is the project Git topic from the June 25 replay stack.
 
 ## Added Features
 
-- Workspace Git snapshot collection and shared Git helpers.
-- Project Git dashboard data contracts.
-- VCS refresh reconciliation for long-lived sessions.
+- [x] Workspace Git snapshot collection and shared Git helpers are topic-owned (`apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`, `packages/shared/src/localTopics/projectGit/index.ts`).
+- [x] Project Git dashboard contracts expose branch, status, and repository context (`packages/contracts/src/project.ts`, `apps/web/src/localTopics/projectGit/index.ts`).
+- [x] VCS refresh reconciliation keeps long-lived sessions current (`apps/server/src/vcs`, `apps/server/src/localTopics/projectGit/index.ts`).
 
 ## Added UI
 
-- Project Git dashboard panels for branch, status, and repository context.
+- [x] Project Git dashboard panels render repository metrics and changes (`apps/web/src/localTopics/projectGit/index.ts`, `apps/desktop/e2e/specs/workspace-git.spec.ts`).
 
 ## Added Server And Runtime Behavior
 
-- Server-side workspace Git scanning is isolated from UI render loops.
-- VCS reconciliation updates project state without replacing unrelated runtime state.
+- [x] Server-side workspace Git scanning is isolated from UI render loops (`apps/server/src/workspaceGit/WorkspaceGitSnapshot.ts`).
+- [x] VCS reconciliation updates project state without replacing unrelated runtime state (`apps/server/src/vcs`, `packages/client-runtime/src/state/vcs.ts`).
 
 ## Added Tests
 
-- Workspace Git snapshot and VCS reconciliation tests.
+- [x] Workspace Git snapshot and VCS reconciliation behavior are covered by focused tests (`apps/server/src/workspaceGit/WorkspaceGitSnapshot.test.ts`, `packages/client-runtime/src/state/vcsAction.test.ts`).
 
 ## Component Entrypoints
 

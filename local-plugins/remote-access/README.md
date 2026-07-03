@@ -14,29 +14,25 @@ This is the base remote-access topic from the June 25, 2026 replay stack. Later 
 
 ## Added Features
 
-- Public path normalization for assets, APIs, WebSockets, and pairing URLs.
-- Tailscale Serve endpoint validation and hosted route management.
-- User-managed Tailscale routes are validated as single segments, probed for availability, and blocked when reserved
-  for another branch/worktree.
-- Live staging verification through the public HTTPS route.
+- [x] Public path normalization covers assets, APIs, WebSockets, and pairing URLs (`packages/shared/src/localTopics/remoteAccess/publicPath.ts`, `apps/server/src/localTopics/remoteAccess/httpRouting.ts`).
+- [x] Tailscale Serve endpoint validation and hosted route management are centralized (`packages/tailscale/src/tailscale.ts`, `apps/desktop/src/localTopics/remoteAccess/exposure.ts`).
+- [x] User-managed Tailscale routes are validated as single segments and probed before use (`packages/shared/src/localTopics/remoteAccess/publicPath.ts`, `packages/tailscale/src/tailscale.ts`).
+- [x] Live staging verification runs through the public HTTPS route (`apps/desktop/scripts/verify-staging-public.mjs`, `vp run verify:staging-public`).
 
 ## Added UI
 
-- Settings surfaces show and copy hosted access and pairing URLs with the active route preserved.
-- Connections settings probe edited routes before apply and show available, owned, taken, and reserved-route states.
+- [x] Settings surfaces show and copy hosted access and pairing URLs with the active route preserved (`apps/web/src/components/settings/pairingUrls.ts`, `apps/web/src/publicPath.ts`).
+- [x] Connections settings probes edited routes and displays available, owned, taken, and reserved states (`apps/web/src/components/settings/ConnectionsSettings.tsx`, `packages/shared/src/localTopics/remoteAccess/publicPath.ts`).
 
 ## Added Server And Runtime Behavior
 
-- Server static, API, and WebSocket handlers accept the configured public path prefix.
-- Server startup and desktop exposure check route availability before provisioning so they do not overwrite another
-  backend's Tailscale Serve target.
-- Desktop exposure code owns mutable Tailscale Serve state, advertised endpoint selection, and reserved `/main`,
-  `/original`, and `/staging` ownership checks against actual git identity.
+- [x] Server static, API, and WebSocket handlers accept the configured public path prefix (`apps/server/src/localTopics/remoteAccess/httpRouting.ts`, `apps/server/src/http.ts`).
+- [x] Server startup and desktop exposure avoid overwriting another backend Tailscale Serve target (`apps/desktop/src/localTopics/remoteAccess/exposure.ts`, `apps/desktop/src/backend/DesktopServerExposure.ts`).
+- [x] Desktop exposure owns mutable Tailscale Serve state and advertised endpoint selection (`apps/desktop/src/localTopics/remoteAccess/exposure.ts`, `apps/desktop/src/backend/tailscaleEndpointProvider.ts`).
 
 ## Added Tests
 
-- Public path, single-segment route validation, route availability, reserved ownership, pairing URL, and staging public
-  verifier coverage.
+- [x] Public path, route validation, route availability, reserved ownership, pairing URL, and staging public verifier coverage protect this topic (`packages/shared/src/publicPath.test.ts`, `packages/tailscale/src/tailscale.test.ts`, `apps/web/src/components/settings/pairingUrls.test.ts`, `apps/desktop/src/backend/DesktopServerExposure.test.ts`).
 
 ## Component Entrypoints
 

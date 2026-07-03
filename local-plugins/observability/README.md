@@ -14,22 +14,22 @@ This topic folds local OTel/LGTM startup, Grafana provisioning, digest metrics, 
 
 ## Added Features
 
-- Local observability startup and status commands.
-- Grafana datasource and dashboard provisioning.
-- Agent-readable observability digest command.
+- [x] Local observability startup and status commands are exposed through scripts (`scripts/local-observability.ts`, `scripts/localTopics/observability/index.ts`).
+- [x] Grafana datasource and dashboard provisioning lives with local observability infra (`infra/local-observability/grafana/provisioning/datasources/t3code.yaml`, `infra/local-observability/grafana/dashboards/t3code-local-observability.json`).
+- [x] Agent-readable digest output is available for local troubleshooting (`scripts/observability-digest.ts`, `scripts/localTopics/observability/index.ts`).
 
 ## Added UI
 
-- Grafana dashboards are provisioned outside the T3 Code web UI.
+- [x] Grafana dashboard panels are provisioned as the operator UI for this topic (`infra/local-observability/grafana/dashboards/t3code-local-observability.json`).
 
 ## Added Server And Runtime Behavior
 
-- Server, browser, desktop, and provider events export logs, traces, and metrics with worktree identity labels.
-- Closed Electron output pipes are treated as best-effort console mirroring failures.
+- [x] Server, browser, desktop, and provider telemetry export logs, traces, and metrics with worktree identity labels (`apps/server/src/localTopics/observability/index.ts`, `apps/desktop/src/localTopics/observability/index.ts`).
+- [x] Closed Electron output pipes are treated as best-effort console mirroring failures (`apps/desktop/src/app/DesktopBackendOutputLog.ts`).
 
 ## Added Tests
 
-- Local observability config, digest, Grafana provisioning, and worktree metric label tests.
+- [x] Local observability config, digest output, Grafana provisioning, and worktree metric labels are covered by focused tests (`scripts/local-observability.test.ts`, `scripts/observability-digest.test.ts`, `packages/shared/src/observabilityResource.test.ts`).
 
 ## Component Entrypoints
 
@@ -44,7 +44,7 @@ Componentization status: `complete`.
 - `scripts/local-observability.ts`
 - `scripts/observability-digest.ts`
 - `apps/server/src/mcp/toolkits/observability`
-- `apps/desktop/src/backend/DesktopBackendOutputLog.ts`
+- `apps/desktop/src/app/DesktopBackendOutputLog.ts`
 
 ## Focused Implementation Snippets
 

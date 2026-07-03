@@ -14,22 +14,22 @@ This topic combines schemas, server operations, UI sheet behavior, secret handli
 
 ## Added Features
 
-- Agent file descriptor schemas and harness manifest schemas.
-- Project-safe read, write, scaffold, and secret-key operations.
-- Provider MCP/env injection for project-scoped harness files.
+- [x] Agent file descriptor and harness manifest schemas are defined in contracts (`packages/contracts/src/localTopics/projectAgentFiles/index.ts`, `packages/contracts/src/localTopics/projectAgentFiles/index.ts`).
+- [x] Project-safe read, write, scaffold, and secret-key operations are owned by server project layers (`apps/server/src/project/Layers/ProjectAgentFiles.ts`).
+- [x] Provider MCP/env injection supports project-scoped harness files (`apps/server/src/project/Layers/ProjectAgentFiles.ts`, `packages/contracts/src/localTopics/projectAgentFiles/index.ts`).
 
 ## Added UI
 
-- Agent Files sheet for listing, reading, editing, and scaffolding project agent files.
+- [x] Agent Files sheet lists, reads, edits, and scaffolds project agent files (`apps/web/src/components/project-agent-files/ProjectAgentFilesSheet.tsx`).
 
 ## Added Server And Runtime Behavior
 
-- Server file operations stay scoped to the active project root.
-- Secret resolution injects project-scoped MCP keys without exposing raw secrets in UI state.
+- [x] Server file operations stay scoped to the active project root (`apps/server/src/project/Layers/ProjectAgentFiles.ts`).
+- [x] Secret resolution injects project-scoped MCP keys without exposing raw secrets in UI state (`apps/server/src/project/Layers/ProjectAgentFiles.ts`, `packages/contracts/src/localTopics/projectAgentFiles/index.ts`).
 
 ## Added Tests
 
-- Schema, resolver, CRUD, scaffold safety, and browser sheet tests.
+- [x] Schema, resolver, CRUD, scaffold safety, and browser sheet behavior are covered by focused tests (`packages/contracts/src/projectAgentFiles.test.ts`, `apps/web/src/components/project-agent-files/projectAgentFilesQueryState.test.ts`).
 
 ## Component Entrypoints
 
@@ -41,7 +41,7 @@ Componentization status: `complete`.
 
 ## Integration Points
 
-- `packages/contracts/src/projectAgentFiles.ts`
+- `packages/contracts/src/localTopics/projectAgentFiles/index.ts`
 - `apps/server/src/project/Layers/ProjectAgentFiles.ts`
 - `apps/server/src/project/Layers/ProjectAgentHarnessResolver.ts`
 - `apps/web/src/components/projectAgentFiles`

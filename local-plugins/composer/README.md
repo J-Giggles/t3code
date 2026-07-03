@@ -14,22 +14,24 @@ This topic folds composer menu, pasted chat context, semantic worktree naming, a
 
 ## Added Features
 
-- `@` mentions and slash menu actions.
-- Chat and terminal context attachments.
-- Semantic branch and worktree naming for composer-created worktrees.
+- [x] Composer `@` mentions and slash command matching are owned by composer modules (`apps/web/src/components/chat/composerSlashCommandSearch.ts`, `apps/web/src/composer-editor-mentions.ts`).
+- [x] Chat and terminal context attachments are carried through composer state (`apps/web/src/composerHandleContext.ts`, `apps/web/src/components/chat/ComposerPendingTerminalContexts.tsx`).
+- [x] Composer-created worktrees receive semantic branch and folder names (`apps/web/src/localTopics/composer/index.ts`, `packages/client-runtime/src/localTopics/composer/index.ts`).
 
 ## Added UI
 
-- Composer menus, compact chat controls, changed-file collapse behavior, and mobile composer selectors.
+- [x] Web composer menus and compact controls render the topic-owned interaction surfaces (`apps/web/src/components/chat/ComposerCommandMenu.tsx`, `apps/web/src/components/chat/CompactComposerControlsMenu.tsx`).
+- [x] Mobile composer selectors and command popovers preserve composer behavior on native clients (`apps/mobile/src/localTopics/composer/index.ts`, `apps/mobile/src/features/threads/ComposerCommandPopover.tsx`).
 
 ## Added Server And Runtime Behavior
 
-- Worktree naming prompt output is consumed before a composer-created worktree is added.
-- Context attachment metadata is carried through provider request construction.
+- [x] Worktree naming prompt output is consumed before a composer-created worktree is added (`packages/client-runtime/src/localTopics/composer/index.ts`, `packages/client-runtime/src/state/threadCommands.ts`).
+- [x] Context attachment metadata reaches provider request construction through runtime state (`packages/client-runtime/src/state/runtime.ts`, `apps/web/src/composerHandleContext.ts`).
 
 ## Added Tests
 
-- Composer menu, pasted context, worktree naming, and mobile composer state tests.
+- [x] Composer menu, context, and state behavior is covered by focused web tests (`apps/web/src/components/chat/composerSlashCommandSearch.test.ts`, `apps/web/src/components/chat/ComposerPendingTerminalContexts.test.tsx`).
+- [x] Mobile composer persistence stays covered by native-facing state tests (`apps/mobile/src/state/use-composer-drafts.test.ts`).
 
 ## Component Entrypoints
 

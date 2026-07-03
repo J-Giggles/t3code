@@ -22,6 +22,20 @@ export const REQUIRED_TOPIC_README_HEADINGS = [
 
 export const REQUIRED_TOPIC_VERIFICATION_COMMANDS = ["vp check", "vp run typecheck"] as const;
 
+export const REQUIRED_REPLAY_CHECKLIST_HEADINGS = [
+  "## Added Features",
+  "## Added UI",
+  "## Added Server And Runtime Behavior",
+  "## Added Tests",
+] as const;
+
+const MIN_NON_NA_REPLAY_CHECKLIST_ITEMS_BY_TOPIC_KIND: Record<LocalTopicKind, number> = {
+  code: 4,
+  mixed: 6,
+  test: 2,
+  docs: 0,
+};
+
 export interface LocalTopicManifestTopic {
   readonly id: string;
   readonly pluginPath: string;
@@ -318,6 +332,150 @@ function hasReadmeHeading(readme: string, heading: string): boolean {
   return readme.split(/\r?\n/).some((line) => line.trim() === heading);
 }
 
+interface ReplayChecklistValidationResult {
+  readonly errors: ReadonlyArray<string>;
+  readonly nonNotApplicableItemCount: number;
+}
+
+function readReadmeSectionLines(readme: string, heading: string): ReadonlyArray<string> {
+  const lines = readme.split(/\r?\n/);
+  const headingIndex = lines.findIndex((line) => line.trim() === heading);
+  if (headingIndex === -1) {
+    return [];
+  }
+
+  const sectionLines: Array<string> = [];
+  for (const line of lines.slice(headingIndex + 1)) {
+    if (line.startsWith("## ")) {
+      break;
+    }
+    sectionLines.push(line);
+  }
+  return sectionLines;
+}
+
+function readReplayChecklistItems(
+  sectionLines: ReadonlyArray<string>,
+): ReadonlyArray<{ readonly checked: boolean; readonly text: string }> {
+  return sectionLines.flatMap((line) => {
+    const match = /^\s*-\s+\[( |x|X)\]\s+(.+?)\s*$/u.exec(line);
+    if (!match) {
+      return [];
+    }
+    return [
+      {
+        checked: match[1] !== " ",
+        text: match[2]!,
+      },
+    ];
+  });
+}
+
+function readInlineCodeSpans(text: string): ReadonlyArray<string> {
+  return Array.from(text.matchAll(/`([^`]+)`/gu), (match) => match[1]!.trim()).filter(
+    (value) => value.length > 0,
+  );
+}
+
+function looksLikeRepoPathEvidence(value: string): boolean {
+  if (
+    value.startsWith("/") ||
+    value.startsWith("$") ||
+    /^[A-Z][A-Z0-9_]*$/u.test(value) ||
+    /^[a-z][a-z0-9+.-]*:/iu.test(value) ||
+    /\s/u.test(value) ||
+    value.includes("*")
+  ) {
+    return false;
+  }
+
+  if (value.includes("/")) {
+    return true;
+  }
+
+  return /\.(?:cjs|css|html|js|json|jsx|kt|md|mjs|scss|sh|sql|svg|swift|ts|tsx|toml|yaml|yml)$/u.test(
+    value,
+  );
+}
+
+function validateReplayChecklistEvidence(
+  rootDir: string,
+  topicId: string,
+  heading: string,
+  itemText: string,
+): ReadonlyArray<string> {
+  const errors: Array<string> = [];
+  const evidenceSpans = readInlineCodeSpans(itemText);
+
+  if (evidenceSpans.length === 0) {
+    errors.push(
+      `Plugin "${topicId}" README replay checklist item under "${heading}" must include backticked evidence.`,
+    );
+    return errors;
+  }
+
+  for (const evidence of evidenceSpans) {
+    if (!looksLikeRepoPathEvidence(evidence)) {
+      continue;
+    }
+    if (!NodeFS.existsSync(NodePath.join(rootDir, evidence))) {
+      errors.push(
+        `Plugin "${topicId}" README replay checklist evidence path does not exist: ${evidence}.`,
+      );
+    }
+  }
+
+  return errors;
+}
+
+function validateReadmeReplayChecklist(
+  rootDir: string,
+  topicId: string,
+  topicKind: LocalTopicKind,
+  readme: string,
+): ReplayChecklistValidationResult {
+  const errors: Array<string> = [];
+  let nonNotApplicableItemCount = 0;
+
+  for (const heading of REQUIRED_REPLAY_CHECKLIST_HEADINGS) {
+    const sectionLines = readReadmeSectionLines(readme, heading);
+    const items = readReplayChecklistItems(sectionLines);
+    if (items.length === 0) {
+      errors.push(
+        `Plugin "${topicId}" README section "${heading}" must include at least one Replay Checklist Item.`,
+      );
+      continue;
+    }
+
+    for (const item of items) {
+      if (!item.checked) {
+        errors.push(
+          `Plugin "${topicId}" README Replay Checklist Item under "${heading}" must be checked.`,
+        );
+      }
+
+      if (item.text.startsWith("Not applicable:")) {
+        continue;
+      }
+
+      nonNotApplicableItemCount++;
+      errors.push(...validateReplayChecklistEvidence(rootDir, topicId, heading, item.text));
+    }
+  }
+
+  const minimum = MIN_NON_NA_REPLAY_CHECKLIST_ITEMS_BY_TOPIC_KIND[topicKind];
+  if (nonNotApplicableItemCount < minimum) {
+    errors.push(
+      `Plugin "${topicId}" README must include at least ${minimum} non-N/A Replay Checklist Items for ${topicKind} topics.`,
+    );
+  }
+
+  return {
+    errors,
+    nonNotApplicableItemCount,
+  };
+}
+
 function validateManifest(manifest: LocalTopicManifest): ReadonlyArray<string> {
   const errors: Array<string> = [];
   const seenIds = new Set<string>();
@@ -426,6 +584,12 @@ function validatePluginFiles(
       }
     }
     return errors;
+  }
+
+  if (readme) {
+    errors.push(
+      ...validateReadmeReplayChecklist(rootDir, topic.id, plugin.topicKind, readme).errors,
+    );
   }
 
   if (plugin.ownedPaths.length === 0) {

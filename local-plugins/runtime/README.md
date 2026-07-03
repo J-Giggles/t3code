@@ -14,23 +14,23 @@ This is the runtime and recovery topic from the June 25 replay stack.
 
 ## Added Features
 
-- Worktree identity propagation from launcher environment into server, web, and runtime state.
-- Controlled backend restart handling and visible recovery states.
-- Reconnect coalescing and provider startup recovery behavior.
+- [x] Worktree identity propagates from launcher environment into server, web, and runtime state (`packages/client-runtime/src/localTopics/runtime/index.ts`, `scripts/dev-runner.ts`).
+- [x] Controlled backend restart handling preserves visible recovery state (`apps/server/src/localTopics/runtime/index.ts`, `apps/server/src/serverRuntimeRestart.ts`).
+- [x] Reconnect coalescing and provider startup recovery stay owned by runtime modules (`packages/client-runtime/src/reconnectBackoff.ts`, `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`).
 
 ## Added UI
 
-- Sidebar and browser labels reflect the active worktree context.
-- Restart and recovery states are surfaced to the user instead of failing silently.
+- [x] Sidebar and browser labels reflect the active worktree context (`apps/web/src/localTopics/runtime/index.ts`, `apps/web/src/components/sidebar`).
+- [x] Restart and recovery states surface to the user instead of failing silently (`apps/web/src/connection/runtime.ts`, `packages/client-runtime/src/connection/presentation.ts`).
 
 ## Added Server And Runtime Behavior
 
-- Runtime state records branch/worktree context and restart policy.
-- Provider session recovery avoids stale identity from inherited parent processes.
+- [x] Runtime state records branch/worktree context and restart policy (`packages/client-runtime/src/state/runtime.ts`, `apps/server/src/serverRuntimeRestart.ts`).
+- [x] Provider session recovery avoids stale identity from inherited parent processes (`apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`, `scripts/dev-runner.ts`).
 
 ## Added Tests
 
-- Dev-runner identity tests, runtime recovery tests, and reconnect behavior coverage.
+- [x] Dev-runner identity, runtime recovery, reconnect, and provider startup behavior are covered by focused tests (`scripts/dev-runner.test.ts`, `packages/client-runtime/src/connection/supervisor.test.ts`, `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`).
 
 ## Component Entrypoints
 
@@ -43,7 +43,7 @@ Componentization status: `complete`.
 ## Integration Points
 
 - `scripts/dev-runner.ts`
-- `apps/server/src/devSupervisor.ts`
+- `apps/server/src/serverRuntimeRestart.ts`
 - `apps/server/src/provider`
 - `apps/web/src/connection`
 - `packages/client-runtime/src`

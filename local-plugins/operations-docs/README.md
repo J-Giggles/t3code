@@ -14,21 +14,21 @@ This docs topic stays late in the replay stack because it records the preceding 
 
 ## Added Features
 
-- Operational ledger for the Jordan topic stack.
-- Staging review guide for topic-by-topic review.
-- Agent instructions for worktree topology and promotion constraints.
+- [x] Operational ledger records the Jordan topic stack and replay order (`docs/operations/jordan-topic-stack.md`, `docs/operations/jordan-topic-stack.manifest.json`).
+- [x] Staging review guide describes topic-by-topic reviewer focus (`docs/operations/staging-review-guide.md`).
+- [x] Agent instructions define worktree topology and promotion constraints (`AGENTS.md`).
 
 ## Added UI
 
-- No product UI.
+- [x] Not applicable: this documentation-only topic adds no product UI.
 
 ## Added Server And Runtime Behavior
 
-- No runtime behavior.
+- [x] Not applicable: this documentation-only topic adds no runtime behavior.
 
 ## Added Tests
 
-- Documentation-only topic; validation is covered by standard repo checks.
+- [x] Documentation metadata is covered by the local topic plugin validator (`scripts/lib/local-topic-stack.ts`).
 
 ## Component Entrypoints
 
