@@ -25,7 +25,7 @@ This topic folds local OTel/LGTM startup, Grafana provisioning, digest metrics, 
 ## Added Server And Runtime Behavior
 
 - [x] Server, browser, desktop, and provider telemetry export logs, traces, and metrics with worktree identity labels (`apps/server/src/localTopics/observability/index.ts`, `apps/desktop/src/localTopics/observability/index.ts`).
-- [x] Closed Electron output pipes are treated as best-effort console mirroring failures (`apps/desktop/src/app/DesktopBackendOutputLog.ts`).
+- [x] Closed Electron output pipes are treated as best-effort console mirroring failures (`apps/desktop/src/app/DesktopObservability.ts`).
 
 ## Added Tests
 
@@ -44,7 +44,7 @@ Componentization status: `complete`.
 - `scripts/local-observability.ts`
 - `scripts/observability-digest.ts`
 - `apps/server/src/mcp/toolkits/observability`
-- `apps/desktop/src/app/DesktopBackendOutputLog.ts`
+- `apps/desktop/src/app/DesktopObservability.ts`
 
 ## Focused Implementation Snippets
 
