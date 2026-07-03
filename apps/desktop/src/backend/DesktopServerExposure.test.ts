@@ -248,6 +248,7 @@ const withHarness = <A, E, R>(
   env: Record<string, string | undefined> = {},
   spawnerLayer?: Layer.Layer<ChildProcessSpawner.ChildProcessSpawner>,
   httpClientLayer?: Layer.Layer<HttpClient.HttpClient>,
+  desktopSettingsLayer?: Layer.Layer<DesktopAppSettings.DesktopAppSettings>,
 ) =>
   Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
@@ -262,6 +263,7 @@ const withHarness = <A, E, R>(
           env,
           ...(spawnerLayer ? { spawnerLayer } : {}),
           ...(httpClientLayer ? { httpClientLayer } : {}),
+          ...(desktopSettingsLayer ? { desktopSettingsLayer } : {}),
         }),
       ),
     );
@@ -489,6 +491,7 @@ describe("DesktopServerExposure", () => {
         assert.notInclude(tailscaleError.message, diskFailure.message);
       }),
       {},
+      undefined,
       undefined,
       settingsLayer,
     );

@@ -1,1 +1,1 @@
-export * from "../../app/DesktopBackendOutputLog.ts";
+export * from "../../app/DesktopObservability.ts";

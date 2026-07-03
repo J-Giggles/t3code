@@ -282,7 +282,7 @@ const makeSplashScenario = (createOutcomes: readonly (Electron.BrowserWindow | n
       Layer.provide(
         Layer.mergeAll(
           desktopAssetsLayer,
-          desktopEnvironmentLayer,
+          makeDesktopEnvironmentLayer(),
           desktopServerExposureLayer,
           electronMenuLayer,
           Layer.succeed(ElectronShell.ElectronShell, {
@@ -388,7 +388,7 @@ describe("DesktopWindow", () => {
 
       yield* Effect.gen(function* () {
         const desktopWindow = yield* DesktopWindow.DesktopWindow;
-        yield* desktopWindow.handleBackendReady;
+        yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
         assert.deepEqual(fakeWindow.loadURL.mock.calls[0], ["http://127.0.0.1:5733/"]);
         assert.equal(fakeWindow.openDevTools.mock.calls.length, 0);
       }).pipe(Effect.provide(layer));
@@ -411,7 +411,7 @@ describe("DesktopWindow", () => {
 
       yield* Effect.gen(function* () {
         const desktopWindow = yield* DesktopWindow.DesktopWindow;
-        yield* desktopWindow.handleBackendReady;
+        yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
         const options = createdWindowOptions[0];
 
         assert.equal(options?.frame, false);
@@ -437,7 +437,7 @@ describe("DesktopWindow", () => {
 
       yield* Effect.gen(function* () {
         const desktopWindow = yield* DesktopWindow.DesktopWindow;
-        yield* desktopWindow.handleBackendReady;
+        yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
         const options = createdWindowOptions[0];
 
         assert.equal(options?.frame, undefined);
@@ -463,7 +463,7 @@ describe("DesktopWindow", () => {
 
       yield* Effect.gen(function* () {
         const desktopWindow = yield* DesktopWindow.DesktopWindow;
-        yield* desktopWindow.handleBackendReady;
+        yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
         const options = createdWindowOptions[0];
 
         assert.equal(options?.frame, undefined);
