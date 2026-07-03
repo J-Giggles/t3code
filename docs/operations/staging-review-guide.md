@@ -15,6 +15,10 @@ matching repo-internal plugin folder under `local-plugins/<topic>/` with owned
 paths, schema v2 componentization metadata, focused implementation snippets,
 replay notes, and verification commands. Run
 `pnpm run topic-plugins:check` when reviewing a stack metadata change.
+The same command enforces each topic README's Replay Checklist Items under
+`Added Features`, `Added UI`, `Added Server And Runtime Behavior`, and
+`Added Tests`. Reviewers should treat those checked items as the behavior-level
+list that must survive an upstream replay.
 
 ## Review Order
 
@@ -51,7 +55,9 @@ follow-up only after both base topics exist.
 Routine upstream refreshes should use
 `docs/operations/nightly-upstream-replay.md`. The nightly script rebuilds
 `.worktrees/nightly-local` only; promotion to `.worktrees/staging` is manual and
-requires a clean fast-forward or an explicitly resolved reconciliation.
+requires a clean fast-forward or an explicitly resolved reconciliation. Each
+apply run writes `topic-audit.md`; read and complete that audit, including human
+promotion sign-off, before moving `staging`.
 
 ## Required Verification
 

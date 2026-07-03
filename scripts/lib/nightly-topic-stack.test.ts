@@ -59,6 +59,17 @@ function createReservedWorktrees(familyRoot: string): {
   return { originalPath, nightlyPath };
 }
 
+function topicAuditPath(familyRoot: string): string {
+  return NodePath.join(
+    familyRoot,
+    ".worktrees",
+    "nightly-local",
+    ".t3code-nightly-runs",
+    createNightlyRunId(runDate),
+    "topic-audit.md",
+  );
+}
+
 function commandKey(invocation: NightlyCommandInvocation): string {
   return [invocation.command, ...invocation.args].join(" ");
 }
@@ -223,6 +234,26 @@ describe("nightly topic stack", () => {
     assert.ok(commands.some((command) => commandKey(command) === "git cherry-pick --skip"));
   });
 
+  it("writes a topic replay audit stub during apply", () => {
+    const { familyRoot, controlRoot } = tempFamily();
+    const commands: Array<NightlyCommandInvocation> = [];
+    const runner = createRunner({ familyRoot, controlRoot, commands });
+
+    const result = runNightlyTopicStack({
+      mode: "apply",
+      rootDir: controlRoot,
+      now: runDate,
+      runner,
+    });
+
+    const audit = NodeFS.readFileSync(topicAuditPath(familyRoot), "utf8");
+    assert.equal(result.topicRecords[0]?.status, "applied");
+    assert.match(audit, /# Topic Replay Audit/);
+    assert.match(audit, /## Branch Diffs Audited/);
+    assert.match(audit, /- \[ \] `test-topic`: checklist reviewed/);
+    assert.match(audit, /## Promotion Sign-Off/);
+  });
+
   it("stops on conflict and writes failure artifacts", () => {
     const { familyRoot, controlRoot } = tempFamily();
     const commands: Array<NightlyCommandInvocation> = [];
@@ -247,5 +278,6 @@ describe("nightly topic stack", () => {
     );
     assert.equal(NodeFS.existsSync(failurePath), true);
     assert.match(NodeFS.readFileSync(failurePath, "utf8"), /Cherry-pick conflict/);
+    assert.match(NodeFS.readFileSync(topicAuditPath(familyRoot), "utf8"), /stopped on conflict/);
   });
 });

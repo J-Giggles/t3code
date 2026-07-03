@@ -51,6 +51,8 @@ export interface NightlyTopicStackPlan {
   readonly dateKey: string;
   readonly branchName: string;
   readonly upstreamRef: string;
+  readonly upstreamHead: string;
+  readonly originalBackupRef?: string;
   readonly originalPath: string;
   readonly nightlyPath: string;
   readonly artifactsDir: string;
@@ -243,6 +245,7 @@ export function createNightlyTopicStackPlan(
   const artifactsDir = NodePath.join(input.nightlyPath, RUNS_RELATIVE_PATH, input.runId);
   const blockers: Array<string> = [];
   const commands: Array<NightlyCommandInvocation> = [];
+  let originalBackupRef: string | undefined;
 
   commands.push(
     gitCommand(input.controlRoot, ["fetch", UPSTREAM_REMOTE, "--prune"], "fetch upstream", true),
@@ -251,10 +254,11 @@ export function createNightlyTopicStackPlan(
   if (!input.original.exists) {
     blockers.push(`Original worktree is missing at ${input.originalPath}.`);
   } else if (needsOriginalBackup(input.original, input.upstreamHead)) {
+    originalBackupRef = createBackupRef(input.runId);
     commands.push(
       gitCommand(
         input.originalPath,
-        ["update-ref", createBackupRef(input.runId), "HEAD"],
+        ["update-ref", originalBackupRef, "HEAD"],
         "backup original HEAD before reset",
         true,
       ),
@@ -345,6 +349,8 @@ export function createNightlyTopicStackPlan(
     dateKey: input.dateKey,
     branchName,
     upstreamRef: input.upstreamRef,
+    upstreamHead: input.upstreamHead,
+    ...(originalBackupRef === undefined ? {} : { originalBackupRef }),
     originalPath: input.originalPath,
     nightlyPath: input.nightlyPath,
     artifactsDir,
@@ -394,6 +400,108 @@ function writeJsonFile(path: string, value: unknown): void {
   NodeFS.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function formatTopicAuditMarkdown(
+  plan: NightlyTopicStackPlan,
+  topicRecords: ReadonlyArray<NightlyRunTopicRecord>,
+  status: "success" | "failed",
+  message?: string,
+): string {
+  const replayOutcomeLines =
+    topicRecords.length === 0
+      ? ["- No topic replay records were written before this run stopped."]
+      : topicRecords.map((record) =>
+          [
+            `- \`${record.status}\` \`${record.id}\``,
+            `\`${record.commit}\``,
+            record.subject,
+            record.message ? `- ${record.message.split(/\r?\n/u)[0]}` : "",
+          ]
+            .filter((part) => part.length > 0)
+            .join(" "),
+        );
+  const emptyOrSkippedRecords = topicRecords.filter((record) => record.status === "empty-skipped");
+  const conflictRecords = topicRecords.filter((record) => record.status === "conflict");
+
+  return [
+    "# Topic Replay Audit",
+    "",
+    "## Run Metadata",
+    "",
+    `- Run id: \`${plan.runId}\``,
+    `- Date key: \`${plan.dateKey}\``,
+    `- Replay branch: \`${plan.branchName}\``,
+    `- Status: \`${status}\``,
+    `- Control worktree: \`${plan.controlRoot}\``,
+    `- Nightly worktree: \`${plan.nightlyPath}\``,
+    `- Artifacts directory: \`${plan.artifactsDir}\``,
+    ...(message ? [`- Failure message: ${message}`] : []),
+    "",
+    "## Upstream Sync",
+    "",
+    `- Upstream ref: \`${plan.upstreamRef}\``,
+    `- Upstream head at plan time: \`${plan.upstreamHead}\``,
+    `- Original worktree: \`${plan.originalPath}\``,
+    `- Original backup ref: ${
+      plan.originalBackupRef === undefined ? "`not-created`" : `\`${plan.originalBackupRef}\``
+    }`,
+    `- Original reset target: \`${plan.upstreamRef}\``,
+    "",
+    "## Branch Diffs Audited",
+    "",
+    "- [ ] Audit `upstream/main...staging` before promotion.",
+    "- [ ] Audit `main...staging` before promotion.",
+    `- [ ] Audit final \`upstream/main...${plan.branchName}\` after replay repair.`,
+    "",
+    "## Replay Outcomes",
+    "",
+    ...replayOutcomeLines,
+    "",
+    "## Topic Checklist Audit",
+    "",
+    ...plan.topics.map(
+      (topic) =>
+        `- [ ] \`${topic.id}\`: checklist reviewed; README updated if needed; evidence recorded.`,
+    ),
+    "",
+    "## Conflict Repairs",
+    "",
+    ...(conflictRecords.length === 0
+      ? ["- [ ] Record compatibility repairs folded into owning topics, or write `None`."]
+      : conflictRecords.map(
+          (record) =>
+            `- [ ] \`${record.id}\` stopped on conflict at \`${record.commit}\`; record repair ownership before promotion.`,
+        )),
+    "",
+    "## Empty Or Skipped Commits",
+    "",
+    ...(emptyOrSkippedRecords.length === 0
+      ? ["- [ ] Record empty or skipped commits, or write `None`."]
+      : emptyOrSkippedRecords.map(
+          (record) =>
+            `- [ ] \`${record.id}\` skipped empty commit \`${record.commit}\`; confirm behavior remains covered.`,
+        )),
+    "",
+    "## Verification Results",
+    "",
+    "- [ ] `vp check`: record result.",
+    "- [ ] `vp run typecheck`: record result.",
+    "- [ ] `pnpm run topic-plugins:check`: record result.",
+    "- [ ] Additional topic-specific verification: record commands and results.",
+    "",
+    "## Unresolved Risks",
+    "",
+    "- [ ] Record unresolved risks, or write `None`.",
+    "",
+    "## Promotion Sign-Off",
+    "",
+    "- Sign-off:",
+    "- Date:",
+    "- Decision:",
+    "- Notes:",
+    "",
+  ].join("\n");
+}
+
 function writeRunArtifacts(
   plan: NightlyTopicStackPlan,
   topicRecords: ReadonlyArray<NightlyRunTopicRecord>,
@@ -405,6 +513,8 @@ function writeRunArtifacts(
     runId: plan.runId,
     branchName: plan.branchName,
     upstreamRef: plan.upstreamRef,
+    upstreamHead: plan.upstreamHead,
+    originalBackupRef: plan.originalBackupRef ?? null,
     controlRoot: plan.controlRoot,
     repoFamilyRoot: plan.repoFamilyRoot,
     originalPath: plan.originalPath,
@@ -417,6 +527,10 @@ function writeRunArtifacts(
     })),
   });
   writeJsonFile(NodePath.join(plan.artifactsDir, "topics.json"), topicRecords);
+  NodeFS.writeFileSync(
+    NodePath.join(plan.artifactsDir, "topic-audit.md"),
+    formatTopicAuditMarkdown(plan, topicRecords, status, message),
+  );
 
   if (status === "failed") {
     NodeFS.writeFileSync(NodePath.join(plan.artifactsDir, "failure.txt"), `${message ?? ""}\n`);

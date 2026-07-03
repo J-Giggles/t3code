@@ -64,6 +64,10 @@
 - Local replay topics are documented as repo-internal plugins under `local-plugins/<topic>/`. Keep each
   `plugin.json`, topic `README.md`, and `docs/operations/jordan-topic-stack.manifest.json` entry synchronized with
   the replay commit. These are not installable Codex plugins and must not use `.codex-plugin/plugin.json`.
+- Topic READMEs must keep checked Replay Checklist Items under `Added Features`, `Added UI`,
+  `Added Server And Runtime Behavior`, and `Added Tests`. Each non-N/A item must include backticked evidence such as
+  a source path, test path, command, or public route. `pnpm run topic-plugins:check` enforces the checklist shape and
+  validates evidence paths that look like repo paths.
 - New local topic code should be componentized behind package-local topic modules such as
   `apps/web/src/localTopics/<topic>/index.ts` or `apps/server/src/localTopics/<topic>/index.ts`, then imported from
   main files as thin wiring. Local plugin metadata uses schema v2; code, mixed, and test topics must have
@@ -110,11 +114,12 @@ When upstream changes, prefer the scripted nightly workflow in
 `docs/operations/nightly-upstream-replay.md`. It fetches upstream, backs up and
 resets `original`, creates or reuses `.worktrees/nightly-local`, creates
 `dev/nightly-topic-stack-YYYYMMDD`, cherry-picks the manifest topics in order,
-and writes artifacts under `.t3code-nightly-runs/`. Resolve conflicts in the
+and writes artifacts, including `topic-audit.md`, under `.t3code-nightly-runs/`. Resolve conflicts in the
 owning topic, run the verification commands from
 `docs/operations/jordan-topic-stack.md`, and compare the final stack against the
 unsquashed source branch with `git diff` when applicable. Promotion to
-`staging` remains a separate explicit user-requested step.
+`staging` remains a separate explicit user-requested step and requires human sign-off in the run's
+`topic-audit.md`.
 
 Current staging includes the June 26 follow-up topic
 `fix(remote-access): harden public staging verification`.

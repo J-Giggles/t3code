@@ -81,6 +81,13 @@ Local topics must be maintained through `local-plugins/<topic>/` and the
 manifest. A plugin folder contains `plugin.json` plus a focused README with the
 required headings checked by `pnpm run topic-plugins:check`.
 
+The README `Added Features`, `Added UI`, `Added Server And Runtime Behavior`,
+and `Added Tests` sections are replay checklists. Every section must include at
+least one checked Replay Checklist Item. Non-N/A items must include backticked
+evidence, and evidence that looks like a repo path must exist. Code, mixed, and
+test topics must keep enough non-N/A items to prove the topic is documented at
+behavior level rather than as vague file-level notes.
+
 For new local work, put topic-owned code in package-local modules and wire it
 from the main files with thin imports. Examples:
 
@@ -111,6 +118,10 @@ It fetches `upstream`, backs up dirty or divergent `original`, resets
 `dev/nightly-topic-stack-YYYYMMDD`, and cherry-picks manifest topics in order.
 Artifacts are written under
 `.worktrees/nightly-local/.t3code-nightly-runs/YYYYMMDD-HHMMSS/`.
+Each apply run also writes `topic-audit.md` with run metadata, branch-diff
+audit placeholders, replay outcomes, one topic checklist placeholder per
+manifest topic, verification placeholders, unresolved risk tracking, and a
+promotion sign-off section.
 
 The script never promotes to `staging`. Use a separate manual promotion after
 the nightly candidate is repaired and verified.
@@ -187,10 +198,14 @@ The two diff commands must produce no output.
 
 Promotion to `staging` is a separate explicit step. Before promoting, create a
 backup ref for the current `staging` branch, verify the topic stack is clean,
-and rerun the checks above. Promote by fast-forwarding or cherry-picking the
-proven topic stack into the reserved staging worktree. Do not promote directly
-to `main` unless the user explicitly asks for a main promotion and the main
-checkout is clean and not actively running.
+complete the run's `topic-audit.md`, and rerun the checks above. The audit must
+confirm `upstream/main...staging`, `main...staging`, and the final rebuilt
+branch diff were inspected, every topic checklist was reviewed, and unresolved
+risks are either absent or explicitly accepted by the human sign-off. Promote by
+fast-forwarding or cherry-picking the proven topic stack into the reserved
+staging worktree. Do not promote directly to `main` unless the user explicitly
+asks for a main promotion and the main checkout is clean and not actively
+running.
 
 Manual promotion from the nightly candidate:
 

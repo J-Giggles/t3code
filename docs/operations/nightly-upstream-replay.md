@@ -30,6 +30,13 @@ materially changed, update the manifest and matching plugin README in the same
 branch. `plugin.json` uses schema v2, and `pnpm run topic-plugins:check` is
 strict by default.
 
+Topic README `Added Features`, `Added UI`, `Added Server And Runtime Behavior`,
+and `Added Tests` sections must contain checked Replay Checklist Items. Each
+non-N/A item must include backticked evidence, such as a source path, test path,
+command, or public route. The validator rejects empty sections, unchecked items,
+missing evidence, stale evidence paths, and topics whose checklist is too thin
+for their topic kind.
+
 Validate metadata with:
 
 ```bash
@@ -87,6 +94,7 @@ Apply mode:
 10. Stops on conflicts and leaves `nightly-local` ready for human repair.
 11. Runs `vp check`, `vp run typecheck`, and
     `pnpm run topic-plugins:check`.
+12. Writes a `topic-audit.md` stub for the run.
 
 Run artifacts are written under:
 
@@ -94,7 +102,13 @@ Run artifacts are written under:
 .worktrees/nightly-local/.t3code-nightly-runs/YYYYMMDD-HHMMSS/
 ```
 
-Conflict artifacts include `plan.json`, `topics.json`, and `failure.txt`.
+Run artifacts include `plan.json`, `topics.json`, and `topic-audit.md`.
+Conflict artifacts also include `failure.txt`.
+
+The script fills mechanical data in `topic-audit.md`, including the run id,
+upstream head, original backup ref when one was needed, replay outcomes, and one
+unchecked topic checklist placeholder per manifest topic. The operator must
+complete the audit before promotion.
 
 ## Promotion
 
@@ -110,8 +124,12 @@ vp run typecheck
 vp run verify:staging-public
 ```
 
-If fast-forward fails, stop and resolve manually. Do not force-push, reset, or
-rewrite `staging` as part of nightly replay.
+Before running the promotion commands, read and complete the run's
+`topic-audit.md`. Promotion requires the audited branch diffs, topic checklist
+confirmations, verification results, unresolved risks, and `Promotion Sign-Off`
+section to be filled in by a human. If fast-forward fails, stop and resolve
+manually. Do not force-push, reset, or rewrite `staging` as part of nightly
+replay.
 
 ## Future Work
 

@@ -12,7 +12,10 @@ Each `local-plugins/<topic>/` folder owns one cherry-pickable topic listed in
   topic kind, componentization status, component entrypoints, integration
   points, and verification commands.
 - `README.md` using the required headings from
-  `scripts/lib/local-topic-stack.ts`.
+  `scripts/lib/local-topic-stack.ts`. The `Added Features`, `Added UI`,
+  `Added Server And Runtime Behavior`, and `Added Tests` sections must contain
+  checked Replay Checklist Items with backticked evidence for every non-N/A
+  item.
 
 When a topic is squashed, split, renamed, dropped, or materially changed, update
 the manifest and matching plugin folder in the same branch. New local topic code
@@ -24,6 +27,9 @@ thin imports.
 `componentization.status = "complete"` and existing entrypoint files. Docs-only
 topics use `componentization.status = "not-applicable"`. Validation is strict by
 default and rejects pending or v1 metadata.
+It also rejects missing Replay Checklist Items, unchecked items, non-N/A items
+without evidence, stale evidence paths, and topic READMEs that are too thin for
+their topic kind.
 
 Run validation with:
 
