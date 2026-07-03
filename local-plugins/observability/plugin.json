@@ -6,7 +6,7 @@
   "topicCommits": ["943c71b562ae10b225ef2844557d516786d08457"],
   "ownedPaths": [
     {
-      "path": "apps/desktop/src/backend/DesktopBackendOutputLog.ts",
+      "path": "apps/desktop/src/app/DesktopBackendOutputLog.ts",
       "role": "source"
     },
     {
@@ -48,7 +48,7 @@
   },
   "integrationPoints": [
     {
-      "path": "apps/desktop/src/backend/DesktopBackendOutputLog.ts",
+      "path": "apps/desktop/src/app/DesktopBackendOutputLog.ts",
       "role": "thin-wiring"
     },
     {

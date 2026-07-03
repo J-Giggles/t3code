@@ -107,8 +107,8 @@
       "id": "topic-replay-safeguards",
       "pluginPath": "local-plugins/topic-replay-safeguards",
       "commits": [
-        "d292cde42f471bcdb8f438f6e12da9a8f5b54889",
-        "fd66c5832f481020ad813b8815c1f31dfd22be6b"
+        "d292cde429bf3364d44d8a95a44f9bc225e882c3",
+        "fd66c5832548c35f121dd5f61208350f63d33332"
       ],
       "subject": "feat(topic-stack): add replay checklist and audit safeguards"
     }

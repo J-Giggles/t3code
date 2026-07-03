@@ -6,8 +6,8 @@ Make local topic replay harder to silently regress by requiring behavior-level R
 
 ## Current Commits
 
-- `d292cde42f471bcdb8f438f6e12da9a8f5b54889` `chore(local-plugins): require replay checklist items`
-- `fd66c5832f481020ad813b8815c1f31dfd22be6b` `feat(topic-stack): write replay audit stub`
+- `d292cde429bf3364d44d8a95a44f9bc225e882c3` `chore(local-plugins): require replay checklist items`
+- `fd66c5832548c35f121dd5f61208350f63d33332` `feat(topic-stack): write replay audit stub`
 
 ## Squash / Replay History
 
