@@ -1149,6 +1149,8 @@ function ChatViewContent(props: ChatViewProps) {
     LastInvokedScriptByProjectSchema,
   );
   const legendListRef = useRef<LegendListRef | null>(null);
+  const [composerOverlayElement, setComposerOverlayElement] = useState<HTMLDivElement | null>(null);
+  const [composerOverlayHeight, setComposerOverlayHeight] = useState(0);
   const isAtEndRef = useRef(true);
   const attachmentPreviewHandoffByMessageIdRef = useRef<Record<string, string[]>>({});
   const attachmentPreviewPromotionInFlightByMessageIdRef = useRef<Record<string, true>>({});
@@ -5188,6 +5190,8 @@ function ChatViewContent(props: ChatViewProps) {
                       composerImagesRef={composerImagesRef}
                       composerTerminalContextsRef={composerTerminalContextsRef}
                       composerElementContextsRef={composerElementContextsRef}
+                      shouldAutoScrollRef={isAtEndRef}
+                      scheduleStickToBottom={scrollToEnd}
                       onSend={onSend}
                       onInterrupt={onInterrupt}
                       onImplementPlanInNewThread={onImplementPlanInNewThread}
