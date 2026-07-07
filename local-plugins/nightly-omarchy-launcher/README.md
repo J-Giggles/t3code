@@ -9,6 +9,7 @@ Make the rebuilt nightly topic stack launchable from Omarchy as `T3 Code Nightly
 - `65e0b8a1220aff21ea52ccc9faea98be74c925d9` `feat(dev-launch): add nightly Omarchy launcher`
 - `1e982269a02c88e2f8e625cb5b5791e443476834` `fix(dev-launch): format nightly launcher docs and tests`
 - `d3dd6d836dabc6e51ba7b8078eb3369965153705` `fix(dev-launch): silence launcher process scan races`
+- `7323721b8f608501102dce10c5679ed4c35e3c95` `fix(dev-launch): seed nightly public verifier project`
 
 ## Squash / Replay History
 
@@ -22,6 +23,7 @@ This topic was added after the initial June topic-stack population. Keep it as a
 - [x] Launcher process scans ignore disappearing `/proc` entries so kill mode stays quiet when processes exit mid-scan (`scripts/lib/omarchy-dev-launchers.ts`, `scripts/lib/omarchy-dev-launchers.test.ts`).
 - [x] `/nightly` is a reserved public route owned by the nightly replay branch/worktree (`packages/shared/src/localTopics/remoteAccess/publicPath.ts`, `/nightly`).
 - [x] A reusable public verifier target proves the nightly HTTPS route with the project/chat flow (`apps/desktop/scripts/verify-staging-public.mjs`, `vp run verify:nightly-public`).
+- [x] The nightly public verifier seeds the current worktree as a project before browser automation, so a fresh nightly profile can still create a chat (`apps/desktop/scripts/verify-staging-public.mjs`, `T3CODE_PUBLIC_VERIFY_SEED_PROJECT`).
 
 ## Added UI
 
@@ -34,6 +36,7 @@ This topic was added after the initial June topic-stack population. Keep it as a
 - [x] The shared Tailscale reconcile helper serves `/nightly` when the nightly backend port is open (`scripts/lib/omarchy-dev-launchers.ts`, `/nightly`).
 - [x] Dev-runner identity inference treats the rolling nightly replay checkout as `nightly` (`scripts/dev-runner.ts`, `scripts/dev-runner.test.ts`).
 - [x] Desktop route ownership rejects `/nightly` from non-nightly worktrees before mutating Tailscale Serve (`apps/desktop/src/backend/DesktopServerExposure.test.ts`, `/nightly`).
+- [x] Public verification uses the existing project CLI to idempotently add `nightly-local` to the nightly profile before pairing (`apps/desktop/scripts/verify-staging-public.mjs`, `apps/server/dist/bin.mjs project add`).
 
 ## Added Tests
 
@@ -100,6 +103,14 @@ const DEFAULT_PUBLIC_URL =
   PUBLIC_VERIFY_TARGET === "nightly"
     ? "https://giggabit.tailfb378a.ts.net/nightly/"
     : "https://giggabit.tailfb378a.ts.net/staging/";
+```
+
+`apps/desktop/scripts/verify-staging-public.mjs`
+
+```js
+const DEFAULT_PROJECT_ROOT = PUBLIC_VERIFY_TARGET === "nightly" ? repoRoot : "";
+const DEFAULT_PROJECT_TITLE = PUBLIC_VERIFY_TARGET === "nightly" ? "nightly-local" : "";
+const projectSeed = await ensureVerificationProject();
 ```
 
 ## Replay Notes
