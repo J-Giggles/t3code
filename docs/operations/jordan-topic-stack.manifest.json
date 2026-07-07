@@ -17,6 +17,7 @@
       "id": "runtime",
       "pluginPath": "local-plugins/runtime",
       "commits": ["51b0cf31cb17e6d7ce9e672a97ad98e4bd365584"],
+      "replayFollowupCommits": ["76f723fc9382eb5da33449f7af8b4ac9375c5de0"],
       "subject": "feat(runtime): preserve worktree context and controlled recovery"
     },
     {

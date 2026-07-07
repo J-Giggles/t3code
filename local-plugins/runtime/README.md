@@ -12,11 +12,16 @@ Preserve the active worktree identity across restarts, reconnects, sidebar label
 
 This is the runtime and recovery topic from the June 25 replay stack.
 
+Replay support follow-ups currently listed in the nightly manifest:
+
+- `76f723fc9382eb5da33449f7af8b4ac9375c5de0` `fix(runtime): accept remote not-found auth errors`
+
 ## Added Features
 
 - [x] Worktree identity propagates from launcher environment into server, web, and runtime state (`packages/client-runtime/src/localTopics/runtime/index.ts`, `scripts/dev-runner.ts`).
 - [x] Controlled backend restart handling preserves visible recovery state (`apps/server/src/localTopics/runtime/index.ts`, `apps/server/src/serverRuntimeRestart.ts`).
 - [x] Reconnect coalescing and provider startup recovery stay owned by runtime modules (`packages/client-runtime/src/reconnectBackoff.ts`, `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`).
+- [x] Remote runtime auth callers accept server-declared not-found failures from the shared environment HTTP contract (`packages/client-runtime/src/remote.ts`, `packages/contracts/src/environmentHttp.ts`).
 
 ## Added UI
 
@@ -27,10 +32,12 @@ This is the runtime and recovery topic from the June 25 replay stack.
 
 - [x] Runtime state records branch/worktree context and restart policy (`packages/client-runtime/src/state/runtime.ts`, `apps/server/src/serverRuntimeRestart.ts`).
 - [x] Provider session recovery avoids stale identity from inherited parent processes (`apps/server/src/provider/Layers/ProviderSessionStartupRecovery.ts`, `scripts/dev-runner.ts`).
+- [x] Remote auth error typing preserves `EnvironmentResourceNotFoundError` through client-runtime recovery paths (`packages/client-runtime/src/remote.ts`, `packages/client-runtime/src/connection/errors.ts`).
 
 ## Added Tests
 
 - [x] Dev-runner identity, runtime recovery, reconnect, and provider startup behavior are covered by focused tests (`scripts/dev-runner.test.ts`, `packages/client-runtime/src/connection/supervisor.test.ts`, `apps/server/src/provider/Layers/ProviderSessionStartupRecovery.test.ts`).
+- [x] Repo typecheck covers the remote auth error union against current contract schemas (`vp run typecheck`, `packages/client-runtime/src/remote.ts`).
 
 ## Component Entrypoints
 
