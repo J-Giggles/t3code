@@ -109,6 +109,12 @@ describe("omarchy-dev-launchers", () => {
     expect(content).toContain("  stop_existing_dev");
   });
 
+  it("renders process scans that ignore disappearing /proc entries", () => {
+    const content = scriptContent("nightly");
+    expect(content).toContain('cat "/proc/$pid/cmdline" 2>/dev/null | tr');
+    expect(content).not.toContain("tr '\\0' ' ' <\"/proc/$pid/cmdline\"");
+  });
+
   it("renders launcher scripts that pass bash syntax checks", () => {
     const homeDir = makeTempHome();
     try {
