@@ -8,6 +8,7 @@ Make the rebuilt nightly topic stack launchable from Omarchy as `T3 Code Nightly
 
 - `65e0b8a1220aff21ea52ccc9faea98be74c925d9` `feat(dev-launch): add nightly Omarchy launcher`
 - `1e982269a02c88e2f8e625cb5b5791e443476834` `fix(dev-launch): format nightly launcher docs and tests`
+- `d3dd6d836dabc6e51ba7b8078eb3369965153705` `fix(dev-launch): silence launcher process scan races`
 
 ## Squash / Replay History
 
@@ -18,6 +19,7 @@ This topic was added after the initial June topic-stack population. Keep it as a
 - [x] Omarchy can render and install a `nightly` launcher for the rolling replay worktree (`scripts/lib/omarchy-dev-launchers.ts`, `pnpm run omarchy:install-dev-launchers -- --dry-run --target nightly`).
 - [x] The nightly launcher accepts rolling dated replay branches (`scripts/lib/omarchy-dev-launchers.ts`, `docs/operations/nightly-upstream-replay.md`).
 - [x] Generated launchers support an explicit worktree-scoped kill mode (`scripts/lib/omarchy-dev-launchers.ts`, `~/.local/bin/t3code-dev-nightly --kill`).
+- [x] Launcher process scans ignore disappearing `/proc` entries so kill mode stays quiet when processes exit mid-scan (`scripts/lib/omarchy-dev-launchers.ts`, `scripts/lib/omarchy-dev-launchers.test.ts`).
 - [x] `/nightly` is a reserved public route owned by the nightly replay branch/worktree (`packages/shared/src/localTopics/remoteAccess/publicPath.ts`, `/nightly`).
 - [x] A reusable public verifier target proves the nightly HTTPS route with the project/chat flow (`apps/desktop/scripts/verify-staging-public.mjs`, `vp run verify:nightly-public`).
 
@@ -36,6 +38,7 @@ This topic was added after the initial June topic-stack population. Keep it as a
 ## Added Tests
 
 - [x] Launcher rendering, branch pattern, kill mode, dry-run count, and Tailscale reconcile output are covered (`scripts/lib/omarchy-dev-launchers.test.ts`).
+- [x] Launcher process scanning covers race-safe `/proc` reads for quiet kill mode (`scripts/lib/omarchy-dev-launchers.test.ts`).
 - [x] Shared public-path tests cover `/nightly` prefix detection and reserved route ownership (`packages/shared/src/publicPath.test.ts`).
 - [x] Dev runner tests cover allowed nightly ownership and rejection from non-nightly worktrees (`scripts/dev-runner.test.ts`).
 - [x] Desktop exposure tests cover allowed `/nightly` Serve setup and rejected non-nightly claims (`apps/desktop/src/backend/DesktopServerExposure.test.ts`).
@@ -108,9 +111,10 @@ Replay after the existing topic-stack safeguards so the nightly worktree and loc
 - `vp test run scripts/lib/omarchy-dev-launchers.test.ts packages/shared/src/publicPath.test.ts scripts/dev-runner.test.ts apps/desktop/src/backend/DesktopServerExposure.test.ts`
 - `pnpm run omarchy:install-dev-launchers -- --dry-run --target nightly`
 - `vp run verify:nightly-public`
+- `vp run test:desktop-e2e:smoke`
 - `vp check`
 - `vp run typecheck`
 
 ## Known Follow-Up Work
 
-- [ ] Run `vp run verify:nightly-public` after the launcher is installed and the nightly app is running (`vp run verify:nightly-public`, `https://giggabit.tailfb378a.ts.net/nightly/`).
+- None currently.

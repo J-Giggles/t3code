@@ -123,6 +123,7 @@
     "vp test run scripts/lib/omarchy-dev-launchers.test.ts packages/shared/src/publicPath.test.ts scripts/dev-runner.test.ts apps/desktop/src/backend/DesktopServerExposure.test.ts",
     "pnpm run omarchy:install-dev-launchers -- --dry-run --target nightly",
     "vp run verify:nightly-public",
+    "vp run test:desktop-e2e:smoke",
     "vp check",
     "vp run typecheck"
   ]
