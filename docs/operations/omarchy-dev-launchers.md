@@ -11,12 +11,12 @@ changes have reached `staging`.
 
 ## Targets
 
-| Target        | Worktree                                | Branch                            | Web port | Server port | CDP port | HTTPS path |
-| ------------- | --------------------------------------- | --------------------------------- | -------: | ----------: | -------: | ---------- |
-| `original`    | `~/code/t3code/.worktrees/original`     | `original`                        |   `5733` |     `13773` |   `9230` | `/original` |
-| `main`        | `~/code/t3code`                         | `main`                            |   `5753` |     `13793` |   `9231` | `/main` |
-| `staging`     | `~/code/t3code/.worktrees/staging`      | `staging`                         |   `5793` |     `13833` |   `9232` | `/staging` |
-| `nightly`     | `~/code/t3code/.worktrees/nightly-local` | `dev/nightly-topic-stack-YYYYMMDD` |   `5833` |     `13873` |   `9234` | `/nightly` |
+| Target     | Worktree                                 | Branch                             | Web port | Server port | CDP port | HTTPS path  |
+| ---------- | ---------------------------------------- | ---------------------------------- | -------: | ----------: | -------: | ----------- |
+| `original` | `~/code/t3code/.worktrees/original`      | `original`                         |   `5733` |     `13773` |   `9230` | `/original` |
+| `main`     | `~/code/t3code`                          | `main`                             |   `5753` |     `13793` |   `9231` | `/main`     |
+| `staging`  | `~/code/t3code/.worktrees/staging`       | `staging`                          |   `5793` |     `13833` |   `9232` | `/staging`  |
+| `nightly`  | `~/code/t3code/.worktrees/nightly-local` | `dev/nightly-topic-stack-YYYYMMDD` |   `5833` |     `13873` |   `9234` | `/nightly`  |
 
 Each rendered launcher sets:
 

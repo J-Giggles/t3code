@@ -738,13 +738,7 @@ describe("DesktopServerExposure", () => {
           { command: "tailscale", args: ["serve", "status", "--json"] },
           {
             command: "tailscale",
-            args: [
-              "serve",
-              "--bg",
-              "--https=443",
-              "--set-path=/nightly",
-              "http://127.0.0.1:13873",
-            ],
+            args: ["serve", "--bg", "--https=443", "--set-path=/nightly", "http://127.0.0.1:13873"],
           },
         ]);
       }),
