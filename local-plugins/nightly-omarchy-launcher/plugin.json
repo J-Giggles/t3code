@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 2,
+  "id": "nightly-omarchy-launcher",
+  "title": "Nightly Omarchy replay launcher",
+  "topicKind": "mixed",
+  "topicCommits": ["65e0b8a1220aff21ea52ccc9faea98be74c925d9"],
+  "ownedPaths": [
+    {
+      "path": "AGENTS.md",
+      "role": "docs"
+    },
+    {
+      "path": "apps/desktop/package.json",
+      "role": "config"
+    },
+    {
+      "path": "apps/desktop/scripts/verify-staging-public.mjs",
+      "role": "script"
+    },
+    {
+      "path": "apps/desktop/src/backend/DesktopServerExposure.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "docs/operations/nightly-upstream-replay.md",
+      "role": "docs"
+    },
+    {
+      "path": "docs/operations/omarchy-dev-launchers.md",
+      "role": "docs"
+    },
+    {
+      "path": "docs/operations/staging-review-guide.md",
+      "role": "docs"
+    },
+    {
+      "path": "package.json",
+      "role": "config"
+    },
+    {
+      "path": "packages/shared/src/localTopics/remoteAccess/publicPath.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/shared/src/publicPath.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "script"
+    },
+    {
+      "path": "scripts/dev-runner.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "scripts/lib/omarchy-dev-launchers.ts",
+      "role": "script"
+    },
+    {
+      "path": "scripts/lib/omarchy-dev-launchers.test.ts",
+      "role": "test"
+    }
+  ],
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "scripts/localTopics/devLaunch/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/desktop/src/localTopics/remoteAccess/publicVerifierHardening.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/desktop/scripts/verify-staging-public.mjs",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "package.json",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/shared/src/publicPath.ts",
+      "role": "public-facade"
+    },
+    {
+      "path": "scripts/dev-runner.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/lib/omarchy-dev-launchers.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "scripts/localTopics/devLaunch/index.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "packages/shared/src/localTopics/remoteAccess/reservedRoutes.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/desktop/src/localTopics/remoteAccess/publicVerifierHardening.ts",
+      "role": "consumer"
+    }
+  ],
+  "verification": [
+    "vp test run scripts/lib/omarchy-dev-launchers.test.ts packages/shared/src/publicPath.test.ts scripts/dev-runner.test.ts apps/desktop/src/backend/DesktopServerExposure.test.ts",
+    "pnpm run omarchy:install-dev-launchers -- --dry-run --target nightly",
+    "vp run verify:nightly-public",
+    "vp check",
+    "vp run typecheck"
+  ]
+}
