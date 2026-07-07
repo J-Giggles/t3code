@@ -7,6 +7,7 @@ Make the rebuilt nightly topic stack launchable from Omarchy as `T3 Code Nightly
 ## Current Commits
 
 - `65e0b8a1220aff21ea52ccc9faea98be74c925d9` `feat(dev-launch): add nightly Omarchy launcher`
+- `1e982269a02c88e2f8e625cb5b5791e443476834` `fix(dev-launch): format nightly launcher docs and tests`
 
 ## Squash / Replay History
 

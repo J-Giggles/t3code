@@ -3,7 +3,10 @@
   "id": "nightly-omarchy-launcher",
   "title": "Nightly Omarchy replay launcher",
   "topicKind": "mixed",
-  "topicCommits": ["65e0b8a1220aff21ea52ccc9faea98be74c925d9"],
+  "topicCommits": [
+    "65e0b8a1220aff21ea52ccc9faea98be74c925d9",
+    "1e982269a02c88e2f8e625cb5b5791e443476834"
+  ],
   "ownedPaths": [
     {
       "path": "AGENTS.md",
