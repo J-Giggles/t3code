@@ -1,5 +1,5 @@
 const LOCAL_TAILSCALE_PATH_PREFIX_PATTERN =
-  /^(\/(?:main|staging|original|t3code(?:-[a-z0-9][a-z0-9-]*)?))(?:\/|$)/u;
+  /^(\/(?:main|staging|original|nightly|t3code(?:-[a-z0-9][a-z0-9-]*)?))(?:\/|$)/u;
 
 export const DEFAULT_PUBLIC_PATH_PREFIX = "/t3code";
 
@@ -25,9 +25,10 @@ export type TailscaleServeUiRouteValidationResult =
     };
 
 export interface TailscaleReservedServeRoutePolicy {
-  readonly route: "/main" | "/original" | "/staging";
-  readonly expectedBranch: "main" | "original" | "staging";
-  readonly expectedWorktreeBasename: "t3code" | "original" | "staging";
+  readonly route: "/main" | "/original" | "/staging" | "/nightly";
+  readonly expectedBranch: string;
+  readonly expectedBranchPattern?: RegExp;
+  readonly expectedWorktreeBasename: "t3code" | "original" | "staging" | "nightly-local";
   readonly expectedDescription: string;
 }
 
@@ -71,6 +72,13 @@ const TAILSCALE_RESERVED_SERVE_ROUTE_POLICIES: Record<
     expectedBranch: "staging",
     expectedWorktreeBasename: "staging",
     expectedDescription: "the staging branch/worktree",
+  },
+  "/nightly": {
+    route: "/nightly",
+    expectedBranch: "dev/nightly-topic-stack-YYYYMMDD",
+    expectedBranchPattern: /^dev\/nightly-topic-stack-[0-9]{8}$/u,
+    expectedWorktreeBasename: "nightly-local",
+    expectedDescription: "the nightly replay branch/worktree",
   },
 };
 
@@ -180,7 +188,11 @@ export function checkTailscaleReservedServeRouteOwner(input: {
     return null;
   }
 
-  const branchMatches = input.identity.branch === policy.expectedBranch;
+  const branchMatches =
+    input.identity.branch !== null &&
+    (policy.expectedBranchPattern === undefined
+      ? input.identity.branch === policy.expectedBranch
+      : policy.expectedBranchPattern.test(input.identity.branch));
   const basenameMatches = input.identity.worktreeBasename === policy.expectedWorktreeBasename;
   const mainPathMatches =
     policy.route !== "/main" || !input.identity.topLevelPath.includes("/.worktrees/");
@@ -220,8 +232,9 @@ export function resolveWorkspacePublicPathPrefix(input: {
 
 /**
  * Detects a local Tailscale path prefix from a URL pathname.
- * Supports canonical worktree paths (`/main`, `/staging`, `/original`), the
- * default `/t3code` path, and legacy worktree instances at `/t3code-<slug>`.
+ * Supports canonical worktree paths (`/main`, `/staging`, `/original`,
+ * `/nightly`), the default `/t3code` path, and legacy worktree instances at
+ * `/t3code-<slug>`.
  */
 export function readLocalPublicPathPrefixFromPathname(pathname: string): string | undefined {
   const match = pathname.match(LOCAL_TAILSCALE_PATH_PREFIX_PATTERN);

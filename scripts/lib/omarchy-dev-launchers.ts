@@ -4,7 +4,13 @@ import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
-export const OMARCHY_DEV_LAUNCHER_TARGETS = ["original", "main", "staging", "manual-port"] as const;
+export const OMARCHY_DEV_LAUNCHER_TARGETS = [
+  "original",
+  "main",
+  "staging",
+  "nightly",
+  "manual-port",
+] as const;
 export type OmarchyDevLauncherTarget = (typeof OMARCHY_DEV_LAUNCHER_TARGETS)[number];
 export type OmarchyDevLauncherTargetSelection = OmarchyDevLauncherTarget | "all";
 export type OmarchyDevLauncherInstallMode = "dry-run" | "write";
@@ -15,6 +21,7 @@ export type OmarchyDevLauncherInstallAction = "create" | "update" | "unchanged";
 export interface OmarchyDevLauncherDefinition {
   readonly target: OmarchyDevLauncherTarget;
   readonly branch: string;
+  readonly branchPattern?: string;
   readonly title: string;
   readonly slug: string;
   readonly worktreeRelativePath: string;
@@ -132,6 +139,26 @@ const DEFINITIONS = [
     worktreeRole: "staging",
   },
   {
+    target: "nightly",
+    branch: "dev/nightly-topic-stack-YYYYMMDD",
+    branchPattern: "^dev/nightly-topic-stack-[0-9]{8}$",
+    title: "T3code Dev Nightly",
+    slug: "nightly",
+    worktreeRelativePath: "code/t3code/.worktrees/nightly-local",
+    portOffset: "100",
+    serverPort: "13873",
+    webPort: "5833",
+    desktopDebuggingPort: "9234",
+    command: "pnpm run dev:desktop",
+    desktopName: "T3 Code Nightly",
+    desktopComment: "Run the latest upstream replay candidate worktree.",
+    desktopKeywords: "t3code;T3 Code;dev;nightly;upstream;replay;",
+    desktopExecKind: "direct",
+    tailscaleServePath: "/nightly",
+    workspaceSlug: "nightly",
+    worktreeRole: "nightly",
+  },
+  {
     target: "manual-port",
     branch: "dev/staging-upstream-manual-port-20260624",
     title: "T3code Dev Manual Port",
@@ -233,10 +260,18 @@ export function renderOmarchyDevLauncherScript(definition: OmarchyDevLauncherDef
     `TITLE="${definition.title}"`,
     `SLUG="${definition.slug}"`,
     `EXPECTED_BRANCH="${definition.branch}"`,
+    `EXPECTED_BRANCH_REGEX="${definition.branchPattern ?? ""}"`,
     "",
     "ensure_expected_branch() {",
     "  local branch",
     '  branch="$(git -C "$WORKTREE" branch --show-current 2>/dev/null || true)"',
+    '  if [[ -n "$EXPECTED_BRANCH_REGEX" ]]; then',
+    '    if [[ "$branch" =~ $EXPECTED_BRANCH_REGEX ]]; then',
+    "      return",
+    "    fi",
+    "    echo \"Refusing to launch $TITLE: $WORKTREE is on '${branch:-detached HEAD}', expected '$EXPECTED_BRANCH'.\" >&2",
+    "    exit 1",
+    "  fi",
     '  if [[ "$branch" != "$EXPECTED_BRANCH" ]]; then',
     "    echo \"Refusing to launch $TITLE: $WORKTREE is on '${branch:-detached HEAD}', expected '$EXPECTED_BRANCH'.\" >&2",
     "    exit 1",
@@ -476,6 +511,12 @@ export function renderOmarchyDevLauncherScript(definition: OmarchyDevLauncherDef
     "  run_supervised_dev_command",
     "}",
     "",
+    'if [[ "${1:-}" == "--kill" ]]; then',
+    "  setup_path",
+    "  stop_existing_dev",
+    "  exit 0",
+    "fi",
+    "",
     'if [[ "${1:-}" == "--attached" ]] || { [ -t 1 ] && [ -t 0 ]; }; then',
     "  run_dev",
     "fi",
@@ -505,6 +546,7 @@ export function renderTailscaleReconcileScript(): string {
     'MAIN_PORT="13793"',
     'ORIGINAL_PORT="13773"',
     'STAGING_PORT="13833"',
+    'NIGHTLY_PORT="13873"',
     'INTERVAL_SECONDS="${T3CODE_TAILSCALE_RECONCILE_INTERVAL_SECONDS:-15}"',
     "",
     "has_command() {",
@@ -605,6 +647,10 @@ export function renderTailscaleReconcileScript(): string {
     "",
     '  if port_open "$STAGING_PORT"; then',
     '    serve_path "/staging" "$STAGING_PORT"',
+    "  fi",
+    "",
+    '  if port_open "$NIGHTLY_PORT"; then',
+    '    serve_path "/nightly" "$NIGHTLY_PORT"',
     "  fi",
     "",
     "  ensure_same_host_tailscale_route",
@@ -709,7 +755,11 @@ function validateTargetWorktree(definition: OmarchyDevLauncherDefinition, homeDi
   const branch = NodeChildProcess.execFileSync("git", ["-C", path, "branch", "--show-current"], {
     encoding: "utf8",
   }).trim();
-  if (branch !== definition.branch) {
+  const branchMatches =
+    definition.branchPattern === undefined
+      ? branch === definition.branch
+      : new RegExp(definition.branchPattern, "u").test(branch);
+  if (!branchMatches) {
     throw new OmarchyDevLauncherError(
       `Refusing to install ${definition.target} launcher: ${path} is on '${
         branch || "detached HEAD"
@@ -847,7 +897,7 @@ export function formatOmarchyDevLauncherInstallResult(
 
 export function omarchyDevLauncherHelp(): string {
   return [
-    "Usage: pnpm run omarchy:install-dev-launchers -- [--dry-run|--write] [--target all|main|staging|original|manual-port]",
+    "Usage: pnpm run omarchy:install-dev-launchers -- [--dry-run|--write] [--target all|main|staging|original|nightly|manual-port]",
     "",
     "Defaults to --dry-run --target all. --write is required to change ~/.local/bin or desktop entries.",
     "",

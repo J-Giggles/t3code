@@ -250,10 +250,19 @@ Source commits intentionally not replayed as new follow-up commits:
   `~/.local/share/applications/t3code-dev-staging.desktop`. It launches `.worktrees/staging` on web port `5793`,
   server port `13833`, and desktop debugging port `9232`. Its app data lives in
   `~/.local/share/t3code-dev/staging`, and its config lives in `~/.config/t3code-dev/staging`.
+- `T3 Code Nightly` uses `~/.local/bin/t3code-dev-nightly` and
+  `~/.local/share/applications/t3code-dev-nightly.desktop`. It launches `.worktrees/nightly-local` on web port
+  `5833`, server port `13873`, and desktop debugging port `9234`, and exposes the public HTTPS route
+  `https://giggabit.tailfb378a.ts.net/nightly/`. Its app data lives in `~/.local/share/t3code-dev/nightly`, and its
+  config lives in `~/.config/t3code-dev/nightly`. The nightly worktree is rebuilt by
+  `pnpm run topic-stack:nightly -- --apply`; do not make product edits there.
+- Generated launcher scripts accept `--kill`, for example `~/.local/bin/t3code-dev-nightly --kill`, to stop only
+  matching processes from that launcher worktree before a rebuild or relaunch.
 - `~/.local/bin/t3code-tailscale-reconcile` is the shared support script installed by
   `pnpm run omarchy:install-dev-launchers -- --write`. It keeps Tailscale Serve routes current and repairs the
   same-host route for the machine's 100.x tailnet IP on the primary interface. If Brave/Chromium times out on the
-  public URL, inspect `apps/desktop/test-results/staging-public/*/network-preflight.json`, `ss -tnp`, and
+  public URL, inspect `apps/desktop/test-results/staging-public/*/network-preflight.json`,
+  `apps/desktop/test-results/nightly-public/*/network-preflight.json`, `ss -tnp`, and
   `ip route get <tailnet-ip> oif <primary-interface>` before claiming staging is healthy.
 - The `original` sync automation may reset files inside `.worktrees/original`, but it must never delete or reset
   `~/.local/share/t3code-dev/original` or `~/.config/t3code-dev/original`.

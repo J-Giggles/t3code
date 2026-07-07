@@ -718,6 +718,69 @@ describe("DesktopServerExposure", () => {
     );
   });
 
+  it.effect("allows /nightly from the rolling nightly replay worktree", () => {
+    const commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }> = [];
+
+    return withGitHarness(
+      {
+        appRootRelativePath: "repo/.worktrees/nightly-local",
+        branch: "dev/nightly-topic-stack-20260707",
+        spawnerLayer: recordingSpawnerLayer(commands),
+      },
+      Effect.gen(function* () {
+        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
+        yield* serverExposure.configureFromSettings({ port: 13873 });
+
+        const change = yield* serverExposure.enableTailscaleAccess({ servePath: "/nightly" });
+
+        assert.equal(change.requiresRelaunch, true);
+        assert.deepEqual(commands.slice(0, 2), [
+          { command: "tailscale", args: ["serve", "status", "--json"] },
+          {
+            command: "tailscale",
+            args: [
+              "serve",
+              "--bg",
+              "--https=443",
+              "--set-path=/nightly",
+              "http://127.0.0.1:13873",
+            ],
+          },
+        ]);
+      }),
+    );
+  });
+
+  it.effect("rejects /nightly from a non-nightly worktree before checking Serve", () => {
+    const commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }> = [];
+
+    return withGitHarness(
+      {
+        appRootRelativePath: "repo/.worktrees/staging",
+        branch: "staging",
+        spawnerLayer: recordingSpawnerLayer(commands),
+      },
+      Effect.gen(function* () {
+        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
+        yield* serverExposure.configureFromSettings({ port: 13873 });
+
+        const error = yield* serverExposure
+          .enableTailscaleAccess({ servePath: "/nightly" })
+          .pipe(Effect.flip);
+
+        if (error._tag !== "DesktopTailscaleServeRouteReservationError") {
+          assert.fail(
+            `Expected DesktopTailscaleServeRouteReservationError, received ${error._tag}.`,
+          );
+        }
+        assert.equal(error.servePath, "/nightly");
+        assert.include(error.message, "reserved for the nightly replay branch/worktree");
+        assert.include(error.message, ".worktrees/staging");
+        assert.deepEqual(commands, []);
+      }),
+    );
+  });
+
   it.effect("returns a structured route probe conflict", () => {
     const commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }> = [];
 

@@ -886,10 +886,12 @@ from a typed source of truth.
 Important implementation areas:
 
 - `scripts/lib/omarchy-dev-launchers.ts` renders launcher scripts and desktop
-  entries for `original`, `main`, and `staging`, plus the shared
+  entries for `original`, `main`, `staging`, and the rolling `nightly` replay
+  worktree, plus the shared
   `t3code-tailscale-reconcile` helper.
 - `scripts/lib/omarchy-dev-launchers.test.ts` verifies generated paths, ports,
-  process names, route repair behavior, shell syntax, and dry-run behavior.
+  process names, kill mode, route repair behavior, shell syntax, and dry-run
+  behavior.
 - `scripts/install-omarchy-dev-launchers.ts` is the CLI entry point exposed by
   `pnpm omarchy:install-dev-launchers`.
 - `docs/operations/omarchy-dev-launchers.md` records install, dry-run, and
@@ -900,6 +902,8 @@ Important implementation areas:
 Reviewers should check:
 
 - Generated launchers target the documented worktrees and ports.
+- The nightly launcher accepts only `dev/nightly-topic-stack-YYYYMMDD` branches,
+  exposes `/nightly`, and can be stopped with `t3code-dev-nightly --kill`.
 - Tailscale Serve path refresh and same-host tailnet route repair are generated
   from source, not hand-edited only in `~/.local/bin`.
 - Machine-local scripts remain outside the repo under `~/.local/bin` and

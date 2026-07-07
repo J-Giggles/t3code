@@ -678,6 +678,81 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       }),
     );
 
+    it.effect("allows /nightly for the rolling nightly replay worktree", () =>
+      Effect.gen(function* () {
+        const repoRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-repo-"));
+        const appRoot = NodePath.join(repoRoot, ".worktrees", "nightly-local");
+        createGitCheckout({
+          appRoot,
+          branch: "dev/nightly-topic-stack-20260707",
+        });
+
+        try {
+          const env = yield* createDevRunnerEnv({
+            mode: "dev:desktop",
+            cwd: appRoot,
+            baseEnv: {
+              T3CODE_TAILSCALE_SERVE_PATH: "/nightly",
+              T3CODE_WORKTREE_ROLE: "staging",
+            },
+            serverOffset: 100,
+            webOffset: 100,
+            t3Home: "/tmp/t3-dev-runner",
+            noBrowser: undefined,
+            autoBootstrapProjectFromCwd: undefined,
+            logWebSocketEvents: undefined,
+            host: undefined,
+            port: 13873,
+            devUrl: undefined,
+          });
+
+          assert.equal(env.T3CODE_WORKTREE_ROLE, "nightly");
+          assert.equal(env.VITE_T3CODE_PUBLIC_BASE_PATH, "/nightly");
+          assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5833/nightly/");
+        } finally {
+          NodeFS.rmSync(repoRoot, { recursive: true, force: true });
+        }
+      }),
+    );
+
+    it.effect("rejects /nightly for a non-nightly worktree", () =>
+      Effect.gen(function* () {
+        const repoRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-dev-runner-repo-"));
+        const appRoot = NodePath.join(repoRoot, ".worktrees", "staging");
+        createGitCheckout({
+          appRoot,
+          branch: "staging",
+        });
+
+        try {
+          const error = yield* createDevRunnerEnv({
+            mode: "dev:desktop",
+            cwd: appRoot,
+            baseEnv: {
+              T3CODE_TAILSCALE_SERVE_PATH: "/nightly",
+              T3CODE_WORKTREE_ROLE: "nightly",
+            },
+            serverOffset: 100,
+            webOffset: 100,
+            t3Home: "/tmp/t3-dev-runner",
+            noBrowser: undefined,
+            autoBootstrapProjectFromCwd: undefined,
+            logWebSocketEvents: undefined,
+            host: undefined,
+            port: 13873,
+            devUrl: undefined,
+          }).pipe(Effect.flip);
+
+          assert.equal(error._tag, "DevRunnerReservedServeRouteError");
+          assert.equal(error.servePath, "/nightly");
+          assert.include(error.message, "reserved for the nightly replay branch/worktree");
+          assert.equal(error.suggestedServePath, "/staging");
+        } finally {
+          NodeFS.rmSync(repoRoot, { recursive: true, force: true });
+        }
+      }),
+    );
+
     it.effect("defaults dev server mode to the higher backend port range", () =>
       Effect.gen(function* () {
         const env = yield* createDevRunnerEnv({

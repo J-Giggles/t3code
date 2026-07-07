@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  checkTailscaleReservedServeRouteOwner,
   DEFAULT_PUBLIC_PATH_PREFIX,
+  getTailscaleReservedServeRoutePolicy,
   joinPublicPathPrefix,
   normalizePublicPathSegment,
   normalizePublicPathPrefix,
@@ -77,6 +79,7 @@ describe("publicPath", () => {
     expect(readLocalPublicPathPrefixFromPathname("/main/pair")).toBe("/main");
     expect(readLocalPublicPathPrefixFromPathname("/staging/pair")).toBe("/staging");
     expect(readLocalPublicPathPrefixFromPathname("/original")).toBe("/original");
+    expect(readLocalPublicPathPrefixFromPathname("/nightly/pair")).toBe("/nightly");
     expect(readLocalPublicPathPrefixFromPathname("/t3code/pair")).toBe("/t3code");
     expect(readLocalPublicPathPrefixFromPathname("/t3code-main/pair")).toBe("/t3code-main");
     expect(readLocalPublicPathPrefixFromPathname("/t3code-staging")).toBe("/t3code-staging");
@@ -89,5 +92,39 @@ describe("publicPath", () => {
     expect(readLocalPublicPathPrefixFromPathname("/t3codeish/pair")).toBeUndefined();
     expect(readLocalPublicPathPrefixFromPathname("/settings")).toBeUndefined();
     expect(readLocalPublicPathPrefixFromPathname("/pair")).toBeUndefined();
+  });
+
+  it("reserves the nightly public route for the rolling replay worktree", () => {
+    expect(getTailscaleReservedServeRoutePolicy("/nightly")).toMatchObject({
+      route: "/nightly",
+      expectedBranch: "dev/nightly-topic-stack-YYYYMMDD",
+      expectedWorktreeBasename: "nightly-local",
+    });
+
+    expect(
+      checkTailscaleReservedServeRouteOwner({
+        route: "/nightly",
+        identity: {
+          branch: "dev/nightly-topic-stack-20260707",
+          topLevelPath: "/repo/t3code/.worktrees/nightly-local",
+          worktreeBasename: "nightly-local",
+        },
+      }),
+    ).toBeNull();
+
+    expect(
+      checkTailscaleReservedServeRouteOwner({
+        route: "/nightly",
+        identity: {
+          branch: "staging",
+          topLevelPath: "/repo/t3code/.worktrees/staging",
+          worktreeBasename: "staging",
+        },
+      }),
+    ).toMatchObject({
+      route: "/nightly",
+      expectedDescription: "the nightly replay branch/worktree",
+      actualBranch: "staging",
+    });
   });
 });

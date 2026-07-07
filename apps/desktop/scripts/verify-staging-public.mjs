@@ -12,11 +12,21 @@ const __dirname = NodePath.dirname(NodeURL.fileURLToPath(import.meta.url));
 const desktopDir = NodePath.resolve(__dirname, "..");
 const repoRoot = NodePath.resolve(desktopDir, "../..");
 
-const DEFAULT_PUBLIC_URL = "https://giggabit.tailfb378a.ts.net/staging/";
+const PUBLIC_VERIFY_TARGET = process.env.T3CODE_PUBLIC_VERIFY_TARGET?.trim() || "staging";
+const DEFAULT_PUBLIC_URL =
+  PUBLIC_VERIFY_TARGET === "nightly"
+    ? "https://giggabit.tailfb378a.ts.net/nightly/"
+    : "https://giggabit.tailfb378a.ts.net/staging/";
 const DEFAULT_MESSAGE = "Hi";
 const DEFAULT_TIMEOUT_MS = 600_000;
-const DEFAULT_PAIRING_BASE_DIR = "~/.local/share/t3code-dev/staging";
-const DEFAULT_PAIRING_DEV_URL = "http://127.0.0.1:5793/staging/";
+const DEFAULT_PAIRING_BASE_DIR =
+  PUBLIC_VERIFY_TARGET === "nightly"
+    ? "~/.local/share/t3code-dev/nightly"
+    : "~/.local/share/t3code-dev/staging";
+const DEFAULT_PAIRING_DEV_URL =
+  PUBLIC_VERIFY_TARGET === "nightly"
+    ? "http://127.0.0.1:5833/nightly/"
+    : "http://127.0.0.1:5793/staging/";
 const DEFAULT_PAIRING_TTL = "5m";
 const DEFAULT_NETWORK_PREFLIGHT_TIMEOUT_MS = 20_000;
 
@@ -28,14 +38,30 @@ function readBooleanEnv(name, fallback) {
   return raw === "1" || raw.toLowerCase() === "true";
 }
 
+function readFallbackEnv(primaryName, fallbackName, fallback) {
+  return process.env[primaryName] ?? process.env[fallbackName] ?? fallback;
+}
+
+function readBooleanFallbackEnv(primaryName, fallbackName, fallback) {
+  if (process.env[primaryName] !== undefined) return readBooleanEnv(primaryName, fallback);
+  return readBooleanEnv(fallbackName, fallback);
+}
+
 function readTimeoutMs() {
-  const raw = process.env.T3CODE_STAGING_VERIFY_TIMEOUT_MS;
+  const raw = readFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_TIMEOUT_MS",
+    "T3CODE_STAGING_VERIFY_TIMEOUT_MS",
+    undefined,
+  );
   if (!raw) return DEFAULT_TIMEOUT_MS;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
 }
 
 function resolveHeadless() {
+  if (process.env.T3CODE_PUBLIC_VERIFY_HEADLESS !== undefined) {
+    return readBooleanEnv("T3CODE_PUBLIC_VERIFY_HEADLESS", false);
+  }
   if (process.env.T3CODE_STAGING_VERIFY_HEADLESS !== undefined) {
     return readBooleanEnv("T3CODE_STAGING_VERIFY_HEADLESS", false);
   }
@@ -113,8 +139,14 @@ async function writeNetworkPreflightArtifact(input) {
 }
 
 async function verifyPrimaryInterfaceReachability(publicUrl, artifactDir) {
-  if (readBooleanEnv("T3CODE_STAGING_VERIFY_SKIP_INTERFACE_PREFLIGHT", false)) {
-    return { checked: false, reason: "disabled by T3CODE_STAGING_VERIFY_SKIP_INTERFACE_PREFLIGHT" };
+  if (
+    readBooleanFallbackEnv(
+      "T3CODE_PUBLIC_VERIFY_SKIP_INTERFACE_PREFLIGHT",
+      "T3CODE_STAGING_VERIFY_SKIP_INTERFACE_PREFLIGHT",
+      false,
+    )
+  ) {
+    return { checked: false, reason: "disabled by public verifier environment" };
   }
 
   const url = new URL(publicUrl);
@@ -193,10 +225,22 @@ async function verifyPrimaryInterfaceReachability(publicUrl, artifactDir) {
 
 async function issuePairingToken() {
   const baseDir = expandHome(
-    process.env.T3CODE_STAGING_VERIFY_PAIRING_BASE_DIR ?? DEFAULT_PAIRING_BASE_DIR,
+    readFallbackEnv(
+      "T3CODE_PUBLIC_VERIFY_PAIRING_BASE_DIR",
+      "T3CODE_STAGING_VERIFY_PAIRING_BASE_DIR",
+      DEFAULT_PAIRING_BASE_DIR,
+    ),
   );
-  const devUrl = process.env.T3CODE_STAGING_VERIFY_PAIRING_DEV_URL ?? DEFAULT_PAIRING_DEV_URL;
-  const ttl = process.env.T3CODE_STAGING_VERIFY_PAIRING_TTL ?? DEFAULT_PAIRING_TTL;
+  const devUrl = readFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_PAIRING_DEV_URL",
+    "T3CODE_STAGING_VERIFY_PAIRING_DEV_URL",
+    DEFAULT_PAIRING_DEV_URL,
+  );
+  const ttl = readFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_PAIRING_TTL",
+    "T3CODE_STAGING_VERIFY_PAIRING_TTL",
+    DEFAULT_PAIRING_TTL,
+  );
   const binPath = NodePath.join(repoRoot, "apps", "server", "dist", "bin.mjs");
   const { stdout } = await execFile(
     process.execPath,
@@ -231,12 +275,22 @@ async function resolveStartUrl(publicUrl) {
     return publicUrl;
   }
 
-  const explicitToken = process.env.T3CODE_STAGING_VERIFY_PAIRING_TOKEN?.trim();
+  const explicitToken = readFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_PAIRING_TOKEN",
+    "T3CODE_STAGING_VERIFY_PAIRING_TOKEN",
+    "",
+  ).trim();
   if (explicitToken) {
     return buildPairingUrl(publicUrl, explicitToken);
   }
 
-  if (readBooleanEnv("T3CODE_STAGING_VERIFY_SKIP_PAIRING", false)) {
+  if (
+    readBooleanFallbackEnv(
+      "T3CODE_PUBLIC_VERIFY_SKIP_PAIRING",
+      "T3CODE_STAGING_VERIFY_SKIP_PAIRING",
+      false,
+    )
+  ) {
     return publicUrl;
   }
 
@@ -315,13 +369,24 @@ async function waitForAssistantResponse(page, timeoutMs) {
 }
 
 async function main() {
-  const publicUrl = process.env.T3CODE_STAGING_PUBLIC_URL ?? DEFAULT_PUBLIC_URL;
+  const publicUrl = readFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_URL",
+    "T3CODE_STAGING_PUBLIC_URL",
+    DEFAULT_PUBLIC_URL,
+  );
   const startUrl = await resolveStartUrl(publicUrl);
-  const message = process.env.T3CODE_STAGING_VERIFY_MESSAGE ?? DEFAULT_MESSAGE;
+  const message = readFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_MESSAGE",
+    "T3CODE_STAGING_VERIFY_MESSAGE",
+    DEFAULT_MESSAGE,
+  );
   const timeoutMs = readTimeoutMs();
   const artifactRoot =
-    process.env.T3CODE_STAGING_VERIFY_ARTIFACT_DIR ??
-    NodePath.join(desktopDir, "test-results", "staging-public");
+    readFallbackEnv(
+      "T3CODE_PUBLIC_VERIFY_ARTIFACT_DIR",
+      "T3CODE_STAGING_VERIFY_ARTIFACT_DIR",
+      undefined,
+    ) ?? NodePath.join(desktopDir, "test-results", `${PUBLIC_VERIFY_TARGET}-public`);
   const artifactDir = NodePath.join(
     artifactRoot,
     `${new Date().toISOString().replace(/[:.]/gu, "-")}-${sanitizeFilenameSegment(new URL(publicUrl).hostname)}`,
@@ -408,7 +473,10 @@ async function main() {
     failureContext.step = "navigate";
     await page.goto(startUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     if (page.url().startsWith("chrome-error://")) {
-      await fail(failureContext, `Public staging URL opened a browser error page: ${publicUrl}`);
+      await fail(
+        failureContext,
+        `Public ${PUBLIC_VERIFY_TARGET} URL opened a browser error page: ${publicUrl}`,
+      );
     }
 
     failureContext.step = "app-shell";
@@ -428,7 +496,10 @@ async function main() {
     await newThreadButtons.first().waitFor({ state: "attached", timeout: 90_000 });
     const projectCount = await newThreadButtons.count();
     if (projectCount < 1) {
-      await fail(failureContext, "No projects were available in the public staging browser.");
+      await fail(
+        failureContext,
+        `No projects were available in the public ${PUBLIC_VERIFY_TARGET} browser.`,
+      );
     }
 
     const firstProjectButton = newThreadButtons.first();

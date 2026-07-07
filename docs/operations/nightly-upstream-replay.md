@@ -147,6 +147,49 @@ vp run verify:nightly-public
 
 Stop only this lane with `~/.local/bin/t3code-dev-nightly --kill` before a rebuild.
 
+## Nightly Launcher
+
+The Omarchy launcher target for this rebuilt worktree is `nightly`. It expects
+`.worktrees/nightly-local` to be on `dev/nightly-topic-stack-YYYYMMDD`, serves
+the app through `https://giggabit.tailfb378a.ts.net/nightly/`, and uses isolated
+ports and app data:
+
+```text
+web: 5833
+server: 13873
+cdp: 9234
+T3CODE_HOME: ~/.local/share/t3code-dev/nightly
+XDG_CONFIG_HOME: ~/.config/t3code-dev/nightly
+```
+
+After a successful apply run, reconcile the launcher files:
+
+```bash
+pnpm run omarchy:install-dev-launchers -- --write --target nightly
+```
+
+Launch from the Omarchy menu entry `T3 Code Nightly`, or from a terminal:
+
+```bash
+~/.local/bin/t3code-dev-nightly
+```
+
+Stop only the nightly worktree processes with:
+
+```bash
+~/.local/bin/t3code-dev-nightly --kill
+```
+
+Verify the public HTTPS route with:
+
+```bash
+vp run verify:nightly-public
+```
+
+This verifier opens the `/nightly/` Tailscale URL from a Playwright browser,
+performs the same primary-interface network preflight as the staging verifier,
+creates a chat with `Hi`, and requires a non-empty assistant response.
+
 ## Promotion
 
 Do not merge or reset staging from this workflow. A successful Linear run reaches `In Review`, then the explicit `$premote-nightly` flow verifies the issue and artifacts, advances `nightly -> staging`, proves staging, and only then advances `staging -> main` across Linux, GitHub, and the Mac. See `docs/operations/premote-nightly.md`.

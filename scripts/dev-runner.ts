@@ -140,6 +140,7 @@ export function inferT3WorktreeRole(input: {
   const normalizedPath = input.cwd.replaceAll("\\", "/");
   if (/\/\.worktrees\/staging(?:\/|$)/u.test(normalizedPath)) return "staging";
   if (/\/\.worktrees\/original(?:\/|$)/u.test(normalizedPath)) return "original";
+  if (/\/\.worktrees\/nightly-local(?:\/|$)/u.test(normalizedPath)) return "nightly";
   if (/\/\.worktrees\/dev-[^/]+(?:\/|$)/u.test(normalizedPath)) return "dev";
   if (normalizedPath.endsWith("/t3code")) return "main";
 
@@ -152,6 +153,7 @@ export function inferT3WorktreeRole(input: {
   if (branch === "main") return "main";
   if (branch === "staging") return "staging";
   if (branch === "original") return "original";
+  if (/^dev\/nightly-topic-stack-[0-9]{8}$/u.test(branch ?? "")) return "nightly";
   return "dev";
 }
 
