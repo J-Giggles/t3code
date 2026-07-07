@@ -27,6 +27,8 @@ const DEFAULT_PAIRING_DEV_URL =
   PUBLIC_VERIFY_TARGET === "nightly"
     ? "http://127.0.0.1:5833/nightly/"
     : "http://127.0.0.1:5793/staging/";
+const DEFAULT_PROJECT_ROOT = PUBLIC_VERIFY_TARGET === "nightly" ? repoRoot : "";
+const DEFAULT_PROJECT_TITLE = PUBLIC_VERIFY_TARGET === "nightly" ? "nightly-local" : "";
 const DEFAULT_PAIRING_TTL = "5m";
 const DEFAULT_NETWORK_PREFLIGHT_TIMEOUT_MS = 20_000;
 
@@ -223,19 +225,93 @@ async function verifyPrimaryInterfaceReachability(publicUrl, artifactDir) {
   }
 }
 
-async function issuePairingToken() {
-  const baseDir = expandHome(
+function readPairingBaseDir() {
+  return expandHome(
     readFallbackEnv(
       "T3CODE_PUBLIC_VERIFY_PAIRING_BASE_DIR",
       "T3CODE_STAGING_VERIFY_PAIRING_BASE_DIR",
       DEFAULT_PAIRING_BASE_DIR,
     ),
   );
-  const devUrl = readFallbackEnv(
+}
+
+function readPairingDevUrl() {
+  return readFallbackEnv(
     "T3CODE_PUBLIC_VERIFY_PAIRING_DEV_URL",
     "T3CODE_STAGING_VERIFY_PAIRING_DEV_URL",
     DEFAULT_PAIRING_DEV_URL,
   );
+}
+
+function readProjectSeedConfig() {
+  const enabled = readBooleanFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_SEED_PROJECT",
+    "T3CODE_STAGING_VERIFY_SEED_PROJECT",
+    PUBLIC_VERIFY_TARGET === "nightly",
+  );
+  const workspaceRoot = expandHome(
+    readFallbackEnv(
+      "T3CODE_PUBLIC_VERIFY_PROJECT_ROOT",
+      "T3CODE_STAGING_VERIFY_PROJECT_ROOT",
+      DEFAULT_PROJECT_ROOT,
+    ),
+  ).trim();
+  const title = readFallbackEnv(
+    "T3CODE_PUBLIC_VERIFY_PROJECT_TITLE",
+    "T3CODE_STAGING_VERIFY_PROJECT_TITLE",
+    DEFAULT_PROJECT_TITLE,
+  ).trim();
+  return { enabled, workspaceRoot, title };
+}
+
+function isProjectAlreadyExistsError(error) {
+  const output = [
+    error && typeof error === "object" && "stdout" in error ? error.stdout : "",
+    error && typeof error === "object" && "stderr" in error ? error.stderr : "",
+    error instanceof Error ? error.message : String(error),
+  ].join("\n");
+  return (
+    output.includes("ProjectAlreadyExistsError") ||
+    output.includes("An active project already exists")
+  );
+}
+
+async function ensureVerificationProject() {
+  const config = readProjectSeedConfig();
+  if (!config.enabled || !config.workspaceRoot) {
+    return { enabled: false };
+  }
+
+  const binPath = NodePath.join(repoRoot, "apps", "server", "dist", "bin.mjs");
+  const args = [
+    binPath,
+    "project",
+    "add",
+    config.workspaceRoot,
+    "--base-dir",
+    readPairingBaseDir(),
+  ];
+  if (config.title) {
+    args.push("--title", config.title);
+  }
+
+  try {
+    await execFile(process.execPath, args, {
+      cwd: repoRoot,
+      maxBuffer: 1024 * 1024,
+    });
+    return { enabled: true, action: "created", workspaceRoot: config.workspaceRoot };
+  } catch (error) {
+    if (isProjectAlreadyExistsError(error)) {
+      return { enabled: true, action: "already-exists", workspaceRoot: config.workspaceRoot };
+    }
+    throw new Error(`Failed to seed verifier project '${config.workspaceRoot}'.`, { cause: error });
+  }
+}
+
+async function issuePairingToken() {
+  const baseDir = readPairingBaseDir();
+  const devUrl = readPairingDevUrl();
   const ttl = readFallbackEnv(
     "T3CODE_PUBLIC_VERIFY_PAIRING_TTL",
     "T3CODE_STAGING_VERIFY_PAIRING_TTL",
@@ -374,6 +450,7 @@ async function main() {
     "T3CODE_STAGING_PUBLIC_URL",
     DEFAULT_PUBLIC_URL,
   );
+  const projectSeed = await ensureVerificationProject();
   const startUrl = await resolveStartUrl(publicUrl);
   const message = readFallbackEnv(
     "T3CODE_PUBLIC_VERIFY_MESSAGE",
@@ -556,6 +633,7 @@ async function main() {
           url: page.url(),
           projectTitle,
           assistantText: String(assistantText).slice(0, 500),
+          projectSeed,
           networkPreflight,
           artifactDir,
         },
