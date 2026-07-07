@@ -12,6 +12,7 @@ import type {
   EnvironmentInternalError,
   EnvironmentOperationForbiddenError,
   EnvironmentRequestInvalidError,
+  EnvironmentResourceNotFoundError,
   EnvironmentScopeRequiredError,
 } from "@t3tools/contracts";
 import { joinHttpBasePath, normalizeHttpBaseUrl } from "@t3tools/shared/advertisedEndpoint";
@@ -93,6 +94,7 @@ export type RemoteEnvironmentAuthError =
   | EnvironmentAuthInvalidError
   | EnvironmentScopeRequiredError
   | EnvironmentOperationForbiddenError
+  | EnvironmentResourceNotFoundError
   | EnvironmentInternalError
   | RemoteEnvironmentAuthFetchError
   | RemoteEnvironmentAuthInvalidJsonError
