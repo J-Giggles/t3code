@@ -15,8 +15,8 @@ const repoRoot = NodePath.resolve(desktopDir, "../..");
 const PUBLIC_VERIFY_TARGET = process.env.T3CODE_PUBLIC_VERIFY_TARGET?.trim() || "staging";
 const DEFAULT_PUBLIC_URL =
   PUBLIC_VERIFY_TARGET === "nightly"
-    ? "https://giggabit.tailfb378a.ts.net/nightly/"
-    : "https://giggabit.tailfb378a.ts.net/staging/";
+    ? "https://giggabit-server.tailfb378a.ts.net/nightly/"
+    : "https://giggabit-server.tailfb378a.ts.net/staging/";
 const DEFAULT_MESSAGE = "Hi";
 const DEFAULT_TIMEOUT_MS = 600_000;
 const DEFAULT_PAIRING_BASE_DIR =

@@ -8,7 +8,7 @@
 - Prefer visible T3 Code Staging Electron verification for UI changes. Use the controlled workflow in
   `docs/operations/headed-staging.md`, keep its isolated `T3CODE_HOME`, and use the documented CDP port for
   screenshots/inspection.
-- For the live staging URL, `https://giggabit.tailfb378a.ts.net/staging/`, a verification pass requires
+- For the live staging URL, `https://giggabit-server.tailfb378a.ts.net/staging/`, a verification pass requires
   `vp run verify:staging-public`. Do not accept loopback-only curls, blank-page screenshots, or a shallow HTTP
   status check as proof. The verifier must prove the public HTTPS path reaches the app, shows projects, creates a
   chat with `Hi`, and receives a non-empty assistant response.
@@ -253,7 +253,7 @@ Source commits intentionally not replayed as new follow-up commits:
 - `T3 Code Nightly` uses `~/.local/bin/t3code-dev-nightly` and
   `~/.local/share/applications/t3code-dev-nightly.desktop`. It launches `.worktrees/nightly-local` on web port
   `5833`, server port `13873`, and desktop debugging port `9234`, and exposes the public HTTPS route
-  `https://giggabit.tailfb378a.ts.net/nightly/`. Its app data lives in `~/.local/share/t3code-dev/nightly`, and its
+  `https://giggabit-server.tailfb378a.ts.net/nightly/`. Its app data lives in `~/.local/share/t3code-dev/nightly`, and its
   config lives in `~/.config/t3code-dev/nightly`. The nightly worktree is rebuilt by
   `pnpm run topic-stack:nightly -- --apply`; do not make product edits there.
 - Generated launcher scripts accept `--kill`, for example `~/.local/bin/t3code-dev-nightly --kill`, to stop only

@@ -151,7 +151,7 @@ Stop only this lane with `~/.local/bin/t3code-dev-nightly --kill` before a rebui
 
 The Omarchy launcher target for this rebuilt worktree is `nightly`. It expects
 `.worktrees/nightly-local` to be on `dev/nightly-topic-stack-YYYYMMDD`, serves
-the app through `https://giggabit.tailfb378a.ts.net/nightly/`, and uses isolated
+the app through `https://giggabit-server.tailfb378a.ts.net/nightly/`, and uses isolated
 ports and app data:
 
 ```text

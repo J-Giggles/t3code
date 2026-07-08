@@ -28,7 +28,7 @@ This topic was added after the initial June topic-stack population. Keep it as a
 ## Added UI
 
 - [x] Omarchy shows a `T3 Code Nightly` desktop entry for the replay candidate worktree (`scripts/lib/omarchy-dev-launchers.ts`, `docs/operations/omarchy-dev-launchers.md`).
-- [x] Browser verification opens the public `/nightly/` route and sends `Hi` from a separate Playwright browser context (`apps/desktop/scripts/verify-staging-public.mjs`, `https://giggabit.tailfb378a.ts.net/nightly/`).
+- [x] Browser verification opens the public `/nightly/` route and sends `Hi` from a separate Playwright browser context (`apps/desktop/scripts/verify-staging-public.mjs`, `https://giggabit-server.tailfb378a.ts.net/nightly/`).
 
 ## Added Server And Runtime Behavior
 
@@ -101,8 +101,8 @@ Componentization status: `complete`.
 const PUBLIC_VERIFY_TARGET = process.env.T3CODE_PUBLIC_VERIFY_TARGET?.trim() || "staging";
 const DEFAULT_PUBLIC_URL =
   PUBLIC_VERIFY_TARGET === "nightly"
-    ? "https://giggabit.tailfb378a.ts.net/nightly/"
-    : "https://giggabit.tailfb378a.ts.net/staging/";
+    ? "https://giggabit-server.tailfb378a.ts.net/nightly/"
+    : "https://giggabit-server.tailfb378a.ts.net/staging/";
 ```
 
 `apps/desktop/scripts/verify-staging-public.mjs`

@@ -115,7 +115,7 @@ context with:
 vp run verify:nightly-public
 ```
 
-That command opens `https://giggabit.tailfb378a.ts.net/nightly/`, proves the
+That command opens `https://giggabit-server.tailfb378a.ts.net/nightly/`, proves the
 primary network interface can reach the route, creates a chat with `Hi`, and
 waits for a non-empty assistant response. Artifacts are written under
 `apps/desktop/test-results/nightly-public/`.

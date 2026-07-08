@@ -145,7 +145,7 @@ The live Tailscale staging URL is not considered verified until a browser can
 use the app end to end. Run:
 
 ```bash
-T3CODE_STAGING_PUBLIC_URL="https://giggabit.tailfb378a.ts.net/staging/" \
+T3CODE_STAGING_PUBLIC_URL="https://giggabit-server.tailfb378a.ts.net/staging/" \
 vp run verify:staging-public
 ```
 
@@ -158,7 +158,7 @@ artifacts are written under `apps/desktop/test-results/staging-public/`.
 The verifier also runs a network preflight from the primary non-tailnet
 interface to the machine's Tailscale IPv4 address. This catches the same-host
 browser failure where loopback or clean process checks succeed but Brave or
-Chromium opens `https://giggabit.tailfb378a.ts.net/staging/` with
+Chromium opens `https://giggabit-server.tailfb378a.ts.net/staging/` with
 `ERR_CONNECTION_TIMED_OUT`. If that preflight fails, inspect
 `network-preflight.json`, `ss -tnp`, and
 `ip route get <tailnet-ip> oif <primary-interface>`. The Omarchy launcher
