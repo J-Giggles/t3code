@@ -1177,6 +1177,7 @@ function ChatViewContent(props: ChatViewProps) {
   const terminalUiState = useTerminalUiStateStore((state) =>
     selectThreadTerminalUiState(state.terminalUiStateByThreadKey, routeThreadRef),
   );
+  const terminalDrawerHeight = terminalUiState.terminalOpen ? terminalUiState.terminalHeight : 0;
   const openTerminalThreadKeys = useTerminalUiStateStore(
     useShallow((state) =>
       Object.entries(state.terminalUiStateByThreadKey).flatMap(
@@ -5095,7 +5096,7 @@ function ChatViewContent(props: ChatViewProps) {
                 anchorMessageId={timelineAnchorMessageId}
                 onAnchorReady={onTimelineAnchorReady}
                 onAnchorSizeChanged={onTimelineAnchorSizeChanged}
-                contentInsetEndAdjustment={composerOverlayHeight}
+                contentInsetEndAdjustment={composerOverlayHeight + terminalDrawerHeight}
                 onIsAtEndChange={onIsAtEndChange}
                 onManualNavigation={cancelTimelineLiveFollowForUserNavigation}
               />
@@ -5104,7 +5105,7 @@ function ChatViewContent(props: ChatViewProps) {
               {showScrollToBottom && (
                 <div
                   className="pointer-events-none absolute left-1/2 z-30 flex -translate-x-1/2 justify-center py-1.5"
-                  style={{ bottom: composerOverlayHeight + 4 }}
+                  style={{ bottom: composerOverlayHeight + terminalDrawerHeight + 4 }}
                 >
                   <button
                     type="button"
@@ -5125,6 +5126,7 @@ function ChatViewContent(props: ChatViewProps) {
               ref={setComposerOverlayElement}
               data-chat-composer-overlay="true"
               className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-1.5 sm:pt-2"
+              style={terminalDrawerHeight > 0 ? { bottom: terminalDrawerHeight } : undefined}
             >
               <div
                 aria-hidden="true"
