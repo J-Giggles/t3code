@@ -88,6 +88,7 @@ import {
   renderProviderTraitsPicker,
 } from "./composerProviderState";
 import { ContextWindowMeter } from "./ContextWindowMeter";
+import { ProviderUsagePopover } from "../../localTopics/providerSettings";
 import { buildExpandedImagePreview, type ExpandedImagePreview } from "./ExpandedImagePreview";
 import { basenameOfPath } from "../../pierre-icons";
 import { cn, randomUUID } from "~/lib/utils";
@@ -331,6 +332,9 @@ const ComposerFooterModeControls = memo(function ComposerFooterModeControls(prop
 
 const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(props: {
   compact: boolean;
+  environmentId: EnvironmentId;
+  selectedInstanceId: ProviderInstanceId;
+  selectedProviderStatus: ServerProvider | null;
   activeContextWindow: ReturnType<typeof deriveLatestContextWindowSnapshot>;
   activeThreadProviderDisplayName: string | null;
   isPreparingWorktree: boolean;
@@ -361,6 +365,11 @@ const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(
           providerDisplayName={props.activeThreadProviderDisplayName}
         />
       ) : null}
+      <ProviderUsagePopover
+        environmentId={props.environmentId}
+        provider={props.selectedProviderStatus}
+        selectedInstanceId={props.selectedInstanceId}
+      />
       {props.isPreparingWorktree ? (
         <span className="text-muted-foreground/70 text-xs">Preparing worktree...</span>
       ) : null}
@@ -2566,6 +2575,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
               >
                 <ComposerFooterPrimaryActions
                   compact={isComposerPrimaryActionsCompact}
+                  environmentId={environmentId}
+                  selectedInstanceId={selectedInstanceId}
+                  selectedProviderStatus={selectedProviderStatus}
                   activeContextWindow={activeContextWindow}
                   activeThreadProviderDisplayName={activeThreadProviderDisplayName}
                   pendingAction={pendingPrimaryAction}
