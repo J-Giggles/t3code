@@ -5,6 +5,7 @@
       "id": "remote-access",
       "pluginPath": "local-plugins/remote-access",
       "commits": ["3d7656e8952955f87204e4c44c1354a5961811ba"],
+      "replayFollowupCommits": ["8e103854f4b13fdc7b4b017174f2c2adffdfd677"],
       "subject": "feat(remote-access): manage Tailscale and routed browser access"
     },
     {
@@ -17,7 +18,7 @@
       "id": "runtime",
       "pluginPath": "local-plugins/runtime",
       "commits": ["51b0cf31cb17e6d7ce9e672a97ad98e4bd365584"],
-      "replayFollowupCommits": ["76f723fc9382eb5da33449f7af8b4ac9375c5de0"],
+      "replayFollowupCommits": ["7fc5017e8904f82f9929a4bb90ebc77162d564f5"],
       "subject": "feat(runtime): preserve worktree context and controlled recovery"
     },
     {
@@ -36,6 +37,7 @@
       "id": "composer",
       "pluginPath": "local-plugins/composer",
       "commits": ["eeb495a826cf0cdf5a3833d0d6131c12e118b4ee"],
+      "replayFollowupCommits": ["93bfab12c31aaadf5a2a03bae99b96dc9b86de80"],
       "subject": "feat(composer): add mentions, slash menus, chat context, and worktree naming"
     },
     {
@@ -107,11 +109,47 @@
     {
       "id": "topic-replay-safeguards",
       "pluginPath": "local-plugins/topic-replay-safeguards",
+      "replayPrerequisiteCommits": [
+        "e68106c12e2e4a8da8d30b0f63f9778fcb937c93",
+        "8dd1b0f34f0417de50f61603b4eff59e7d8985f7",
+        "6287cddb5cf421dc330b744d43335de2baf5dc02"
+      ],
       "commits": [
         "d292cde429bf3364d44d8a95a44f9bc225e882c3",
         "fd66c5832548c35f121dd5f61208350f63d33332"
       ],
+      "replayFollowupCommits": [
+        "4ffe4dd25021a879bc8092b2194c8419d20f42b3",
+        "98a44e975023f9e135c31db8307351e0855e6007",
+        "478733b59104db03d01d46887fd4e346a9b243fa",
+        "d4f2ba8898c19719e85036a3106197a91dcb433b",
+        "2e1bea1ad393d15e7b97594098a34b1ba9fd763a",
+        "6f662e22a28e0f5455962014713a8fdb77cf3baa",
+        "e7dc04618dc79835f9d3d82c71854605741665d8",
+        "e99f5912a2121892c176f9dce57b35a8ca7af9d2",
+        "f754e9d208cbc4b8d1db232ca597a3ddaf9f29b9"
+      ],
       "subject": "feat(topic-stack): add replay checklist and audit safeguards"
+    },
+    {
+      "id": "nightly-omarchy-launcher",
+      "pluginPath": "local-plugins/nightly-omarchy-launcher",
+      "commits": [
+        "65e0b8a1220aff21ea52ccc9faea98be74c925d9",
+        "1e982269a02c88e2f8e625cb5b5791e443476834"
+      ],
+      "replayFollowupCommits": [
+        "aeae7549f4f31bff7a43d1cdb0c2f3cfb2813662",
+        "ee32822969ad920190f3453a376beb15ae9f90db",
+        "c24778b2e81a6b95a7868c14602e3647f68e75b5",
+        "5ab0b3381d114abe03d0e85ade6e7c418ebae45b",
+        "d3dd6d836dabc6e51ba7b8078eb3369965153705",
+        "d640d8e84ed8db94d3cbf3c47d550836a310f69c",
+        "7323721b8f608501102dce10c5679ed4c35e3c95",
+        "512be0c4d98ba8cbeca27e343056e21ab2da3b9c",
+        "cd2b1d8c0078b91f4ce278a230a5d7263fc07cbd"
+      ],
+      "subject": "feat(dev-launch): add nightly Omarchy launcher"
     }
   ]
 }

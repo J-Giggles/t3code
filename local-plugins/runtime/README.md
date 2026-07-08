@@ -14,7 +14,7 @@ This is the runtime and recovery topic from the June 25 replay stack.
 
 Replay support follow-ups currently listed in the nightly manifest:
 
-- `76f723fc9382eb5da33449f7af8b4ac9375c5de0` `fix(runtime): accept remote not-found auth errors`
+- `7fc5017e8904f82f9929a4bb90ebc77162d564f5` `fix(runtime): accept remote not-found auth errors`
 
 ## Added Features
 

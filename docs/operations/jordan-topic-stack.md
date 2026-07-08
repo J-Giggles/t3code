@@ -44,7 +44,7 @@ installable Codex plugins.
 6. `feat(composer): add mentions, slash menus, chat context, and worktree naming`
    - Owns composer `@` mentions, slash menus, chat/terminal context
      attachments, semantic worktree naming, compact chat/sidebar stabilization,
-     and related mobile composer behavior.
+     terminal-drawer composer offsetting, and related mobile composer behavior.
 7. `feat(prompt-settings): add configurable prompt settings`
    - Owns prompt settings schemas, defaults, persistence, settings UI, and
      provider prompt wiring.

@@ -13,6 +13,21 @@ Make local topic replay harder to silently regress by requiring behavior-level R
 
 This topic was added after the schema v2 local plugin migration so future upstream replays preserve the new checklist and audit safeguards. Keep it after the functional topic stack because it updates every topic README and the replay workflow documentation.
 
+Replay support follow-ups currently listed in the nightly manifest:
+
+- `e68106c12e2e4a8da8d30b0f63f9778fcb937c93` `docs(agents): require replay checklist maintenance`
+- `8dd1b0f34f0417de50f61603b4eff59e7d8985f7` `feat(local-topics): add componentized topic entrypoints`
+- `6287cddb5cf421dc330b744d43335de2baf5dc02` `chore(local-plugins): migrate topic metadata to schema v2`
+- `4ffe4dd25021a879bc8092b2194c8419d20f42b3` `docs(operations): record nightly topic replay handoff`
+- `98a44e975023f9e135c31db8307351e0855e6007` `docs(operations): record nightly upstream audit`
+- `478733b59104db03d01d46887fd4e346a9b243fa` `docs(agents): document local Omarchy launchers`
+- `d4f2ba8898c19719e85036a3106197a91dcb433b` `fix(topic-stack): ignore generated nightly artifacts`
+- `2e1bea1ad393d15e7b97594098a34b1ba9fd763a` `fix(topic-stack): ignore desktop verification artifacts`
+- `6f662e22a28e0f5455962014713a8fdb77cf3baa` `fix(topic-stack): keep nightly branch artifacts ignored`
+- `e7dc04618dc79835f9d3d82c71854605741665d8` `chore(local-plugins): record runtime auth followup`
+- `e99f5912a2121892c176f9dce57b35a8ca7af9d2` `chore(local-plugins): record chat layout replay proof`
+- `f754e9d208cbc4b8d1db232ca597a3ddaf9f29b9` `fix(topic-stack): refresh pnpm lockfile patch metadata`
+
 ## Added Features
 
 - [x] Replay Checklist Items are defined as project language for local topic replay (`CONTEXT.md`).
@@ -20,6 +35,8 @@ This topic was added after the schema v2 local plugin migration so future upstre
 - [x] Non-N/A Replay Checklist Items must include backticked evidence (`scripts/lib/local-topic-stack.ts`, `local-plugins/remote-access/README.md`).
 - [x] Evidence that looks like a repo path must exist before validation passes (`scripts/lib/local-topic-stack.ts`).
 - [x] Nightly apply writes a run-specific Topic Replay Audit stub (`scripts/lib/nightly-topic-stack.ts`).
+- [x] Nightly replay plans include topic prerequisite, primary, and follow-up commits in order (`scripts/lib/local-topic-stack.ts`, `scripts/lib/nightly-topic-stack.ts`).
+- [x] Frozen installs stay reproducible after upstream replay lockfile updates (`pnpm-lock.yaml`, `CI=true pnpm install --frozen-lockfile`).
 
 ## Added UI
 
@@ -30,11 +47,14 @@ This topic was added after the schema v2 local plugin migration so future upstre
 - [x] Local topic validation rejects missing, unchecked, vague, or stale Replay Checklist Items (`scripts/lib/local-topic-stack.ts`, `scripts/validate-local-topic-plugins.ts`).
 - [x] Nightly replay artifacts include topic-audit.md with branch-diff, topic checklist, verification, risk, and sign-off placeholders (`scripts/lib/nightly-topic-stack.ts`).
 - [x] The replay audit records one topic-level checklist placeholder per manifest entry (`scripts/lib/nightly-topic-stack.ts`, `docs/operations/jordan-topic-stack.manifest.json`).
+- [x] Dry-run output lists every replay support commit, including follow-ups that are not primary plugin `topicCommits` (`scripts/lib/nightly-topic-stack.ts`, `docs/operations/jordan-topic-stack.manifest.json`).
+- [x] The package lock records current pnpm patch metadata so a fresh checkout can install before running gates (`pnpm-lock.yaml`, `CI=true pnpm install --frozen-lockfile`).
 
 ## Added Tests
 
 - [x] Validator tests cover v2 metadata, checklist sections, unchecked items, missing evidence, stale evidence paths, and topic minimums (`scripts/lib/local-topic-stack.test.ts`).
 - [x] Nightly replay tests cover audit stub generation and conflict artifact audit output (`scripts/lib/nightly-topic-stack.test.ts`).
+- [x] Stack tests cover manifest parsing and replay planning for prerequisite and follow-up commit arrays (`scripts/lib/local-topic-stack.test.ts`, `scripts/lib/nightly-topic-stack.test.ts`).
 
 ## Component Entrypoints
 
@@ -54,6 +74,7 @@ Componentization status: `complete`.
 - `docs/operations/nightly-upstream-replay.md`
 - `docs/operations/staging-review-guide.md`
 - `AGENTS.md`
+- `pnpm-lock.yaml`
 
 ## Focused Implementation Snippets
 
@@ -81,10 +102,13 @@ NodeFS.writeFileSync(
 
 Replay after the functional topic stack so README checklist conversion sees the current topic folders. If this topic conflicts, keep validator/checklist documentation changes together and keep audit-stub changes with the nightly replay script.
 
+The manifest's primary `commits` array remains matched to `plugin.json` `topicCommits`. Replay prerequisite and follow-up arrays are manifest-only expansion lists that the nightly planner must include in cherry-pick order.
+
 ## Verification
 
 - `vp check`
 - `vp run typecheck`
+- `CI=true pnpm install --frozen-lockfile`
 - `pnpm run topic-plugins:check`
 - `vp test run scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts`
 

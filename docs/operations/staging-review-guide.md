@@ -697,6 +697,9 @@ Reviewers should check:
   commands, and skills.
 - Terminal context does not include unintended private data.
 - Composer layout remains stable with attached context references.
+- Composer layout remains reachable when the right panel and terminal drawer are
+  open; the terminal drawer must move the composer above it instead of covering
+  the prompt box.
 - Terminal read-only/owner metadata is consistent between server snapshots and
   client state.
 
@@ -704,6 +707,9 @@ Reviewers should check:
 
 - Open the composer slash menu and attach a past chat.
 - Attach a terminal session and confirm the inserted reference is readable.
+- Run `vp run --filter @t3tools/desktop e2e:smoke -- chat-layout.spec.ts`
+  after changing chat layout, context-window, sidebar-history, right-panel, or
+  terminal-drawer behavior.
 - Search slash menu templates and provider skills with one query and verify the
   item ordering is predictable.
 
@@ -727,8 +733,9 @@ Important implementation areas:
   stack for Playwright tests.
 - `apps/desktop/e2e/support/preflight.ts` decides when external dependencies
   such as Tailscale or providers are available.
-- `apps/desktop/e2e/specs/*.spec.ts` cover composer, connections, dev launch,
-  pairing paths, recovery lifecycle, provider recovery, and workspace git state.
+- `apps/desktop/e2e/specs/*.spec.ts` cover composer, chat layout, connections,
+  dev launch, pairing paths, recovery lifecycle, provider recovery, and
+  workspace git state.
 - `apps/desktop/scripts/run-e2e.mjs` wraps the Playwright E2E entry point.
 - `apps/desktop/scripts/dev-electron.mjs` adds staging-friendly controls such as
   disabling auto-restart on change.

@@ -12,6 +12,10 @@ Make the composer a richer command surface for mentions, slash actions, context 
 
 This topic folds composer menu, pasted chat context, semantic worktree naming, and compact chat/sidebar fixes into one replay unit.
 
+Replay support follow-ups currently listed in the nightly manifest:
+
+- `93bfab12c31aaadf5a2a03bae99b96dc9b86de80` `fix(composer): keep chat controls above terminal drawer`
+
 ## Added Features
 
 - [x] Composer `@` mentions and slash command matching are owned by composer modules (`apps/web/src/components/chat/composerSlashCommandSearch.ts`, `apps/web/src/composer-editor-mentions.ts`).
@@ -22,6 +26,7 @@ This topic folds composer menu, pasted chat context, semantic worktree naming, a
 
 - [x] Web composer menus and compact controls render the topic-owned interaction surfaces (`apps/web/src/components/chat/ComposerCommandMenu.tsx`, `apps/web/src/components/chat/CompactComposerControlsMenu.tsx`).
 - [x] Mobile composer selectors and command popovers preserve composer behavior on native clients (`apps/mobile/src/localTopics/composer/index.ts`, `apps/mobile/src/features/threads/ComposerCommandPopover.tsx`).
+- [x] Chat layout keeps seeded history rows, the context-window meter, the right panel, and the composer reachable while the terminal drawer is open (`apps/web/src/components/ChatView.tsx`, `apps/desktop/e2e/specs/chat-layout.spec.ts`).
 
 ## Added Server And Runtime Behavior
 
@@ -32,6 +37,7 @@ This topic folds composer menu, pasted chat context, semantic worktree naming, a
 
 - [x] Composer menu, context, and state behavior is covered by focused web tests (`apps/web/src/components/chat/composerSlashCommandSearch.test.ts`, `apps/web/src/components/chat/ComposerPendingTerminalContexts.test.tsx`).
 - [x] Mobile composer persistence stays covered by native-facing state tests (`apps/mobile/src/state/use-composer-drafts.test.ts`).
+- [x] Headed Electron smoke coverage seeds past chats and asserts composer growth, context-window visibility, right-panel access, and terminal-drawer geometry (`apps/desktop/e2e/specs/chat-layout.spec.ts`, `apps/desktop/e2e/support/seedChatLayoutState.ts`).
 
 ## Component Entrypoints
 
@@ -45,6 +51,7 @@ Componentization status: `complete`.
 
 - `apps/web/src/components/composer`
 - `apps/web/src/components/chat`
+- `apps/web/src/components/ChatView.tsx`
 - `apps/mobile/src/features`
 - `packages/client-runtime/src/state`
 
@@ -78,6 +85,7 @@ Replay after provider-settings so provider-aware menu items and resets see stabl
 - `vp check`
 - `vp run typecheck`
 - `vp run lint:mobile`
+- `vp run --filter @t3tools/desktop e2e:smoke -- chat-layout.spec.ts`
 
 ## Known Follow-Up Work
 

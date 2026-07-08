@@ -10,8 +10,20 @@
       "role": "source"
     },
     {
+      "path": "apps/web/src/components/ChatView.tsx",
+      "role": "source"
+    },
+    {
       "path": "apps/web/src/components/composer",
       "role": "source"
+    },
+    {
+      "path": "apps/desktop/e2e/specs/chat-layout.spec.ts",
+      "role": "test"
+    },
+    {
+      "path": "apps/desktop/e2e/support/seedChatLayoutState.ts",
+      "role": "test"
     },
     {
       "path": "apps/mobile/src/features",
@@ -52,6 +64,10 @@
       "role": "thin-wiring"
     },
     {
+      "path": "apps/web/src/components/ChatView.tsx",
+      "role": "thin-wiring"
+    },
+    {
       "path": "apps/web/src/components/composer",
       "role": "thin-wiring"
     },
@@ -80,5 +96,10 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run lint:mobile"]
+  "verification": [
+    "vp check",
+    "vp run typecheck",
+    "vp run lint:mobile",
+    "vp run --filter @t3tools/desktop e2e:smoke -- chat-layout.spec.ts"
+  ]
 }

@@ -28,7 +28,7 @@ This is the desktop verification topic from the June 25 replay stack.
 
 ## Added Tests
 
-- [x] Desktop smoke specs cover composer, connections, workspace Git, and recovery lifecycle behavior (`apps/desktop/e2e/specs/composer.spec.ts`, `apps/desktop/e2e/specs/recovery-lifecycle.spec.ts`).
+- [x] Desktop smoke specs cover composer, chat layout, connections, workspace Git, and recovery lifecycle behavior (`apps/desktop/e2e/specs/composer.spec.ts`, `apps/desktop/e2e/specs/chat-layout.spec.ts`, `apps/desktop/e2e/specs/recovery-lifecycle.spec.ts`).
 - [x] Headed staging instructions are maintained with the desktop smoke workflow (`docs/operations/headed-staging.md`).
 
 ## Component Entrypoints
@@ -49,6 +49,7 @@ Componentization status: `complete`.
 
 ```ts
 export const DESKTOP_E2E_TOPIC_SPECS = [
+  "chat-layout.spec.ts",
   "composer.spec.ts",
   "connections.spec.ts",
   "dev-launch.spec.ts",
@@ -60,6 +61,7 @@ export const DESKTOP_E2E_TOPIC_SPECS = [
 export const DESKTOP_E2E_TOPIC_SUPPORT = [
   "electronHarness.ts",
   "preflight.ts",
+  "seedChatLayoutState.ts",
 ```
 
 ## Replay Notes

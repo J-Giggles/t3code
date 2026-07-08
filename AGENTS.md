@@ -103,6 +103,8 @@ Current topic order:
 4. `feat(project-git): add project Git dashboard and VCS reconciliation`
 5. `feat(provider-settings): add usage, reset, and T3 access controls`
 6. `feat(composer): add mentions, slash menus, chat context, and worktree naming`
+   - Includes chat-layout protection for seeded history rows, context-window visibility, right-panel access, and
+     terminal-drawer composer offsetting.
 7. `feat(prompt-settings): add configurable prompt settings`
 8. `feat(app-automation): add desktop shell MCP controls`
 9. `feat(project-agent-files): add schemas, CRUD, and scaffold safety`
