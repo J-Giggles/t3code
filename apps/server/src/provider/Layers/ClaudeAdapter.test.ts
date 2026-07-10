@@ -40,6 +40,15 @@ import type { ClaudeAdapterShape } from "../Services/ClaudeAdapter.ts";
 import { makeClaudeAdapter, type ClaudeAdapterLiveOptions } from "./ClaudeAdapter.ts";
 const decodeClaudeSettings = Schema.decodeSync(ClaudeSettings);
 
+type ClaudePermissionOptions = Parameters<NonNullable<ClaudeQueryOptions["canUseTool"]>>[2];
+type ClaudePermissionOptionsWithRequestId = ClaudePermissionOptions & {
+  readonly requestId: string;
+};
+
+const withClaudePermissionRequestId = (
+  options: ClaudePermissionOptionsWithRequestId,
+): ClaudePermissionOptionsWithRequestId => options;
+
 // Test-local service tag so the rest of the file can keep using `yield* ClaudeAdapter`.
 class ClaudeAdapter extends Context.Service<ClaudeAdapter, ClaudeAdapterShape>()(
   "t3/provider/Layers/ClaudeAdapter.test/ClaudeAdapter",
@@ -2650,7 +2659,8 @@ describe("ClaudeAdapterLive", () => {
       const permissionPromise = canUseTool(
         "Bash",
         { command: "pwd" },
-        {
+        withClaudePermissionRequestId({
+          requestId: "request-tool-use-1",
           signal: new AbortController().signal,
           suggestions: [
             {
@@ -2660,7 +2670,7 @@ describe("ClaudeAdapterLive", () => {
             },
           ],
           toolUseID: "tool-use-1",
-        },
+        }),
       );
 
       const requested = yield* Stream.runHead(adapter.streamEvents);
@@ -2733,10 +2743,11 @@ describe("ClaudeAdapterLive", () => {
       const agentPermissionPromise = canUseTool(
         "Agent",
         {},
-        {
+        withClaudePermissionRequestId({
+          requestId: "request-tool-agent-1",
           signal: new AbortController().signal,
           toolUseID: "tool-agent-1",
-        },
+        }),
       );
 
       const agentRequested = yield* Stream.runHead(adapter.streamEvents);
@@ -2757,10 +2768,11 @@ describe("ClaudeAdapterLive", () => {
       const grepPermissionPromise = canUseTool(
         "Grep",
         { pattern: "foo", path: "src" },
-        {
+        withClaudePermissionRequestId({
+          requestId: "request-tool-grep-approval-1",
           signal: new AbortController().signal,
           toolUseID: "tool-grep-approval-1",
-        },
+        }),
       );
 
       const grepRequested = yield* Stream.runHead(adapter.streamEvents);
@@ -3293,10 +3305,11 @@ describe("ClaudeAdapterLive", () => {
           plan: "# Ship it\n\n- one\n- two",
           allowedPrompts: [{ tool: "Bash", prompt: "run tests" }],
         },
-        {
+        withClaudePermissionRequestId({
+          requestId: "request-tool-exit-1",
           signal: new AbortController().signal,
           toolUseID: "tool-exit-1",
-        },
+        }),
       );
 
       const proposedEvent = yield* Stream.runHead(adapter.streamEvents);
@@ -3459,10 +3472,15 @@ describe("ClaudeAdapterLive", () => {
         ],
       };
 
-      const permissionPromise = canUseTool("AskUserQuestion", askInput, {
-        signal: new AbortController().signal,
-        toolUseID: "tool-ask-1",
-      });
+      const permissionPromise = canUseTool(
+        "AskUserQuestion",
+        askInput,
+        withClaudePermissionRequestId({
+          requestId: "request-tool-ask-1",
+          signal: new AbortController().signal,
+          toolUseID: "tool-ask-1",
+        }),
+      );
 
       // The adapter should emit a user-input.requested event.
       const requestedEvent = yield* Stream.runHead(adapter.streamEvents);
@@ -3585,10 +3603,15 @@ describe("ClaudeAdapterLive", () => {
         ],
       };
 
-      const permissionPromise = canUseTool("AskUserQuestion", askInput, {
-        signal: new AbortController().signal,
-        toolUseID: "tool-ask-2",
-      });
+      const permissionPromise = canUseTool(
+        "AskUserQuestion",
+        askInput,
+        withClaudePermissionRequestId({
+          requestId: "request-tool-ask-2",
+          signal: new AbortController().signal,
+          toolUseID: "tool-ask-2",
+        }),
+      );
 
       // Should still get user-input.requested even in full-access mode.
       const requestedEvent = yield* Stream.runHead(adapter.streamEvents);
@@ -3650,10 +3673,11 @@ describe("ClaudeAdapterLive", () => {
             },
           ],
         },
-        {
+        withClaudePermissionRequestId({
+          requestId: "request-tool-ask-abort",
           signal: controller.signal,
           toolUseID: "tool-ask-abort",
-        },
+        }),
       );
 
       const requestedEvent = yield* Stream.runHead(adapter.streamEvents);
