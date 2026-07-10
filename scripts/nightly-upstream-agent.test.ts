@@ -68,6 +68,25 @@ describe("nightly-upstream-agent", () => {
     });
   });
 
+  it("retries a failed clean run when upstream is unchanged", () => {
+    expect(
+      decideNightlyReplay({
+        force: false,
+        upstreamBefore: "aaa",
+        upstreamAfter: "aaa",
+        originalExists: true,
+        originalHead: "aaa",
+        nightlyExists: true,
+        nightlyDirty: false,
+        previousRunStatus: "failed",
+        previousRunUpstreamAfter: "aaa",
+      }),
+    ).toEqual({
+      apply: true,
+      reason: "retry-failed-run",
+    });
+  });
+
   it("fails closed when nightly is dirty", () => {
     expect(
       decideNightlyReplay({
@@ -482,7 +501,7 @@ describe("nightly-upstream-agent", () => {
     expect(JSON.stringify(messages[0]!.replyMarkup)).toContain("Copy: explain upstream");
   });
 
-  it("prompts Hermes for a Telegram-ready feature-level Conflict Brief", () => {
+  it("prompts Hermes for a Linear-ready feature-level Conflict Brief", () => {
     const prompt = formatConflictBriefGenerationPrompt({
       conflictPromptPath: "/run/hermes-conflict-prompt.md",
       conflictPacketPath: "/run/conflict-packet.md",
@@ -490,12 +509,12 @@ describe("nightly-upstream-agent", () => {
       topicCatalogPath: "/run/topic-catalog.md",
     });
 
-    expect(prompt).toContain("Telegram-ready Conflict Brief");
+    expect(prompt).toContain("Linear-ready Conflict Brief");
     expect(prompt).toContain("feature-level, not file-by-file");
     expect(prompt).toContain("Default to auto-repair when the local topic feature can still work");
     expect(prompt).toContain("Auto-repair eligibility:");
     expect(prompt).toContain("Always give a recommendation");
-    expect(prompt).toContain("Tap an option in the Conflict Decision Card");
+    expect(prompt).toContain("exact decision Jordan needs to make");
   });
 
   it("keeps long Conflict Briefs bounded while preserving the next action", () => {
@@ -778,7 +797,7 @@ describe("nightly-upstream-agent", () => {
     expect(JSON.stringify(messages[0]!.replyMarkup)).toContain("Copy: show failed/conflicted");
   });
 
-  it("creates a topic catalog that points the chat at topic docs and tests", () => {
+  it("creates a topic catalog that points Linear and agents at topic docs and tests", () => {
     const catalog = formatTopicCatalog({
       status: "success" satisfies NightlyAgentStatus,
       startedAt: "2026-07-09T00:00:00.000Z",
@@ -815,7 +834,7 @@ describe("nightly-upstream-agent", () => {
       proofArtifacts: [],
     });
 
-    expect(catalog).toContain("How To Ask The Chat");
+    expect(catalog).toContain("How To Use This Catalog");
     expect(catalog).toContain("local-plugins/remote-access/README.md");
     expect(catalog).toContain("vp test run apps/desktop/example.test.ts");
   });

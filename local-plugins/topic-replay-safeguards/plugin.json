@@ -57,6 +57,14 @@
       "role": "source"
     },
     {
+      "path": "scripts/lib/linear-nightly-control.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/linear-nightly-control.test.ts",
+      "role": "test"
+    },
+    {
       "path": "scripts/lib/nightly-topic-repair-scope.ts",
       "role": "source"
     },
@@ -78,6 +86,18 @@
     },
     {
       "path": "docs/operations/nightly-upstream-replay.md",
+      "role": "docs"
+    },
+    {
+      "path": "docs/operations/premote-nightly.md",
+      "role": "docs"
+    },
+    {
+      "path": ".codex/skills/premote-nightly",
+      "role": "docs"
+    },
+    {
+      "path": ".codex/skills/premote-staging",
       "role": "docs"
     },
     {
@@ -143,6 +163,16 @@
         "publicSurface": "internal"
       },
       {
+        "path": "scripts/lib/linear-nightly-control.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/linear-nightly-control.test.ts",
+        "kind": "test",
+        "publicSurface": "test"
+      },
+      {
         "path": "scripts/lib/nightly-topic-repair-scope.ts",
         "kind": "source",
         "publicSurface": "internal"
@@ -194,6 +224,10 @@
       "role": "consumer"
     },
     {
+      "path": "docs/operations/premote-nightly.md",
+      "role": "consumer"
+    },
+    {
       "path": "AGENTS.md",
       "role": "consumer"
     }
@@ -202,17 +236,17 @@
     "vp check",
     "vp run typecheck",
     "pnpm run topic-plugins:check",
-    "vp test run scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts"
+    "vp test run scripts/lib/linear-nightly-control.test.ts scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts"
   ],
   "replayContract": {
     "autonomy": "guarded-auto-repair",
     "risk": "medium",
-    "intent": "Rebuild local topics on current upstream without routine human intervention while preserving each feature contract, machine-checking the result, and reserving Telegram decisions for fundamental product conflicts.",
+    "intent": "Rebuild local topics on current upstream without routine human intervention, preserve each feature contract, machine-check the result, and use Linear only for promotion review or fundamental product decisions.",
     "preserve": [
       "Preserve the local feature goal: Make local topic replay harder to silently regress by requiring behavior-level README checklists and a run-specific replay audit artifact.",
       "Keep documented owned paths and integration points aligned with local-plugins/topic-replay-safeguards/README.md.",
       "Keep replay contracts explicit enough for an autonomous repair worker to preserve feature intent instead of blindly preferring either side of a file conflict.",
-      "Keep completed-stack verification, exact conflict-memory reuse, dependency-floor reconciliation, and Telegram run evidence fail closed."
+      "Keep completed-stack verification, exact conflict-memory reuse, dependency-floor reconciliation, control-plane sync, and Linear run evidence fail closed."
     ],
     "safeAutoRepair": [
       "Adapt replay checklist validation, audit artifacts, and manifest checks to upstream script/test refactors.",
@@ -230,7 +264,7 @@
       "vp check",
       "vp run typecheck",
       "pnpm run topic-plugins:check",
-      "vp test run scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts"
+      "vp test run scripts/lib/linear-nightly-control.test.ts scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts"
     ]
   }
 }

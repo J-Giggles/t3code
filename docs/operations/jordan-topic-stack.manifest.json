@@ -1,5 +1,18 @@
 {
   "schemaVersion": 1,
+  "controlPlanePaths": [
+    ".codex/skills/premote-nightly",
+    ".codex/skills/premote-staging",
+    "AGENTS.md",
+    "CONTEXT.md",
+    "docs/operations/jordan-topic-stack.manifest.json",
+    "docs/operations/nightly-upstream-agent.md",
+    "docs/operations/nightly-upstream-replay.md",
+    "docs/operations/premote-nightly.md",
+    "docs/operations/premote-staging.md",
+    "docs/operations/staging-review-guide.md",
+    "local-plugins"
+  ],
   "topics": [
     {
       "id": "remote-access",

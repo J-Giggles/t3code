@@ -200,11 +200,37 @@ describe("local topic plugin validation", () => {
   it("parses the manifest", () => {
     const root = tempRoot();
     writeTopicFixture(root);
+    const manifestPath = NodePath.join(root, LOCAL_TOPIC_MANIFEST_PATH);
+    const fixture = JSON.parse(NodeFS.readFileSync(manifestPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    writeJson(manifestPath, {
+      ...fixture,
+      controlPlanePaths: [".codex/skills", "local-plugins"],
+    });
 
     const manifest = readLocalTopicManifest(root);
 
     assert.equal(manifest.schemaVersion, 1);
+    assert.deepStrictEqual(manifest.controlPlanePaths, [".codex/skills", "local-plugins"]);
     assert.equal(manifest.topics[0]?.id, "test-topic");
+  });
+
+  it("rejects unsafe control-plane paths", () => {
+    const root = tempRoot();
+    writeTopicFixture(root);
+    const manifestPath = NodePath.join(root, LOCAL_TOPIC_MANIFEST_PATH);
+    const fixture = JSON.parse(NodeFS.readFileSync(manifestPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    writeJson(manifestPath, {
+      ...fixture,
+      controlPlanePaths: ["../outside"],
+    });
+
+    assert.throws(() => readLocalTopicManifest(root), /safe repo-relative paths/);
   });
 
   it("parses optional replay prerequisite and followup commits", () => {

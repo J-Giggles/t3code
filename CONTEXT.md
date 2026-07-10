@@ -15,13 +15,17 @@ _Avoid_: replay notes, checklist copy, promotion log
 A human-readable explanation of a replay conflict that starts from the feature or topic intent, names the upstream and local intents that collide, presents resolution options, and gives a recommended path before any repair is applied.
 _Avoid_: conflict packet, merge notes, hunk summary
 
-**Decision Card**:
-A Telegram-native approval surface for a replay conflict. It summarizes the recommended resolution and presents copyable follow-up actions, but does not itself repair files until the operator explicitly approves a repair.
-_Avoid_: poll, vote, button menu
+**Linear Nightly Run**:
+A child issue under the T3 Code nightly operations issue that records one actionable upstream replay from discovery through proof and promotion. It contains the official-change overview, topic task list, repair evidence, recommendation, and final promotion state.
+_Avoid_: notification, chat message, nightly alert
 
 **Topic Stack Checklist**:
-A Telegram-native progress view of the local topic stack for a nightly replay run. It marks each topic as replayed, conflicted, skipped, pending, or not run so the operator can scan the stack without opening run artifacts.
+The Linear task list and run-artifact inventory for a nightly replay. It marks each topic as replayed, auto-repaired, skipped, conflicted, pending, or not run and links the feature and test evidence needed to understand it.
 _Avoid_: topic list, feature dump, replay summary
+
+**Control-Plane Sync**:
+The generated post-replay commit that copies current workflow metadata, topic contracts, runbooks, and project skills from the control checkout into Nightly after all manifest topic commits apply.
+_Avoid_: topic commit, source replay, manual metadata patch
 
 **Replay Contract**:
 The machine-readable `replayContract` section in a local topic `plugin.json`. It tells the nightly agent the topic intent, invariants to preserve, safe auto-repair cases, stop-for-human cases, risk, autonomy level, and proof commands.
@@ -50,6 +54,10 @@ _Avoid_: upstream branch, clean copy
 **Nightly Lane**:
 The rebuilt candidate produced by replaying Jordan-local topic commits on top of the Original Lane. It is the place to inspect fresh upstream compatibility before promoting anything to Staging.
 _Avoid_: nightly-local, dev/nightly-topic-stack branch
+
+**Nightly Promotion Candidate**:
+A Nightly Lane commit whose Linear Nightly Run is in review and whose replay report, upstream base, control-plane sync, topic checks, and required public or headed proof all agree. Eligibility does not itself authorize promotion.
+_Avoid_: latest nightly, automatic release, approved build
 
 **Staging Lane**:
 The verified integration lane for Jordan-local updates. It receives tested topic commits from dev worktrees or the Nightly Lane and is the final proving ground before Main.

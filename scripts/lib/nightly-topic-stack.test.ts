@@ -17,6 +17,7 @@ import {
   type NightlyCommandResult,
   type NightlyCommandRunner,
   runNightlyTopicStack,
+  syncNightlyControlPlaneMetadata,
 } from "./nightly-topic-stack.ts";
 import { hasMaterialPorcelainChanges } from "./nightly-worktree-status.ts";
 
@@ -200,6 +201,64 @@ function fail(stderr: string): NightlyCommandResult {
 }
 
 describe("nightly topic stack", () => {
+  it("synchronizes declared control-plane metadata into a generated nightly commit", () => {
+    const { familyRoot, controlRoot } = tempFamily();
+    const { originalPath, nightlyPath } = createReservedWorktrees(familyRoot);
+    const sourcePath = NodePath.join(controlRoot, ".codex/skills/premote-nightly/SKILL.md");
+    const targetPath = NodePath.join(nightlyPath, ".codex/skills/premote-nightly/SKILL.md");
+    NodeFS.mkdirSync(NodePath.dirname(sourcePath), { recursive: true });
+    NodeFS.mkdirSync(NodePath.dirname(targetPath), { recursive: true });
+    NodeFS.writeFileSync(sourcePath, "current control plane\n");
+    NodeFS.writeFileSync(targetPath, "stale control plane\n");
+    const plan = createNightlyTopicStackPlan({
+      controlRoot,
+      repoFamilyRoot: familyRoot,
+      manifest: {
+        schemaVersion: 1,
+        controlPlanePaths: [".codex/skills"],
+        topics: [],
+      },
+      runId: "20260626-101112",
+      dateKey: "20260626",
+      upstreamRef: "upstream/main",
+      upstreamHead,
+      originalPath,
+      original: { exists: true, dirty: false, head: upstreamHead },
+      nightlyPath,
+      nightly: { exists: true, dirty: false, head: upstreamHead },
+    });
+    const commands: Array<NightlyCommandInvocation> = [];
+    const syncCommit = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    const runner: NightlyCommandRunner = (invocation) => {
+      commands.push(invocation);
+      if (commandKey(invocation) === "git diff --cached --quiet") return fail("");
+      if (commandKey(invocation) === "git rev-parse HEAD") return ok(syncCommit);
+      return ok("");
+    };
+
+    assert.deepEqual(syncNightlyControlPlaneMetadata(plan, runner), {
+      changed: true,
+      commit: syncCommit,
+    });
+    assert.equal(NodeFS.readFileSync(targetPath, "utf8"), "current control plane\n");
+    assert.ok(
+      commands.some(
+        (command) =>
+          commandKey(command) === "git commit -m chore(topic-stack): sync control-plane metadata",
+      ),
+    );
+    assert.deepEqual(
+      JSON.parse(
+        NodeFS.readFileSync(NodePath.join(plan.artifactsDir, "control-plane-sync.json"), "utf8"),
+      ),
+      {
+        changed: true,
+        commit: syncCommit,
+        paths: [".codex/skills"],
+      },
+    );
+  });
+
   it("round-trips exact conflict repair memory", () => {
     const { familyRoot } = tempFamily();
     const nightlyPath = NodePath.join(familyRoot, ".worktrees/nightly");

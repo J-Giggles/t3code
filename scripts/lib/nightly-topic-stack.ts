@@ -73,6 +73,7 @@ export interface NightlyTopicStackPlan {
   readonly nightlyPath: string;
   readonly artifactsDir: string;
   readonly blockers: ReadonlyArray<string>;
+  readonly controlPlanePaths: ReadonlyArray<string>;
   readonly commands: ReadonlyArray<NightlyCommandInvocation>;
   readonly topics: ReadonlyArray<{
     readonly id: string;
@@ -424,6 +425,7 @@ export function createNightlyTopicStackPlan(
     nightlyPath: input.nightlyPath,
     artifactsDir,
     blockers,
+    controlPlanePaths: input.manifest.controlPlanePaths ?? [],
     commands,
     topics: input.manifest.topics.map((topic) => ({
       id: topic.id,
@@ -816,7 +818,7 @@ function formatConflictPacket(input: {
     "",
     "## Ask Hermes",
     "",
-    `- Telegram: \`@jgigg_hermes_bot read ${promptPath} and propose the safest resolution.\``,
+    `- Linear: attach this brief to the matching nightly run and include a recommended resolution.`,
     `- CLI: \`hermes -z "Read ${promptPath} and propose the safest resolution."\``,
     "",
     "## Current Unmerged Files",
@@ -1055,6 +1057,84 @@ function runPlannedVerificationCommands(
   }
 }
 
+export function syncNightlyControlPlaneMetadata(
+  plan: NightlyTopicStackPlan,
+  runner: NightlyCommandRunner,
+): { readonly changed: boolean; readonly commit?: string } {
+  const artifactPath = NodePath.join(plan.artifactsDir, "control-plane-sync.json");
+  NodeFS.mkdirSync(plan.artifactsDir, { recursive: true });
+  if (plan.controlPlanePaths.length === 0) {
+    NodeFS.writeFileSync(
+      artifactPath,
+      `${JSON.stringify({ changed: false, paths: [] }, null, 2)}\n`,
+    );
+    return { changed: false };
+  }
+
+  for (const relativePath of plan.controlPlanePaths) {
+    const sourcePath = NodePath.join(plan.controlRoot, relativePath);
+    const targetPath = NodePath.join(plan.nightlyPath, relativePath);
+    if (!NodeFS.existsSync(sourcePath)) {
+      throw new Error(`Control-plane source path does not exist: ${sourcePath}`);
+    }
+    NodeFS.rmSync(targetPath, { recursive: true, force: true });
+    NodeFS.mkdirSync(NodePath.dirname(targetPath), { recursive: true });
+    const sourceStat = NodeFS.lstatSync(sourcePath);
+    NodeFS.cpSync(sourcePath, targetPath, {
+      recursive: sourceStat.isDirectory(),
+      preserveTimestamps: true,
+    });
+  }
+
+  runCommand(
+    runner,
+    gitCommand(
+      plan.nightlyPath,
+      ["add", "--all", "--", ...plan.controlPlanePaths],
+      "stage synchronized control-plane metadata",
+      true,
+    ),
+  );
+  const staged = runCommand(
+    runner,
+    gitCommand(
+      plan.nightlyPath,
+      ["diff", "--cached", "--quiet"],
+      "inspect synchronized control-plane metadata",
+      false,
+      true,
+    ),
+  );
+  if (staged.exitCode === 0) {
+    NodeFS.writeFileSync(
+      artifactPath,
+      `${JSON.stringify({ changed: false, paths: plan.controlPlanePaths }, null, 2)}\n`,
+    );
+    return { changed: false };
+  }
+  if (staged.exitCode !== 1) {
+    throw new Error(
+      `Failed to inspect synchronized control-plane metadata: ${staged.stderr || staged.stdout}`,
+    );
+  }
+
+  runCommand(
+    runner,
+    gitCommand(
+      plan.nightlyPath,
+      ["commit", "-m", "chore(topic-stack): sync control-plane metadata"],
+      "commit synchronized control-plane metadata",
+      true,
+    ),
+  );
+  const commit = gitOutput(runner, plan.nightlyPath, ["rev-parse", "HEAD"], "read sync commit");
+  NodeFS.writeFileSync(
+    artifactPath,
+    `${JSON.stringify({ changed: true, commit, paths: plan.controlPlanePaths }, null, 2)}\n`,
+  );
+  return { changed: true, commit };
+}
+
 export function runNightlyTopicStack(
   options: RunNightlyTopicStackOptions,
 ): NightlyTopicStackRunResult {
@@ -1106,6 +1186,7 @@ export function runNightlyTopicStack(
   let topicRecords: ReadonlyArray<NightlyRunTopicRecord> = [];
   try {
     topicRecords = applyCherryPicks(plan, runner);
+    syncNightlyControlPlaneMetadata(plan, runner);
     runPlannedVerificationCommands(plan, runner);
     writeRunArtifacts(plan, topicRecords, "success");
   } catch (error) {

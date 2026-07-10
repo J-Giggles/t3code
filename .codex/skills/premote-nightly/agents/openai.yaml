@@ -1,0 +1,4 @@
+interface:
+  display_name: "Premote Nightly"
+  short_description: "Promote a verified T3 Code nightly build across server and Mac."
+  default_prompt: "Promote the latest verified nightly build to staging and main across the Linux server, GitHub, and Mac launcher checkout."

@@ -55,14 +55,14 @@ follow-up only after both base topics exist.
 
 Routine upstream refreshes should use
 `docs/operations/nightly-upstream-agent.md`. The server-owned nightly agent
-rebuilds `.worktrees/nightly` only; promotion to `.worktrees/staging` is manual
-and requires a clean fast-forward or an explicitly resolved reconciliation.
+rebuilds `.worktrees/nightly` only; promotion remains an explicit review step.
 Each topic carries a structured Replay Contract. Routine conflicts are repaired
-within declared topic paths and verified on the completed stack. Telegram asks
+within declared topic paths and verified on the completed stack. Linear asks
 for a decision only when preserving the feature requires a fundamental product,
-architecture, security, or operator choice. Each apply run writes
-`topic-audit.md`, `nightly-agent-report.md`, and `topic-catalog.md`; read and
-complete the audit, including human promotion sign-off, before moving `staging`.
+architecture, security, or operator choice. Each actionable run writes
+`topic-audit.md`, `nightly-agent-report.md`, `topic-catalog.md`,
+`control-plane-sync.json`, and a matching Linear run issue. Use
+`$premote-nightly` after the issue reaches `In Review` and all evidence agrees.
 
 ## Autonomous Replay Safeguards
 
@@ -74,7 +74,8 @@ merge helper:
 - The repair worker may edit only declared topic paths or files authored by the replay commits; the parent process validates the patch, conflict state, and cherry-pick identity (`scripts/lib/nightly-upstream-agent.ts`, `scripts/lib/nightly-topic-repair-scope.ts`).
 - Dependency reconciliation must retain local additions while preventing an old topic from downgrading an exact dependency pin below current upstream (`scripts/lib/nightly-dependency-reconciliation.ts`).
 - Success requires the completed-stack frozen install, repository checks, full typecheck, topic-plugin validation, and any repaired-topic verification commands (`scripts/lib/nightly-upstream-agent.ts`).
-- Telegram reports should show upstream changes, applied topics, proof status, and a topic catalog suitable for Hermes follow-up questions (`docs/operations/nightly-upstream-agent.md`).
+- Linear runs should show upstream changes, applied topics, repair status, proof, and a topic catalog suitable for agent follow-up questions (`docs/operations/nightly-upstream-agent.md`).
+- Promotion must match the Linear issue to `linear-run.json`, the current nightly SHA, the upstream base, and `control-plane-sync.json` before staging moves (`docs/operations/premote-nightly.md`).
 
 ## Required Verification
 

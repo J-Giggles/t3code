@@ -47,6 +47,7 @@ export interface LocalTopicManifestTopic {
 
 export interface LocalTopicManifest {
   readonly schemaVersion: 1;
+  readonly controlPlanePaths?: ReadonlyArray<string>;
   readonly topics: ReadonlyArray<LocalTopicManifestTopic>;
 }
 
@@ -245,8 +246,24 @@ function parseManifestJson(raw: string, sourcePath: string): LocalTopicManifest 
     throw new Error(`${sourcePath} field "topics" must be an array.`);
   }
 
+  const controlPlanePaths = readOptionalStringArrayField(input, "controlPlanePaths", sourcePath);
+  for (const path of controlPlanePaths ?? []) {
+    const normalized = NodePath.normalize(path);
+    if (
+      path.length === 0 ||
+      NodePath.isAbsolute(path) ||
+      normalized === ".." ||
+      normalized.startsWith(`..${NodePath.sep}`)
+    ) {
+      throw new Error(
+        `${sourcePath} field "controlPlanePaths" must contain safe repo-relative paths.`,
+      );
+    }
+  }
+
   return {
     schemaVersion: readManifestSchemaVersion(input, sourcePath),
+    controlPlanePaths: controlPlanePaths ?? [],
     topics: topics.map((topic, index) => {
       if (typeof topic !== "object" || topic === null || Array.isArray(topic)) {
         throw new Error(`${sourcePath} topic at index ${index} must be an object.`);

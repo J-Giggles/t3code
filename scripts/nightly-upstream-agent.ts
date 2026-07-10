@@ -2,4 +2,4 @@
 
 import { runNightlyUpstreamAgentCli } from "./lib/nightly-upstream-agent.ts";
 
-runNightlyUpstreamAgentCli();
+await runNightlyUpstreamAgentCli();
