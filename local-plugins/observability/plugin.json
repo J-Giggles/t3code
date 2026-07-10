@@ -80,5 +80,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Run a local observability hub for logs, traces, metrics, Grafana dashboards, and agent-readable digests.",
+    "preserve": [
+      "Preserve the local feature goal: Run a local observability hub for logs, traces, metrics, Grafana dashboards, and agent-readable digests.",
+      "Keep documented owned paths and integration points aligned with local-plugins/observability/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt local telemetry, Grafana provisioning, digest metrics, and worktree labels to upstream runtime or dependency changes.",
+      "Move logging/metrics facades through new server, desktop, or provider module boundaries while preserving local-only observability."
+    ],
+    "stopForHuman": [
+      "Stop when upstream introduces an incompatible observability pipeline that changes where local telemetry may be sent.",
+      "Stop when preserving local telemetry could leak private data outside the documented local stack."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

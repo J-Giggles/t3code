@@ -115,6 +115,9 @@ Current topic order:
 
 - Includes machine-enforced Replay Checklist Items for local plugin READMEs, `topic-audit.md` run artifacts, and
   human promotion sign-off documentation.
+- Also owns structured Replay Contracts, constrained autonomous conflict repair, exact-fingerprint Repair Memory,
+  upstream dependency-floor reconciliation, completed-stack verification, and Telegram/Hermes run evidence. Human
+  input is reserved for fundamental product, architecture, security, or operator decisions.
 
 When upstream changes, prefer the scripted nightly workflow in
 `docs/operations/nightly-upstream-replay.md`. It fetches upstream, backs up and

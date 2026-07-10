@@ -80,5 +80,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Provide project-scoped agent file management with typed schemas, safe CRUD, and scaffold support.",
+    "preserve": [
+      "Preserve the local feature goal: Provide project-scoped agent file management with typed schemas, safe CRUD, and scaffold support.",
+      "Keep documented owned paths and integration points aligned with local-plugins/project-agent-files/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt agent-file schemas, CRUD handlers, scaffold safety, and provider MCP/env wiring to upstream project/settings refactors.",
+      "Move safe repo harness operations through new server/client contracts while preserving scoped file ownership."
+    ],
+    "stopForHuman": [
+      "Stop when upstream changes provider secret or project-file ownership semantics enough that local CRUD rules need a new security decision.",
+      "Stop when a repair would broaden file write scope beyond the documented scaffold-safe paths."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

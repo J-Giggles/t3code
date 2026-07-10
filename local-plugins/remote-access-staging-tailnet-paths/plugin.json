@@ -64,5 +64,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Serve staging assets, API routes, and WebSocket paths correctly when the public tailnet URL includes `/staging/`.",
+    "preserve": [
+      "Preserve the local feature goal: Serve staging assets, API routes, and WebSocket paths correctly when the public tailnet URL includes `/staging/`.",
+      "Keep documented owned paths and integration points aligned with local-plugins/remote-access-staging-tailnet-paths/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt staging tailnet path serving to upstream public path, server routing, or desktop exposure changes.",
+      "Preserve `/staging/` public HTTPS behavior through new route helpers or asset bases."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes path-prefixed hosting support or changes tailnet serving in a way that needs a route policy decision.",
+      "Stop when a repair would expose staging through the wrong public path."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

@@ -39,7 +39,9 @@ const MIN_NON_NA_REPLAY_CHECKLIST_ITEMS_BY_TOPIC_KIND: Record<LocalTopicKind, nu
 export interface LocalTopicManifestTopic {
   readonly id: string;
   readonly pluginPath: string;
+  readonly prerequisiteCommits: ReadonlyArray<string>;
   readonly commits: ReadonlyArray<string>;
+  readonly followupCommits: ReadonlyArray<string>;
   readonly subject: string;
 }
 
@@ -54,6 +56,11 @@ export type LocalTopicComponentStatus = "pending" | "complete" | "not-applicable
 export type LocalTopicComponentKind = "source" | "test" | "docs";
 export type LocalTopicPublicSurface = "facade" | "internal" | "test";
 export type LocalTopicIntegrationPointRole = "thin-wiring" | "public-facade" | "consumer";
+export type LocalTopicReplayAutonomy =
+  | "low-risk-auto-repair"
+  | "guarded-auto-repair"
+  | "manual-decision";
+export type LocalTopicReplayRisk = "low" | "medium" | "high";
 
 export interface LocalTopicOwnedPath {
   readonly path: string;
@@ -74,6 +81,16 @@ export interface LocalTopicComponentization {
 export interface LocalTopicIntegrationPoint {
   readonly path: string;
   readonly role: LocalTopicIntegrationPointRole;
+}
+
+export interface LocalTopicReplayContract {
+  readonly autonomy: LocalTopicReplayAutonomy;
+  readonly risk: LocalTopicReplayRisk;
+  readonly intent: string;
+  readonly preserve: ReadonlyArray<string>;
+  readonly safeAutoRepair: ReadonlyArray<string>;
+  readonly stopForHuman: ReadonlyArray<string>;
+  readonly verification: ReadonlyArray<string>;
 }
 
 export interface LocalTopicPluginV1 {
@@ -97,9 +114,21 @@ export interface LocalTopicPluginV2 {
   readonly componentization: LocalTopicComponentization;
   readonly integrationPoints: ReadonlyArray<LocalTopicIntegrationPoint>;
   readonly verification: ReadonlyArray<string>;
+  readonly replayContract?: LocalTopicReplayContract;
 }
 
 export type LocalTopicPlugin = LocalTopicPluginV1 | LocalTopicPluginV2;
+
+export function localTopicRepairPaths(plugin: LocalTopicPlugin): ReadonlyArray<string> {
+  return plugin.schemaVersion === 1
+    ? [...new Set([...plugin.ownedPaths, ...plugin.componentEntrypoints])]
+    : [
+        ...new Set([
+          ...plugin.ownedPaths.map((entry) => entry.path),
+          ...plugin.integrationPoints.map((entry) => entry.path),
+        ]),
+      ];
+}
 
 export interface ValidateLocalTopicPluginsOptions {
   readonly strict?: boolean;
@@ -223,10 +252,22 @@ function parseManifestJson(raw: string, sourcePath: string): LocalTopicManifest 
         throw new Error(`${sourcePath} topic at index ${index} must be an object.`);
       }
       const topicRecord = topic as Record<string, unknown>;
+      const replayPrerequisiteCommits = readOptionalStringArrayField(
+        topicRecord,
+        "replayPrerequisiteCommits",
+        sourcePath,
+      );
+      const replayFollowupCommits = readOptionalStringArrayField(
+        topicRecord,
+        "replayFollowupCommits",
+        sourcePath,
+      );
       return {
         id: readStringField(topicRecord, "id", sourcePath),
         pluginPath: readStringField(topicRecord, "pluginPath", sourcePath),
+        prerequisiteCommits: replayPrerequisiteCommits ?? [],
         commits: readStringArrayField(topicRecord, "commits", sourcePath),
+        followupCommits: replayFollowupCommits ?? [],
         subject: readStringField(topicRecord, "subject", sourcePath),
       };
     }),
@@ -302,7 +343,37 @@ function readIntegrationPointsV2(
   }));
 }
 
+function readReplayContractV2(
+  input: Record<string, unknown>,
+  sourcePath: string,
+): LocalTopicReplayContract | undefined {
+  if (!("replayContract" in input)) {
+    return undefined;
+  }
+  const value = input.replayContract;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${sourcePath} field "replayContract" must be an object.`);
+  }
+
+  const replayContract = value as Record<string, unknown>;
+  return {
+    autonomy: readEnumField(
+      replayContract,
+      "autonomy",
+      ["low-risk-auto-repair", "guarded-auto-repair", "manual-decision"],
+      sourcePath,
+    ),
+    risk: readEnumField(replayContract, "risk", ["low", "medium", "high"], sourcePath),
+    intent: readStringField(replayContract, "intent", sourcePath),
+    preserve: readStringArrayField(replayContract, "preserve", sourcePath),
+    safeAutoRepair: readStringArrayField(replayContract, "safeAutoRepair", sourcePath),
+    stopForHuman: readStringArrayField(replayContract, "stopForHuman", sourcePath),
+    verification: readStringArrayField(replayContract, "verification", sourcePath),
+  };
+}
+
 function parsePluginJsonV2(input: Record<string, unknown>, sourcePath: string): LocalTopicPluginV2 {
+  const replayContract = readReplayContractV2(input, sourcePath);
   return {
     schemaVersion: 2,
     id: readStringField(input, "id", sourcePath),
@@ -313,6 +384,7 @@ function parsePluginJsonV2(input: Record<string, unknown>, sourcePath: string): 
     componentization: readComponentizationV2(input, sourcePath),
     integrationPoints: readIntegrationPointsV2(input, sourcePath),
     verification: readStringArrayField(input, "verification", sourcePath),
+    ...(replayContract === undefined ? {} : { replayContract }),
   };
 }
 
@@ -584,6 +656,37 @@ function validatePluginFiles(
       }
     }
     return errors;
+  }
+
+  if (plugin.replayContract === undefined) {
+    errors.push(`Plugin "${topic.id}" must define replayContract for autonomous replay repair.`);
+  } else {
+    if (plugin.replayContract.intent.trim().length === 0) {
+      errors.push(`Plugin "${topic.id}" replayContract.intent must not be empty.`);
+    }
+    if (plugin.replayContract.preserve.length === 0) {
+      errors.push(`Plugin "${topic.id}" replayContract.preserve must list feature invariants.`);
+    }
+    if (plugin.replayContract.safeAutoRepair.length === 0) {
+      errors.push(
+        `Plugin "${topic.id}" replayContract.safeAutoRepair must list safe repair cases.`,
+      );
+    }
+    if (plugin.replayContract.stopForHuman.length === 0) {
+      errors.push(
+        `Plugin "${topic.id}" replayContract.stopForHuman must list fundamental conflict cases.`,
+      );
+    }
+    if (plugin.replayContract.verification.length === 0) {
+      errors.push(`Plugin "${topic.id}" replayContract.verification must list proof commands.`);
+    }
+    for (const verificationCommand of plugin.replayContract.verification) {
+      if (!plugin.verification.includes(verificationCommand)) {
+        errors.push(
+          `Plugin "${topic.id}" replayContract verification must be listed in verification: "${verificationCommand}".`,
+        );
+      }
+    }
   }
 
   if (readme) {

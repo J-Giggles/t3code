@@ -55,5 +55,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "low-risk-auto-repair",
+    "risk": "low",
+    "intent": "Keep the visible staging identity stable in sidebar and runtime labels even when parent launch environment includes generic values.",
+    "preserve": [
+      "Preserve the local feature goal: Keep the visible staging identity stable in sidebar and runtime labels even when parent launch environment includes generic values.",
+      "Keep documented owned paths and integration points aligned with local-plugins/runtime-staging-identity/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt staging identity display and runtime labels when upstream changes sidebar or worktree metadata shape.",
+      "Move identity preservation into new UI/runtime facades while keeping staging visibly distinct from main."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes lane identity display and the desired replacement UX needs a decision.",
+      "Stop when preserving staging identity would mislabel the active checkout."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

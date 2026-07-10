@@ -80,5 +80,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Expose reliable project Git state and reconcile VCS refreshes without blocking chat or stale workspace snapshots.",
+    "preserve": [
+      "Preserve the local feature goal: Expose reliable project Git state and reconcile VCS refreshes without blocking chat or stale workspace snapshots.",
+      "Keep documented owned paths and integration points aligned with local-plugins/project-git/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt Git dashboard contracts, status readers, and VCS reconciliation wiring to upstream UI or API refactors.",
+      "Move local Git surfaces through new shared git utilities while preserving project-level visibility and safe reconciliation."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes the project VCS surface or introduces conflicting Git ownership semantics.",
+      "Stop when a repair would risk destructive Git operations without an explicit operator decision."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

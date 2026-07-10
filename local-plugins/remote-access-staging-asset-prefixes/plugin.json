@@ -64,5 +64,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Prevent duplicated staging prefixes in generated asset URLs and static HTML responses.",
+    "preserve": [
+      "Preserve the local feature goal: Prevent duplicated staging prefixes in generated asset URLs and static HTML responses.",
+      "Keep documented owned paths and integration points aligned with local-plugins/remote-access-staging-asset-prefixes/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt canonical asset prefixes to upstream Vite, static asset, or public base path changes.",
+      "Preserve staging asset loading through the public path without restoring superseded build assumptions."
+    ],
+    "stopForHuman": [
+      "Stop when upstream changes asset serving so staging path-prefix behavior needs a new hosting decision.",
+      "Stop when a repair would make main/original/staging share an unsafe asset namespace."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

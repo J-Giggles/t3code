@@ -76,7 +76,9 @@ installable Codex plugins.
     - Follow-up for strict public verifier and same-host Tailscale preflight.
 18. `feat(topic-stack): add replay checklist and audit safeguards`
     - Follow-up for machine-enforced Replay Checklist Items, run-specific
-      `topic-audit.md` creation, and promotion sign-off documentation.
+      `topic-audit.md` creation, structured Replay Contracts, constrained
+      autonomous repair, Exact Repair Memory, completed-stack verification,
+      dependency reconciliation, and promotion sign-off documentation.
 
 ## Local Topic Plugins
 

@@ -46,5 +46,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run test:desktop-e2e:smoke"]
+  "verification": ["vp check", "vp run typecheck", "vp run test:desktop-e2e:smoke"],
+  "replayContract": {
+    "autonomy": "low-risk-auto-repair",
+    "risk": "low",
+    "intent": "Add headed Electron verification infrastructure for staging workflows and UI-sensitive local topics.",
+    "preserve": [
+      "Preserve the local feature goal: Add headed Electron verification infrastructure for staging workflows and UI-sensitive local topics.",
+      "Keep documented owned paths and integration points aligned with local-plugins/desktop-tests/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt headed desktop smoke tests, page objects, selectors, and fixtures to upstream UI layout changes.",
+      "Update test waits and assertions when the user-facing feature proof remains equivalent."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes the flow being tested and the expected proof should be redefined.",
+      "Stop when changing the test would hide a real broken local topic behavior."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

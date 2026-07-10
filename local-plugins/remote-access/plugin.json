@@ -113,5 +113,29 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+  "verification": [
+    "vp check",
+    "vp run typecheck",
+    "vp run --filter @t3tools/desktop e2e:smoke -- connections.spec.ts",
+    "vp run verify:staging-public"
+  ],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "high",
+    "intent": "Keep local T3 Code worktrees reachable through stable Tailscale HTTPS URLs, including path-prefixed routes such as `/staging/`.",
+    "preserve": [
+      "Preserve the local feature goal: Keep local T3 Code worktrees reachable through stable Tailscale HTTPS URLs, including path-prefixed routes such as `/staging/`.",
+      "Keep documented owned paths and integration points aligned with local-plugins/remote-access/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt public-path helpers, route probes, endpoint wiring, or tests when upstream refactors settings, desktop exposure, server routing, Vite paths, schemas, or dependency shapes.",
+      "Move the topic through new upstream abstractions when hosted URLs, API paths, WebSocket paths, or pairing URLs can still preserve the same public access contract.",
+      "Drop obsolete side changes outside the documented remote-access intent when upstream has replaced them with an equivalent subsystem, such as DesktopBackendOutputLog moving into DesktopObservability."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes or replaces the remote-access/product surface so stable Tailscale HTTPS routes are no longer a valid feature goal.",
+      "Stop when preserving route ownership or no-overwrite behavior would weaken security, auth, or operator isolation."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

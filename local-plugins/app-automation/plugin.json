@@ -71,5 +71,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "high",
+    "intent": "Expose controlled desktop shell and preview automation through MCP tools for headed staging verification.",
+    "preserve": [
+      "Preserve the local feature goal: Expose controlled desktop shell and preview automation through MCP tools for headed staging verification.",
+      "Keep documented owned paths and integration points aligned with local-plugins/app-automation/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt desktop shell MCP/RPC/IPC contracts to upstream desktop process or permission refactors.",
+      "Move app automation tools through new command routers while preserving explicit ownership, typed contracts, and headed verification."
+    ],
+    "stopForHuman": [
+      "Stop when upstream changes desktop automation permissions or security boundaries in a way that requires a human trust decision.",
+      "Stop when tool behavior would control a broader surface than the documented local feature contract."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

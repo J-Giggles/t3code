@@ -63,5 +63,27 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": [
+    "vp check",
+    "vp run typecheck",
+    "vp run --filter @t3tools/desktop e2e:smoke -- chat-layout.spec.ts"
+  ],
+  "replayContract": {
+    "autonomy": "low-risk-auto-repair",
+    "risk": "low",
+    "intent": "Add provider settings for usage limits, provider-native reset behavior, and T3 access controls.",
+    "preserve": [
+      "Preserve the local feature goal: Add provider settings for usage limits, provider-native reset behavior, and T3 access controls.",
+      "Keep documented owned paths and integration points aligned with local-plugins/provider-settings/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt provider usage, reset, and T3 access wiring when upstream changes provider status shapes, settings components, contracts, or composer layout.",
+      "Keep the selected-provider usage popover visible by moving thin composer wiring to the new upstream footer/component structure."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes provider usage/reset/access concepts entirely or changes provider auth semantics so the local controls would mislead the operator.",
+      "Stop when preserving T3 access controls would bypass upstream security or billing restrictions."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

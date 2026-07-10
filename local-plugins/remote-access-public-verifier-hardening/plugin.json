@@ -71,5 +71,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"],
+  "replayContract": {
+    "autonomy": "low-risk-auto-repair",
+    "risk": "low",
+    "intent": "Make public staging verification prove the real HTTPS path reaches the app and completes a project/chat flow.",
+    "preserve": [
+      "Preserve the local feature goal: Make public staging verification prove the real HTTPS path reaches the app and completes a project/chat flow.",
+      "Keep documented owned paths and integration points aligned with local-plugins/remote-access-public-verifier-hardening/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt the public staging verifier to upstream UI text, selectors, network preflight shape, or desktop test harness changes.",
+      "Keep the verifier strict about real public HTTPS reachability, project listing, chat creation, and non-empty assistant response."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes the verifier target flow and proof requirements need to be redefined.",
+      "Stop when weakening the verifier would allow loopback-only or blank-page checks to pass."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

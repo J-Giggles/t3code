@@ -1,11 +1,27 @@
 // @effect-diagnostics nodeBuiltinImport:off globalDate:off - Nightly replay is a Node CLI that owns git process orchestration.
-import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
-import { type LocalTopicManifest, readLocalTopicManifest } from "./local-topic-stack.ts";
+import { runProcessCommand } from "./command-runner.ts";
+import {
+  type LocalTopicManifest,
+  readLocalTopicManifest,
+  readLocalTopicPlugin,
+} from "./local-topic-stack.ts";
+import {
+  isPathInRecordedRepairScope,
+  readRecordedRepairMemory,
+  restoreRecordedRepairMemory,
+} from "./nightly-repair-memory.ts";
+import { resolveTopicRepairPaths } from "./nightly-topic-repair-scope.ts";
+import { hasMaterialPorcelainChanges } from "./nightly-worktree-status.ts";
 
 export type NightlyTopicStackMode = "dry-run" | "apply";
-export type NightlyTopicStatus = "pending" | "applied" | "empty-skipped" | "conflict";
+export type NightlyTopicStatus =
+  | "pending"
+  | "applied"
+  | "auto-resolved"
+  | "empty-skipped"
+  | "conflict";
 
 export interface NightlyCommandInvocation {
   readonly command: string;
@@ -62,6 +78,7 @@ export interface NightlyTopicStackPlan {
     readonly id: string;
     readonly subject: string;
     readonly commits: ReadonlyArray<string>;
+    readonly repairPaths: ReadonlyArray<string>;
   }>;
 }
 
@@ -94,7 +111,7 @@ export interface ParsedNightlyTopicStackArgs {
 
 const UPSTREAM_REMOTE = "upstream";
 const UPSTREAM_REF = "upstream/main";
-const NIGHTLY_WORKTREE_RELATIVE_PATH = ".worktrees/nightly-local";
+const NIGHTLY_WORKTREE_RELATIVE_PATH = ".worktrees/nightly";
 const ORIGINAL_WORKTREE_RELATIVE_PATH = ".worktrees/original";
 const RUNS_RELATIVE_PATH = ".t3code-nightly-runs";
 
@@ -103,16 +120,13 @@ function stringifyCommand(invocation: NightlyCommandInvocation): string {
 }
 
 function defaultRunner(invocation: NightlyCommandInvocation): NightlyCommandResult {
-  const result = NodeChildProcess.spawnSync(invocation.command, invocation.args, {
-    cwd: invocation.cwd,
-    encoding: "utf8",
+  const result = runProcessCommand(invocation.command, invocation.args, invocation.cwd, {
+    allowFailure: true,
   });
-
-  const exitCode = typeof result.status === "number" ? result.status : 1;
   return {
-    exitCode,
-    stdout: result.stdout ?? "",
-    stderr: result.stderr ?? (result.error ? result.error.message : ""),
+    exitCode: result.exitCode,
+    stdout: result.stdout,
+    stderr: result.stderr,
   };
 }
 
@@ -166,6 +180,18 @@ function shellCommand(
   };
 }
 
+function topicRepairPaths(
+  controlRoot: string,
+  topic: LocalTopicManifest["topics"][number],
+): string[] {
+  try {
+    const plugin = readLocalTopicPlugin(controlRoot, topic.pluginPath);
+    return [...resolveTopicRepairPaths(controlRoot, plugin, replayCommitsForTopic(topic))];
+  } catch {
+    return [];
+  }
+}
+
 function gitOutput(
   runner: NightlyCommandRunner,
   cwd: string,
@@ -204,18 +230,17 @@ export function resolveRepoFamilyRoot(worktreeRoot: string): string {
   return markerIndex === -1 ? normalized : normalized.slice(0, markerIndex);
 }
 
-function hasPorcelainChanges(statusOutput: string): boolean {
-  return statusOutput
-    .split(/\r?\n/)
-    .some((line) => line.trim().length > 0 && !line.startsWith("## "));
-}
-
 function inspectWorktree(runner: NightlyCommandRunner, path: string): NightlyWorktreeState {
   if (!NodeFS.existsSync(path)) {
     return { exists: false, dirty: false };
   }
 
-  const status = gitOutput(runner, path, ["status", "--porcelain=v1"], "inspect worktree status");
+  const status = gitOutput(
+    runner,
+    path,
+    ["status", "--porcelain=v1", "--untracked-files=all"],
+    "inspect worktree status",
+  );
   const headResult = gitOutputAllowFailure(
     runner,
     path,
@@ -225,7 +250,7 @@ function inspectWorktree(runner: NightlyCommandRunner, path: string): NightlyWor
 
   return {
     exists: true,
-    dirty: hasPorcelainChanges(status),
+    dirty: hasMaterialPorcelainChanges(status),
     ...(headResult.exitCode === 0 ? { head: headResult.stdout.trim() } : {}),
   };
 }
@@ -238,10 +263,13 @@ function needsOriginalBackup(original: NightlyWorktreeState, upstreamHead: strin
   return original.dirty || (original.head !== undefined && original.head !== upstreamHead);
 }
 
+function replayCommitsForTopic(topic: LocalTopicManifest["topics"][number]): ReadonlyArray<string> {
+  return [...topic.prerequisiteCommits, ...topic.commits, ...topic.followupCommits];
+}
 export function createNightlyTopicStackPlan(
   input: NightlyTopicStackPlanInput,
 ): NightlyTopicStackPlan {
-  const branchName = `dev/nightly-topic-stack-${input.dateKey}`;
+  const branchName = "nightly";
   const artifactsDir = NodePath.join(input.nightlyPath, RUNS_RELATIVE_PATH, input.runId);
   const blockers: Array<string> = [];
   const commands: Array<NightlyCommandInvocation> = [];
@@ -252,7 +280,14 @@ export function createNightlyTopicStackPlan(
   );
 
   if (!input.original.exists) {
-    blockers.push(`Original worktree is missing at ${input.originalPath}.`);
+    commands.push(
+      gitCommand(
+        input.controlRoot,
+        ["worktree", "add", "-B", "original", input.originalPath, input.upstreamRef],
+        "create original worktree",
+        true,
+      ),
+    );
   } else if (needsOriginalBackup(input.original, input.upstreamHead)) {
     originalBackupRef = createBackupRef(input.runId);
     commands.push(
@@ -301,7 +336,7 @@ export function createNightlyTopicStackPlan(
       gitCommand(
         input.controlRoot,
         ["worktree", "add", input.nightlyPath, input.upstreamRef],
-        "create nightly-local worktree",
+        "create nightly worktree",
         true,
       ),
     );
@@ -314,10 +349,22 @@ export function createNightlyTopicStackPlan(
       "create or reset nightly branch",
       true,
     ),
+    gitCommand(
+      input.nightlyPath,
+      ["config", "rerere.enabled", "true"],
+      "enable git rerere conflict memory",
+      true,
+    ),
+    gitCommand(
+      input.nightlyPath,
+      ["config", "rerere.autoupdate", "true"],
+      "enable git rerere autoupdate",
+      true,
+    ),
   );
 
   for (const topic of input.manifest.topics) {
-    for (const commit of topic.commits) {
+    for (const commit of replayCommitsForTopic(topic)) {
       commands.push(
         gitCommand(
           input.nightlyPath,
@@ -331,12 +378,34 @@ export function createNightlyTopicStackPlan(
   }
 
   commands.push(
+    shellCommand(
+      input.controlRoot,
+      process.execPath,
+      [
+        NodePath.join(input.controlRoot, "scripts/reconcile-nightly-dependencies.ts"),
+        "--worktree",
+        input.nightlyPath,
+        "--upstream-ref",
+        input.upstreamRef,
+        "--report",
+        NodePath.join(artifactsDir, "dependency-reconciliation.json"),
+      ],
+      "reconcile upstream dependency versions",
+      true,
+    ),
+    shellCommand(
+      input.nightlyPath,
+      "corepack",
+      ["pnpm", "install", "--frozen-lockfile"],
+      "install nightly dependencies",
+      true,
+    ),
     shellCommand(input.nightlyPath, "vp", ["check"], "run vp check", true),
     shellCommand(input.nightlyPath, "vp", ["run", "typecheck"], "run vp run typecheck", true),
     shellCommand(
       input.controlRoot,
-      "pnpm",
-      ["run", "topic-plugins:check"],
+      process.execPath,
+      [NodePath.join(input.controlRoot, "scripts/validate-local-topic-plugins.ts")],
       "validate local topic plugin metadata",
       false,
     ),
@@ -359,7 +428,8 @@ export function createNightlyTopicStackPlan(
     topics: input.manifest.topics.map((topic) => ({
       id: topic.id,
       subject: topic.subject,
-      commits: topic.commits,
+      commits: replayCommitsForTopic(topic),
+      repairPaths: topicRepairPaths(input.controlRoot, topic),
     })),
   };
 }
@@ -560,6 +630,271 @@ function isEmptyCherryPick(runner: NightlyCommandRunner, cwd: string): boolean {
   return cherryPickHead.exitCode === 0 && unstagedDiff.exitCode === 0 && stagedDiff.exitCode === 0;
 }
 
+function activeCherryPickHead(runner: NightlyCommandRunner, cwd: string): string | undefined {
+  const result = gitOutputAllowFailure(
+    runner,
+    cwd,
+    ["rev-parse", "-q", "--verify", "CHERRY_PICK_HEAD"],
+    "check cherry-pick head",
+  );
+  return result.exitCode === 0 && result.stdout.trim().length > 0
+    ? result.stdout.trim()
+    : undefined;
+}
+
+function unmergedFiles(runner: NightlyCommandRunner, cwd: string): ReadonlyArray<string> {
+  const result = gitOutputAllowFailure(
+    runner,
+    cwd,
+    ["diff", "--name-only", "--diff-filter=U"],
+    "list unmerged files",
+  );
+  if (result.exitCode !== 0 || result.stdout.trim().length === 0) return [];
+  return result.stdout
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+function continueAutoResolvedCherryPick(
+  plan: NightlyTopicStackPlan,
+  runner: NightlyCommandRunner,
+): NightlyCommandResult | undefined {
+  if (activeCherryPickHead(runner, plan.nightlyPath) === undefined) return undefined;
+  if (unmergedFiles(runner, plan.nightlyPath).length > 0) return undefined;
+  const result = runCommand(
+    runner,
+    gitCommand(
+      plan.nightlyPath,
+      ["cherry-pick", "--continue"],
+      "continue rerere-resolved cherry-pick",
+      true,
+      true,
+    ),
+  );
+  return result.exitCode === 0 ? result : undefined;
+}
+
+function continueRecordedRepairMemory(
+  plan: NightlyTopicStackPlan,
+  runner: NightlyCommandRunner,
+  record: NightlyRunTopicRecord,
+): NightlyCommandResult | undefined {
+  const conflictIndex = gitOutputAllowFailure(
+    runner,
+    plan.nightlyPath,
+    ["ls-files", "-u"],
+    "capture conflict index for repair memory",
+  );
+  if (conflictIndex.exitCode !== 0 || conflictIndex.stdout.trim().length === 0) return undefined;
+  const memory = readRecordedRepairMemory({
+    repoFamilyRoot: plan.repoFamilyRoot,
+    topicId: record.id,
+    commit: record.commit,
+    indexOutput: conflictIndex.stdout,
+  });
+  if (memory === undefined) return undefined;
+  const repairPaths = plan.topics.find((topic) => topic.id === record.id)?.repairPaths ?? [];
+  if (
+    repairPaths.length === 0 ||
+    memory.files.some((file) => !isPathInRecordedRepairScope(file.path, repairPaths))
+  ) {
+    return undefined;
+  }
+
+  let paths: ReadonlyArray<string>;
+  try {
+    paths = restoreRecordedRepairMemory(plan.nightlyPath, memory, repairPaths);
+  } catch {
+    return undefined;
+  }
+  const stage = runCommand(
+    runner,
+    gitCommand(
+      plan.nightlyPath,
+      ["add", "-A", "--", ...paths],
+      "stage recorded repair memory",
+      true,
+      true,
+    ),
+  );
+  if (stage.exitCode !== 0) return undefined;
+  const rerere = runCommand(
+    runner,
+    gitCommand(plan.nightlyPath, ["rerere"], "record restored repair memory in rerere", true, true),
+  );
+  if (rerere.exitCode !== 0) return undefined;
+  const continued = runCommand(
+    runner,
+    gitCommand(
+      plan.nightlyPath,
+      ["cherry-pick", "--continue"],
+      "continue recorded repair memory",
+      true,
+      true,
+    ),
+  );
+  return continued.exitCode === 0 && unmergedFiles(runner, plan.nightlyPath).length === 0
+    ? continued
+    : undefined;
+}
+
+function commandOutputForPacket(
+  runner: NightlyCommandRunner,
+  cwd: string,
+  args: ReadonlyArray<string>,
+  description: string,
+): string {
+  const result = gitOutputAllowFailure(runner, cwd, args, description);
+  const output = [result.stdout, result.stderr].filter((part) => part.trim().length > 0).join("\n");
+  return output.trim().length > 0 ? output.trim() : "(no output)";
+}
+
+function formatConflictPacket(input: {
+  readonly plan: NightlyTopicStackPlan;
+  readonly record: NightlyRunTopicRecord;
+  readonly activeCherryPick?: string;
+  readonly unmerged: ReadonlyArray<string>;
+  readonly status: string;
+  readonly lsFiles: string;
+  readonly combinedDiff: string;
+  readonly commitShow: string;
+}): string {
+  const packetPath = NodePath.join(input.plan.artifactsDir, "conflict-packet.md");
+  const promptPath = NodePath.join(input.plan.artifactsDir, "hermes-conflict-prompt.md");
+  return [
+    "# Nightly Conflict Packet",
+    "",
+    "This packet is generated when the nightly topic replay finds a conflict that git rerere could not fully resolve from previous decisions.",
+    "",
+    "## Conflict",
+    "",
+    `- Topic: \`${input.record.id}\``,
+    `- Subject: ${input.record.subject}`,
+    `- Commit: \`${input.record.commit}\``,
+    `- Active cherry-pick: \`${input.activeCherryPick ?? "unknown"}\``,
+    `- Nightly worktree: \`${input.plan.nightlyPath}\``,
+    `- Upstream base: \`${input.plan.upstreamRef}\` at \`${input.plan.upstreamHead}\``,
+    `- Packet: \`${packetPath}\``,
+    `- Hermes prompt: \`${promptPath}\``,
+    "",
+    "## Resolution Policy",
+    "",
+    "- Preserve the upstream ping.gg behavior unless the local topic explicitly owns the conflicting behavior.",
+    "- Preserve the local topic intent behind the replay commit; move it onto the new upstream shape instead of restoring deleted or superseded architecture blindly.",
+    "- When a conflict is resolved, run the relevant focused tests first, then `vp check` and `vp run typecheck` before promoting the result.",
+    "- Keep the fix in the owning topic. The first successful rerun after this resolution should let `git rerere` remember the decision and auto-resolve repeats.",
+    "",
+    "## Ask Hermes",
+    "",
+    `- Telegram: \`@jgigg_hermes_bot read ${promptPath} and propose the safest resolution.\``,
+    `- CLI: \`hermes -z "Read ${promptPath} and propose the safest resolution."\``,
+    "",
+    "## Current Unmerged Files",
+    "",
+    ...(input.unmerged.length === 0
+      ? [
+          "- No unmerged files were detected. `git cherry-pick --continue` may have failed for another reason.",
+        ]
+      : input.unmerged.map((file) => `- \`${file}\``)),
+    "",
+    "## Git Status",
+    "",
+    "```text",
+    input.status,
+    "```",
+    "",
+    "## Conflict Index",
+    "",
+    "```text",
+    input.lsFiles,
+    "```",
+    "",
+    "## Commit Being Replayed",
+    "",
+    "```text",
+    input.commitShow,
+    "```",
+    "",
+    "## Combined Diff",
+    "",
+    "```diff",
+    input.combinedDiff,
+    "```",
+    "",
+  ].join("\n");
+}
+
+function formatHermesConflictPrompt(input: {
+  readonly plan: NightlyTopicStackPlan;
+  readonly record: NightlyRunTopicRecord;
+}): string {
+  const packetPath = NodePath.join(input.plan.artifactsDir, "conflict-packet.md");
+  const auditPath = NodePath.join(input.plan.artifactsDir, "topic-audit.md");
+  return [
+    "You are helping resolve a T3 Code nightly topic replay conflict on giggabit-server.",
+    "",
+    `Read the conflict packet: ${packetPath}`,
+    `Read the topic audit: ${auditPath}`,
+    "",
+    "Task:",
+    `- Topic: ${input.record.id}`,
+    `- Commit: ${input.record.commit}`,
+    "- Explain the upstream intent, the local topic intent, and the safest resolution.",
+    "- If Jordan explicitly asks you to fix it, edit the nightly worktree, preserve both intents where possible, stage the resolution, continue the cherry-pick, and run focused verification before the full gates.",
+    "- Do not abort the cherry-pick. If the resolution is uncertain, say exactly which files need human review.",
+    "",
+    "After a successful manual resolution, rerun the nightly workflow from scratch so git rerere can replay the remembered decision automatically and continue the remaining topic stack.",
+    "",
+  ].join("\n");
+}
+
+function writeConflictResolutionPacket(
+  plan: NightlyTopicStackPlan,
+  record: NightlyRunTopicRecord,
+  runner: NightlyCommandRunner,
+): void {
+  NodeFS.mkdirSync(plan.artifactsDir, { recursive: true });
+  const packetPath = NodePath.join(plan.artifactsDir, "conflict-packet.md");
+  const promptPath = NodePath.join(plan.artifactsDir, "hermes-conflict-prompt.md");
+  const activeCherryPick = activeCherryPickHead(runner, plan.nightlyPath);
+  const unmerged = unmergedFiles(runner, plan.nightlyPath);
+  NodeFS.writeFileSync(
+    packetPath,
+    formatConflictPacket({
+      plan,
+      record,
+      ...(activeCherryPick === undefined ? {} : { activeCherryPick }),
+      unmerged,
+      status: commandOutputForPacket(
+        runner,
+        plan.nightlyPath,
+        ["status", "--short", "--branch"],
+        "capture conflict status",
+      ),
+      lsFiles: commandOutputForPacket(
+        runner,
+        plan.nightlyPath,
+        ["ls-files", "-u"],
+        "capture conflict index",
+      ),
+      commitShow: commandOutputForPacket(
+        runner,
+        plan.nightlyPath,
+        ["show", "--stat", "--oneline", "--decorate", "--no-renames", record.commit],
+        "capture replay commit",
+      ),
+      combinedDiff: commandOutputForPacket(
+        runner,
+        plan.nightlyPath,
+        ["diff", "--cc"],
+        "capture combined conflict diff",
+      ),
+    }),
+  );
+  NodeFS.writeFileSync(promptPath, formatHermesConflictPrompt({ plan, record }));
+}
+
 function applyCherryPicks(
   plan: NightlyTopicStackPlan,
   runner: NightlyCommandRunner,
@@ -604,6 +939,18 @@ function applyCherryPicks(
         continue;
       }
 
+      const autoResolved = continueAutoResolvedCherryPick(plan, runner);
+      if (autoResolved !== undefined) {
+        records.push({
+          id: topic.id,
+          subject: topic.subject,
+          commit,
+          status: "auto-resolved",
+          message: result.stderr || result.stdout || autoResolved.stderr || autoResolved.stdout,
+        });
+        continue;
+      }
+
       const conflictRecord: NightlyRunTopicRecord = {
         id: topic.id,
         subject: topic.subject,
@@ -611,7 +958,18 @@ function applyCherryPicks(
         status: "conflict",
         message: result.stderr || result.stdout,
       };
+      const memoryResolved = continueRecordedRepairMemory(plan, runner, conflictRecord);
+      if (memoryResolved !== undefined) {
+        records.push({
+          ...conflictRecord,
+          status: "auto-resolved",
+          message: `Applied exact recorded repair memory. ${memoryResolved.stderr || memoryResolved.stdout}`,
+        });
+        continue;
+      }
+
       records.push(conflictRecord);
+      writeConflictResolutionPacket(plan, conflictRecord, runner);
       writeRunArtifacts(
         plan,
         records,
@@ -798,7 +1156,7 @@ export function nightlyTopicStackHelp(): string {
   return [
     "Usage: pnpm run topic-stack:nightly -- [--dry-run|--apply] [--root <control-worktree>]",
     "",
-    "Rebuilds the local topic stack in .worktrees/nightly-local.",
+    "Rebuilds the local topic stack in .worktrees/nightly.",
     "--dry-run prints the plan without running mutating git commands.",
     "--apply fetches upstream, resets original after backup, replays manifest topics, and runs verification.",
     "",

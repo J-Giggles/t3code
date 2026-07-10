@@ -72,5 +72,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Allow prompt defaults and overrides to be configured through shared settings and provider wiring.",
+    "preserve": [
+      "Preserve the local feature goal: Allow prompt defaults and overrides to be configured through shared settings and provider wiring.",
+      "Keep documented owned paths and integration points aligned with local-plugins/prompt-settings/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt prompt settings contracts, persistence, and provider wiring when upstream moves model/provider configuration surfaces.",
+      "Update prompt helper imports and tests while preserving configurable prompt behavior."
+    ],
+    "stopForHuman": [
+      "Stop when upstream removes configurable prompts or replaces them with incompatible provider-managed behavior.",
+      "Stop when preserving local prompt settings would override upstream safety or policy controls."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

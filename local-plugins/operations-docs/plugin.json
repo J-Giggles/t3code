@@ -36,5 +36,23 @@
       "role": "thin-wiring"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "low-risk-auto-repair",
+    "risk": "low",
+    "intent": "Document the local replay stack, promotion rules, and staging review order for future upstream refreshes.",
+    "preserve": [
+      "Preserve the local feature goal: Document the local replay stack, promotion rules, and staging review order for future upstream refreshes.",
+      "Keep documented owned paths and integration points aligned with local-plugins/operations-docs/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt operations docs and ledgers when filenames, commands, or topic ordering change but the maintenance workflow remains the same.",
+      "Refresh examples and references to match current automation output."
+    ],
+    "stopForHuman": [
+      "Stop when the documented promotion or replay policy itself needs a product/process decision.",
+      "Stop when docs would authorize destructive branch or worktree behavior not already approved."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

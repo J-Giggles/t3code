@@ -64,5 +64,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"]
+  "verification": ["vp check", "vp run typecheck", "vp run verify:staging-public"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "high",
+    "intent": "Ensure reserved routes such as `/staging/`, `/main/`, and `/original/` come from launcher-owned identity instead of stale persisted settings.",
+    "preserve": [
+      "Preserve the local feature goal: Ensure reserved routes such as `/staging/`, `/main/`, and `/original/` come from launcher-owned identity instead of stale persisted settings.",
+      "Keep documented owned paths and integration points aligned with local-plugins/remote-access-reserved-routes/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt reserved route ownership checks to upstream route, branch, or worktree metadata changes.",
+      "Preserve authoritative main/original/staging route protection through newer route validation helpers."
+    ],
+    "stopForHuman": [
+      "Stop when upstream changes route ownership semantics and local reserved-lane authority needs a new operator decision.",
+      "Stop when a repair might let the wrong worktree claim a reserved public route."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

@@ -5,11 +5,13 @@ import * as NodePath from "node:path";
 import { assert, describe, it } from "vitest";
 import {
   LOCAL_TOPIC_MANIFEST_PATH,
+  localTopicRepairPaths,
   readLocalTopicManifest,
   REQUIRED_REPLAY_CHECKLIST_HEADINGS,
   REQUIRED_TOPIC_README_HEADINGS,
   validateLocalTopicPlugins,
 } from "./local-topic-stack.ts";
+import { resolveTopicRepairPaths } from "./nightly-topic-repair-scope.ts";
 
 function tempRoot(): string {
   return NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "local-topic-stack-"));
@@ -84,6 +86,8 @@ function writeTopicFixture(
     readonly omitEntrypointsOnDisk?: boolean;
     readonly verification?: ReadonlyArray<string>;
     readonly replayChecklistMode?: ReplayChecklistFixtureMode;
+    readonly omitReplayContract?: boolean;
+    readonly replayContractVerification?: ReadonlyArray<string>;
   } = {},
 ): void {
   const topicKind = options.topicKind ?? "code";
@@ -138,10 +142,61 @@ function writeTopicFixture(
     },
     integrationPoints: [{ path: "apps/web/src/test-topic.ts", role: "thin-wiring" }],
     verification: options.verification ?? ["vp check", "vp run typecheck"],
+    ...(options.omitReplayContract === true
+      ? {}
+      : {
+          replayContract: {
+            autonomy: "guarded-auto-repair",
+            risk: "medium",
+            intent: "Keep the test topic behavior available after upstream refactors.",
+            preserve: ["The fixture topic module remains wired through the documented entrypoint."],
+            safeAutoRepair: [
+              "Move imports or thin wiring when upstream refactors the surrounding module.",
+            ],
+            stopForHuman: [
+              "Stop when upstream removes the product surface that the fixture behavior depends on.",
+            ],
+            verification: options.replayContractVerification ?? ["vp check", "vp run typecheck"],
+          },
+        }),
   });
 }
 
 describe("local topic plugin validation", () => {
+  it("derives repair scope from owned paths and integration points", () => {
+    const plugin = {
+      schemaVersion: 2 as const,
+      id: "test-topic",
+      title: "Test topic",
+      topicKind: "code" as const,
+      topicCommits: ["abc"],
+      ownedPaths: [{ path: "apps/web/src/localTopics/testTopic", role: "source" as const }],
+      componentization: { status: "complete" as const, entrypoints: [] },
+      integrationPoints: [
+        { path: "apps/web/src/components/ChatView.tsx", role: "thin-wiring" as const },
+      ],
+      verification: ["vp check"],
+    };
+    assert.deepEqual(localTopicRepairPaths(plugin), [
+      "apps/web/src/localTopics/testTopic",
+      "apps/web/src/components/ChatView.tsx",
+    ]);
+    assert.deepEqual(
+      resolveTopicRepairPaths("/repo", plugin, ["abc"], (command, args, cwd) => ({
+        command: [command, ...args].join(" "),
+        cwd,
+        exitCode: 0,
+        stdout: "apps/server/src/topic-wiring.ts\napps/web/src/components/ChatView.tsx\n",
+        stderr: "",
+      })),
+      [
+        "apps/server/src/topic-wiring.ts",
+        "apps/web/src/components/ChatView.tsx",
+        "apps/web/src/localTopics/testTopic",
+      ],
+    );
+  });
+
   it("parses the manifest", () => {
     const root = tempRoot();
     writeTopicFixture(root);
@@ -152,6 +207,35 @@ describe("local topic plugin validation", () => {
     assert.equal(manifest.topics[0]?.id, "test-topic");
   });
 
+  it("parses optional replay prerequisite and followup commits", () => {
+    const root = tempRoot();
+    writeTopicFixture(root);
+    writeJson(NodePath.join(root, LOCAL_TOPIC_MANIFEST_PATH), {
+      schemaVersion: 1,
+      topics: [
+        {
+          id: "test-topic",
+          pluginPath: "local-plugins/test-topic",
+          replayPrerequisiteCommits: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+          commits: ["1111111111111111111111111111111111111111"],
+          replayFollowupCommits: ["bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+          subject: "feat(test): add test topic",
+        },
+      ],
+    });
+
+    const manifest = readLocalTopicManifest(root);
+
+    assert.deepStrictEqual(manifest.topics[0]?.prerequisiteCommits, [
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    ]);
+    assert.deepStrictEqual(manifest.topics[0]?.commits, [
+      "1111111111111111111111111111111111111111",
+    ]);
+    assert.deepStrictEqual(manifest.topics[0]?.followupCommits, [
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    ]);
+  });
   it("accepts a complete plugin folder", () => {
     const root = tempRoot();
     writeTopicFixture(root);
@@ -295,6 +379,26 @@ describe("local topic plugin validation", () => {
 
     assert.equal(result.ok, false);
     assert.ok(result.errors.some((error) => error.includes("verification")));
+  });
+
+  it("fails when replayContract is missing", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { omitReplayContract: true });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("replayContract")));
+  });
+
+  it("fails when replayContract verification is not listed in plugin verification", () => {
+    const root = tempRoot();
+    writeTopicFixture(root, { replayContractVerification: ["vp run missing-proof"] });
+
+    const result = validateLocalTopicPlugins(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("missing-proof")));
   });
 
   it("rejects v1 metadata in strict mode but accepts it in permissive mode", () => {

@@ -36,7 +36,7 @@ Review in this order:
 10. Local observability hub, Grafana provisioning, and digest metrics.
 11. Headed desktop verification coverage.
 12. Patch-stack maintenance workflow and promotion governance.
-13. Topic replay checklist and audit safeguards.
+13. Autonomous topic replay, checklist, and audit safeguards.
 
 The order matters because later topics reuse earlier infrastructure. The app
 launcher depends on correct advertised endpoints. Runtime recovery and project
@@ -54,11 +54,27 @@ the web/server/verifier pieces into remote access and the generated
 follow-up only after both base topics exist.
 
 Routine upstream refreshes should use
-`docs/operations/nightly-upstream-replay.md`. The nightly script rebuilds
-`.worktrees/nightly-local` only; promotion to `.worktrees/staging` is manual and
-requires a clean fast-forward or an explicitly resolved reconciliation. Each
-apply run writes `topic-audit.md`; read and complete that audit, including human
-promotion sign-off, before moving `staging`.
+`docs/operations/nightly-upstream-agent.md`. The server-owned nightly agent
+rebuilds `.worktrees/nightly` only; promotion to `.worktrees/staging` is manual
+and requires a clean fast-forward or an explicitly resolved reconciliation.
+Each topic carries a structured Replay Contract. Routine conflicts are repaired
+within declared topic paths and verified on the completed stack. Telegram asks
+for a decision only when preserving the feature requires a fundamental product,
+architecture, security, or operator choice. Each apply run writes
+`topic-audit.md`, `nightly-agent-report.md`, and `topic-catalog.md`; read and
+complete the audit, including human promotion sign-off, before moving `staging`.
+
+## Autonomous Replay Safeguards
+
+Review the nightly workflow as a feature-preservation system, not as a generic
+merge helper:
+
+- Replay Contracts must describe the behavior to preserve, allowed routine repairs, stop conditions, and proof commands (`local-plugins/topic-replay-safeguards/plugin.json`).
+- Exact Repair Memory may reuse a decision only for the same topic commit and canonical Git conflict-stage fingerprint (`scripts/lib/nightly-repair-memory.ts`).
+- The repair worker may edit only declared topic paths or files authored by the replay commits; the parent process validates the patch, conflict state, and cherry-pick identity (`scripts/lib/nightly-upstream-agent.ts`, `scripts/lib/nightly-topic-repair-scope.ts`).
+- Dependency reconciliation must retain local additions while preventing an old topic from downgrading an exact dependency pin below current upstream (`scripts/lib/nightly-dependency-reconciliation.ts`).
+- Success requires the completed-stack frozen install, repository checks, full typecheck, topic-plugin validation, and any repaired-topic verification commands (`scripts/lib/nightly-upstream-agent.ts`).
+- Telegram reports should show upstream changes, applied topics, proof status, and a topic catalog suitable for Hermes follow-up questions (`docs/operations/nightly-upstream-agent.md`).
 
 ## Required Verification
 

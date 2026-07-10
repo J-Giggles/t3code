@@ -146,5 +146,23 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"]
+  "verification": ["vp check", "vp run typecheck"],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Let T3 Code launch project apps from declared worktree profiles with predictable ports, setup commands, and local or hosted URLs.",
+    "preserve": [
+      "Preserve the local feature goal: Let T3 Code launch project apps from declared worktree profiles with predictable ports, setup commands, and local or hosted URLs.",
+      "Keep documented owned paths and integration points aligned with local-plugins/dev-launch/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt launcher generation, env wiring, port definitions, or route reconciliation to upstream runtime and desktop process changes.",
+      "Move durable worktree launch behavior onto newer upstream dev-runner abstractions while keeping reserved lane identity intact."
+    ],
+    "stopForHuman": [
+      "Stop when upstream changes the launcher/runtime model enough that durable lane launch profiles need a new operator UX decision.",
+      "Stop when route collision handling conflicts with upstream safety or ownership semantics."
+    ],
+    "verification": ["vp check", "vp run typecheck"]
+  }
 }

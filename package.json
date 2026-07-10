@@ -44,6 +44,7 @@
     "omarchy:install-dev-launchers": "node scripts/install-omarchy-dev-launchers.ts",
     "sync:repos": "node scripts/sync-reference-repos.ts",
     "topic-stack:nightly": "node scripts/rebuild-nightly-topic-stack.ts",
+    "nightly:upstream-agent": "node scripts/nightly-upstream-agent.ts",
     "topic-plugins:check": "node scripts/validate-local-topic-plugins.ts"
   },
   "devDependencies": {

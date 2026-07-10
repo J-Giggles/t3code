@@ -37,6 +37,10 @@ Replay support follow-ups currently listed in the nightly manifest:
 - [x] Nightly apply writes a run-specific Topic Replay Audit stub (`scripts/lib/nightly-topic-stack.ts`).
 - [x] Nightly replay plans include topic prerequisite, primary, and follow-up commits in order (`scripts/lib/local-topic-stack.ts`, `scripts/lib/nightly-topic-stack.ts`).
 - [x] Frozen installs stay reproducible after upstream replay lockfile updates (`pnpm-lock.yaml`, `CI=true pnpm install --frozen-lockfile`).
+- [x] Every local topic declares a structured Replay Contract with autonomy, risk, intent, preservation rules, safe repairs, human stop conditions, and verification (`local-plugins/topic-replay-safeguards/plugin.json`, `scripts/lib/local-topic-stack.ts`).
+- [x] Routine replay conflicts can be repaired autonomously inside declared topic paths while fundamental product decisions fail closed for Telegram review (`scripts/lib/nightly-upstream-agent.ts`, `docs/operations/nightly-upstream-agent.md`).
+- [x] Exact Repair Memory reuses a proven conflict resolution only when the topic commit and canonical conflict-stage entries match exactly, including an exact residual subset left by rerere (`scripts/lib/nightly-repair-memory.ts`).
+- [x] Completed stacks reconcile stale dependency pins against current upstream before the frozen install and project gates run (`scripts/lib/nightly-dependency-reconciliation.ts`, `scripts/reconcile-nightly-dependencies.ts`).
 
 ## Added UI
 
@@ -49,12 +53,20 @@ Replay support follow-ups currently listed in the nightly manifest:
 - [x] The replay audit records one topic-level checklist placeholder per manifest entry (`scripts/lib/nightly-topic-stack.ts`, `docs/operations/jordan-topic-stack.manifest.json`).
 - [x] Dry-run output lists every replay support commit, including follow-ups that are not primary plugin `topicCommits` (`scripts/lib/nightly-topic-stack.ts`, `docs/operations/jordan-topic-stack.manifest.json`).
 - [x] The package lock records current pnpm patch metadata so a fresh checkout can install before running gates (`pnpm-lock.yaml`, `CI=true pnpm install --frozen-lockfile`).
+- [x] A trusted parent process constrains the repair worker to declared topic paths plus files authored by the replay commits, rejects conflict markers, records reusable resolutions, and resumes only the expected cherry-pick (`scripts/lib/nightly-upstream-agent.ts`, `scripts/lib/nightly-topic-repair-scope.ts`, `scripts/lib/nightly-repair-memory.ts`).
+- [x] Completed-stack verification enforces dependency reconciliation, frozen installation, repository checks, typechecking, topic metadata validation, and repaired-topic commands (`scripts/lib/nightly-upstream-agent.ts`, `docs/operations/nightly-upstream-agent.md`).
+- [x] Telegram receives structured start, upstream, applied-topic, run-scoped proof, verification, and final-status messages; human decision controls appear only for unresolved fundamental conflicts (`scripts/lib/nightly-upstream-agent.ts`, `scripts/nightly-upstream-agent.test.ts`).
+- [x] Each run writes an agent-readable topic catalog so Hermes can answer feature and test questions from the Telegram room (`scripts/lib/nightly-upstream-agent.ts`, `docs/operations/nightly-upstream-agent.md`).
+- [x] Shared synchronous command execution keeps exit handling and audit output consistent across replay CLIs (`scripts/lib/command-runner.ts`, `scripts/reconcile-nightly-dependencies.ts`).
 
 ## Added Tests
 
 - [x] Validator tests cover v2 metadata, checklist sections, unchecked items, missing evidence, stale evidence paths, and topic minimums (`scripts/lib/local-topic-stack.test.ts`).
 - [x] Nightly replay tests cover audit stub generation and conflict artifact audit output (`scripts/lib/nightly-topic-stack.test.ts`).
 - [x] Stack tests cover manifest parsing and replay planning for prerequisite and follow-up commit arrays (`scripts/lib/local-topic-stack.test.ts`, `scripts/lib/nightly-topic-stack.test.ts`).
+- [x] Nightly agent tests cover structured Telegram output, strict resume guards, repair classification, path restrictions, completed-stack proof, and applied-topic reporting (`scripts/nightly-upstream-agent.test.ts`).
+- [x] Dependency reconciliation tests prove current upstream exact pins win while local-only dependencies survive (`scripts/lib/nightly-dependency-reconciliation.test.ts`).
+- [x] Nightly stack tests cover artifact-safe worktree checks, missing original-lane creation, and replay contract propagation (`scripts/lib/nightly-topic-stack.test.ts`).
 
 ## Component Entrypoints
 
@@ -64,16 +76,29 @@ Componentization status: `complete`.
 - `scripts/lib/nightly-topic-stack.ts` (source, internal)
 - `scripts/lib/local-topic-stack.test.ts` (test, test)
 - `scripts/lib/nightly-topic-stack.test.ts` (test, test)
+- `scripts/lib/nightly-dependency-reconciliation.ts` (source, internal)
+- `scripts/lib/nightly-dependency-reconciliation.test.ts` (test, test)
+- `scripts/lib/nightly-repair-memory.ts` (source, internal)
+- `scripts/lib/nightly-worktree-status.ts` (source, internal)
+- `scripts/lib/command-runner.ts` (source, internal)
+- `scripts/lib/nightly-upstream-agent.ts` (source, internal)
+- `scripts/lib/nightly-topic-repair-scope.ts` (source, internal)
+- `scripts/nightly-upstream-agent.ts` (source, facade)
+- `scripts/nightly-upstream-agent.test.ts` (test, test)
+- `scripts/reconcile-nightly-dependencies.ts` (source, facade)
 
 ## Integration Points
 
 - `scripts/validate-local-topic-plugins.ts`
 - `scripts/rebuild-nightly-topic-stack.ts`
+- `scripts/nightly-upstream-agent.ts`
+- `scripts/reconcile-nightly-dependencies.ts`
 - `local-plugins/README.md`
 - `docs/operations/jordan-topic-stack.md`
 - `docs/operations/nightly-upstream-replay.md`
 - `docs/operations/staging-review-guide.md`
 - `AGENTS.md`
+- `package.json`
 - `pnpm-lock.yaml`
 
 ## Focused Implementation Snippets
@@ -100,7 +125,7 @@ NodeFS.writeFileSync(
 
 ## Replay Notes
 
-Replay after the functional topic stack so README checklist conversion sees the current topic folders. If this topic conflicts, keep validator/checklist documentation changes together and keep audit-stub changes with the nightly replay script.
+Replay after the functional topic stack so README checklist conversion sees the current topic folders. If this topic conflicts, keep validator/checklist documentation changes together, keep audit and notification behavior with the nightly agent, and preserve exact-match repair memory plus completed-stack verification as fail-closed safeguards.
 
 The manifest's primary `commits` array remains matched to `plugin.json` `topicCommits`. Replay prerequisite and follow-up arrays are manifest-only expansion lists that the nightly planner must include in cherry-pick order.
 
@@ -110,8 +135,8 @@ The manifest's primary `commits` array remains matched to `plugin.json` `topicCo
 - `vp run typecheck`
 - `CI=true pnpm install --frozen-lockfile`
 - `pnpm run topic-plugins:check`
-- `vp test run scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts`
+- `vp test run scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts`
 
 ## Known Follow-Up Work
 
-- Add a promotion preflight command after one real replay has produced a completed `topic-audit.md`.
+- Keep production Exact Repair Memory machine-local and grow it only from successfully verified live replays (`scripts/lib/nightly-repair-memory.ts`).

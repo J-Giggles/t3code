@@ -101,5 +101,23 @@
     "vp run typecheck",
     "vp run lint:mobile",
     "vp run --filter @t3tools/desktop e2e:smoke -- chat-layout.spec.ts"
-  ]
+  ],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Make the composer a richer command surface for mentions, slash actions, context attachments, and semantic worktree names.",
+    "preserve": [
+      "Preserve the local feature goal: Make the composer a richer command surface for mentions, slash actions, context attachments, and semantic worktree names.",
+      "Keep documented owned paths and integration points aligned with local-plugins/composer/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt mentions, slash menus, context display, and semantic worktree naming to upstream composer state or UI refactors.",
+      "Move menu and context-window behavior through new component boundaries while preserving keyboard and chat-layout coverage."
+    ],
+    "stopForHuman": [
+      "Stop when upstream replaces composer interaction patterns and local menu/context behavior needs a new UX decision.",
+      "Stop when semantic branch/worktree naming conflicts with upstream branch safety rules."
+    ],
+    "verification": ["vp check", "vp run typecheck", "vp run lint:mobile"]
+  }
 }

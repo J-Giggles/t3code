@@ -33,8 +33,60 @@
       "role": "test"
     },
     {
+      "path": "scripts/lib/nightly-dependency-reconciliation.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/nightly-dependency-reconciliation.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "scripts/lib/nightly-repair-memory.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/nightly-worktree-status.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/command-runner.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/nightly-upstream-agent.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/nightly-topic-repair-scope.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/nightly-upstream-agent.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/nightly-upstream-agent.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "scripts/reconcile-nightly-dependencies.ts",
+      "role": "source"
+    },
+    {
+      "path": "docs/operations/nightly-upstream-agent.md",
+      "role": "docs"
+    },
+    {
       "path": "docs/operations/nightly-upstream-replay.md",
       "role": "docs"
+    },
+    {
+      "path": "package.json",
+      "role": "config"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "role": "config"
     }
   ],
   "componentization": {
@@ -59,6 +111,56 @@
         "path": "scripts/lib/nightly-topic-stack.test.ts",
         "kind": "test",
         "publicSurface": "test"
+      },
+      {
+        "path": "scripts/lib/nightly-dependency-reconciliation.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/nightly-dependency-reconciliation.test.ts",
+        "kind": "test",
+        "publicSurface": "test"
+      },
+      {
+        "path": "scripts/lib/nightly-repair-memory.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/nightly-worktree-status.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/command-runner.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/nightly-upstream-agent.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/nightly-topic-repair-scope.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/nightly-upstream-agent.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "scripts/nightly-upstream-agent.test.ts",
+        "kind": "test",
+        "publicSurface": "test"
+      },
+      {
+        "path": "scripts/reconcile-nightly-dependencies.ts",
+        "kind": "source",
+        "publicSurface": "facade"
       }
     ]
   },
@@ -69,6 +171,10 @@
     },
     {
       "path": "scripts/rebuild-nightly-topic-stack.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "package.json",
       "role": "consumer"
     },
     {
@@ -96,6 +202,35 @@
     "vp check",
     "vp run typecheck",
     "pnpm run topic-plugins:check",
-    "vp test run scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts"
-  ]
+    "vp test run scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts"
+  ],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Rebuild local topics on current upstream without routine human intervention while preserving each feature contract, machine-checking the result, and reserving Telegram decisions for fundamental product conflicts.",
+    "preserve": [
+      "Preserve the local feature goal: Make local topic replay harder to silently regress by requiring behavior-level README checklists and a run-specific replay audit artifact.",
+      "Keep documented owned paths and integration points aligned with local-plugins/topic-replay-safeguards/README.md.",
+      "Keep replay contracts explicit enough for an autonomous repair worker to preserve feature intent instead of blindly preferring either side of a file conflict.",
+      "Keep completed-stack verification, exact conflict-memory reuse, dependency-floor reconciliation, and Telegram run evidence fail closed."
+    ],
+    "safeAutoRepair": [
+      "Adapt replay checklist validation, audit artifacts, and manifest checks to upstream script/test refactors.",
+      "Preserve machine-enforced topic documentation and replay evidence requirements through new metadata shapes.",
+      "Repair routine source, test, documentation, and dependency conflicts inside declared topic paths when the replay contract still has one unambiguous implementation.",
+      "Reuse a prior repair only when the topic commit and canonical conflict-stage fingerprint match exactly.",
+      "When dependency manifests and pnpm-lock.yaml conflict, preserve newer upstream dependency versions and regenerate lock data from the current manifests; never downgrade a manifest merely to match an older topic lockfile."
+    ],
+    "stopForHuman": [
+      "Stop when the topic metadata contract itself needs a new policy decision.",
+      "Stop when a repair would loosen promotion, checklist, audit, security, or operator safeguards.",
+      "Stop when preserving the local feature requires a product, architecture, security, or operator decision with more than one materially different valid outcome."
+    ],
+    "verification": [
+      "vp check",
+      "vp run typecheck",
+      "pnpm run topic-plugins:check",
+      "vp test run scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts"
+    ]
+  }
 }
