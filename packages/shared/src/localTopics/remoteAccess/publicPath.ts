@@ -179,6 +179,12 @@ export function getTailscaleReservedServeRoutePolicy(
   );
 }
 
+export function isDurableNightlyServeRouteOwner(
+  identity: TailscaleServeRouteOwnerIdentity,
+): boolean {
+  return identity.branch === "nightly" && identity.worktreeBasename === "nightly";
+}
+
 export function checkTailscaleReservedServeRouteOwner(input: {
   readonly route: string;
   readonly identity: TailscaleServeRouteOwnerIdentity;
@@ -197,7 +203,10 @@ export function checkTailscaleReservedServeRouteOwner(input: {
   const mainPathMatches =
     policy.route !== "/main" || !input.identity.topLevelPath.includes("/.worktrees/");
 
-  if (branchMatches && basenameMatches && mainPathMatches) {
+  const durableNightlyMatches =
+    policy.route === "/nightly" && isDurableNightlyServeRouteOwner(input.identity);
+
+  if ((branchMatches && basenameMatches && mainPathMatches) || durableNightlyMatches) {
     return null;
   }
 

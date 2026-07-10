@@ -4,6 +4,7 @@ import {
   checkTailscaleReservedServeRouteOwner,
   DEFAULT_PUBLIC_PATH_PREFIX,
   getTailscaleReservedServeRoutePolicy,
+  isDurableNightlyServeRouteOwner,
   joinPublicPathPrefix,
   normalizePublicPathSegment,
   normalizePublicPathPrefix,
@@ -111,6 +112,20 @@ describe("publicPath", () => {
         },
       }),
     ).toBeNull();
+    expect(
+      isDurableNightlyServeRouteOwner({
+        branch: "nightly",
+        topLevelPath: "/repo/t3code/.worktrees/nightly",
+        worktreeBasename: "nightly",
+      }),
+    ).toBe(true);
+    expect(
+      isDurableNightlyServeRouteOwner({
+        branch: "dev/nightly-topic-stack-20260710",
+        topLevelPath: "/repo/t3code/.worktrees/nightly-local",
+        worktreeBasename: "nightly-local",
+      }),
+    ).toBe(false);
 
     expect(
       checkTailscaleReservedServeRouteOwner({
