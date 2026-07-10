@@ -243,6 +243,10 @@ function readPairingDevUrl() {
   );
 }
 
+function readVerificationProjectTitleFallback() {
+  return PUBLIC_VERIFY_TARGET === "nightly" ? NodePath.basename(repoRoot) : DEFAULT_PROJECT_TITLE;
+}
+
 function readProjectSeedConfig() {
   const enabled = readBooleanFallbackEnv(
     "T3CODE_PUBLIC_VERIFY_SEED_PROJECT",
@@ -259,7 +263,7 @@ function readProjectSeedConfig() {
   const title = readFallbackEnv(
     "T3CODE_PUBLIC_VERIFY_PROJECT_TITLE",
     "T3CODE_STAGING_VERIFY_PROJECT_TITLE",
-    DEFAULT_PROJECT_TITLE,
+    readVerificationProjectTitleFallback(),
   ).trim();
   return { enabled, workspaceRoot, title };
 }
