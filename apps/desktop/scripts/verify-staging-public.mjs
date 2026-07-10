@@ -294,6 +294,8 @@ async function ensureVerificationProject() {
     config.workspaceRoot,
     "--base-dir",
     readPairingBaseDir(),
+    "--dev-url",
+    readPairingDevUrl(),
   ];
   if (config.title) {
     args.push("--title", config.title);

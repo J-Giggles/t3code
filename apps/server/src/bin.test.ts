@@ -58,10 +58,11 @@ const captureStdout = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     return { result, output };
   }).pipe(Effect.provide(Layer.mergeAll(CliRuntimeLayer, TestConsole.layer)));
 
-const makeCliTestServerConfig = (baseDir: string) =>
-  resolveCliAuthConfig({ baseDir: Option.some(baseDir) }, Option.some("Info")).pipe(
-    Effect.provide(CliRuntimeLayer),
-  );
+const makeCliTestServerConfig = (baseDir: string, devUrl?: URL) =>
+  resolveCliAuthConfig(
+    { baseDir: Option.some(baseDir), devUrl: Option.fromUndefinedOr(devUrl) },
+    Option.some("Info"),
+  ).pipe(Effect.provide(CliRuntimeLayer));
 
 const makeProjectPersistenceLayer = (config: ServerConfig.ServerConfig["Service"]) =>
   Layer.mergeAll(
@@ -72,9 +73,9 @@ const makeProjectPersistenceLayer = (config: ServerConfig.ServerConfig["Service"
     WorkspacePaths.layer,
   ).pipe(Layer.provideMerge(NodeServices.layer), Layer.provide(ServerConfig.layer(config)));
 
-const readPersistedSnapshot = (baseDir: string) =>
+const readPersistedSnapshot = (baseDir: string, devUrl?: URL) =>
   Effect.gen(function* () {
-    const config = yield* makeCliTestServerConfig(baseDir);
+    const config = yield* makeCliTestServerConfig(baseDir, devUrl);
     return yield* Effect.gen(function* () {
       const projectionSnapshotQuery = yield* ProjectionSnapshotQuery.ProjectionSnapshotQuery;
       return yield* projectionSnapshotQuery.getSnapshot();
@@ -504,31 +505,40 @@ it.layer(NodeServices.layer)("bin cli parsing", (it) => {
     }),
   );
 
-  it.effect("rejects dev-url on project commands", () =>
+  it.effect("targets dev state for project commands when dev-url is provided", () =>
     Effect.gen(function* () {
-      const workspaceRoot = NodeFS.mkdtempSync(
-        NodePath.join(NodeOS.tmpdir(), "t3-cli-projects-unknown-option-workspace-"),
+      const baseDir = NodeFS.mkdtempSync(
+        NodePath.join(NodeOS.tmpdir(), "t3-cli-projects-dev-state-test-"),
       );
-      const error = yield* runCliWithRuntime([
+      const workspaceRoot = NodeFS.mkdtempSync(
+        NodePath.join(NodeOS.tmpdir(), "t3-cli-projects-dev-state-workspace-"),
+      );
+      const devUrl = new URL("http://127.0.0.1:5173/nightly/");
+
+      yield* runCliWithRuntime([
         "project",
         "add",
         workspaceRoot,
+        "--title",
+        "Nightly",
+        "--base-dir",
+        baseDir,
         "--dev-url",
-        "http://127.0.0.1:5173",
-      ]).pipe(Effect.flip);
+        devUrl.toString(),
+      ]);
 
-      if (!CliError.isCliError(error)) {
-        assert.fail(`Expected CliError, got ${String(error)}`);
-      }
-      if (error._tag !== "ShowHelp") {
-        assert.fail(`Expected ShowHelp, got ${error._tag}`);
-      }
-      assert.deepEqual(error.commandPath, ["t3", "project", "add"]);
-      const optionError = error.errors[0] as CliError.CliError | undefined;
-      if (!optionError || optionError._tag !== "UnrecognizedOption") {
-        assert.fail(`Expected UnrecognizedOption, got ${String(optionError?._tag)}`);
-      }
-      assert.equal(optionError.option, "--dev-url");
+      const devSnapshot = yield* readPersistedSnapshot(baseDir, devUrl);
+      const devProject = devSnapshot.projects.find(
+        (project) => project.workspaceRoot === workspaceRoot && project.deletedAt === null,
+      );
+      assert.equal(devProject?.title, "Nightly");
+
+      const productionSnapshot = yield* readPersistedSnapshot(baseDir);
+      assert.isFalse(
+        productionSnapshot.projects.some(
+          (project) => project.workspaceRoot === workspaceRoot && project.deletedAt === null,
+        ),
+      );
     }),
   );
 });
