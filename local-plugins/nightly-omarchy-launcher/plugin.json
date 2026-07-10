@@ -21,6 +21,14 @@
       "role": "script"
     },
     {
+      "path": "apps/server/src/bin.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "apps/server/src/cli/config.ts",
+      "role": "source"
+    },
+    {
       "path": "apps/desktop/src/backend/DesktopServerExposure.test.ts",
       "role": "test"
     },
@@ -91,6 +99,10 @@
       "role": "thin-wiring"
     },
     {
+      "path": "apps/server/src/cli/config.ts",
+      "role": "public-facade"
+    },
+    {
       "path": "package.json",
       "role": "thin-wiring"
     },
@@ -126,5 +138,28 @@
     "vp run test:desktop-e2e:smoke",
     "vp check",
     "vp run typecheck"
-  ]
+  ],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "medium",
+    "intent": "Make the rebuilt nightly topic stack launchable from Omarchy as `T3 Code Nightly`, served through `/nightly/`, and verifiable through the same browser flow used for public staging.",
+    "preserve": [
+      "Preserve the local feature goal: Make the rebuilt nightly topic stack launchable from Omarchy as `T3 Code Nightly`, served through `/nightly/`, and verifiable through the same browser flow used for public staging.",
+      "Keep documented owned paths and integration points aligned with local-plugins/nightly-omarchy-launcher/README.md."
+    ],
+    "safeAutoRepair": [
+      "Adapt nightly launcher generation, ports, public route, and install docs to upstream launcher or dev-runner changes.",
+      "Preserve the dedicated nightly lane and `/nightly/` route without touching staging or main launchers."
+    ],
+    "stopForHuman": [
+      "Stop when upstream changes launcher installation or route ownership enough that the nightly lane UX needs a decision.",
+      "Stop when a repair would overwrite machine-local launcher state outside the documented generated files."
+    ],
+    "verification": [
+      "vp test run scripts/lib/omarchy-dev-launchers.test.ts packages/shared/src/publicPath.test.ts scripts/dev-runner.test.ts apps/desktop/src/backend/DesktopServerExposure.test.ts",
+      "pnpm run omarchy:install-dev-launchers -- --dry-run --target nightly",
+      "vp check",
+      "vp run typecheck"
+    ]
+  }
 }

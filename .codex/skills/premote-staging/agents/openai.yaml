@@ -1,0 +1,4 @@
+interface:
+  display_name: "Premote Staging"
+  short_description: "Promote T3 Code staging to main"
+  default_prompt: "Use $premote-staging to promote the T3 Code staging lane to main on giggabit-server."

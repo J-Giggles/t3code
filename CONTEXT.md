@@ -11,6 +11,7 @@ _Avoid_: checkbox, checklist bullet, feature bullet
 **Topic Replay Audit**:
 A run-specific audit artifact that records what was inspected, replayed, repaired, verified, and signed off before a rebuilt local topic stack is promoted.
 _Avoid_: replay notes, checklist copy, promotion log
+
 **Conflict Brief**:
 A human-readable explanation of a replay conflict that starts from the feature or topic intent, names the upstream and local intents that collide, presents resolution options, and gives a recommended path before any repair is applied.
 _Avoid_: conflict packet, merge notes, hunk summary

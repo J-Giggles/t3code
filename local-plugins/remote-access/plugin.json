@@ -26,6 +26,14 @@
       "role": "source"
     },
     {
+      "path": "apps/web/src/components/settings/ConnectionsSettings.tsx",
+      "role": "source"
+    },
+    {
+      "path": "apps/desktop/e2e/specs/connections.spec.ts",
+      "role": "test"
+    },
+    {
       "path": "packages/shared/src/publicPath.ts",
       "role": "source"
     },
@@ -83,6 +91,10 @@
     {
       "path": "apps/web/src/publicPath.ts",
       "role": "public-facade"
+    },
+    {
+      "path": "apps/web/src/components/settings/ConnectionsSettings.tsx",
+      "role": "consumer"
     },
     {
       "path": "packages/shared/src/publicPath.ts",

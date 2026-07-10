@@ -14,6 +14,14 @@
       "role": "source"
     },
     {
+      "path": "apps/web/src/components/chat/ProviderUsagePopover.tsx",
+      "role": "source"
+    },
+    {
+      "path": "apps/desktop/e2e/specs/chat-layout.spec.ts",
+      "role": "test"
+    },
+    {
       "path": "packages/contracts/src/provider.ts",
       "role": "source"
     },
@@ -47,6 +55,10 @@
       "role": "thin-wiring"
     },
     {
+      "path": "apps/web/src/components/chat/ChatComposer.tsx",
+      "role": "thin-wiring"
+    },
+    {
       "path": "packages/contracts/src/provider.ts",
       "role": "public-facade"
     },
@@ -66,6 +78,7 @@
   "verification": [
     "vp check",
     "vp run typecheck",
+    "vp test run apps/server/src/provider/Layers/ClaudeAdapter.test.ts",
     "vp run --filter @t3tools/desktop e2e:smoke -- chat-layout.spec.ts"
   ],
   "replayContract": {
@@ -84,6 +97,10 @@
       "Stop when upstream removes provider usage/reset/access concepts entirely or changes provider auth semantics so the local controls would mislead the operator.",
       "Stop when preserving T3 access controls would bypass upstream security or billing restrictions."
     ],
-    "verification": ["vp check", "vp run typecheck"]
+    "verification": [
+      "vp check",
+      "vp run typecheck",
+      "vp test run apps/server/src/provider/Layers/ClaudeAdapter.test.ts"
+    ]
   }
 }

@@ -10,6 +10,10 @@ Make the rebuilt nightly topic stack launchable from Omarchy as `T3 Code Nightly
 - `1e982269a02c88e2f8e625cb5b5791e443476834` `fix(dev-launch): format nightly launcher docs and tests`
 - `d3dd6d836dabc6e51ba7b8078eb3369965153705` `fix(dev-launch): silence launcher process scan races`
 - `7323721b8f608501102dce10c5679ed4c35e3c95` `fix(dev-launch): seed nightly public verifier project`
+- `cd2b1d8c0078b91f4ce278a230a5d7263fc07cbd` `fix(dev-launch): use current MagicDNS verifier host`
+- `2502c9637ded29ba1ab03e9ff12aa6c827f33cd2` `fix(dev-launch): allow the durable nightly route owner`
+- `3c430a148b85fb77516c8f26d2e95f3cbce78b45` `fix(dev-launch): select the durable nightly verifier project`
+- `a56bbc1215ac5df544a8af779fddf7474194105d` `fix(dev-launch): target the running verifier state lane`
 
 ## Squash / Replay History
 
@@ -17,8 +21,8 @@ This topic was added after the initial June topic-stack population. Keep it as a
 
 ## Added Features
 
-- [x] Omarchy can render and install a `nightly` launcher for the rolling replay worktree (`scripts/lib/omarchy-dev-launchers.ts`, `pnpm run omarchy:install-dev-launchers -- --dry-run --target nightly`).
-- [x] The nightly launcher accepts rolling dated replay branches (`scripts/lib/omarchy-dev-launchers.ts`, `docs/operations/nightly-upstream-replay.md`).
+- [x] Omarchy can render and install a `nightly` launcher for the durable replay worktree (`scripts/lib/omarchy-dev-launchers.ts`, `pnpm run omarchy:install-dev-launchers -- --dry-run --target nightly`).
+- [x] The nightly launcher requires the durable `nightly` branch and reserved nightly checkout (`scripts/lib/omarchy-dev-launchers.ts`, `docs/operations/nightly-upstream-replay.md`).
 - [x] Generated launchers support an explicit worktree-scoped kill mode (`scripts/lib/omarchy-dev-launchers.ts`, `~/.local/bin/t3code-dev-nightly --kill`).
 - [x] Launcher process scans ignore disappearing `/proc` entries so kill mode stays quiet when processes exit mid-scan (`scripts/lib/omarchy-dev-launchers.ts`, `scripts/lib/omarchy-dev-launchers.test.ts`).
 - [x] `/nightly` is a reserved public route owned by the nightly replay branch/worktree (`packages/shared/src/localTopics/remoteAccess/publicPath.ts`, `/nightly`).
@@ -34,9 +38,10 @@ This topic was added after the initial June topic-stack population. Keep it as a
 
 - [x] Nightly uses isolated ports and app state: web `5833`, server `13873`, and CDP `9234` (`scripts/lib/omarchy-dev-launchers.ts`, `AGENTS.md`).
 - [x] The shared Tailscale reconcile helper serves `/nightly` when the nightly backend port is open (`scripts/lib/omarchy-dev-launchers.ts`, `/nightly`).
-- [x] Dev-runner identity inference treats the rolling nightly replay checkout as `nightly` (`scripts/dev-runner.ts`, `scripts/dev-runner.test.ts`).
+- [x] Dev-runner identity inference treats the durable nightly replay checkout as `nightly` (`scripts/dev-runner.ts`, `scripts/dev-runner.test.ts`).
 - [x] Desktop route ownership rejects `/nightly` from non-nightly worktrees before mutating Tailscale Serve (`apps/desktop/src/backend/DesktopServerExposure.test.ts`, `/nightly`).
-- [x] Public verification uses the existing project CLI to idempotently add `nightly-local` to the nightly profile before pairing (`apps/desktop/scripts/verify-staging-public.mjs`, `apps/server/dist/bin.mjs project add`).
+- [x] Public verification uses the existing project CLI to idempotently add `nightly` to the nightly profile before pairing (`apps/desktop/scripts/verify-staging-public.mjs`, `apps/server/dist/bin.mjs project add`).
+- [x] Project CLI mutations accept the launcher dev URL so verifier seeding targets the running dev-state lane instead of inactive production state (`apps/server/src/cli/config.ts`, `apps/desktop/scripts/verify-staging-public.mjs`).
 
 ## Added Tests
 
@@ -45,6 +50,7 @@ This topic was added after the initial June topic-stack population. Keep it as a
 - [x] Shared public-path tests cover `/nightly` prefix detection and reserved route ownership (`packages/shared/src/publicPath.test.ts`).
 - [x] Dev runner tests cover allowed nightly ownership and rejection from non-nightly worktrees (`scripts/dev-runner.test.ts`).
 - [x] Desktop exposure tests cover allowed `/nightly` Serve setup and rejected non-nightly claims (`apps/desktop/src/backend/DesktopServerExposure.test.ts`).
+- [x] Server CLI integration coverage proves `project add --dev-url` writes to dev state without changing production state (`apps/server/src/bin.test.ts`, `--dev-url`).
 
 ## Component Entrypoints
 
@@ -60,6 +66,8 @@ Componentization status: `complete`.
 - `scripts/dev-runner.ts`
 - `packages/shared/src/publicPath.ts`
 - `apps/desktop/scripts/verify-staging-public.mjs`
+- `apps/server/src/cli/config.ts`
+- `apps/server/src/bin.test.ts`
 - `package.json`
 - `apps/desktop/package.json`
 - `docs/operations/omarchy-dev-launchers.md`
@@ -73,9 +81,8 @@ Componentization status: `complete`.
 ```ts
 {
   target: "nightly",
-  branch: "dev/nightly-topic-stack-YYYYMMDD",
-  branchPattern: "^dev/nightly-topic-stack-[0-9]{8}$",
-  worktreeRelativePath: "code/t3code/.worktrees/nightly-local",
+  branch: "nightly",
+  worktreeRelativePath: "code/t3code/.worktrees/nightly",
   portOffset: "100",
   serverPort: "13873",
   webPort: "5833",
@@ -88,10 +95,9 @@ Componentization status: `complete`.
 ```ts
 "/nightly": {
   route: "/nightly",
-  expectedBranch: "dev/nightly-topic-stack-YYYYMMDD",
-  expectedBranchPattern: /^dev\/nightly-topic-stack-[0-9]{8}$/u,
-  expectedWorktreeBasename: "nightly-local",
-  expectedDescription: "the nightly replay branch/worktree",
+  expectedBranch: "nightly",
+  expectedWorktreeBasename: "nightly",
+  expectedDescription: "the nightly branch/worktree",
 }
 ```
 
@@ -109,8 +115,23 @@ const DEFAULT_PUBLIC_URL =
 
 ```js
 const DEFAULT_PROJECT_ROOT = PUBLIC_VERIFY_TARGET === "nightly" ? repoRoot : "";
-const DEFAULT_PROJECT_TITLE = PUBLIC_VERIFY_TARGET === "nightly" ? "nightly-local" : "";
+const DEFAULT_PROJECT_TITLE = PUBLIC_VERIFY_TARGET === "nightly" ? "nightly" : "";
 const projectSeed = await ensureVerificationProject();
+```
+
+`apps/desktop/scripts/verify-staging-public.mjs`
+
+```js
+const args = [
+  binPath,
+  "project",
+  "add",
+  config.workspaceRoot,
+  "--base-dir",
+  readPairingBaseDir(),
+  "--dev-url",
+  readPairingDevUrl(),
+];
 ```
 
 ## Replay Notes

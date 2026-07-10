@@ -12,6 +12,10 @@ Keep local T3 Code worktrees reachable through stable Tailscale HTTPS URLs, incl
 
 This is the base remote-access topic from the June 25, 2026 replay stack. Later hardening commits stay separate in the manifest until the topic is replayed and folded.
 
+Replay support follow-ups currently listed in the nightly manifest:
+
+- `8e103854f4b13fdc7b4b017174f2c2adffdfd677` `fix(remote-access): restore connections settings effect hook`
+
 ## Added Features
 
 - [x] Public path normalization covers assets, APIs, WebSockets, and pairing URLs (`packages/shared/src/localTopics/remoteAccess/publicPath.ts`, `apps/server/src/localTopics/remoteAccess/httpRouting.ts`).
@@ -23,6 +27,7 @@ This is the base remote-access topic from the June 25, 2026 replay stack. Later 
 
 - [x] Settings surfaces show and copy hosted access and pairing URLs with the active route preserved (`apps/web/src/components/settings/pairingUrls.ts`, `apps/web/src/publicPath.ts`).
 - [x] Connections settings probes edited routes and displays available, owned, taken, and reserved states (`apps/web/src/components/settings/ConnectionsSettings.tsx`, `packages/shared/src/localTopics/remoteAccess/publicPath.ts`).
+- [x] Connections settings route renders without the app error boundary after replayed Tailscale route hook wiring (`apps/web/src/components/settings/ConnectionsSettings.tsx`, `apps/desktop/e2e/specs/connections.spec.ts`).
 
 ## Added Server And Runtime Behavior
 
@@ -33,6 +38,7 @@ This is the base remote-access topic from the June 25, 2026 replay stack. Later 
 ## Added Tests
 
 - [x] Public path, route validation, route availability, reserved ownership, pairing URL, and staging public verifier coverage protect this topic (`packages/shared/src/publicPath.test.ts`, `packages/tailscale/src/tailscale.test.ts`, `apps/web/src/components/settings/pairingUrls.test.ts`, `apps/desktop/src/backend/DesktopServerExposure.test.ts`).
+- [x] Headed Electron smoke opens Connections settings and proves local/remote access controls render instead of the app error boundary (`apps/desktop/e2e/specs/connections.spec.ts`, `vp run --filter @t3tools/desktop e2e:smoke -- connections.spec.ts`).
 
 ## Component Entrypoints
 
@@ -47,6 +53,7 @@ Componentization status: `complete`.
 
 - `apps/server/src/http.ts`
 - `apps/web/src/publicPath.ts`
+- `apps/web/src/components/settings/ConnectionsSettings.tsx`
 - `apps/desktop/src/backend/DesktopServerExposure.ts`
 - `packages/shared/src/publicPath.ts`
 - `packages/tailscale/src/tailscale.ts`
@@ -105,6 +112,7 @@ in this topic when rebuilding.
 
 - `vp check`
 - `vp run typecheck`
+- `vp run --filter @t3tools/desktop e2e:smoke -- connections.spec.ts`
 - `vp run verify:staging-public`
 
 ## Known Follow-Up Work

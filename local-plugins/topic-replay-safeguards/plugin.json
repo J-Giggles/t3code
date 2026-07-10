@@ -208,6 +208,10 @@
       "role": "consumer"
     },
     {
+      "path": "apps/desktop/package.json",
+      "role": "consumer"
+    },
+    {
       "path": "local-plugins/README.md",
       "role": "consumer"
     },
@@ -235,6 +239,7 @@
   "verification": [
     "vp check",
     "vp run typecheck",
+    "CI=true pnpm install --frozen-lockfile",
     "pnpm run topic-plugins:check",
     "vp test run scripts/lib/linear-nightly-control.test.ts scripts/nightly-upstream-agent.test.ts scripts/lib/local-topic-stack.test.ts scripts/lib/nightly-topic-stack.test.ts scripts/lib/nightly-dependency-reconciliation.test.ts"
   ],

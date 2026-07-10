@@ -28,7 +28,7 @@
   there.
 - `/home/jgigg/code/t3code/.worktrees/staging` is reserved for the `staging` branch and the staging promotion lane.
   Do not check out feature branches in this path.
-- `/home/jgigg/code/t3code/.worktrees/nightly-local` is the rolling upstream replay candidate worktree. It is owned
+- `/home/jgigg/code/t3code/.worktrees/nightly` is the durable upstream replay candidate worktree. It is owned
   by `pnpm run topic-stack:nightly -- --apply`; if it is dirty, nightly replay must fail closed instead of resetting
   it.
 - Do all new implementation work in a separate worktree whose directory name starts with `dev-`, for example
@@ -60,7 +60,7 @@
 - The `original` mirror should be synced from upstream and tested nightly so replayable local topics can be checked
   against the latest upstream base. Use `pnpm run topic-stack:nightly -- --dry-run` to inspect the plan and
   `pnpm run topic-stack:nightly -- --apply` to fetch `upstream`, back up and reset `original`, rebuild
-  `.worktrees/nightly-local`, and run verification. The nightly script never promotes to `staging`.
+  `.worktrees/nightly`, and run verification. The nightly script never promotes to `staging`.
 - Local replay topics are documented as repo-internal plugins under `local-plugins/<topic>/`. Keep each
   `plugin.json`, topic `README.md`, and `docs/operations/jordan-topic-stack.manifest.json` entry synchronized with
   the replay commit. These are not installable Codex plugins and must not use `.codex-plugin/plugin.json`.
@@ -94,6 +94,8 @@ Current topic order:
      strict public staging verifier.
    - Also owns user-managed single-segment Tailscale Serve route validation, availability probing, and reserved
      `/main`, `/original`, and `/staging` ownership checks against the actual git branch/worktree.
+   - Includes headed Connections settings coverage so route probing and remote-access controls render without the app
+     error boundary.
 2. `feat(dev-launch): add durable worktree launch profiles`
    - Includes Omarchy launcher generation and the shared `t3code-tailscale-reconcile` helper for Tailscale Serve
      path refresh and same-host route repair.
@@ -102,6 +104,8 @@ Current topic order:
 3. `feat(runtime): preserve worktree context and controlled recovery`
 4. `feat(project-git): add project Git dashboard and VCS reconciliation`
 5. `feat(provider-settings): add usage, reset, and T3 access controls`
+   - Includes selected-provider usage icon and popover wiring in the chat composer footer, with headed chat-layout
+     smoke coverage so the popover cannot be replayed as an unused component.
 6. `feat(composer): add mentions, slash menus, chat context, and worktree naming`
    - Includes chat-layout protection for seeded history rows, context-window visibility, right-panel access, and
      terminal-drawer composer offsetting.
@@ -112,6 +116,10 @@ Current topic order:
 11. `test(desktop): add headed desktop verification coverage`
 12. `docs(operations): document Jordan patch-stack maintenance workflow`
 13. `feat(topic-stack): add replay checklist and audit safeguards`
+14. `feat(dev-launch): add nightly Omarchy launcher`
+
+- Includes `/nightly/` route ownership, the strict nightly verifier, and
+  project seeding into the launcher's active dev-state lane.
 
 - Includes machine-enforced Replay Checklist Items for local plugin READMEs, `topic-audit.md` run artifacts, and
   human promotion sign-off documentation.
@@ -122,8 +130,8 @@ Current topic order:
 
 When upstream changes, prefer the scripted nightly workflow in
 `docs/operations/nightly-upstream-replay.md`. It fetches upstream, backs up and
-resets `original`, creates or reuses `.worktrees/nightly-local`, creates
-`dev/nightly-topic-stack-YYYYMMDD`, cherry-picks the manifest topics in order,
+resets `original`, creates or reuses `.worktrees/nightly`, resets branch
+`nightly`, cherry-picks the manifest topics in order,
 and writes artifacts, including `topic-audit.md`, under `.t3code-nightly-runs/`. Resolve conflicts in the
 owning topic, run the verification commands from
 `docs/operations/jordan-topic-stack.md`, and compare the final stack against the
@@ -251,11 +259,12 @@ Source commits intentionally not replayed as new follow-up commits:
   server port `13833`, and desktop debugging port `9232`. Its app data lives in
   `~/.local/share/t3code-dev/staging`, and its config lives in `~/.config/t3code-dev/staging`.
 - `T3 Code Nightly` uses `~/.local/bin/t3code-dev-nightly` and
-  `~/.local/share/applications/t3code-dev-nightly.desktop`. It launches `.worktrees/nightly-local` on web port
+  `~/.local/share/applications/t3code-dev-nightly.desktop`. It launches `.worktrees/nightly` on web port
   `5833`, server port `13873`, and desktop debugging port `9234`, and exposes the public HTTPS route
   `https://giggabit-server.tailfb378a.ts.net/nightly/`. Its app data lives in `~/.local/share/t3code-dev/nightly`, and its
   config lives in `~/.config/t3code-dev/nightly`. The nightly worktree is rebuilt by
-  `pnpm run topic-stack:nightly -- --apply`; do not make product edits there.
+  `pnpm run topic-stack:nightly -- --apply`; do not make product edits there. The strict verifier must pass both
+  the profile base directory and launcher dev URL to project CLI mutations so it uses the running dev-state lane.
 - Generated launcher scripts accept `--kill`, for example `~/.local/bin/t3code-dev-nightly --kill`, to stop only
   matching processes from that launcher worktree before a rebuild or relaunch.
 - `~/.local/bin/t3code-tailscale-reconcile` is the shared support script installed by

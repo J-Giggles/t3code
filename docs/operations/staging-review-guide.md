@@ -152,6 +152,9 @@ Important implementation areas:
 - `apps/desktop/scripts/verify-staging-public.mjs` is the live staging gate. It
   verifies the primary-interface network path, loads the public URL, opens a
   project, sends `Hi`, and waits for a non-empty assistant response.
+- The nightly verifier passes the launcher dev URL to `project add`, keeping
+  verifier projects in the same `dev/state.sqlite` lane as the running nightly
+  backend.
 - Mobile remote-environment registry changes preserve the advertised endpoint
   seen by paired mobile clients.
 
@@ -199,6 +202,9 @@ Reviewers should check:
 
 - Launch desktop staging with a `T3CODE_WORKSPACE_SLUG`.
 - Confirm Settings shows the hosted Tailscale URL with the expected path.
+- Run `vp run --filter @t3tools/desktop e2e:smoke -- connections.spec.ts`
+  and confirm the Connections settings page renders local and remote access
+  controls instead of the app error boundary.
 - Copy a pairing link and verify it contains the HTTPS origin and path exactly
   once.
 - Open the hosted URL in a browser and confirm projects are visible, a new chat
@@ -209,6 +215,9 @@ Reviewers should check:
   desktop browser times out while loopback checks pass, inspect `ss -tnp` and
   `ip route get <tailnet-ip> oif <primary-interface>` before accepting the
   route.
+- For nightly, confirm the selected verifier project resolves to the durable
+  `.worktrees/nightly` checkout and was not seeded into the inactive
+  `userdata/state.sqlite` lane.
 - Confirm assets, API calls, and WebSocket connection all load under the path
   prefix.
 - Inspect the first generated module script and confirm it returns JavaScript
@@ -634,6 +643,9 @@ Important implementation areas:
   hover/focus refresh path.
 - `apps/web/src/components/chat/ChatComposer.tsx` places the usage popover in
   the composer footer for the selected provider instance.
+- `apps/desktop/e2e/specs/chat-layout.spec.ts` requires the provider usage
+  button and popover alongside the context-window meter in headed Electron
+  smoke coverage.
 
 ### Why This Shape
 
@@ -661,6 +673,8 @@ Reviewers should check:
   provider instance and applies the updated provider list.
 - The usage icon color reflects the lowest remaining rate-limit window without
   overstating accuracy.
+- Headed chat-layout smoke fails if the composer footer has the context-window
+  meter but drops the selected-provider usage button.
 
 ### Suggested Manual Checks
 
@@ -902,7 +916,7 @@ Important implementation areas:
 Reviewers should check:
 
 - Generated launchers target the documented worktrees and ports.
-- The nightly launcher accepts only `dev/nightly-topic-stack-YYYYMMDD` branches,
+- The nightly launcher accepts only branch `nightly`,
   exposes `/nightly`, and can be stopped with `t3code-dev-nightly --kill`.
 - Tailscale Serve path refresh and same-host tailnet route repair are generated
   from source, not hand-edited only in `~/.local/bin`.

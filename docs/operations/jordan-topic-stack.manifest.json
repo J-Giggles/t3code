@@ -44,6 +44,10 @@
       "id": "provider-settings",
       "pluginPath": "local-plugins/provider-settings",
       "commits": ["cbabcf08e13af412f9feb57afbcc583b63f87f06"],
+      "replayFollowupCommits": [
+        "a159898af2e75a9c87a82f3480db8e56b4e3b0dd",
+        "d97993ccbb4ec1753d1d340c5fb53561cfcdd485"
+      ],
       "subject": "feat(provider-settings): add usage, reset, and T3 access controls"
     },
     {
@@ -140,7 +144,10 @@
         "6f662e22a28e0f5455962014713a8fdb77cf3baa",
         "e7dc04618dc79835f9d3d82c71854605741665d8",
         "e99f5912a2121892c176f9dce57b35a8ca7af9d2",
-        "f754e9d208cbc4b8d1db232ca597a3ddaf9f29b9"
+        "f754e9d208cbc4b8d1db232ca597a3ddaf9f29b9",
+        "820348b2b8d662e10f95033dbb67d0bbe8d6c296",
+        "27ed804757e681ec4976b3356294b3b2b0d4ed3e",
+        "7f8eb6b54720709d843910161aef1577855a7850"
       ],
       "subject": "feat(topic-stack): add replay checklist and audit safeguards"
     },
@@ -160,7 +167,10 @@
         "d640d8e84ed8db94d3cbf3c47d550836a310f69c",
         "7323721b8f608501102dce10c5679ed4c35e3c95",
         "512be0c4d98ba8cbeca27e343056e21ab2da3b9c",
-        "cd2b1d8c0078b91f4ce278a230a5d7263fc07cbd"
+        "cd2b1d8c0078b91f4ce278a230a5d7263fc07cbd",
+        "2502c9637ded29ba1ab03e9ff12aa6c827f33cd2",
+        "3c430a148b85fb77516c8f26d2e95f3cbce78b45",
+        "a56bbc1215ac5df544a8af779fddf7474194105d"
       ],
       "subject": "feat(dev-launch): add nightly Omarchy launcher"
     }
