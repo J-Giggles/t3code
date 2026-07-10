@@ -113,7 +113,7 @@ function createRunner(options: {
   readonly controlRoot: string;
   readonly originalDirty?: boolean;
   readonly nightlyDirty?: boolean;
-  readonly cherryPick?: "applied" | "empty" | "conflict" | "rerere";
+  readonly cherryPick?: "applied" | "empty" | "conflict" | "rerere" | "rerere-empty";
   readonly recordedRepair?: boolean;
   readonly commands: Array<NightlyCommandInvocation>;
 }): NightlyCommandRunner {
@@ -142,12 +142,23 @@ function createRunner(options: {
       if (options.cherryPick === "empty") {
         return fail("The previous cherry-pick is now empty.\n");
       }
-      if (options.cherryPick === "conflict" || options.cherryPick === "rerere") {
-        return fail("CONFLICT (content): Merge conflict.\n");
+      if (
+        options.cherryPick === "conflict" ||
+        options.cherryPick === "rerere" ||
+        options.cherryPick === "rerere-empty"
+      ) {
+        return fail(
+          options.cherryPick === "rerere-empty"
+            ? `error: could not apply ${topicCommit}... test topic\n`
+            : "CONFLICT (content): Merge conflict.\n",
+        );
       }
       return ok("");
     }
     if (key === "git rev-parse -q --verify CHERRY_PICK_HEAD") {
+      if (options.cherryPick === "rerere-empty" && cherryPickContinued) {
+        return fail("");
+      }
       return ok(topicCommit);
     }
     if (key === "git diff --name-only --diff-filter=U") {
@@ -159,12 +170,17 @@ function createRunner(options: {
       return ok("100644 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 2\tconflicted.ts\n");
     }
     if (key === "git diff --quiet" || key === "git diff --cached --quiet") {
-      return options.cherryPick === "conflict" || options.cherryPick === "rerere"
+      return options.cherryPick === "conflict" ||
+        options.cherryPick === "rerere" ||
+        (options.cherryPick === "rerere-empty" && !cherryPickContinued)
         ? fail("")
         : ok("");
     }
     if (key === "git cherry-pick --continue") {
       cherryPickContinued = true;
+      if (options.cherryPick === "rerere-empty") {
+        return fail("The previous cherry-pick is now empty.\n");
+      }
       return ok("");
     }
     if (key === "git cherry-pick --skip") {
@@ -542,6 +558,23 @@ describe("nightly topic stack", () => {
 
     assert.equal(result.topicRecords[0]?.status, "auto-resolved");
     assert.ok(commands.some((command) => commandKey(command) === "git cherry-pick --continue"));
+  });
+
+  it("skips a rerere-resolved cherry-pick that becomes a clean no-op", () => {
+    const { familyRoot, controlRoot } = tempFamily();
+    const commands: Array<NightlyCommandInvocation> = [];
+    const runner = createRunner({ familyRoot, controlRoot, commands, cherryPick: "rerere-empty" });
+
+    const result = runNightlyTopicStack({
+      mode: "apply",
+      rootDir: controlRoot,
+      now: runDate,
+      runner,
+    });
+
+    assert.equal(result.topicRecords[0]?.status, "empty-skipped");
+    assert.ok(commands.some((command) => commandKey(command) === "git cherry-pick --continue"));
+    assert.ok(!commands.some((command) => commandKey(command) === "git cherry-pick --skip"));
   });
 
   it("writes a topic replay audit stub during apply", () => {

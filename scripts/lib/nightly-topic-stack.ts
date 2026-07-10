@@ -642,6 +642,35 @@ function activeCherryPickHead(runner: NightlyCommandRunner, cwd: string): string
     : undefined;
 }
 
+function isCleanCherryPickNoOpAfterFailure(
+  runner: NightlyCommandRunner,
+  cwd: string,
+  result: NightlyCommandResult,
+): boolean {
+  const output = `${result.stdout}\n${result.stderr}`;
+  if (
+    !/(?:could not apply|cherry-pick is now empty|nothing to commit|patch is empty)/iu.test(output)
+  ) {
+    return false;
+  }
+  if (activeCherryPickHead(runner, cwd) !== undefined || unmergedFiles(runner, cwd).length > 0) {
+    return false;
+  }
+  const unstagedDiff = gitOutputAllowFailure(
+    runner,
+    cwd,
+    ["diff", "--quiet"],
+    "check clean failed cherry-pick worktree",
+  );
+  const stagedDiff = gitOutputAllowFailure(
+    runner,
+    cwd,
+    ["diff", "--cached", "--quiet"],
+    "check clean failed cherry-pick index",
+  );
+  return unstagedDiff.exitCode === 0 && stagedDiff.exitCode === 0;
+}
+
 function unmergedFiles(runner: NightlyCommandRunner, cwd: string): ReadonlyArray<string> {
   const result = gitOutputAllowFailure(
     runner,
@@ -947,6 +976,17 @@ function applyCherryPicks(
           commit,
           status: "auto-resolved",
           message: result.stderr || result.stdout || autoResolved.stderr || autoResolved.stdout,
+        });
+        continue;
+      }
+
+      if (isCleanCherryPickNoOpAfterFailure(runner, plan.nightlyPath, result)) {
+        records.push({
+          id: topic.id,
+          subject: topic.subject,
+          commit,
+          status: "empty-skipped",
+          message: result.stderr || result.stdout,
         });
         continue;
       }
