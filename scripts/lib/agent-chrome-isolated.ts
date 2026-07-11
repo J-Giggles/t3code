@@ -3,10 +3,11 @@ export interface IsolatedAgentChromeArgs {
 }
 
 export function parseIsolatedAgentChromeArgs(args: ReadonlyArray<string>): IsolatedAgentChromeArgs {
-  if (args.length > 1) {
+  const options = args.filter((argument) => argument !== "--");
+  if (options.length > 1) {
     throw new Error("Usage: pnpm run agent-browser:isolated -- [https://example.com]");
   }
-  const url = args[0] ?? "about:blank";
+  const url = options[0] ?? "about:blank";
   if (url !== "about:blank") {
     const parsed = new URL(url);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
