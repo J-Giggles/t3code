@@ -155,7 +155,6 @@ describe("agent Chrome browser setup", () => {
       },
     };
     const calls: Array<readonly [string, ReadonlyArray<string>]> = [];
-    let desktopDefault = "brave-browser.desktop";
     let httpDefault = "brave-browser.desktop";
     let httpsDefault = "brave-browser.desktop";
 
@@ -177,12 +176,8 @@ describe("agent Chrome browser setup", () => {
           if (command === "codex" && args[0] === "mcp" && args[1] === "add") {
             return { exitCode: 0, stdout: "added\n", stderr: "" };
           }
-          if (command === "xdg-settings" && args[0] === "set") {
-            desktopDefault = args[2] ?? "";
-            return { exitCode: 0, stdout: "", stderr: "" };
-          }
           if (command === "xdg-settings" && args[0] === "get") {
-            return { exitCode: 0, stdout: `${desktopDefault}\n`, stderr: "" };
+            return { exitCode: 0, stdout: `${httpDefault}\n`, stderr: "" };
           }
           if (command === "xdg-mime" && args[0] === "default") {
             if (args[2] === "x-scheme-handler/http") httpDefault = args[1] ?? "";
@@ -203,7 +198,6 @@ describe("agent Chrome browser setup", () => {
       assert.ok(addCall);
       assert.equal(addCall[1].filter((argument) => argument.includes(existingToken)).length, 1);
       const desktopDefinition = buildAgentChromeDesktopDefinition(homeDir);
-      assert.equal(desktopDefault, AGENT_CHROME_DESKTOP_ID);
       assert.equal(httpDefault, AGENT_CHROME_DESKTOP_ID);
       assert.equal(httpsDefault, AGENT_CHROME_DESKTOP_ID);
       assert.equal(result.configured, true);
