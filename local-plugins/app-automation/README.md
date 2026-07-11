@@ -11,6 +11,7 @@ Expose controlled desktop shell and preview automation through MCP tools for hea
 - `14be0103fdd9a764d96a94ca53fa3e15b254fd8e` `fix(app-automation): harden shared Chrome profile`
 - `54716c4e70cf79bc8768c857118770cc08826070` `test(app-automation): verify shared Chrome session`
 - `928165bdf610d891b889ff30d67cfe435d8417b3` `fix(app-automation): accept pnpm option delimiter`
+- `3ff1a7fca14c4f3318937ea981aa8e0f0e904136` `fix(app-automation): register pinned Chrome desktop`
 
 ## Squash / Replay History
 
