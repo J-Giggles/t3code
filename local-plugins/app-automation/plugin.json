@@ -38,11 +38,19 @@
       "role": "source"
     },
     {
+      "path": "scripts/lib/agent-chrome-isolated.ts",
+      "role": "source"
+    },
+    {
       "path": "scripts/lib/agent-chrome-browser-verifier.ts",
       "role": "test"
     },
     {
       "path": "scripts/setup-agent-chrome-browser.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/open-isolated-agent-browser.ts",
       "role": "source"
     },
     {
@@ -65,6 +73,11 @@
       },
       {
         "path": "scripts/lib/agent-chrome-browser.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/agent-chrome-isolated.ts",
         "kind": "source",
         "publicSurface": "internal"
       }
@@ -112,6 +125,10 @@
       "role": "consumer"
     },
     {
+      "path": "scripts/open-isolated-agent-browser.ts",
+      "role": "consumer"
+    },
+    {
       "path": "scripts/verify-agent-chrome-browser.ts",
       "role": "consumer"
     }
@@ -130,6 +147,7 @@
     "safeAutoRepair": [
       "Adapt desktop shell MCP/RPC/IPC contracts to upstream desktop process or permission refactors.",
       "Adapt the pinned Playwright MCP setup command or injected browser tool names when upstream Codex MCP configuration shapes change without changing browser authority.",
+      "Adapt the temporary-profile Chromium launcher when upstream changes executable names or profile-isolation flags without weakening cleanup.",
       "Move app automation tools through new command routers while preserving explicit ownership, typed contracts, and headed verification."
     ],
     "stopForHuman": [

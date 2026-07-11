@@ -32,13 +32,14 @@ This is the app automation topic from the June 25 replay stack plus the GBT-89 s
 - [x] The idempotent setup command pins extension-backed Playwright MCP and preserves an existing automatic-approval token without exposing it in output (`scripts/setup-agent-chrome-browser.ts`, `scripts/lib/agent-chrome-browser.ts`).
 - [x] The machine-local launcher pins the existing `Default` Chrome profile and relies on Chrome's singleton handoff instead of introducing a second user-data directory (`scripts/lib/agent-chrome-browser.ts`, `docs/operations/agent-chrome-browser.md`).
 - [x] Browser instructions select shared Chrome first, require a 1440×900 desktop viewport, and keep collaborative preview as the explicit fallback (`packages/shared/src/prompts.ts`, `docs/operations/agent-chrome-browser.md`).
+- [x] The final fallback has one executable temporary-profile Chromium launcher that deletes its user-data directory on exit (`scripts/open-isolated-agent-browser.ts`, `scripts/lib/agent-chrome-isolated.ts`).
 
 ## Added Tests
 
 - [x] App automation broker behavior is covered by focused MCP tests (`apps/server/src/mcp/AppAutomationBroker.test.ts`).
 - [x] Preview automation routing remains covered separately from app-shell control (`apps/server/src/mcp/toolkits/preview/tools.test.ts`, `apps/desktop/src/ipc/methods/preview.test.ts`).
 - [x] Chrome MCP command construction, secret handling, configuration matching, CLI modes, and injected Codex instructions are covered by focused tests (`scripts/lib/agent-chrome-browser.test.ts`, `apps/server/src/provider/Layers/CodexSessionRuntime.test.ts`).
-- [x] The live headed verifier requires completed `browser_tabs` and `browser_resize` calls against extension-backed Chrome and emits a secret-free evidence manifest (`scripts/verify-agent-chrome-browser.ts`, `scripts/lib/agent-chrome-browser-verifier.ts`).
+- [x] The `SharedChromePageObject` live headed verifier requires tab, viewport, navigation, snapshot, shared-cookie, no-failure, and no-fallback assertions, then emits a secret-free flow evidence matrix (`scripts/verify-agent-chrome-browser.ts`, `scripts/lib/agent-chrome-browser-verifier.ts`).
 
 ## Component Entrypoints
 
@@ -47,6 +48,7 @@ Componentization status: `complete`.
 - `apps/desktop/src/localTopics/appAutomation/index.ts` (source, internal)
 - `apps/server/src/localTopics/appAutomation/index.ts` (source, internal)
 - `scripts/lib/agent-chrome-browser.ts` (source, internal)
+- `scripts/lib/agent-chrome-isolated.ts` (source, internal)
 
 ## Integration Points
 
@@ -57,6 +59,7 @@ Componentization status: `complete`.
 - `docs/operations/agent-chrome-browser.md`
 - `packages/shared/src/prompts.ts`
 - `scripts/setup-agent-chrome-browser.ts`
+- `scripts/open-isolated-agent-browser.ts`
 - `scripts/verify-agent-chrome-browser.ts`
 
 ## Focused Implementation Snippets

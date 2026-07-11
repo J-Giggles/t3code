@@ -4,9 +4,12 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { assert, describe, it } from "vitest";
 import {
+  buildIsolatedAgentChromeCommand,
+  parseIsolatedAgentChromeArgs,
+} from "./agent-chrome-isolated.ts";
+import {
   agentChromeVerificationPassed,
-  buildAgentChromeVerificationManifest,
-  parseAgentChromeVerification,
+  SharedChromePageObject,
 } from "./agent-chrome-browser-verifier.ts";
 import {
   AGENT_CHROME_DESKTOP_ID,
@@ -63,6 +66,28 @@ describe("agent Chrome browser setup", () => {
     assert.match(definition.launcherContents, /--profile-directory=Default/);
     assert.notMatch(definition.launcherContents, /--user-data-dir/);
     assert.match(definition.desktopContents, /x-scheme-handler\/https/);
+  });
+
+  it("builds a temporary-profile Chromium fallback and rejects unsafe URLs", () => {
+    assert.deepEqual(parseIsolatedAgentChromeArgs([]), { url: "about:blank" });
+    assert.deepEqual(parseIsolatedAgentChromeArgs(["https://example.com/path"]), {
+      url: "https://example.com/path",
+    });
+    assert.deepEqual(
+      buildIsolatedAgentChromeCommand("/tmp/isolated-profile", "https://example.com"),
+      [
+        "--user-data-dir=/tmp/isolated-profile",
+        "--disable-sync",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "https://example.com",
+      ],
+    );
+    assert.throws(() => parseIsolatedAgentChromeArgs(["file:///etc/passwd"]), /only HTTP/);
+    assert.throws(
+      () => parseIsolatedAgentChromeArgs(["https://example.com", "https://example.org"]),
+      /Usage:/,
+    );
   });
 
   it("recognizes the expected Codex MCP configuration without logging secrets", () => {
@@ -212,38 +237,58 @@ describe("agent Chrome browser setup", () => {
           status: "completed",
         },
       },
+      {
+        type: "item.completed",
+        item: {
+          type: "mcp_tool_call",
+          server: "playwright-extension",
+          tool: "browser_navigate",
+          status: "completed",
+        },
+      },
+      {
+        type: "item.completed",
+        item: {
+          type: "mcp_tool_call",
+          server: "playwright-extension",
+          tool: "browser_snapshot",
+          status: "completed",
+          result: { content: [{ type: "text", text: "SHARED_SESSION_AUTHENTICATED" }] },
+        },
+      },
     ]
       .map((event) => JSON.stringify(event))
       .join("\n");
-    const assertions = parseAgentChromeVerification(
+    const page = new SharedChromePageObject("http://127.0.0.1:1234/check");
+    const assertions = page.assertions(
       events,
-      "SHARED_CHROME_E2E_OK tab_count=1 viewport=1440x900",
+      "SHARED_CHROME_E2E_OK tab_count=1 viewport=1440x900 auth=shared-cookie",
     );
 
     assert.equal(agentChromeVerificationPassed(assertions), true);
-    assert.deepEqual(buildAgentChromeVerificationManifest(assertions, "2026-07-11T00:00:00Z"), {
-      issue: "GBT-89",
-      generatedAt: "2026-07-11T00:00:00Z",
-      surface: "playwright-extension",
-      command: "pnpm run agent-browser:verify",
-      checkpoints: [
-        "Codex completed browser_tabs through playwright-extension",
-        "Codex completed browser_resize at 1440x900",
-        "Codex returned the secret-free headed verification marker",
-      ],
-      absenceChecks: [
-        "No failed MCP tool call",
-        "No fallback browser surface used",
-        "No token, URL, title, account identity, or page content retained",
-      ],
-      assertions,
-      rawBrowserContentStored: false,
-    });
-    assert.equal(
-      agentChromeVerificationPassed(
-        parseAgentChromeVerification(events, "SHARED_CHROME_E2E_FAILED"),
+    const manifest = page.manifest(assertions, "2026-07-11T00:00:00Z");
+    assert.equal(manifest.issue, "GBT-89");
+    assert.equal(manifest.generatedAt, "2026-07-11T00:00:00Z");
+    assert.equal(manifest.rawBrowserContentStored, false);
+    assert.equal(manifest.flowEvidenceMatrix.length, 3);
+    assert.ok(
+      manifest.flowEvidenceMatrix.some((flow) =>
+        flow.assertions.includes("sharedSessionCookieObserved"),
       ),
+    );
+    assert.equal(
+      agentChromeVerificationPassed(page.assertions(events, "SHARED_CHROME_E2E_FAILED")),
       false,
     );
+    const fallbackEvent = JSON.stringify({
+      type: "item.completed",
+      item: {
+        type: "mcp_tool_call",
+        server: "t3-code",
+        tool: "preview_status",
+        status: "completed",
+      },
+    });
+    assert.equal(page.assertions(`${events}\n${fallbackEvent}`, "").noFallbackSurfaceCalls, false);
   });
 });

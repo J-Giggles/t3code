@@ -39,7 +39,7 @@ pnpm run agent-browser:setup -- --doctor
 codex mcp get playwright-extension --json
 ```
 
-The doctor verifies Google Chrome, Codex, `npx`, the pinned Playwright MCP package, the expected MCP command, and the HTTP/HTTPS browser defaults. It deliberately does not inspect Chrome cookies, passwords, local storage, or profile databases.
+The doctor verifies Google Chrome, the last-resort Chromium binary, Codex, `npx`, the pinned Playwright MCP package, the expected MCP command, the pinned-profile launcher, and the HTTP/HTTPS browser defaults. It deliberately does not inspect Chrome cookies, passwords, local storage, or profile databases.
 
 Use `--dry-run` to inspect the intended setup without changing Codex:
 
@@ -53,7 +53,7 @@ Run the live headed verifier before promoting browser-policy changes:
 pnpm run agent-browser:verify
 ```
 
-The verifier starts an ephemeral Codex run, requires successful `browser_tabs` and `browser_resize` calls through `playwright-extension`, and records only secret-free assertions beneath `~/.local/share/t3code-agent-browser/mcp-output/verification/`. It deliberately discards raw browser events, URLs, titles, account identities, and page content.
+The verifier starts a loopback session sentinel, seeds an HttpOnly cookie through the pinned system Chrome launcher, and then uses the `SharedChromePageObject` helper in an ephemeral Codex run. It requires successful `browser_tabs`, `browser_resize`, `browser_navigate`, and `browser_snapshot` calls through `playwright-extension`, proves that the agent observed the cookie seeded through the operator browser path, rejects failed or fallback MCP calls, and writes a secret-free flow evidence matrix beneath `~/.local/share/t3code-agent-browser/mcp-output/verification/`. It deliberately discards raw browser events, URLs, titles, account identities, and page content.
 
 ## Agent Browser Policy
 
@@ -65,7 +65,9 @@ For browser-required work, agents should:
 4. Stay on the selected browser surface for the task and use snapshot-provided locators.
 5. Fall back to `preview_status`, `preview_open`, `preview_resize`, and the remaining `preview_*` tools only when the extension-backed browser is absent or explicitly reports an unavailable/unsupported error.
 6. Use `app_*` only for T3 Code's own Electron shell.
-7. Only after both supported hosts explicitly fail, use an isolated Chromium profile for public or unauthenticated work; never treat that last-resort browser as sharing Chrome logins.
+7. Only after both supported hosts explicitly fail, run `pnpm run agent-browser:isolated -- <https-url>` for public or unauthenticated work; never treat that last-resort browser as sharing Chrome logins.
+
+The isolated helper launches the installed `chromium` binary with a new temporary `--user-data-dir`, disables sync, blocks until the browser exits, and then deletes the profile directory. This makes the final fallback deterministic and prevents it from reading or retaining Chrome's authenticated state.
 
 Do not launch separate Brave, Chrome, Chromium, raw CDP, agent-browser, or standalone Playwright automation while either supported toolset is available. A second browser process may not have the same authenticated state and can make agent behavior appear inconsistent.
 
