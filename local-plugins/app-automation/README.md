@@ -7,14 +7,14 @@ Expose controlled desktop shell and preview automation through MCP tools for hea
 ## Current Commits
 
 - `997062c1d2105bab3d1c923749ef8edb0fe9f6d9` `feat(app-automation): add desktop shell MCP controls`
-- `bbf8b48a88c06ace91fc4847c4f91d8642cc0f2c` `feat(app-automation): share authenticated Chrome with agents`
-- `14be0103fdd9a764d96a94ca53fa3e15b254fd8e` `fix(app-automation): harden shared Chrome profile`
-- `54716c4e70cf79bc8768c857118770cc08826070` `test(app-automation): verify shared Chrome session`
-- `928165bdf610d891b889ff30d67cfe435d8417b3` `fix(app-automation): accept pnpm option delimiter`
-- `3ff1a7fca14c4f3318937ea981aa8e0f0e904136` `fix(app-automation): register pinned Chrome desktop`
-- `20d0361bbbf1b10615e9969dce43a0feb3793351` `fix(app-automation): launch Chrome from remote sessions`
-- `2ed7ea0551cb4ddda5d7885adaca8ba628506921` `test(app-automation): summarize Chrome verifier failures`
-- `14fcdbf865b678e7c37485c00288bcc0e50700ea` `fix(app-automation): accept isolated browser delimiter`
+- `ef9481cc7d4b5355891d621cd649b32867034839` `feat(app-automation): share authenticated Chrome with agents`
+- `917158d5d99e83ff943a86bb3b15378102f52c9c` `fix(app-automation): harden shared Chrome profile`
+- `b83287dccceb01de801f60261393f8fa9a4dd69f` `test(app-automation): verify shared Chrome session`
+- `e2e5f28e6784f89e9deb75921bf7d25df543ba36` `fix(app-automation): accept pnpm option delimiter`
+- `4d22e3b3a7fef17eb2f72432563dfda56c6b8ef7` `fix(app-automation): register pinned Chrome desktop`
+- `5f1622a64f165a1bf24b2e3578a7d1447c7600ef` `fix(app-automation): launch Chrome from remote sessions`
+- `c057ae0a969d170b881f4adabcaf05200e301049` `test(app-automation): summarize Chrome verifier failures`
+- `bde4caf8ac74cd2579636e942b4f6899bcba084d` `fix(app-automation): accept isolated browser delimiter`
 
 ## Squash / Replay History
 
