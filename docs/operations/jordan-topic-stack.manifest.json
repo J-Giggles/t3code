@@ -69,7 +69,8 @@
       "commits": ["997062c1d2105bab3d1c923749ef8edb0fe9f6d9"],
       "replayFollowupCommits": [
         "bbf8b48a88c06ace91fc4847c4f91d8642cc0f2c",
-        "14be0103fdd9a764d96a94ca53fa3e15b254fd8e"
+        "14be0103fdd9a764d96a94ca53fa3e15b254fd8e",
+        "54716c4e70cf79bc8768c857118770cc08826070"
       ],
       "subject": "feat(app-automation): add desktop shell MCP controls"
     },
