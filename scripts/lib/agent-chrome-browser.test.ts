@@ -8,6 +8,7 @@ import {
   parseIsolatedAgentChromeArgs,
 } from "./agent-chrome-isolated.ts";
 import {
+  agentChromeVerificationEventSummary,
   agentChromeVerificationPassed,
   SharedChromePageObject,
 } from "./agent-chrome-browser-verifier.ts";
@@ -260,6 +261,7 @@ describe("agent Chrome browser setup", () => {
       .map((event) => JSON.stringify(event))
       .join("\n");
     const page = new SharedChromePageObject("http://127.0.0.1:1234/check");
+    assert.match(agentChromeVerificationEventSummary(events), /browser_snapshot:completed:ok/);
     const assertions = page.assertions(
       events,
       "SHARED_CHROME_E2E_OK tab_count=1 viewport=1440x900 auth=shared-cookie",

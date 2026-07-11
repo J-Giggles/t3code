@@ -7,6 +7,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import {
+  agentChromeVerificationEventSummary,
   agentChromeVerificationPassed,
   SharedChromePageObject,
 } from "./lib/agent-chrome-browser-verifier.ts";
@@ -148,6 +149,11 @@ async function main(): Promise<void> {
 
     const page = new SharedChromePageObject(sentinel.checkUrl);
     const eventsJsonl = await runCodex(page.verificationPrompt(), process.cwd(), finalPath);
+    if (!NodeFS.existsSync(finalPath)) {
+      throw new Error(
+        `Codex completed without a final verification marker (${agentChromeVerificationEventSummary(eventsJsonl)}).`,
+      );
+    }
     const finalMessage = NodeFS.readFileSync(finalPath, "utf8");
     const assertions = page.assertions(eventsJsonl, finalMessage);
     if (!agentChromeVerificationPassed(assertions)) {
