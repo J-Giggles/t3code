@@ -124,6 +124,10 @@ export function buildAgentChromeDesktopDefinition(homeDir: string): AgentChromeD
     desktopPath,
     launcherContents: [
       "#!/usr/bin/env sh",
+      'export DISPLAY="${DISPLAY:-:0}"',
+      'export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"',
+      'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"',
+      'export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"',
       `exec google-chrome-stable --profile-directory=${AGENT_CHROME_PROFILE_DIRECTORY} "$@"`,
       "",
     ].join("\n"),

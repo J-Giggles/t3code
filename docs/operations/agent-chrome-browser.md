@@ -26,7 +26,7 @@ The setup command is the explicit opt-in that lets Main, Staging, and Nightly sh
 
 The token is accepted only through the environment. The setup command rejects command-line token arguments so the credential does not land in shell history. Re-running `--write` preserves the existing configured token when the environment variable is absent.
 
-The pinned launcher never supplies a second `--user-data-dir`. Repeated launches therefore use Chrome's own singleton handoff and profile lock for the same `Default` profile instead of silently creating an isolated profile with different cookies.
+The pinned launcher restores the headed Wayland/XDG session variables when invoked over SSH and never supplies a second `--user-data-dir`. Repeated local or remote launches therefore reach the visible desktop and use Chrome's own singleton handoff and profile lock for the same `Default` profile instead of silently creating an isolated profile with different cookies.
 
 Start a new Codex task after setup so the app-server loads the new MCP configuration. The first extension connection may still require choosing or approving a Chrome tab; the token removes repeated connection-approval prompts after that initial browser authorization.
 

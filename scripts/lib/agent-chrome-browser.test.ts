@@ -63,6 +63,8 @@ describe("agent Chrome browser setup", () => {
     assert.equal(AGENT_CHROME_DESKTOP_ID, "t3code-agent-chrome.desktop");
     assert.equal(AGENT_CHROME_PROFILE_DIRECTORY, "Default");
     assert.match(definition.launcherPath, /t3code-agent-chrome$/);
+    assert.match(definition.launcherContents, /WAYLAND_DISPLAY/);
+    assert.match(definition.launcherContents, /XDG_RUNTIME_DIR/);
     assert.match(definition.launcherContents, /--profile-directory=Default/);
     assert.notMatch(definition.launcherContents, /--user-data-dir/);
     assert.match(definition.desktopContents, /x-scheme-handler\/https/);
