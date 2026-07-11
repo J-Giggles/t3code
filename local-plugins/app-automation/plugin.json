@@ -22,7 +22,23 @@
       "role": "docs"
     },
     {
+      "path": "docs/operations/agent-chrome-browser.md",
+      "role": "docs"
+    },
+    {
+      "path": "packages/shared/src/prompts.ts",
+      "role": "source"
+    },
+    {
       "path": "packages/contracts/src/preview.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/lib/agent-chrome-browser.ts",
+      "role": "source"
+    },
+    {
+      "path": "scripts/setup-agent-chrome-browser.ts",
       "role": "source"
     }
   ],
@@ -36,6 +52,11 @@
       },
       {
         "path": "apps/server/src/localTopics/appAutomation/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/lib/agent-chrome-browser.ts",
         "kind": "source",
         "publicSurface": "internal"
       }
@@ -59,6 +80,14 @@
       "role": "thin-wiring"
     },
     {
+      "path": "docs/operations/agent-chrome-browser.md",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/shared/src/prompts.ts",
+      "role": "thin-wiring"
+    },
+    {
       "path": "packages/contracts/src/preview.ts",
       "role": "public-facade"
     },
@@ -69,6 +98,10 @@
     {
       "path": "apps/server/src/localTopics/appAutomation/index.ts",
       "role": "consumer"
+    },
+    {
+      "path": "scripts/setup-agent-chrome-browser.ts",
+      "role": "consumer"
     }
   ],
   "verification": ["vp check", "vp run typecheck"],
@@ -78,14 +111,18 @@
     "intent": "Expose controlled desktop shell and preview automation through MCP tools for headed staging verification.",
     "preserve": [
       "Preserve the local feature goal: Expose controlled desktop shell and preview automation through MCP tools for headed staging verification.",
+      "Authenticated website work prefers the extension-backed agent-only Chrome profile and uses collaborative preview only as the explicit unavailable-browser fallback.",
+      "Browser setup never copies or reads Chrome cookie databases and keeps the Playwright extension token out of logs, documentation, and command-line options.",
       "Keep documented owned paths and integration points aligned with local-plugins/app-automation/README.md."
     ],
     "safeAutoRepair": [
       "Adapt desktop shell MCP/RPC/IPC contracts to upstream desktop process or permission refactors.",
+      "Adapt the pinned Playwright MCP setup command or injected browser tool names when upstream Codex MCP configuration shapes change without changing browser authority.",
       "Move app automation tools through new command routers while preserving explicit ownership, typed contracts, and headed verification."
     ],
     "stopForHuman": [
       "Stop when upstream changes desktop automation permissions or security boundaries in a way that requires a human trust decision.",
+      "Stop when Chrome or Playwright removes extension-backed reuse of the existing authenticated browser profile.",
       "Stop when tool behavior would control a broader surface than the documented local feature contract."
     ],
     "verification": ["vp check", "vp run typecheck"]
