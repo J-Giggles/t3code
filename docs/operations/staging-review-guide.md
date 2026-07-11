@@ -1166,6 +1166,15 @@ Important implementation areas:
   `apps/server/src/mcp/toolkits/app/tools.ts` expose the MCP `app_*` tools.
 - `docs/operations/headed-staging.md` documents the split between `preview_*`
   browser-preview control, `app_*` Electron-shell control, and CDP inspection.
+- `scripts/lib/agent-chrome-browser.ts` and
+  `scripts/setup-agent-chrome-browser.ts` configure the official Playwright
+  Extension as the canonical authenticated Chrome surface without copying
+  profile databases into Electron.
+- `packages/shared/src/prompts.ts` selects extension-backed `browser_*` tools
+  first, requires a 1440×900 viewport, and preserves `preview_*` as the
+  explicit unavailable-browser fallback.
+- `docs/operations/agent-chrome-browser.md` documents one-time extension/token
+  setup, health checks, recovery, and browser-surface ownership.
 
 ### Review Focus
 
@@ -1181,6 +1190,11 @@ Reviewers should check:
   full app automation.
 - Headed staging docs describe when to use product-native MCP tools versus CDP
   inspection.
+- Authenticated web tasks reuse the operator's real agent-only Chrome state,
+  while dev-preview and unsupported-extension tasks retain the collaborative
+  preview fallback.
+- The setup command pins the Playwright MCP package, keeps the extension token
+  out of shell arguments and output, and recognizes configuration drift.
 
 ## Topic 20: Composer-Created Worktree Semantic Naming
 

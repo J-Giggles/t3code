@@ -52,15 +52,17 @@ export type PromptRenderVariables = Readonly<Record<string, string | number | bo
 
 const T3_CODE_BROWSER_TOOL_INSTRUCTIONS = `
 
-## T3 Code collaborative browser
+## T3 Code browser control
 
-You are running inside T3 Code. The \`t3-code\` MCP server exposes product-native control tools. Use \`preview_*\` for websites and dev-server previews inside T3 Code's collaborative browser. Use \`app_*\` only when the task is about controlling T3 Code's own Electron UI.
+You are running inside T3 Code. When the \`playwright-extension\` MCP server exposes \`browser_*\` tools, use that shared authenticated Chrome browser for websites and browser-required work. It controls the existing agent-only Chrome profile, including its logged-in sessions, tabs, and extensions. Do not switch to another browser surface during the task.
 
-For browser preview work, first call \`preview_status\`. If no automation-capable preview is attached, call \`preview_open\` before concluding that the browser is unavailable. Then use \`preview_navigate\`, \`preview_snapshot\`, and the focused interaction tools. Prefer snapshot-provided locators over coordinates.
+Start shared-Chrome work with \`browser_tabs\` to select or create the target tab, then call \`browser_resize\` with width 1440 and height 900 before taking a fresh snapshot. Continue with \`browser_snapshot\` and the focused \`browser_*\` interaction tools, using snapshot-provided locators instead of coordinates.
 
-For T3 Code app-shell work, first call \`app_status\` and then \`app_snapshot\`; prefer app_snapshot-provided locators over coordinates.
+If the \`playwright-extension\` tools are absent or explicitly unavailable, use the \`t3-code\` MCP server's collaborative browser as the fallback. Call \`preview_status\`, then \`preview_open\` when no automation-capable preview is attached, followed by \`preview_navigate\`, \`preview_resize\`, \`preview_snapshot\`, and the focused \`preview_*\` interaction tools. Use a 1440 by 900 freeform preview viewport unless the task requires a named device size.
 
-Do not use raw CDP, OS mouse automation, Node REPL browser automation, standalone Playwright, or agent-browser merely because the preview is initially closed or a first call fails. Use an alternative browser system only when the product-native tools are absent, the user explicitly requests another browser, or \`preview_open\` returns an explicit unsupported/unavailable error. A failed T3 tool call should be inspected and retried with corrected arguments when the error is actionable.
+Use \`app_*\` only when the task is about controlling T3 Code's own Electron UI. For app-shell work, first call \`app_status\` and then \`app_snapshot\`; prefer app_snapshot-provided locators over coordinates.
+
+Do not use raw CDP, OS mouse automation, a Node REPL browser runtime, standalone Playwright scripts, agent-browser, or a separately launched Brave/Chrome/Chromium process while either supported browser toolset is available. Inspect and retry actionable tool errors on the selected surface; change surfaces only when that surface reports an explicit unavailable or unsupported error.
 `;
 
 const CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS = `<collaboration_mode># Plan Mode (Conversational)

@@ -222,17 +222,21 @@ describe("buildTurnStartParams", () => {
 });
 
 describe("T3 browser developer instructions", () => {
-  it("prefers product-native preview and app tools in both collaboration modes", () => {
+  it("prefers the shared authenticated Chrome browser in both collaboration modes", () => {
     for (const instructions of [
       CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
       CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS,
     ]) {
+      NodeAssert.match(instructions, /playwright-extension/);
+      NodeAssert.match(instructions, /browser_tabs/);
+      NodeAssert.match(instructions, /browser_resize/);
+      NodeAssert.match(instructions, /1440.*900/);
       NodeAssert.match(instructions, /t3-code/);
       NodeAssert.match(instructions, /preview_status/);
       NodeAssert.match(instructions, /preview_open/);
       NodeAssert.match(instructions, /app_status/);
       NodeAssert.match(instructions, /app_snapshot/);
-      NodeAssert.match(instructions, /Do not use raw CDP/);
+      NodeAssert.match(instructions, /explicitly unavailable/);
     }
   });
 });
