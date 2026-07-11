@@ -261,9 +261,9 @@ function writeProfileLauncher(definition: AgentChromeDesktopDefinition): void {
 
 function configureDefaultBrowser(run: AgentChromeBrowserDependencies["run"]): void {
   const commands: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [
-    ["xdg-settings", ["set", "default-web-browser", AGENT_CHROME_DESKTOP_ID]],
     ["xdg-mime", ["default", AGENT_CHROME_DESKTOP_ID, "x-scheme-handler/http"]],
     ["xdg-mime", ["default", AGENT_CHROME_DESKTOP_ID, "x-scheme-handler/https"]],
+    ["xdg-mime", ["default", AGENT_CHROME_DESKTOP_ID, "text/html"]],
   ];
   for (const [command, args] of commands) {
     if (run(command, args).exitCode !== 0) {
