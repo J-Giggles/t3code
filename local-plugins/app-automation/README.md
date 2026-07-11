@@ -13,6 +13,7 @@ Expose controlled desktop shell and preview automation through MCP tools for hea
 - `928165bdf610d891b889ff30d67cfe435d8417b3` `fix(app-automation): accept pnpm option delimiter`
 - `3ff1a7fca14c4f3318937ea981aa8e0f0e904136` `fix(app-automation): register pinned Chrome desktop`
 - `20d0361bbbf1b10615e9969dce43a0feb3793351` `fix(app-automation): launch Chrome from remote sessions`
+- `2ed7ea0551cb4ddda5d7885adaca8ba628506921` `test(app-automation): summarize Chrome verifier failures`
 
 ## Squash / Replay History
 
