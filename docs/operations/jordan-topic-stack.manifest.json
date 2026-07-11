@@ -74,7 +74,8 @@
         "928165bdf610d891b889ff30d67cfe435d8417b3",
         "3ff1a7fca14c4f3318937ea981aa8e0f0e904136",
         "20d0361bbbf1b10615e9969dce43a0feb3793351",
-        "2ed7ea0551cb4ddda5d7885adaca8ba628506921"
+        "2ed7ea0551cb4ddda5d7885adaca8ba628506921",
+        "14fcdbf865b678e7c37485c00288bcc0e50700ea"
       ],
       "subject": "feat(app-automation): add desktop shell MCP controls"
     },
