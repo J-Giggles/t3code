@@ -112,7 +112,7 @@ Current topic order:
 7. `feat(prompt-settings): add configurable prompt settings`
 8. `feat(app-automation): add desktop shell MCP controls`
    - Includes the extension-backed shared authenticated Chrome setup, Chrome-first browser instructions, and the
-     server doctor that keeps HTTP/HTTPS defaults on the same Google Chrome profile.
+     server doctor and headed verifier that keep HTTP/HTTPS defaults on the same pinned Google Chrome profile.
 9. `feat(project-agent-files): add schemas, CRUD, and scaffold safety`
 10. `feat(observability): add local hub, Grafana provisioning, and digest metrics`
 11. `test(desktop): add headed desktop verification coverage`

@@ -8,6 +8,7 @@ Expose controlled desktop shell and preview automation through MCP tools for hea
 
 - `997062c1d2105bab3d1c923749ef8edb0fe9f6d9` `feat(app-automation): add desktop shell MCP controls`
 - `bbf8b48a88c06ace91fc4847c4f91d8642cc0f2c` `feat(app-automation): share authenticated Chrome with agents`
+- `14be0103fdd9a764d96a94ca53fa3e15b254fd8e` `fix(app-automation): harden shared Chrome profile`
 
 ## Squash / Replay History
 
