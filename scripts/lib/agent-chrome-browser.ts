@@ -9,7 +9,8 @@ export const PLAYWRIGHT_MCP_PACKAGE = "@playwright/mcp@0.0.78";
 export const PLAYWRIGHT_EXTENSION_ID = "mmlmfjhmonkocbjadbfplnigmagldckm";
 export const PLAYWRIGHT_EXTENSION_URL = `https://chromewebstore.google.com/detail/playwright-extension/${PLAYWRIGHT_EXTENSION_ID}`;
 export const PLAYWRIGHT_EXTENSION_TOKEN_ENV = "PLAYWRIGHT_MCP_EXTENSION_TOKEN";
-export const GOOGLE_CHROME_DESKTOP_ID = "google-chrome.desktop";
+export const AGENT_CHROME_DESKTOP_ID = "t3code-agent-chrome.desktop";
+export const AGENT_CHROME_PROFILE_DIRECTORY = "Default";
 
 export type AgentChromeBrowserMode = "doctor" | "dry-run" | "write";
 
@@ -22,6 +23,22 @@ export interface AgentChromeMcpDefinition {
   readonly command: string;
   readonly args: ReadonlyArray<string>;
   readonly outputDir: string;
+}
+
+export interface AgentChromeDesktopDefinition {
+  readonly launcherPath: string;
+  readonly desktopPath: string;
+  readonly launcherContents: string;
+  readonly desktopContents: string;
+}
+
+export interface AgentChromeBrowserCapabilities {
+  readonly chrome: boolean;
+  readonly codex: boolean;
+  readonly npx: boolean;
+  readonly playwrightMcp: boolean;
+  readonly xdgSettings: boolean;
+  readonly xdgMime: boolean;
 }
 
 interface CommandResult {
@@ -42,17 +59,12 @@ export interface AgentChromeBrowserSetupResult {
   readonly packageName: string;
   readonly outputDir: string;
   readonly extensionUrl: string;
-  readonly chromeAvailable: boolean;
-  readonly codexAvailable: boolean;
-  readonly npxAvailable: boolean;
-  readonly packageAvailable: boolean;
-  readonly xdgSettingsAvailable: boolean;
-  readonly xdgMimeAvailable: boolean;
+  readonly capabilities: AgentChromeBrowserCapabilities;
   readonly configured: boolean;
+  readonly profileLauncherConfigured: boolean;
   readonly defaultBrowserConfigured: boolean;
   readonly ready: boolean;
   readonly automaticApproval: boolean;
-  readonly changed: boolean;
 }
 
 function defaultRun(command: string, args: ReadonlyArray<string>): CommandResult {
@@ -94,6 +106,36 @@ export function buildAgentChromeMcpDefinition(homeDir: string): AgentChromeMcpDe
       "60000",
     ],
     outputDir,
+  };
+}
+
+export function buildAgentChromeDesktopDefinition(homeDir: string): AgentChromeDesktopDefinition {
+  const launcherPath = NodePath.join(homeDir, ".local", "bin", "t3code-agent-chrome");
+  const desktopPath = NodePath.join(
+    homeDir,
+    ".local",
+    "share",
+    "applications",
+    AGENT_CHROME_DESKTOP_ID,
+  );
+  return {
+    launcherPath,
+    desktopPath,
+    launcherContents: [
+      "#!/usr/bin/env sh",
+      `exec google-chrome-stable --profile-directory=${AGENT_CHROME_PROFILE_DIRECTORY} "$@"`,
+      "",
+    ].join("\n"),
+    desktopContents: [
+      "[Desktop Entry]",
+      "Type=Application",
+      "Name=T3 Code Agent Chrome",
+      `Exec="${launcherPath}" %U`,
+      "Terminal=false",
+      "Categories=Network;WebBrowser;",
+      "MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;",
+      "",
+    ].join("\n"),
   };
 }
 
@@ -195,15 +237,31 @@ function defaultBrowserConfigured(run: AgentChromeBrowserDependencies["run"]): b
   const http = run("xdg-mime", ["query", "default", "x-scheme-handler/http"]);
   const https = run("xdg-mime", ["query", "default", "x-scheme-handler/https"]);
   return [desktop, http, https].every(
-    (result) => result.exitCode === 0 && result.stdout.trim() === GOOGLE_CHROME_DESKTOP_ID,
+    (result) => result.exitCode === 0 && result.stdout.trim() === AGENT_CHROME_DESKTOP_ID,
   );
+}
+
+function profileLauncherConfigured(definition: AgentChromeDesktopDefinition): boolean {
+  return (
+    NodeFS.existsSync(definition.launcherPath) &&
+    NodeFS.readFileSync(definition.launcherPath, "utf8") === definition.launcherContents &&
+    NodeFS.existsSync(definition.desktopPath) &&
+    NodeFS.readFileSync(definition.desktopPath, "utf8") === definition.desktopContents
+  );
+}
+
+function writeProfileLauncher(definition: AgentChromeDesktopDefinition): void {
+  NodeFS.mkdirSync(NodePath.dirname(definition.launcherPath), { recursive: true, mode: 0o700 });
+  NodeFS.mkdirSync(NodePath.dirname(definition.desktopPath), { recursive: true, mode: 0o700 });
+  NodeFS.writeFileSync(definition.launcherPath, definition.launcherContents, { mode: 0o755 });
+  NodeFS.writeFileSync(definition.desktopPath, definition.desktopContents, { mode: 0o644 });
 }
 
 function configureDefaultBrowser(run: AgentChromeBrowserDependencies["run"]): void {
   const commands: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [
-    ["xdg-settings", ["set", "default-web-browser", GOOGLE_CHROME_DESKTOP_ID]],
-    ["xdg-mime", ["default", GOOGLE_CHROME_DESKTOP_ID, "x-scheme-handler/http"]],
-    ["xdg-mime", ["default", GOOGLE_CHROME_DESKTOP_ID, "x-scheme-handler/https"]],
+    ["xdg-settings", ["set", "default-web-browser", AGENT_CHROME_DESKTOP_ID]],
+    ["xdg-mime", ["default", AGENT_CHROME_DESKTOP_ID, "x-scheme-handler/http"]],
+    ["xdg-mime", ["default", AGENT_CHROME_DESKTOP_ID, "x-scheme-handler/https"]],
   ];
   for (const [command, args] of commands) {
     if (run(command, args).exitCode !== 0) {
@@ -220,31 +278,36 @@ export function setupAgentChromeBrowser(
   const environment = dependencies.environment ?? process.env;
   const run = dependencies.run ?? defaultRun;
   const definition = buildAgentChromeMcpDefinition(homeDir);
-  const chromeAvailable = commandAvailable(run, "google-chrome-stable");
-  const codexAvailable = commandAvailable(run, "codex");
+  const desktopDefinition = buildAgentChromeDesktopDefinition(homeDir);
   const npxAvailable = commandAvailable(run, "npx");
-  const xdgSettingsAvailable = commandAvailable(run, "xdg-settings");
-  const xdgMimeAvailable = commandAvailable(run, "xdg-mime");
-  const packageAvailable =
-    npxAvailable && run("npx", ["-y", PLAYWRIGHT_MCP_PACKAGE, "--version"]).exitCode === 0;
-  const existingConfig = codexAvailable ? readMcpConfig(run) : undefined;
+  const capabilities: AgentChromeBrowserCapabilities = {
+    chrome: commandAvailable(run, "google-chrome-stable"),
+    codex: commandAvailable(run, "codex"),
+    npx: npxAvailable,
+    xdgSettings: commandAvailable(run, "xdg-settings"),
+    xdgMime: commandAvailable(run, "xdg-mime"),
+    playwrightMcp:
+      npxAvailable && run("npx", ["-y", PLAYWRIGHT_MCP_PACKAGE, "--version"]).exitCode === 0,
+  };
+  const existingConfig = capabilities.codex ? readMcpConfig(run) : undefined;
   const environmentToken = environment[PLAYWRIGHT_EXTENSION_TOKEN_ENV]?.trim() || undefined;
   const preservedToken = extensionTokenFromConfig(existingConfig);
   const extensionToken = environmentToken ?? preservedToken;
 
   if (mode === "write") {
     const missing = [
-      !chromeAvailable ? "google-chrome-stable" : undefined,
-      !codexAvailable ? "codex" : undefined,
-      !npxAvailable ? "npx" : undefined,
-      !xdgSettingsAvailable ? "xdg-settings" : undefined,
-      !xdgMimeAvailable ? "xdg-mime" : undefined,
-      !packageAvailable ? PLAYWRIGHT_MCP_PACKAGE : undefined,
+      !capabilities.chrome ? "google-chrome-stable" : undefined,
+      !capabilities.codex ? "codex" : undefined,
+      !capabilities.npx ? "npx" : undefined,
+      !capabilities.xdgSettings ? "xdg-settings" : undefined,
+      !capabilities.xdgMime ? "xdg-mime" : undefined,
+      !capabilities.playwrightMcp ? PLAYWRIGHT_MCP_PACKAGE : undefined,
     ].filter((value): value is string => value !== undefined);
     if (missing.length > 0) {
       throw new Error(`Cannot install the agent Chrome browser; missing: ${missing.join(", ")}.`);
     }
     NodeFS.mkdirSync(definition.outputDir, { recursive: true, mode: 0o700 });
+    writeProfileLauncher(desktopDefinition);
     const install = run("codex", buildAgentChromeMcpAddArgs(definition, extensionToken));
     if (install.exitCode !== 0) {
       throw new Error(`Codex failed to configure MCP server ${AGENT_CHROME_MCP_NAME}.`);
@@ -259,24 +322,20 @@ export function setupAgentChromeBrowser(
     extensionToken !== undefined,
   );
   const browserConfigured =
-    xdgSettingsAvailable && xdgMimeAvailable && defaultBrowserConfigured(run);
+    capabilities.xdgSettings && capabilities.xdgMime && defaultBrowserConfigured(run);
+  const launcherConfigured = profileLauncherConfigured(desktopDefinition);
   return {
     mode,
     mcpName: AGENT_CHROME_MCP_NAME,
     packageName: PLAYWRIGHT_MCP_PACKAGE,
     outputDir: definition.outputDir,
     extensionUrl: PLAYWRIGHT_EXTENSION_URL,
-    chromeAvailable,
-    codexAvailable,
-    npxAvailable,
-    packageAvailable,
-    xdgSettingsAvailable,
-    xdgMimeAvailable,
+    capabilities,
     configured,
+    profileLauncherConfigured: launcherConfigured,
     defaultBrowserConfigured: browserConfigured,
-    ready: configured && browserConfigured,
+    ready: configured && launcherConfigured && browserConfigured,
     automaticApproval: extensionToken !== undefined,
-    changed: mode === "write",
   };
 }
 
@@ -301,11 +360,14 @@ function status(ok: boolean): string {
 export function formatAgentChromeBrowserSetupResult(result: AgentChromeBrowserSetupResult): string {
   return [
     `Agent Chrome browser (${result.mode})`,
-    `Chrome: ${status(result.chromeAvailable)}`,
-    `Codex: ${status(result.codexAvailable)}`,
-    `npx: ${status(result.npxAvailable)}`,
-    `${result.packageName}: ${status(result.packageAvailable)}`,
+    `Chrome: ${status(result.capabilities.chrome)}`,
+    `Codex: ${status(result.capabilities.codex)}`,
+    `npx: ${status(result.capabilities.npx)}`,
+    `${result.packageName}: ${status(result.capabilities.playwrightMcp)}`,
     `${result.mcpName}: ${result.configured ? "configured" : "not configured"}`,
+    `Pinned Chrome profile launcher: ${
+      result.profileLauncherConfigured ? "configured" : "not configured"
+    }`,
     `Default HTTP/HTTPS browser: ${
       result.defaultBrowserConfigured ? "Google Chrome" : "not Google Chrome"
     }`,

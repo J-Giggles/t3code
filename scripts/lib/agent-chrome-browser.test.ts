@@ -4,10 +4,17 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { assert, describe, it } from "vitest";
 import {
+  agentChromeVerificationPassed,
+  buildAgentChromeVerificationManifest,
+  parseAgentChromeVerification,
+} from "./agent-chrome-browser-verifier.ts";
+import {
+  AGENT_CHROME_DESKTOP_ID,
   AGENT_CHROME_MCP_NAME,
+  AGENT_CHROME_PROFILE_DIRECTORY,
+  buildAgentChromeDesktopDefinition,
   buildAgentChromeMcpAddArgs,
   buildAgentChromeMcpDefinition,
-  GOOGLE_CHROME_DESKTOP_ID,
   isExpectedAgentChromeMcpConfig,
   parseAgentChromeBrowserArgs,
   PLAYWRIGHT_EXTENSION_ID,
@@ -45,6 +52,17 @@ describe("agent Chrome browser setup", () => {
     assert.equal(args[4], "PLAYWRIGHT_MCP_EXTENSION_TOKEN=secret-token");
     assert.ok(args.includes("--"));
     assert.equal(args.filter((value) => value.includes("secret-token")).length, 1);
+  });
+
+  it("pins system browser launches to the existing agent-only Chrome profile", () => {
+    const definition = buildAgentChromeDesktopDefinition("/home/jgigg");
+
+    assert.equal(AGENT_CHROME_DESKTOP_ID, "t3code-agent-chrome.desktop");
+    assert.equal(AGENT_CHROME_PROFILE_DIRECTORY, "Default");
+    assert.match(definition.launcherPath, /t3code-agent-chrome$/);
+    assert.match(definition.launcherContents, /--profile-directory=Default/);
+    assert.notMatch(definition.launcherContents, /--user-data-dir/);
+    assert.match(definition.desktopContents, /x-scheme-handler\/https/);
   });
 
   it("recognizes the expected Codex MCP configuration without logging secrets", () => {
@@ -155,16 +173,77 @@ describe("agent Chrome browser setup", () => {
       );
       assert.ok(addCall);
       assert.equal(addCall[1].filter((argument) => argument.includes(existingToken)).length, 1);
-      assert.equal(desktopDefault, GOOGLE_CHROME_DESKTOP_ID);
-      assert.equal(httpDefault, GOOGLE_CHROME_DESKTOP_ID);
-      assert.equal(httpsDefault, GOOGLE_CHROME_DESKTOP_ID);
+      const desktopDefinition = buildAgentChromeDesktopDefinition(homeDir);
+      assert.equal(desktopDefault, AGENT_CHROME_DESKTOP_ID);
+      assert.equal(httpDefault, AGENT_CHROME_DESKTOP_ID);
+      assert.equal(httpsDefault, AGENT_CHROME_DESKTOP_ID);
       assert.equal(result.configured, true);
+      assert.equal(result.profileLauncherConfigured, true);
       assert.equal(result.defaultBrowserConfigured, true);
       assert.equal(result.ready, true);
       assert.equal(result.automaticApproval, true);
       assert.equal(NodeFS.existsSync(definition.outputDir), true);
+      assert.equal(
+        NodeFS.readFileSync(desktopDefinition.launcherPath, "utf8"),
+        desktopDefinition.launcherContents,
+      );
     } finally {
       NodeFS.rmSync(homeDir, { recursive: true, force: true });
     }
+  });
+
+  it("accepts only secret-free completed headed verification checkpoints", () => {
+    const events = [
+      {
+        type: "item.completed",
+        item: {
+          type: "mcp_tool_call",
+          server: "playwright-extension",
+          tool: "browser_tabs",
+          status: "completed",
+        },
+      },
+      {
+        type: "item.completed",
+        item: {
+          type: "mcp_tool_call",
+          server: "playwright-extension",
+          tool: "browser_resize",
+          status: "completed",
+        },
+      },
+    ]
+      .map((event) => JSON.stringify(event))
+      .join("\n");
+    const assertions = parseAgentChromeVerification(
+      events,
+      "SHARED_CHROME_E2E_OK tab_count=1 viewport=1440x900",
+    );
+
+    assert.equal(agentChromeVerificationPassed(assertions), true);
+    assert.deepEqual(buildAgentChromeVerificationManifest(assertions, "2026-07-11T00:00:00Z"), {
+      issue: "GBT-89",
+      generatedAt: "2026-07-11T00:00:00Z",
+      surface: "playwright-extension",
+      command: "pnpm run agent-browser:verify",
+      checkpoints: [
+        "Codex completed browser_tabs through playwright-extension",
+        "Codex completed browser_resize at 1440x900",
+        "Codex returned the secret-free headed verification marker",
+      ],
+      absenceChecks: [
+        "No failed MCP tool call",
+        "No fallback browser surface used",
+        "No token, URL, title, account identity, or page content retained",
+      ],
+      assertions,
+      rawBrowserContentStored: false,
+    });
+    assert.equal(
+      agentChromeVerificationPassed(
+        parseAgentChromeVerification(events, "SHARED_CHROME_E2E_FAILED"),
+      ),
+      false,
+    );
   });
 });

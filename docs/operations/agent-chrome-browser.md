@@ -6,7 +6,7 @@ This design does not copy, read, or share Chrome's cookie database with Electron
 
 ## One-Time Setup
 
-1. Open Google Chrome on `giggabit-server` using the normal agent-only profile.
+1. Open Google Chrome on `giggabit-server` using the existing agent-only `Default` profile.
 2. Install the Microsoft [Playwright Extension](https://chromewebstore.google.com/detail/playwright-extension/mmlmfjhmonkocbjadbfplnigmagldckm).
 3. Open the extension status page and copy its `PLAYWRIGHT_MCP_EXTENSION_TOKEN` value. Treat the token as a local browser-control credential: do not paste it into Linear, logs, documentation, or shell history.
 4. Configure Codex from the T3 Code checkout:
@@ -18,13 +18,15 @@ pnpm run agent-browser:setup -- --write
 unset PLAYWRIGHT_MCP_EXTENSION_TOKEN
 ```
 
-The setup command installs an idempotent Codex MCP entry named `playwright-extension` and makes `google-chrome.desktop` the system default for HTTP and HTTPS links. It pins `@playwright/mcp@0.0.78`, enables extension mode, requests a 1440×900 viewport, omits inline image responses, and writes Playwright artifacts beneath:
+The setup command is the explicit opt-in that lets Main, Staging, and Nightly share the agent-only browser while their remaining runtime state stays isolated. It installs an idempotent Codex MCP entry named `playwright-extension`, creates a machine-local `t3code-agent-chrome` launcher pinned to Chrome's `Default` profile, and makes that launcher the system default for HTTP and HTTPS links. It pins `@playwright/mcp@0.0.78`, enables extension mode, requests a 1440×900 viewport, omits inline image responses, and writes Playwright artifacts beneath:
 
 ```text
 ~/.local/share/t3code-agent-browser/mcp-output
 ```
 
 The token is accepted only through the environment. The setup command rejects command-line token arguments so the credential does not land in shell history. Re-running `--write` preserves the existing configured token when the environment variable is absent.
+
+The pinned launcher never supplies a second `--user-data-dir`. Repeated launches therefore use Chrome's own singleton handoff and profile lock for the same `Default` profile instead of silently creating an isolated profile with different cookies.
 
 Start a new Codex task after setup so the app-server loads the new MCP configuration. The first extension connection may still require choosing or approving a Chrome tab; the token removes repeated connection-approval prompts after that initial browser authorization.
 
@@ -45,6 +47,14 @@ Use `--dry-run` to inspect the intended setup without changing Codex:
 pnpm run agent-browser:setup -- --dry-run
 ```
 
+Run the live headed verifier before promoting browser-policy changes:
+
+```bash
+pnpm run agent-browser:verify
+```
+
+The verifier starts an ephemeral Codex run, requires successful `browser_tabs` and `browser_resize` calls through `playwright-extension`, and records only secret-free assertions beneath `~/.local/share/t3code-agent-browser/mcp-output/verification/`. It deliberately discards raw browser events, URLs, titles, account identities, and page content.
+
 ## Agent Browser Policy
 
 For browser-required work, agents should:
@@ -55,6 +65,7 @@ For browser-required work, agents should:
 4. Stay on the selected browser surface for the task and use snapshot-provided locators.
 5. Fall back to `preview_status`, `preview_open`, `preview_resize`, and the remaining `preview_*` tools only when the extension-backed browser is absent or explicitly reports an unavailable/unsupported error.
 6. Use `app_*` only for T3 Code's own Electron shell.
+7. Only after both supported hosts explicitly fail, use an isolated Chromium profile for public or unauthenticated work; never treat that last-resort browser as sharing Chrome logins.
 
 Do not launch separate Brave, Chrome, Chromium, raw CDP, agent-browser, or standalone Playwright automation while either supported toolset is available. A second browser process may not have the same authenticated state and can make agent behavior appear inconsistent.
 

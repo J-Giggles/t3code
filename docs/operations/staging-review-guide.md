@@ -1170,6 +1170,9 @@ Important implementation areas:
   `scripts/setup-agent-chrome-browser.ts` configure the official Playwright
   Extension as the canonical authenticated Chrome surface without copying
   profile databases into Electron.
+- `scripts/verify-agent-chrome-browser.ts` performs the live headed
+  `browser_tabs` and 1440×900 `browser_resize` assertions and writes a
+  secret-free evidence manifest.
 - `packages/shared/src/prompts.ts` selects extension-backed `browser_*` tools
   first, requires a 1440×900 viewport, and preserves `preview_*` as the
   explicit unavailable-browser fallback.
@@ -1194,7 +1197,11 @@ Reviewers should check:
   while dev-preview and unsupported-extension tasks retain the collaborative
   preview fallback.
 - The setup command pins the Playwright MCP package, keeps the extension token
-  out of shell arguments and output, and recognizes configuration drift.
+  out of user-provided command-line options and output, pins the existing
+  `Default` Chrome profile through a singleton launcher, and recognizes
+  configuration drift.
+- `pnpm run agent-browser:verify` passes against the real headed Chrome
+  extension before promotion.
 
 ## Topic 20: Composer-Created Worktree Semantic Naming
 

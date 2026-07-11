@@ -29,6 +29,7 @@ This is the app automation topic from the June 25 replay stack plus the GBT-89 s
 - [x] Desktop automation RPC and IPC contracts are registered with the app shell (`apps/desktop/src/ipc/methods/appAutomation.ts`, `packages/contracts/src/appAutomation.ts`).
 - [x] MCP routing separates T3 Code app control from browser preview control (`apps/server/src/mcp/AppAutomationBroker.ts`, `apps/server/src/mcp/toolkits/preview/handlers.ts`).
 - [x] The idempotent setup command pins extension-backed Playwright MCP and preserves an existing automatic-approval token without exposing it in output (`scripts/setup-agent-chrome-browser.ts`, `scripts/lib/agent-chrome-browser.ts`).
+- [x] The machine-local launcher pins the existing `Default` Chrome profile and relies on Chrome's singleton handoff instead of introducing a second user-data directory (`scripts/lib/agent-chrome-browser.ts`, `docs/operations/agent-chrome-browser.md`).
 - [x] Browser instructions select shared Chrome first, require a 1440×900 desktop viewport, and keep collaborative preview as the explicit fallback (`packages/shared/src/prompts.ts`, `docs/operations/agent-chrome-browser.md`).
 
 ## Added Tests
@@ -36,6 +37,7 @@ This is the app automation topic from the June 25 replay stack plus the GBT-89 s
 - [x] App automation broker behavior is covered by focused MCP tests (`apps/server/src/mcp/AppAutomationBroker.test.ts`).
 - [x] Preview automation routing remains covered separately from app-shell control (`apps/server/src/mcp/toolkits/preview/tools.test.ts`, `apps/desktop/src/ipc/methods/preview.test.ts`).
 - [x] Chrome MCP command construction, secret handling, configuration matching, CLI modes, and injected Codex instructions are covered by focused tests (`scripts/lib/agent-chrome-browser.test.ts`, `apps/server/src/provider/Layers/CodexSessionRuntime.test.ts`).
+- [x] The live headed verifier requires completed `browser_tabs` and `browser_resize` calls against extension-backed Chrome and emits a secret-free evidence manifest (`scripts/verify-agent-chrome-browser.ts`, `scripts/lib/agent-chrome-browser-verifier.ts`).
 
 ## Component Entrypoints
 
@@ -54,6 +56,7 @@ Componentization status: `complete`.
 - `docs/operations/agent-chrome-browser.md`
 - `packages/shared/src/prompts.ts`
 - `scripts/setup-agent-chrome-browser.ts`
+- `scripts/verify-agent-chrome-browser.ts`
 
 ## Focused Implementation Snippets
 
@@ -84,6 +87,7 @@ Replay before project-agent-files and observability so later tests can use contr
 - `vp check`
 - `vp run typecheck`
 - `vp test run scripts/lib/agent-chrome-browser.test.ts apps/server/src/provider/Layers/CodexSessionRuntime.test.ts`
+- `pnpm run agent-browser:verify`
 
 ## Known Follow-Up Work
 
