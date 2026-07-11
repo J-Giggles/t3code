@@ -196,23 +196,24 @@ export function isExpectedAgentChromeMcpConfig(
 }
 
 export function parseAgentChromeBrowserArgs(args: ReadonlyArray<string>): AgentChromeBrowserArgs {
-  if (args.includes("--token") || args.some((argument) => argument.startsWith("--token="))) {
+  const options = args.filter((argument) => argument !== "--");
+  if (options.includes("--token") || options.some((argument) => argument.startsWith("--token="))) {
     throw new Error(
       `Do not pass browser tokens on the command line; set ${PLAYWRIGHT_EXTENSION_TOKEN_ENV} instead.`,
     );
   }
   const allowed = new Set(["--doctor", "--dry-run", "--write", "--help", "-h"]);
-  const unknown = args.find((argument) => !allowed.has(argument));
+  const unknown = options.find((argument) => !allowed.has(argument));
   if (unknown) {
     throw new Error(`Unknown agent Chrome browser option: ${unknown}`);
   }
-  const modes = ["--doctor", "--dry-run", "--write"].filter((mode) => args.includes(mode));
+  const modes = ["--doctor", "--dry-run", "--write"].filter((mode) => options.includes(mode));
   if (modes.length > 1) {
     throw new Error("Choose exactly one mode: --doctor, --dry-run, or --write.");
   }
   const selected = modes[0];
   return {
-    help: args.includes("--help") || args.includes("-h"),
+    help: options.includes("--help") || options.includes("-h"),
     mode: selected === "--write" ? "write" : selected === "--dry-run" ? "dry-run" : "doctor",
   };
 }

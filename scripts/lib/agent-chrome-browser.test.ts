@@ -124,6 +124,10 @@ describe("agent Chrome browser setup", () => {
       help: false,
       mode: "write",
     });
+    assert.deepEqual(parseAgentChromeBrowserArgs(["--", "--write"]), {
+      help: false,
+      mode: "write",
+    });
     assert.deepEqual(parseAgentChromeBrowserArgs(["--help"]), { help: true, mode: "doctor" });
     assert.throws(
       () => parseAgentChromeBrowserArgs(["--token", "secret-token"]),
