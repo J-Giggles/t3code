@@ -71,6 +71,14 @@ function mcpToolEvents(eventsJsonl: string): ReadonlyArray<McpToolEvent> {
     });
 }
 
+export function agentChromeVerificationEventSummary(eventsJsonl: string): string {
+  const summary = mcpToolEvents(eventsJsonl).map(
+    (tool) =>
+      `${tool.event}:${tool.server ?? "unknown"}/${tool.tool ?? "unknown"}:${tool.status ?? "unknown"}:${tool.failed ? "failed" : "ok"}`,
+  );
+  return summary.length > 0 ? summary.join(", ") : "no MCP tool events";
+}
+
 export class SharedChromePageObject {
   readonly sessionCheckUrl: string;
 
