@@ -237,6 +237,7 @@ describe("T3 browser developer instructions", () => {
       NodeAssert.match(instructions, /app_status/);
       NodeAssert.match(instructions, /app_snapshot/);
       NodeAssert.match(instructions, /explicitly unavailable/);
+      NodeAssert.match(instructions, /isolated Chromium profile/);
     }
   });
 });

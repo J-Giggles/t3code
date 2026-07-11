@@ -62,6 +62,7 @@ If the \`playwright-extension\` tools are absent or explicitly unavailable, use 
 
 Use \`app_*\` only when the task is about controlling T3 Code's own Electron UI. For app-shell work, first call \`app_status\` and then \`app_snapshot\`; prefer app_snapshot-provided locators over coordinates.
 
+Only after both supported browser hosts explicitly report unavailable may you use a separately launched isolated Chromium profile, and only for work that does not depend on the shared Chrome login state.
 Do not use raw CDP, OS mouse automation, a Node REPL browser runtime, standalone Playwright scripts, agent-browser, or a separately launched Brave/Chrome/Chromium process while either supported browser toolset is available. Inspect and retry actionable tool errors on the selected surface; change surfaces only when that surface reports an explicit unavailable or unsupported error.
 `;
 

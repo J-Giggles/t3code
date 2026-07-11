@@ -38,8 +38,16 @@
       "role": "source"
     },
     {
+      "path": "scripts/lib/agent-chrome-browser-verifier.ts",
+      "role": "test"
+    },
+    {
       "path": "scripts/setup-agent-chrome-browser.ts",
       "role": "source"
+    },
+    {
+      "path": "scripts/verify-agent-chrome-browser.ts",
+      "role": "test"
     }
   ],
   "componentization": {
@@ -102,9 +110,13 @@
     {
       "path": "scripts/setup-agent-chrome-browser.ts",
       "role": "consumer"
+    },
+    {
+      "path": "scripts/verify-agent-chrome-browser.ts",
+      "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck"],
+  "verification": ["vp check", "vp run typecheck", "pnpm run agent-browser:verify"],
   "replayContract": {
     "autonomy": "guarded-auto-repair",
     "risk": "high",
@@ -112,7 +124,7 @@
     "preserve": [
       "Preserve the local feature goal: Expose controlled desktop shell and preview automation through MCP tools for headed staging verification.",
       "Authenticated website work prefers the extension-backed agent-only Chrome profile and uses collaborative preview only as the explicit unavailable-browser fallback.",
-      "Browser setup never copies or reads Chrome cookie databases and keeps the Playwright extension token out of logs, documentation, and command-line options.",
+      "Browser setup never copies or reads Chrome cookie databases and keeps the Playwright extension token out of logs, documentation, user-entered CLI options, and shell history.",
       "Keep documented owned paths and integration points aligned with local-plugins/app-automation/README.md."
     ],
     "safeAutoRepair": [
@@ -125,6 +137,6 @@
       "Stop when Chrome or Playwright removes extension-backed reuse of the existing authenticated browser profile.",
       "Stop when tool behavior would control a broader surface than the documented local feature contract."
     ],
-    "verification": ["vp check", "vp run typecheck"]
+    "verification": ["vp check", "vp run typecheck", "pnpm run agent-browser:verify"]
   }
 }
