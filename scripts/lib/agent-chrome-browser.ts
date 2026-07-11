@@ -34,6 +34,7 @@ export interface AgentChromeDesktopDefinition {
 
 export interface AgentChromeBrowserCapabilities {
   readonly chrome: boolean;
+  readonly isolatedChromium: boolean;
   readonly codex: boolean;
   readonly npx: boolean;
   readonly playwrightMcp: boolean;
@@ -282,6 +283,7 @@ export function setupAgentChromeBrowser(
   const npxAvailable = commandAvailable(run, "npx");
   const capabilities: AgentChromeBrowserCapabilities = {
     chrome: commandAvailable(run, "google-chrome-stable"),
+    isolatedChromium: commandAvailable(run, "chromium"),
     codex: commandAvailable(run, "codex"),
     npx: npxAvailable,
     xdgSettings: commandAvailable(run, "xdg-settings"),
@@ -297,6 +299,7 @@ export function setupAgentChromeBrowser(
   if (mode === "write") {
     const missing = [
       !capabilities.chrome ? "google-chrome-stable" : undefined,
+      !capabilities.isolatedChromium ? "chromium" : undefined,
       !capabilities.codex ? "codex" : undefined,
       !capabilities.npx ? "npx" : undefined,
       !capabilities.xdgSettings ? "xdg-settings" : undefined,
@@ -334,7 +337,7 @@ export function setupAgentChromeBrowser(
     configured,
     profileLauncherConfigured: launcherConfigured,
     defaultBrowserConfigured: browserConfigured,
-    ready: configured && launcherConfigured && browserConfigured,
+    ready: configured && launcherConfigured && browserConfigured && capabilities.isolatedChromium,
     automaticApproval: extensionToken !== undefined,
   };
 }
@@ -361,6 +364,7 @@ export function formatAgentChromeBrowserSetupResult(result: AgentChromeBrowserSe
   return [
     `Agent Chrome browser (${result.mode})`,
     `Chrome: ${status(result.capabilities.chrome)}`,
+    `Isolated Chromium fallback: ${status(result.capabilities.isolatedChromium)}`,
     `Codex: ${status(result.capabilities.codex)}`,
     `npx: ${status(result.capabilities.npx)}`,
     `${result.packageName}: ${status(result.capabilities.playwrightMcp)}`,

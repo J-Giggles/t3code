@@ -1170,9 +1170,10 @@ Important implementation areas:
   `scripts/setup-agent-chrome-browser.ts` configure the official Playwright
   Extension as the canonical authenticated Chrome surface without copying
   profile databases into Electron.
-- `scripts/verify-agent-chrome-browser.ts` performs the live headed
-  `browser_tabs` and 1440×900 `browser_resize` assertions and writes a
-  secret-free evidence manifest.
+- `scripts/verify-agent-chrome-browser.ts` and the `SharedChromePageObject`
+  helper perform the live headed tab, 1440×900 viewport, shared-session cookie,
+  no-failure, and no-fallback assertions and write a secret-free flow evidence
+  matrix.
 - `packages/shared/src/prompts.ts` selects extension-backed `browser_*` tools
   first, requires a 1440×900 viewport, and preserves `preview_*` as the
   explicit unavailable-browser fallback.

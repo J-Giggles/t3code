@@ -44,6 +44,7 @@
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist apps/*/dist-electron packages/*/dist .vite-plus apps/*/.vite-plus packages/*/.vite-plus",
     "agent-browser:setup": "node scripts/setup-agent-chrome-browser.ts",
     "agent-browser:verify": "node scripts/verify-agent-chrome-browser.ts",
+    "agent-browser:isolated": "node scripts/open-isolated-agent-browser.ts",
     "omarchy:install-dev-launchers": "node scripts/install-omarchy-dev-launchers.ts",
     "sync:repos": "node scripts/sync-reference-repos.ts",
     "topic-stack:nightly": "node scripts/rebuild-nightly-topic-stack.ts",
