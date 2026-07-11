@@ -76,6 +76,9 @@ describe("agent Chrome browser setup", () => {
     assert.deepEqual(parseIsolatedAgentChromeArgs(["https://example.com/path"]), {
       url: "https://example.com/path",
     });
+    assert.deepEqual(parseIsolatedAgentChromeArgs(["--", "https://example.com/path"]), {
+      url: "https://example.com/path",
+    });
     assert.deepEqual(
       buildIsolatedAgentChromeCommand("/tmp/isolated-profile", "https://example.com"),
       [
