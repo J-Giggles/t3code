@@ -1,0 +1,3 @@
+# Bind submission to an immutable prepared prompt revision
+
+T3 maintains a visible, versioned Prepared Prompt bound to an explicit Coding Agent and chat, whether it was prepared through Theo Conversation, Dictation State, or editing a queued submission from another channel. Before voice accepts “Send it,” or the visual composer accepts its reciprocal explicit Send action, T3 summarizes the target and prompt intent; the Turn Scheduler submits exactly that displayed revision. Any content or target change creates a new revision and invalidates readiness until T3 summarizes again. This prevents a conversational or visual confirmation from submitting text or targeting a thread that changed after the user reviewed it.
