@@ -1,6 +1,6 @@
 # On-the-Go Mode
 
-Status: accepted design, ready for implementation planning.
+Status: accepted by Jordan on 2026-07-12, ready for implementation planning.
 
 On-the-Go Mode makes T3 Code primarily operable by voice while preserving explicit authorization, predictable failure behavior, privacy-aware speech, and full visual accessibility. Theo is the read-only conversational companion; Coding Agents remain the actors that perform project work.
 
@@ -162,6 +162,7 @@ The local topic contains schema-v2 metadata, exact owned paths, component entryp
 ## Release Gates
 
 - The [Test Contract](./on-the-go-test-contract.md) is green.
+- Every accepted feature has traceable unit-test IDs in the Feature Unit-Test Acceptance Matrix, with success, refusal/failure, and invariant coverage implemented before its slice exits.
 - Voice Parity Audit covers every interactive feature or a reviewed exception.
 - `vp check` and `vp run typecheck` pass.
 - `vp run lint:mobile` passes for native code.

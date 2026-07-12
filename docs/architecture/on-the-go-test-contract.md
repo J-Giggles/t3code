@@ -10,6 +10,43 @@ Use virtual clocks and virtual microphone/audio fixtures for endpointing, correc
 
 ## Required Suites
 
+### Feature Unit-Test Acceptance Matrix
+
+Every accepted feature must ship with deterministic unit tests against the smallest owning Module. A feature is not complete with only headed, integration, snapshot, or live-provider coverage. Each row below requires at least the named success, refusal/failure, and invariant cases; implementation may split a case into additional tests. Test names and evidence must retain these IDs so the topic README, Linear handoff, and replay audit can prove coverage without guessing.
+
+| ID           | Feature                                            | Required unit cases                                                                                                                                                                                          |
+| ------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OTG-UT-001` | Mode toggle and state machine                      | Off disables listeners/output; valid state transitions preserve the selected mode; invalid or unavailable transitions fail closed without partial state.                                                     |
+| `OTG-UT-002` | Voice Session Ownership                            | One authenticated device acquires ownership; a second device cannot speak/listen concurrently; restart and handoff retain exactly one owner and require Continue before autoplay.                            |
+| `OTG-UT-003` | Wake, activation, and Barge-In                     | Default/custom wake activates the correct state; noise and failed calibration do not activate; Barge-In off blocks interruption while universal Stop remains wake-free.                                      |
+| `OTG-UT-004` | Dictation and transcription                        | Activated speech produces a correctable draft; action-like words remain text in Dictation State; failure discards raw audio and preserves an explicit recoverable transcript state.                          |
+| `OTG-UT-005` | Command Vocabulary and resolver                    | Immutable phrases resolve locally; a valid custom alias resolves to one cataloged action; conflicts, shadowing, and non-catalog model output are rejected.                                                   |
+| `OTG-UT-006` | Consequential confirmation and reciprocal controls | Exact readback plus Confirm executes once; generic yes, expiry, ambiguity, or changed target aborts; visual/keyboard/touch equivalents invoke the same action contract.                                      |
+| `OTG-UT-007` | Response Queue                                     | Completed responses enter global completion order and badge count; two-second tones coalesce without losing count; handled/retention state survives restart and cross-device sync.                           |
+| `OTG-UT-008` | Attention Queue                                    | Approval/input/failure enters oldest-first Attention once; ordinary response promotion does not duplicate; items persist until resolution or cancellation and override ordinary reminder tone.               |
+| `OTG-UT-009` | Announcements and navigation                       | Last selects newest, Next selects oldest unhandled, Previous follows history; empty/filtered queues explain no match; announcement never speaks code, logs, or secrets.                                      |
+| `OTG-UT-010` | Theo Conversation and Context Fetch                | Theo starts from bounded response context and fetches authorized evidence when needed; denied/egress-incompatible sources fail closed; fetched instructions cannot change role, target, safety, or commands. |
+| `OTG-UT-011` | Preference learning and activation prompt          | Repeated explicit evidence proposes a versioned profile update; secrets/one-offs/uncertain inference are excluded; undo/reset restores the prior generated prompt without rewriting fixed safety rules.      |
+| `OTG-UT-012` | Prepared Prompt and Send it                        | A visible ready revision and bound target submit exactly once; edits/retargeting invalidate authorization; offline or unknown outcome creates a pending/reconciliation state and never auto-sends.           |
+| `OTG-UT-013` | New-agent handoff                                  | A new agent receives only bounded relevant context and an isolated semantic worktree; secrets and unrelated context are excluded; shared writable state requires a separate exact confirmation.              |
+| `OTG-UT-014` | Turn Scheduler delivery intents                    | Queue, Steer, and Interrupt-and-replace remain explicit across voice/composer/MCP callers; omitted legacy intent queues with deprecation; stale active-turn identity cannot affect a newer turn.             |
+| `OTG-UT-015` | Pending Turns and steering correction              | FIFO head dispatches once; correction within ten seconds atomically converts the unchanged queued item to steering; timeout, changed revision, blocked turn, or steer failure preserves the queue safely.    |
+| `OTG-UT-016` | Continuation Gate and recovery                     | Compatible work continues; approvals, failures, drift, conflict, or classifier uncertainty stop; retry only reconciles and explicit Continue releases work without replaying prior side effects.             |
+| `OTG-UT-017` | Follow selection and checkpoints                   | One chat is followed; unique switch is atomic while ambiguity changes nothing; known checkpoints retain evidence and unknown raw provider events remain silent.                                              |
+| `OTG-UT-018` | Follow summaries and Timeline                      | Material checkpoints coalesce within the rate limit; approval/blocker/final bypass correctly; protected speech yields one latest catch-up and Timeline citations persist without marking responses handled.  |
+| `OTG-UT-019` | Model selection, fallback, and budgets             | STT/Theo/TTS select independently by capability; only announced pre-approved fallbacks run; exhausted fallback or hard budget stops remote work while local Stop/safety remains available.                   |
+| `OTG-UT-020` | Audio focus, privacy, and cache                    | Private/public routes render the permitted detail; calls/media/navigation apply correct pause/duck policy; secrets never render and encrypted device audio expires by 24 hours.                              |
+| `OTG-UT-021` | Platform capability policy                         | Electron/mobile allow their declared background states; web loses voice availability when backgrounded; unsupported platform actions explain the boundary without leaving a listener active.                 |
+| `OTG-UT-022` | Data controls and diagnostics                      | Inspect/export/delete/reset affect only the requested scope; export preview is redacted; diagnostics omit raw audio/transcript content and deletion removes temporary buffers/cascades correctly.            |
+| `OTG-UT-023` | Replayable topic contract                          | Topic entrypoints register once and expose the stable interface; optional Jordan topics may be absent; semantic seam drift fails closed while proven mechanical moves retain equivalent behavior.            |
+
+Coverage rules:
+
+- Every product feature or later accepted decision must be added to this matrix before the plan can be accepted.
+- Every implementation slice lists the `OTG-UT-*` IDs it owns and cannot exit while any owned ID lacks passing evidence.
+- Each unit-test ID must cover a normal path, a denial/failure path, and the durable or safety invariant relevant to that feature.
+- Cross-feature property, fault-injection, integration, headed, native, accessibility, performance, replay, and live smoke suites remain required in addition to this matrix.
+
 ### State And Property Tests
 
 - Every command/state pair either has one cataloged disposition or fails closed.
