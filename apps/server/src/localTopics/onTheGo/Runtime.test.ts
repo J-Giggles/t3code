@@ -148,6 +148,41 @@ describe("OnTheGoRuntime", () => {
     expect(harness.runtime.snapshot(harness.scope).owner?.continueRequired).toBe(false);
   });
 
+  it("OTG-UT-002: migrates an exact Slice 1 snapshot before restart continuation", () => {
+    const harness = makeDeterministicOnTheGoHarness();
+    const phone = OnTheGoDeviceId.make("legacy-phone");
+    harness.deviceTrust.trust(phone);
+    harness.runtime.dispatch({
+      type: "owner.acquire",
+      commandId: OnTheGoCommandId.make("legacy-owner"),
+      deviceId: phone,
+    });
+    const {
+      foundation: _foundation,
+      eventLog: _eventLog,
+      ...sliceOneSnapshot
+    } = harness.runtime.snapshot(harness.scope);
+
+    harness.restore(sliceOneSnapshot);
+
+    expect(harness.runtime.events(harness.scope)).toEqual([]);
+    expect(harness.runtime.snapshot(harness.scope)).toMatchObject({
+      owner: { deviceId: phone, continueRequired: true },
+      foundation: { pendingTurns: [], effectOutbox: [] },
+      eventLog: [],
+    });
+    expect(
+      harness.runtime.dispatch({
+        type: "owner.continue",
+        commandId: OnTheGoCommandId.make("legacy-continue"),
+        deviceId: phone,
+      }),
+    ).toMatchObject({ status: "accepted" });
+    harness.restart();
+    expect(harness.runtime.snapshot(harness.scope)).toHaveProperty("foundation");
+    expect(harness.runtime.snapshot(harness.scope)).toHaveProperty("eventLog");
+  });
+
   it("OTG-UT-003: activates calibrated wakes, rejects noise, and keeps Stop wake-free", () => {
     const harness = makeDeterministicOnTheGoHarness();
     const phone = OnTheGoDeviceId.make("phone");
@@ -628,6 +663,6 @@ describe("OnTheGoRuntime", () => {
 
     harness.restart();
     expect(harness.runtime.dispatch(response)).toMatchObject({ status: "accepted" });
-    expect(harness.runtime.events(harness.scope)).toHaveLength(0);
+    expect(harness.runtime.events(harness.scope)).toHaveLength(1);
   });
 });

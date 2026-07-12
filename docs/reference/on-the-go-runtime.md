@@ -1,6 +1,6 @@
 # On-the-Go Runtime Contracts
 
-Status: Slice 1 contract and deterministic-harness reference. Production transport, persistence, provider, and client wiring are not yet implemented.
+Status: Slices 1–2 contract, deterministic-harness, and durable-foundation reference. Production transport, provider, and client wiring are not yet implemented.
 
 The schema-only public contracts are exported from `@t3tools/contracts` and owned by `packages/contracts/src/localTopics/onTheGo/index.ts`. Runtime policy and its internal adapter ports are owned by `apps/server/src/localTopics/onTheGo/`.
 
@@ -45,3 +45,21 @@ The runtime owns adapters for authorization, capabilities, clock, device trust, 
 - Deterministic adapter contract: `apps/server/src/localTopics/onTheGo/Adapters.test.ts`
 
 Headed Electron and Page Object coverage begins with the Electron vertical slice defined in `docs/architecture/on-the-go-topic-handoff.md`; this schema/runtime slice has no user-facing surface to drive.
+
+## Durable Foundation
+
+The snapshot's `foundation` read model owns durable Response and Attention queues, bounded announcements,
+versioned Theo preferences, Prepared Prompt revisions, scheduler submissions, queue recovery, minimal context
+evidence, isolated new-agent handoffs, model fallback audit, speech-cache expiry, and deletion tombstones.
+
+All mutations remain schema-defined commands through `dispatch`. Device identity is mandatory, prompt delivery is
+bound to an exact ready revision, voice delivery requires `Send it`, scheduler intent is explicit, steering is
+bound to the expected active turn, and unknown/offline outcomes never auto-send. Retrieved context remains evidence
+and cannot alter Theo's fixed read-only or handoff rules.
+
+Slice 2 deterministic evidence:
+
+- `apps/server/src/localTopics/onTheGo/FoundationRuntime.test.ts` (`OTG-UT-007`–`OTG-UT-016`, `OTG-UT-019`,
+  `OTG-UT-020`, and `OTG-UT-022`)
+- `apps/server/src/localTopics/onTheGo/FoundationRuntime.ts`
+- `packages/contracts/src/localTopics/onTheGo/foundation.ts`

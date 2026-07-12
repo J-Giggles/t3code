@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import { OnTheGoSubmissionId } from "@t3tools/contracts";
 
 import { makeDeterministicOnTheGoHarness } from "./testing.ts";
 
@@ -27,12 +28,16 @@ describe("deterministic On-the-Go adapters", () => {
     });
     expect(harness.providerCheckpoints.read()).toHaveLength(1);
 
-    harness.contextFetch.allow("thread", "thread-1", "bounded evidence");
+    harness.contextFetch.allow("thread", "thread-1", "bounded evidence", "chat-1");
     expect(harness.contextFetch.fetch("thread", "thread-1")).toEqual({
       _tag: "Success",
       excerpt: "bounded evidence",
+      ownerScope: "chat-1",
     });
-    expect(harness.contextFetch.fetch("web", "blocked")).toEqual({ _tag: "Denied" });
+    expect(harness.contextFetch.fetch("web", "blocked")).toEqual({
+      _tag: "Denied",
+      reason: "authorization",
+    });
 
     harness.connectivity.setOnline(false);
     expect(harness.connectivity.isOnline()).toBe(false);
@@ -40,13 +45,25 @@ describe("deterministic On-the-Go adapters", () => {
     harness.turnDelivery.respondWith("queued");
     expect(
       harness.turnDelivery.deliver({
+        submissionId: OnTheGoSubmissionId.make("submission-1"),
         target: "agent-1",
+        targetAgentId: "agent-1",
         intent: "queue",
         prompt: "Run the tests",
+        expectedActiveTurnId: null,
+        source: "voice",
       }),
     ).toEqual({ disposition: "queued" });
     expect(harness.turnDelivery.deliveries()).toEqual([
-      { target: "agent-1", intent: "queue", prompt: "Run the tests" },
+      {
+        submissionId: OnTheGoSubmissionId.make("submission-1"),
+        target: "agent-1",
+        targetAgentId: "agent-1",
+        intent: "queue",
+        prompt: "Run the tests",
+        expectedActiveTurnId: null,
+        source: "voice",
+      },
     ]);
   });
 });

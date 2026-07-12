@@ -6,20 +6,22 @@ import {
   PositiveInt,
   TrimmedNonEmptyString,
 } from "../../baseSchemas.ts";
-
-export const OnTheGoCommandId = TrimmedNonEmptyString.pipe(Schema.brand("OnTheGoCommandId"));
-export type OnTheGoCommandId = typeof OnTheGoCommandId.Type;
-
-export const OnTheGoDeviceId = TrimmedNonEmptyString.pipe(Schema.brand("OnTheGoDeviceId"));
-export type OnTheGoDeviceId = typeof OnTheGoDeviceId.Type;
+import {
+  OnTheGoCommandId,
+  OnTheGoConfirmationId,
+  OnTheGoDeviceId,
+  OnTheGoInputSource,
+} from "./common.ts";
+import {
+  OnTheGoFoundationCommand,
+  OnTheGoFoundationEvent,
+  OnTheGoFoundationState,
+} from "./foundation.ts";
+export { OnTheGoCommandId, OnTheGoConfirmationId, OnTheGoDeviceId, OnTheGoInputSource };
+export * from "./foundation.ts";
 
 export const OnTheGoRawAudioId = TrimmedNonEmptyString.pipe(Schema.brand("OnTheGoRawAudioId"));
 export type OnTheGoRawAudioId = typeof OnTheGoRawAudioId.Type;
-
-export const OnTheGoConfirmationId = TrimmedNonEmptyString.pipe(
-  Schema.brand("OnTheGoConfirmationId"),
-);
-export type OnTheGoConfirmationId = typeof OnTheGoConfirmationId.Type;
 
 export const OnTheGoVoiceSessionId = TrimmedNonEmptyString.pipe(
   Schema.brand("OnTheGoVoiceSessionId"),
@@ -36,9 +38,6 @@ export const OnTheGoMode = Schema.Literals([
 ]);
 export type OnTheGoMode = typeof OnTheGoMode.Type;
 
-export const OnTheGoInputSource = Schema.Literals(["voice", "visual", "keyboard", "touch"]);
-export type OnTheGoInputSource = typeof OnTheGoInputSource.Type;
-
 export const ON_THE_GO_ACTION_IDS = [
   "speech.stop",
   "interaction.cancel",
@@ -48,6 +47,11 @@ export const ON_THE_GO_ACTION_IDS = [
   "follow.start",
   "mode.sleep",
   "agent.interrupt-and-replace",
+  "queue.continue",
+  "data.delete",
+  "data.reset",
+  "effect.abandon",
+  "agent.shared-write",
 ] as const;
 export const OnTheGoActionId = Schema.Literals(ON_THE_GO_ACTION_IDS);
 export type OnTheGoActionId = typeof OnTheGoActionId.Type;
@@ -152,6 +156,7 @@ export const OnTheGoCommand = Schema.Union([
   OnTheGoActionResolveCommand,
   OnTheGoConfirmationRequestCommand,
   OnTheGoConfirmationRespondCommand,
+  OnTheGoFoundationCommand,
 ]);
 export type OnTheGoCommand = typeof OnTheGoCommand.Type;
 
@@ -182,6 +187,25 @@ export const OnTheGoCommandRejected = Schema.Struct({
     "confirmation-expired",
     "confirmation-target-changed",
     "confirmation-ambiguous",
+    "duplicate-record",
+    "not-found",
+    "policy-denied",
+    "revision-not-ready",
+    "send-phrase-required",
+    "offline-pending",
+    "unknown-outcome",
+    "stale-active-turn",
+    "correction-expired",
+    "queue-frozen",
+    "confirmation-required",
+    "egress-incompatible",
+    "fallback-not-approved",
+    "budget-exhausted",
+    "shared-write-confirmation-required",
+    "queue-cap-reached",
+    "intent-required",
+    "turn-blocked",
+    "preference-conflict",
   ]),
 });
 
@@ -225,6 +249,7 @@ export const OnTheGoActionAuthorizedEvent = Schema.Struct({
 export const OnTheGoEvent = Schema.Union([
   OnTheGoActionResolvedEvent,
   OnTheGoActionAuthorizedEvent,
+  OnTheGoFoundationEvent,
 ]);
 export type OnTheGoEvent = typeof OnTheGoEvent.Type;
 
@@ -348,5 +373,7 @@ export const OnTheGoSnapshot = Schema.Struct({
       continueRequired: Schema.Boolean,
     }),
   ),
+  foundation: OnTheGoFoundationState,
+  eventLog: Schema.Array(OnTheGoEvent),
 });
 export type OnTheGoSnapshot = typeof OnTheGoSnapshot.Type;

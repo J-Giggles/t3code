@@ -11,6 +11,13 @@ import type {
 import * as DateTime from "effect/DateTime";
 
 import type { OnTheGoRuntimePorts } from "./Ports.ts";
+import { isOnTheGoFoundationCommand, onTheGoFoundationCommandRegistry } from "./CommandRegistry.ts";
+import {
+  dispatchOnTheGoFoundation,
+  initialOnTheGoFoundationState,
+  normalizeOnTheGoFoundationState,
+  pruneOnTheGoFoundationState,
+} from "./FoundationRuntime.ts";
 
 export interface OnTheGoRuntime {
   readonly dispatch: (command: OnTheGoCommand) => OnTheGoCommandDisposition;
@@ -39,6 +46,8 @@ const initialSnapshot = (): OnTheGoSnapshot => ({
   lastResolvedAction: null,
   pendingConfirmation: null,
   owner: null,
+  foundation: initialOnTheGoFoundationState(),
+  eventLog: [],
 });
 
 const safetyActions = new Map<string, OnTheGoActionId>([
@@ -56,17 +65,47 @@ const isCatalogedAction = (action: string): action is OnTheGoActionId =>
 const normalizePhrase = (phrase: string) => phrase.trim().toLocaleLowerCase();
 
 export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime => {
-  const emittedEvents: Array<OnTheGoEvent> = [];
   const restored = ports.persistence.load();
-  let current = restored
+  let current: OnTheGoSnapshot = restored
     ? {
         ...restored,
         owner: restored.owner ? { ...restored.owner, continueRequired: true } : null,
+        foundation: normalizeOnTheGoFoundationState(restored.foundation),
+        eventLog: restored.eventLog ?? [],
       }
     : initialSnapshot();
+  current = {
+    ...current,
+    foundation: pruneOnTheGoFoundationState(
+      normalizeOnTheGoFoundationState(current.foundation),
+      ports.clock.now(),
+    ),
+  };
+  if (restored) {
+    const durableLayers = current.foundation.profileLayers.filter(
+      (layer) => layer.scope !== "session",
+    );
+    current = {
+      ...current,
+      foundation: {
+        ...current.foundation,
+        profileLayers: durableLayers,
+        profileHistory: current.foundation.profileHistory.filter(
+          (revision) => revision.scope !== "session",
+        ),
+        profileEvidenceCandidates: current.foundation.profileEvidenceCandidates.filter(
+          (candidate) => candidate.scope !== "session",
+        ),
+        profileConflictQuestion: null,
+        activeProfileVersion: Math.max(0, ...durableLayers.map((layer) => layer.version)),
+      },
+    };
+  }
+  const emittedEvents: Array<OnTheGoEvent> = [...current.eventLog];
   ports.persistence.save(current);
 
   const accept = (commandId: OnTheGoCommand["commandId"]): OnTheGoCommandDisposition => {
+    current = { ...current, eventLog: emittedEvents };
     ports.persistence.save(current);
     return { status: "accepted", commandId };
   };
@@ -90,6 +129,80 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
   };
 
   const dispatchNew = (command: OnTheGoCommand): OnTheGoCommandDisposition => {
+    if (isOnTheGoFoundationCommand(command)) {
+      if (onTheGoFoundationCommandRegistry[command.type] !== "system") {
+        const ownerRejection = requireReadyOwner(command.commandId, command.deviceId);
+        if (ownerRejection) return ownerRejection;
+      }
+      if (
+        command.type === "queue.continue" ||
+        command.type === "data.delete" ||
+        command.type === "effect.abandon" ||
+        (command.type === "data.reset" && command.scope !== "profile")
+      ) {
+        const action =
+          command.type === "queue.continue"
+            ? "queue.continue"
+            : command.type === "data.delete"
+              ? "data.delete"
+              : command.type === "effect.abandon"
+                ? "effect.abandon"
+                : "data.reset";
+        const target =
+          command.type === "queue.continue"
+            ? `${command.targetAgentId}:${command.expectedPendingCount}`
+            : command.type === "data.delete"
+              ? `${command.scope}:${command.expectedPendingCount}:${command.expectedActiveTurnId ?? "none"}`
+              : command.type === "effect.abandon"
+                ? command.effectId
+                : `${command.scope}:${command.expectedPendingCount}`;
+        const confirmationId = command.confirmationId;
+        const authorized = emittedEvents.some(
+          (event) =>
+            event.type === "action.authorized" &&
+            event.confirmationId === confirmationId &&
+            event.action === action &&
+            event.target === target,
+        );
+        if (
+          !authorized ||
+          confirmationId === null ||
+          current.foundation.consumedConfirmations.includes(confirmationId)
+        )
+          return reject(command.commandId, "confirmation-required");
+      }
+      if (command.type === "agent.handoff.create" && command.sharedWritable) {
+        const confirmationId = command.sharedWriteConfirmationId;
+        const target = `handoff:${command.agentId}:${command.promptId}:shared`;
+        const authorized =
+          confirmationId !== null &&
+          emittedEvents.some(
+            (event) =>
+              event.type === "action.authorized" &&
+              event.confirmationId === confirmationId &&
+              event.action === "agent.shared-write" &&
+              event.target === target,
+          );
+        if (
+          !authorized ||
+          (confirmationId !== null &&
+            current.foundation.consumedConfirmations.includes(confirmationId))
+        )
+          return reject(command.commandId, "shared-write-confirmation-required");
+      }
+      const result = dispatchOnTheGoFoundation(current.foundation, command, ports, (foundation) => {
+        current = { ...current, foundation };
+        ports.persistence.save(current);
+      });
+      current = { ...current, foundation: result.state };
+      const resultEvents = [...(result.event ? [result.event] : []), ...(result.events ?? [])];
+      for (const event of resultEvents) {
+        emittedEvents.push({ ...event, sequence: emittedEvents.length, at: ports.clock.now() });
+      }
+      current = { ...current, eventLog: emittedEvents };
+      ports.persistence.save(current);
+      return result.disposition;
+    }
     switch (command.type) {
       case "mode.set": {
         if (!ports.capabilities.isModeAvailable(command.mode)) {
@@ -233,7 +346,6 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
           lastResolvedAction: catalogedAction,
           output: catalogedAction === "speech.stop" ? "disabled" : current.output,
         };
-        ports.persistence.save(current);
         emittedEvents.push({
           type: "action.resolved",
           sequence: emittedEvents.length,
@@ -243,6 +355,8 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
           source: command.source,
           resolution: safetyAction ? "local-safety" : aliasAction ? "alias" : "model",
         });
+        current = { ...current, eventLog: emittedEvents };
+        ports.persistence.save(current);
         return { status: "accepted", commandId: command.commandId };
       }
       case "confirmation.request": {
@@ -300,7 +414,6 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
           return reject(command.commandId, "confirmation-target-changed");
         }
         current = { ...current, pendingConfirmation: null };
-        ports.persistence.save(current);
         emittedEvents.push({
           type: "action.authorized",
           sequence: emittedEvents.length,
@@ -311,6 +424,8 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
           target: pending.target,
           source: command.source,
         });
+        current = { ...current, eventLog: emittedEvents };
+        ports.persistence.save(current);
         return { status: "accepted", commandId: command.commandId };
       }
     }
@@ -332,6 +447,11 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
     },
     snapshot: (scope) => {
       if (!ports.authorization.canRead(scope)) throw new Error("On-the-Go scope is not authorized");
+      current = {
+        ...current,
+        foundation: pruneOnTheGoFoundationState(current.foundation, ports.clock.now()),
+      };
+      ports.persistence.save(current);
       return structuredClone(current);
     },
   };

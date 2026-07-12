@@ -6,13 +6,13 @@ import {
   type OnTheGoMode,
   type OnTheGoReadScope,
   type OnTheGoRawAudioId,
-  type OnTheGoSnapshot,
 } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 
 import type {
   OnTheGoAudioFocus,
   OnTheGoAudioOutput,
+  OnTheGoAudioPolicy,
   OnTheGoAuthorization,
   OnTheGoCapabilities,
   OnTheGoClock,
@@ -20,7 +20,11 @@ import type {
   OnTheGoConnectivity,
   OnTheGoContextFetch,
   OnTheGoDeviceTrust,
+  OnTheGoHandoffBuilder,
+  OnTheGoModelPolicy,
+  OnTheGoReconciliation,
   OnTheGoPersistence,
+  OnTheGoPersistedSnapshot,
   OnTheGoProviderCheckpoint,
   OnTheGoProviderCheckpoints,
   OnTheGoRawAudio,
@@ -74,10 +78,14 @@ export interface DeterministicOnTheGoCommandModel extends OnTheGoCommandModel {
 export interface DeterministicOnTheGoAudioOutput extends OnTheGoAudioOutput {
   readonly spoken: () => ReadonlyArray<string>;
   readonly isSpeaking: () => boolean;
+  readonly respondToReconciliationWith: (disposition: "completed" | "failed" | "unknown") => void;
 }
 
 export interface DeterministicOnTheGoAudioFocus extends OnTheGoAudioFocus {
   readonly set: (focus: ReturnType<OnTheGoAudioFocus["current"]>) => void;
+}
+export interface DeterministicOnTheGoAudioPolicy extends OnTheGoAudioPolicy {
+  readonly setPrivacy: (privacy: "private" | "public") => void;
 }
 
 export interface DeterministicOnTheGoTheoModel extends OnTheGoTheoModel {
@@ -89,7 +97,8 @@ export interface DeterministicOnTheGoProviderCheckpoints extends OnTheGoProvider
 }
 
 export interface DeterministicOnTheGoContextFetch extends OnTheGoContextFetch {
-  readonly allow: (source: string, reference: string, excerpt: string) => void;
+  readonly allow: (source: string, reference: string, excerpt: string, ownerScope: string) => void;
+  readonly denyEgress: (source: string, reference: string) => void;
 }
 
 export interface DeterministicOnTheGoConnectivity extends OnTheGoConnectivity {
@@ -101,11 +110,25 @@ export interface DeterministicOnTheGoTurnDelivery extends OnTheGoTurnDelivery {
     disposition: ReturnType<OnTheGoTurnDelivery["deliver"]>["disposition"],
   ) => void;
   readonly deliveries: () => ReadonlyArray<OnTheGoTurnDeliveryRequest>;
+  readonly observedOutboxStatuses: () => ReadonlyArray<string | null>;
+  readonly respondToDeletionWith: (disposition: "no-active" | "terminal" | "unknown") => void;
+  readonly setSteerable: (steerable: boolean) => void;
+  readonly respondToReconciliationWith: (disposition: "completed" | "failed" | "unknown") => void;
+}
+export interface DeterministicOnTheGoModelPolicy extends OnTheGoModelPolicy {
+  readonly respondWith: (
+    capability: "transcription" | "reasoning" | "speech",
+    result: ReturnType<OnTheGoModelPolicy["select"]>,
+  ) => void;
+}
+export interface DeterministicOnTheGoReconciliation extends OnTheGoReconciliation {
+  readonly allow: (promptId: string, revisionId: string) => void;
 }
 
 export interface DeterministicOnTheGoHarness {
   readonly audioFocus: DeterministicOnTheGoAudioFocus;
   readonly audioOutput: DeterministicOnTheGoAudioOutput;
+  readonly audioPolicy: DeterministicOnTheGoAudioPolicy;
   readonly authorization: DeterministicOnTheGoAuthorization;
   readonly capabilities: DeterministicOnTheGoCapabilities;
   readonly clock: DeterministicOnTheGoClock;
@@ -120,9 +143,13 @@ export interface DeterministicOnTheGoHarness {
   readonly transcription: DeterministicOnTheGoTranscription;
   readonly theoModel: DeterministicOnTheGoTheoModel;
   readonly turnDelivery: DeterministicOnTheGoTurnDelivery;
+  readonly handoffBuilder: OnTheGoHandoffBuilder;
+  readonly modelPolicy: DeterministicOnTheGoModelPolicy;
+  readonly reconciliation: DeterministicOnTheGoReconciliation;
   readonly runtime: OnTheGoRuntime;
   readonly scope: OnTheGoReadScope;
   readonly restart: () => void;
+  readonly restore: (snapshot: OnTheGoPersistedSnapshot) => void;
 }
 
 export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness => {
@@ -136,16 +163,40 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
   const spoken = new Array<string>();
   let speaking = false;
   let audioFocusState: ReturnType<OnTheGoAudioFocus["current"]> = "available";
+  let outputPrivacy: "private" | "public" = "public";
   let now = DateTime.toEpochMillis(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
   const modelResolutions = new Map<string, string>();
   const theoResponses = new Map<string, string>();
   const checkpoints = new Array<OnTheGoProviderCheckpoint>();
-  const contextResults = new Map<string, string>();
+  const contextResults = new Map<
+    string,
+    { readonly excerpt: string; readonly ownerScope: string }
+  >();
+  const egressDeniedContext = new Set<string>();
+  const modelPolicyResults = new Map<
+    "transcription" | "reasoning" | "speech",
+    ReturnType<OnTheGoModelPolicy["select"]>
+  >();
+  const reconciledRevisions = new Set<string>();
+  const handoffResults = new Map<
+    string,
+    {
+      readonly _tag: "Success";
+      readonly worktreeName: string;
+      readonly includedReferences: ReadonlyArray<string>;
+    }
+  >();
   let online = true;
   let turnDisposition: ReturnType<OnTheGoTurnDelivery["deliver"]>["disposition"] = "queued";
+  let deletionDisposition: ReturnType<OnTheGoTurnDelivery["interruptForDeletion"]>["disposition"] =
+    "no-active";
+  let steerable = true;
+  let reconciliationDisposition: "completed" | "failed" | "unknown" = "unknown";
+  let audioReconciliationDisposition: "completed" | "failed" | "unknown" = "unknown";
   const deliveries = new Array<OnTheGoTurnDeliveryRequest>();
+  const deliveryOutboxStatuses = new Array<string | null>();
   const trustedDevices = new Set<OnTheGoDeviceId>();
-  let persisted: OnTheGoSnapshot | null = null;
+  let persisted: OnTheGoPersistedSnapshot | null = null;
   const dispositions = new Map<OnTheGoCommandId, OnTheGoCommandDisposition>();
   const wakePhrases = new Map<string, "command" | "theo-conversation">([
     ["t3", "command"],
@@ -169,6 +220,14 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
     stop: () => {
       speaking = false;
     },
+    duck: () => undefined,
+    pause: () => {
+      speaking = false;
+    },
+    reconcile: () => ({ disposition: audioReconciliationDisposition }),
+    respondToReconciliationWith: (disposition) => {
+      audioReconciliationDisposition = disposition;
+    },
     spoken: () => spoken,
     isSpeaking: () => speaking,
   };
@@ -176,6 +235,17 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
     current: () => audioFocusState,
     set: (focus) => {
       audioFocusState = focus;
+    },
+  };
+  const audioPolicy: DeterministicOnTheGoAudioPolicy = {
+    render: ({ privateDetail, publicSummary }) => {
+      const candidate = outputPrivacy === "public" ? publicSummary : privateDetail;
+      return /token|password|secret|credential/i.test(candidate)
+        ? "Sensitive content omitted."
+        : candidate;
+    },
+    setPrivacy: (privacy) => {
+      outputPrivacy = privacy;
     },
   };
   const authorization: DeterministicOnTheGoAuthorization = {
@@ -224,11 +294,19 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
   };
   const contextFetch: DeterministicOnTheGoContextFetch = {
     fetch: (source, reference) => {
-      const excerpt = contextResults.get(`${source}:${reference}`);
-      return excerpt === undefined ? { _tag: "Denied" } : { _tag: "Success", excerpt };
+      if (egressDeniedContext.has(`${source}:${reference}`)) {
+        return { _tag: "Denied", reason: "egress" };
+      }
+      const result = contextResults.get(`${source}:${reference}`);
+      return result === undefined
+        ? { _tag: "Denied", reason: "authorization" }
+        : { _tag: "Success", ...result };
     },
-    allow: (source, reference, excerpt) => {
-      contextResults.set(`${source}:${reference}`, excerpt);
+    allow: (source, reference, excerpt, ownerScope) => {
+      contextResults.set(`${source}:${reference}`, { excerpt, ownerScope });
+    },
+    denyEgress: (source, reference) => {
+      egressDeniedContext.add(`${source}:${reference}`);
     },
   };
   const connectivity: DeterministicOnTheGoConnectivity = {
@@ -239,6 +317,11 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
   };
   const turnDelivery: DeterministicOnTheGoTurnDelivery = {
     deliver: (request) => {
+      deliveryOutboxStatuses.push(
+        persisted?.foundation?.effectOutbox.find(
+          (effect) => effect.effectId === request.submissionId,
+        )?.status ?? null,
+      );
       deliveries.push(request);
       return { disposition: turnDisposition };
     },
@@ -246,6 +329,53 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
       turnDisposition = disposition;
     },
     deliveries: () => deliveries,
+    observedOutboxStatuses: () => deliveryOutboxStatuses,
+    interruptForDeletion: () => ({ disposition: deletionDisposition }),
+    respondToDeletionWith: (disposition) => {
+      deletionDisposition = disposition;
+    },
+    canSteer: () => steerable,
+    setSteerable: (value) => {
+      steerable = value;
+    },
+    reconcile: () => ({ disposition: reconciliationDisposition }),
+    respondToReconciliationWith: (disposition) => {
+      reconciliationDisposition = disposition;
+    },
+  };
+  const handoffBuilder: OnTheGoHandoffBuilder = {
+    create: (request) => {
+      if (request.references.some((reference) => reference.toLowerCase().includes("secret")))
+        return { _tag: "Denied" };
+      const result = {
+        _tag: "Success" as const,
+        worktreeName: `dev-${request.agentId}`,
+        includedReferences: request.references.filter(
+          (reference) => !reference.toLowerCase().includes("unrelated"),
+        ),
+      };
+      handoffResults.set(request.effectId, result);
+      return result;
+    },
+    reconcile: (effectId) => handoffResults.get(effectId) ?? { _tag: "Unknown" },
+  };
+  const modelPolicy: DeterministicOnTheGoModelPolicy = {
+    select: (request) =>
+      modelPolicyResults.get(request.capability) ?? {
+        _tag: "Selected",
+        providerId: request.providerId,
+        modelId: request.modelId,
+        fallback: false,
+      },
+    respondWith: (capability, result) => {
+      modelPolicyResults.set(capability, result);
+    },
+  };
+  const reconciliation: DeterministicOnTheGoReconciliation = {
+    canMarkReady: (promptId, revisionId) => reconciledRevisions.has(`${promptId}:${revisionId}`),
+    allow: (promptId, revisionId) => {
+      reconciledRevisions.add(`${promptId}:${revisionId}`);
+    },
   };
   const persistence: OnTheGoPersistence = {
     load: () => persisted,
@@ -282,6 +412,7 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
   const ports = {
     audioFocus,
     audioOutput,
+    audioPolicy,
     authorization,
     capabilities,
     clock,
@@ -296,12 +427,16 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
     theoModel,
     transcription,
     turnDelivery,
+    handoffBuilder,
+    modelPolicy,
+    reconciliation,
   };
   let runtime = makeOnTheGoRuntime(ports);
 
   return {
     audioFocus,
     audioOutput,
+    audioPolicy,
     authorization,
     capabilities,
     clock,
@@ -316,11 +451,18 @@ export const makeDeterministicOnTheGoHarness = (): DeterministicOnTheGoHarness =
     transcription,
     theoModel,
     turnDelivery,
+    handoffBuilder,
+    modelPolicy,
+    reconciliation,
     scope,
     get runtime() {
       return runtime;
     },
     restart: () => {
+      runtime = makeOnTheGoRuntime(ports);
+    },
+    restore: (snapshot) => {
+      persisted = structuredClone(snapshot);
       runtime = makeOnTheGoRuntime(ports);
     },
   };

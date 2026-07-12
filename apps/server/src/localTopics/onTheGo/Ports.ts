@@ -5,7 +5,10 @@ import type {
   OnTheGoRawAudioId,
   OnTheGoReadScope,
   OnTheGoMode,
+  OnTheGoPromptId,
+  OnTheGoPromptRevisionId,
   OnTheGoSnapshot,
+  OnTheGoSubmissionId,
 } from "@t3tools/contracts";
 
 export interface OnTheGoAuthorization {
@@ -29,6 +32,11 @@ export interface OnTheGoCommandModel {
 export interface OnTheGoAudioOutput {
   readonly speak: (text: string) => void;
   readonly stop: () => void;
+  readonly duck: () => void;
+  readonly pause: () => void;
+  readonly reconcile: (effectId: string) => {
+    readonly disposition: "completed" | "failed" | "unknown";
+  };
 }
 
 export interface OnTheGoAudioFocus {
@@ -55,7 +63,9 @@ export interface OnTheGoContextFetch {
   readonly fetch: (
     source: string,
     reference: string,
-  ) => { readonly _tag: "Success"; readonly excerpt: string } | { readonly _tag: "Denied" };
+  ) =>
+    | { readonly _tag: "Success"; readonly excerpt: string; readonly ownerScope: string }
+    | { readonly _tag: "Denied"; readonly reason: "authorization" | "egress" };
 }
 
 export interface OnTheGoConnectivity {
@@ -63,23 +73,93 @@ export interface OnTheGoConnectivity {
 }
 
 export interface OnTheGoTurnDeliveryRequest {
+  readonly submissionId: OnTheGoSubmissionId;
   readonly target: string;
+  readonly targetAgentId: string;
   readonly intent: "queue" | "steer" | "interrupt-and-replace";
   readonly prompt: string;
+  readonly expectedActiveTurnId: string | null;
+  readonly source: "voice" | "composer" | "mcp" | "automation" | "legacy";
 }
 
 export interface OnTheGoTurnDelivery {
   readonly deliver: (request: OnTheGoTurnDeliveryRequest) => {
-    readonly disposition: "queued" | "steered" | "interrupted" | "rejected";
+    readonly disposition: "queued" | "steered" | "interrupted" | "rejected" | "unknown";
   };
+  readonly interruptForDeletion: (request: {
+    readonly scope: string;
+    readonly expectedActiveTurnId: string | null;
+  }) => {
+    readonly disposition: "no-active" | "terminal" | "unknown";
+  };
+  readonly canSteer: (activeTurnId: string) => boolean;
+  readonly reconcile: (effectId: string) => {
+    readonly disposition: "completed" | "failed" | "unknown";
+  };
+}
+
+export interface OnTheGoHandoffBuilder {
+  readonly create: (request: {
+    readonly effectId: string;
+    readonly agentId: string;
+    readonly prompt: string;
+    readonly targetChatId: string;
+    readonly references: ReadonlyArray<string>;
+    readonly sharedWritable: boolean;
+  }) =>
+    | {
+        readonly _tag: "Success";
+        readonly worktreeName: string;
+        readonly includedReferences: ReadonlyArray<string>;
+      }
+    | { readonly _tag: "Denied" };
+  readonly reconcile: (effectId: string) =>
+    | {
+        readonly _tag: "Success";
+        readonly worktreeName: string;
+        readonly includedReferences: ReadonlyArray<string>;
+      }
+    | { readonly _tag: "Failed" }
+    | { readonly _tag: "Unknown" };
+}
+
+export interface OnTheGoModelPolicy {
+  readonly select: (request: {
+    readonly capability: "transcription" | "reasoning" | "speech";
+    readonly providerId: string;
+    readonly modelId: string;
+  }) =>
+    | {
+        readonly _tag: "Selected";
+        readonly providerId: string;
+        readonly modelId: string;
+        readonly fallback: boolean;
+      }
+    | { readonly _tag: "Denied"; readonly reason: "budget-exhausted" | "fallback-not-approved" };
+}
+
+export interface OnTheGoAudioPolicy {
+  readonly render: (input: {
+    readonly privateDetail: string;
+    readonly publicSummary: string;
+  }) => string;
+}
+export interface OnTheGoReconciliation {
+  readonly canMarkReady: (
+    promptId: OnTheGoPromptId,
+    revisionId: OnTheGoPromptRevisionId,
+  ) => boolean;
 }
 
 export interface OnTheGoDeviceTrust {
   readonly isTrusted: (deviceId: OnTheGoDeviceId) => boolean;
 }
 
+export type OnTheGoPersistedSnapshot = Omit<OnTheGoSnapshot, "foundation" | "eventLog"> &
+  Partial<Pick<OnTheGoSnapshot, "foundation" | "eventLog">>;
+
 export interface OnTheGoPersistence {
-  readonly load: () => OnTheGoSnapshot | null;
+  readonly load: () => OnTheGoPersistedSnapshot | null;
   readonly save: (snapshot: OnTheGoSnapshot) => void;
   readonly loadDisposition: (commandId: OnTheGoCommandId) => OnTheGoCommandDisposition | null;
   readonly saveDisposition: (
@@ -119,4 +199,8 @@ export interface OnTheGoRuntimePorts {
   readonly theoModel: OnTheGoTheoModel;
   readonly transcription: OnTheGoTranscription;
   readonly turnDelivery: OnTheGoTurnDelivery;
+  readonly handoffBuilder: OnTheGoHandoffBuilder;
+  readonly modelPolicy: OnTheGoModelPolicy;
+  readonly audioPolicy: OnTheGoAudioPolicy;
+  readonly reconciliation: OnTheGoReconciliation;
 }
