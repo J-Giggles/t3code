@@ -40,6 +40,8 @@ Keep the external Interface no larger than the behavior requires:
 - `events(scope)` exposes ordered typed events.
 - `snapshot(scope)` returns authorized durable/read-model state.
 
+The concrete Slice 1 schemas, read authorization, dispositions, adapter ports, and evidence are documented in [On-the-Go Runtime Contracts](../reference/on-the-go-runtime.md).
+
 Transport registration, persistence, providers, transcription, Theo, speech, audio focus, device trust, and optional topic integrations are internal seams. Production and deterministic fake Adapters satisfy the same ports.
 
 ## Implementation Slices
