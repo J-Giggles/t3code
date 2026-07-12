@@ -9,11 +9,12 @@ Implement [On-the-Go Mode](./on-the-go-mode.md) as one independently replayable 
 1. Bind every implementation run to the existing Linear delivery task and a dedicated Agent Run.
 2. Work only in a new `dev-` worktree and feature branch; never implement in root main, original, nightly, or reserved staging.
 3. Build in reviewable slices with green focused tests.
-4. Before final topic squash, compare the accumulated branch to its upstream base and confirm no unrelated changes.
-5. Create/update `local-plugins/on-the-go/plugin.json`, README, topic manifest, staging review guide, and all affected reference/operations docs in the same topic.
-6. Squash the verified slices into one coherent `feat(on-the-go): add voice-first coding companion` topic commit.
-7. Replay that commit onto a clean upstream-only worktree and run the full [Test Contract](./on-the-go-test-contract.md).
-8. Promote the clean verified commit to reserved staging under repository policy. Main promotion remains a separate explicit request.
+4. Assign every accepted feature to its `OTG-UT-*` IDs from the Test Contract and implement those deterministic unit tests in the same slice as the feature.
+5. Before final topic squash, compare the accumulated branch to its upstream base and confirm no unrelated changes.
+6. Create/update `local-plugins/on-the-go/plugin.json`, README, topic manifest, staging review guide, and all affected reference/operations docs in the same topic.
+7. Squash the verified slices into one coherent `feat(on-the-go): add voice-first coding companion` topic commit.
+8. Replay that commit onto a clean upstream-only worktree and run the full [Test Contract](./on-the-go-test-contract.md).
+9. Promote the clean verified commit to reserved staging under repository policy. Main promotion remains a separate explicit request.
 
 ## Target Module Shape
 
@@ -49,7 +50,7 @@ Transport registration, persistence, providers, transcription, Theo, speech, aud
 - Fake clock, voice input, audio output/focus, model, provider checkpoint, persistence, and connectivity Adapters.
 - State/property harness using only the external Interface.
 
-Exit: core state, authorization, idempotency, and ownership properties pass without UI or live providers.
+Exit: `OTG-UT-001` through `OTG-UT-006` and core state, authorization, idempotency, and ownership properties pass without UI or live providers.
 
 ### 2. Durable Server Foundation
 
@@ -57,7 +58,7 @@ Exit: core state, authorization, idempotency, and ownership properties pass with
 - Response and Attention queues, alert disposition, Prompt Handoff, Prepared Prompt revisions.
 - Turn Scheduler, Pending Turns, steering, continuation gate, recovery, and lifecycle events.
 
-Exit: deterministic server suites cover normal, retry, unknown-outcome, and restart behavior.
+Exit: `OTG-UT-007` through `OTG-UT-016`, `OTG-UT-019`, `OTG-UT-020`, and `OTG-UT-022` cover normal, refusal/failure, retry, unknown-outcome, and restart behavior.
 
 ### 3. Electron Core Vertical Slice
 
@@ -65,7 +66,7 @@ Exit: deterministic server suites cover normal, retry, unknown-outcome, and rest
 - Command State, protected dictation, one response announcement, Theo conversation, Send it, and Stop.
 - Headed Electron Page Objects and end-to-end flow.
 
-Exit: the Core Voice Journey works visibly in isolated headed staging.
+Exit: the owning unit IDs remain green and the Core Voice Journey works visibly in isolated headed staging.
 
 ### 4. Follow Mode
 
@@ -73,14 +74,14 @@ Exit: the Core Voice Journey works visibly in isolated headed staging.
 - Selection/switching, batching/rate limit, catch-up, quiet cue, fallback, Follow Timeline, and speech contention.
 - Completion/Attention coexistence and subagent aggregation.
 
-Exit: deterministic and headed Follow flows pass across supported provider fixtures.
+Exit: `OTG-UT-017` and `OTG-UT-018` plus deterministic and headed Follow flows pass across supported provider fixtures.
 
 ### 5. Native Mobile
 
 - Background/lock activation, OS mic indicator, headset/PTT, audio route/focus, device trust, ownership handoff, and low-power behavior.
 - Native Voice Dock/lock-screen reciprocal controls and mobile E2E.
 
-Exit: required background, lock, call, headset, route, and ownership tests pass; `vp run lint:mobile` is green.
+Exit: the mobile cases of `OTG-UT-002`, `OTG-UT-020`, and `OTG-UT-021` plus required background, lock, call, headset, route, and ownership tests pass; `vp run lint:mobile` is green.
 
 ### 6. Foreground Web And Settings Completion
 
@@ -88,7 +89,7 @@ Exit: required background, lock, call, headset, route, and ownership tests pass;
 - Optional adapters for other Jordan topics without hard dependencies.
 - Full Reciprocal Accessibility and Voice Parity Audit.
 
-Exit: web foreground behavior, settings, accessibility, and optional-integration contracts pass.
+Exit: the web/settings cases of `OTG-UT-005`, `OTG-UT-006`, `OTG-UT-019`, `OTG-UT-021`, and `OTG-UT-022` plus accessibility and optional-integration contracts pass.
 
 ### 7. Topic Packaging And Upstream Replay
 
@@ -97,7 +98,7 @@ Exit: web foreground behavior, settings, accessibility, and optional-integration
 - Manifest ordering, replay contract, staging guide, API/reference/operations docs, and audit artifact.
 - Clean-upstream replay with no other Jordan topics.
 
-Exit: full release gates in the design and Test Contract are green and the single commit is ready for staging.
+Exit: `OTG-UT-023`, every other `OTG-UT-*` ID, and the full release gates in the design and Test Contract are green; the single commit is ready for staging.
 
 ## Replay Contract Guidance
 
@@ -124,6 +125,7 @@ Stop for human:
 
 - All accepted behavior in the design is implemented or explicitly deferred by a reviewed issue; stable release cannot defer safety, privacy, Send it, queue correctness, ownership, or reciprocal accessibility.
 - The Test Contract is green with evidence.
+- Every accepted feature maps to a passing `OTG-UT-*` ID with success, refusal/failure, and invariant evidence in the owning slice.
 - The topic is one clean coherent commit with matching metadata/docs/tests.
 - Clean upstream replay succeeds independently.
 - Reserved staging contains the verified commit and headed review evidence.
