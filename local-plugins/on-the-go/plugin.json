@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 2,
+  "id": "on-the-go",
+  "title": "Voice-first Theo companion and durable agent orchestration",
+  "topicKind": "mixed",
+  "topicCommits": ["27a8180aee833c83c4ae8284bc9826c6fda76070"],
+  "ownedPaths": [
+    { "path": "packages/contracts/src/localTopics/onTheGo", "role": "source" },
+    { "path": "packages/client-runtime/src/localTopics/onTheGo", "role": "source" },
+    { "path": "apps/server/src/localTopics/onTheGo", "role": "source" },
+    { "path": "apps/web/src/localTopics/onTheGo", "role": "source" },
+    { "path": "apps/desktop/src/localTopics/onTheGo", "role": "source" },
+    { "path": "apps/mobile/src/localTopics/onTheGo", "role": "source" },
+    { "path": "apps/desktop/e2e/localTopics/onTheGo", "role": "test" },
+    { "path": "apps/desktop/e2e/specs/on-the-go.spec.ts", "role": "test" },
+    { "path": "apps/desktop/e2e/support", "role": "test" },
+    { "path": "apps/desktop/playwright.on-the-go.config.ts", "role": "test" },
+    { "path": "apps/desktop/scripts/run-on-the-go-e2e.mjs", "role": "test" },
+    { "path": "docs/adr", "role": "docs" },
+    { "path": "docs/architecture/on-the-go-mode.md", "role": "docs" },
+    { "path": "docs/architecture/on-the-go-test-contract.md", "role": "docs" },
+    { "path": "docs/architecture/on-the-go-topic-handoff.md", "role": "docs" },
+    { "path": "docs/reference/on-the-go-runtime.md", "role": "docs" }
+  ],
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "packages/contracts/src/localTopics/onTheGo/index.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "packages/client-runtime/src/localTopics/onTheGo/index.ts",
+        "kind": "source",
+        "publicSurface": "facade"
+      },
+      {
+        "path": "apps/server/src/localTopics/onTheGo/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/onTheGo/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/desktop/src/localTopics/onTheGo/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/mobile/src/localTopics/onTheGo/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    { "path": "packages/contracts/src/index.ts", "role": "public-facade" },
+    { "path": "packages/contracts/src/rpc.ts", "role": "public-facade" },
+    { "path": "packages/contracts/src/settings.ts", "role": "public-facade" },
+    { "path": "packages/client-runtime/src/rpc/client.ts", "role": "thin-wiring" },
+    { "path": "packages/client-runtime/package.json", "role": "public-facade" },
+    { "path": "apps/server/src/server.ts", "role": "thin-wiring" },
+    { "path": "apps/server/src/ws.ts", "role": "thin-wiring" },
+    { "path": "apps/web/src/routes/__root.tsx", "role": "thin-wiring" },
+    { "path": "apps/web/src/components/settings/SettingsPanels.tsx", "role": "thin-wiring" },
+    { "path": "apps/desktop/src/electron/ElectronWindow.ts", "role": "thin-wiring" },
+    { "path": "apps/desktop/src/window/DesktopWindow.ts", "role": "thin-wiring" },
+    { "path": "apps/desktop/package.json", "role": "test-wiring" },
+    { "path": "apps/mobile/src/App.tsx", "role": "thin-wiring" },
+    { "path": "apps/mobile/src/features/shortcuts/appShortcuts.ts", "role": "thin-wiring" },
+    { "path": "apps/mobile/app.config.ts", "role": "thin-wiring" },
+    { "path": "package.json", "role": "test-wiring" },
+    { "path": "pnpm-lock.yaml", "role": "dependency-wiring" },
+    { "path": "vite.config.ts", "role": "test-wiring" }
+  ],
+  "verification": [
+    "pnpm exec vp check",
+    "pnpm exec vp run typecheck",
+    "pnpm exec vp run lint:mobile",
+    "pnpm exec vp test packages/contracts/src/localTopics/onTheGo apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/mobile/src/features/shortcuts/appShortcuts.test.ts apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo",
+    "pnpm run test:on-the-go:e2e -- --reporter=line",
+    "pnpm --filter @t3tools/mobile run config:dev -- --type public"
+  ],
+  "replayContract": {
+    "autonomy": "low-risk-auto-repair",
+    "risk": "high",
+    "intent": "Keep T3 Code operable by voice through Theo, durable queues, Follow Mode, exact Send it authorization, and native background policy.",
+    "preserve": [
+      "Preserve one-device Voice Session ownership, wake-free local Stop, and optional Barge-In.",
+      "Preserve exact Prepared Prompt revisions and mandatory Send it authorization.",
+      "Preserve durable Response, Attention, Pending Turn, Follow Timeline, and Theo Profile state.",
+      "Preserve independent STT, Theo, and TTS settings and fail closed for unsupported speech selections.",
+      "Preserve bounded, redacted, untrusted context retrieval from T3 threads, project docs/source, DNS-pinned public HTTPS pages, and registered connected-app adapters.",
+      "Preserve durable authenticated device bindings and exact Prepared Prompt recovery across reconnects.",
+      "Preserve explicit approved Theo fallbacks and per-Voice-Session remote call budgets without disabling local safety.",
+      "Preserve isolated new-agent handoff bootstrap and conservative provider checkpoint mapping.",
+      "Preserve the standalone headed Electron harness and feature-level OTG-UT-001 through OTG-UT-023 contract."
+    ],
+    "safeAutoRepair": [
+      "Move thin RPC, root-mount, settings-panel, Electron-window, quick-action, or mobile-root wiring to equivalent upstream seams while interface tests remain green.",
+      "Adapt provider event names only when the new event has the same conservative approval, blocker, test, or terminal semantics.",
+      "Update Expo or Playwright configuration syntax while retaining background microphone indicators, permissions, custom renderer protocol support, and fail-closed policy."
+    ],
+    "stopForHuman": [
+      "Stop if upstream removes the orchestration dispatch, snapshot, subscription, settings, or thread-projection seam or changes authorization semantics.",
+      "Stop if mobile or Electron platforms cannot truthfully provide the declared background microphone behavior.",
+      "Stop if a replay would weaken Send it, confirmation, ownership, privacy, redaction, or unknown-outcome safeguards.",
+      "Stop if provider event changes cannot be conservatively mapped without narrating unknown raw events."
+    ],
+    "verification": [
+      "pnpm exec vp check",
+      "pnpm exec vp run typecheck",
+      "pnpm exec vp run lint:mobile",
+      "pnpm exec vp test packages/contracts/src/localTopics/onTheGo apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/mobile/src/features/shortcuts/appShortcuts.test.ts apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo",
+      "pnpm run test:on-the-go:e2e -- --reporter=line"
+    ]
+  }
+}
