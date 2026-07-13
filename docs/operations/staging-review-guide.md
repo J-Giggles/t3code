@@ -34,9 +34,10 @@ Review in this order:
 8. Desktop shell MCP automation controls.
 9. Project agent file schemas, CRUD, and scaffold safety.
 10. Local observability hub, Grafana provisioning, and digest metrics.
-11. Headed desktop verification coverage.
-12. Patch-stack maintenance workflow and promotion governance.
-13. Autonomous topic replay, checklist, and audit safeguards.
+11. On-the-Go voice companion, Follow Mode, and native background policy.
+12. Headed desktop verification coverage.
+13. Patch-stack maintenance workflow and promotion governance.
+14. Autonomous topic replay, checklist, and audit safeguards.
 
 The order matters because later topics reuse earlier infrastructure. The app
 launcher depends on correct advertised endpoints. Runtime recovery and project
@@ -1431,6 +1432,39 @@ Reviewers should check:
   launched from a parent process with stale T3 env.
 - Existing metrics continue to emit method, operation, provider, and outcome
   labels alongside the new worktree labels.
+
+## Topic 25: On-the-Go Voice Companion
+
+### User Problem
+
+Coding-agent work can finish or need attention while the operator is away from the keyboard. T3 Code needs a conversational voice layer that can explain those results, follow one running chat, and prepare the next exact prompt without letting speech ambiguity bypass agent authorization.
+
+### What Changed
+
+The `on-the-go` topic adds a schema-defined server runtime, shared client controller, Electron/web Voice Dock, native-mobile background adapter, provider-neutral voice settings, durable queues, Theo Profile learning, Follow Timeline, ten-second steering correction, and isolated new-agent handoff bootstrap.
+
+Important implementation areas:
+
+- `packages/contracts/src/localTopics/onTheGo` owns the stable command, event, snapshot, queue, profile, scheduler, Follow, model, audio, and data schemas.
+- `apps/server/src/localTopics/onTheGo` owns deterministic policy, crash-safe persistence, conservative provider checkpoints, and production schedulers.
+- `packages/client-runtime/src/localTopics/onTheGo` owns wake/command/Theo/dictation behavior shared across platforms.
+- `apps/web/src/localTopics/onTheGo` owns the accessible Voice Dock, settings panel, captions, badges, profile, and Follow Timeline.
+- `apps/mobile/src/localTopics/onTheGo` owns native recognition/TTS, secure identity, background policy, and reciprocal touch controls.
+- `apps/desktop/e2e/specs/on-the-go.spec.ts` is the recognition-driven headed acceptance journey.
+
+### Review Focus
+
+Reviewers should check:
+
+- Only one authenticated device listens and speaks, and restart/handoff requires Continue.
+- Stop remains local and wake-free; Barge-In off blocks background noise from interrupting Theo.
+- A Prepared Prompt cannot send without the exact current revision, target, and “Send it.”
+- Queue/steer/interrupt intents remain explicit; stale turns and unknown outcomes fail closed.
+- Theo preferences exclude secrets and remain visible, versioned, undoable, and unable to rewrite fixed safety rules.
+- Follow speaks only known checkpoints, keeps unknown provider events silent, and preserves evidence in its Timeline.
+- New-agent handoffs include bounded relevant evidence and use an isolated semantic worktree.
+- Hosted web stops listening when hidden, while Electron and native mobile honor their declared background capability.
+- Mobile configuration includes OS microphone indicators, Android foreground-service permissions, and iOS background audio mode.
 
 ## Cross-Topic Risks
 

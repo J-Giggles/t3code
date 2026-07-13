@@ -116,10 +116,13 @@ Current topic order:
      Chrome profile, plus the deterministic temporary-profile Chromium fallback.
 9. `feat(project-agent-files): add schemas, CRUD, and scaffold safety`
 10. `feat(observability): add local hub, Grafana provisioning, and digest metrics`
-11. `test(desktop): add headed desktop verification coverage`
-12. `docs(operations): document Jordan patch-stack maintenance workflow`
-13. `feat(topic-stack): add replay checklist and audit safeguards`
-14. `feat(dev-launch): add nightly Omarchy launcher`
+11. `feat(on-the-go): add voice-first Theo companion`
+    - Includes durable Response, Attention, Pending Turn, Follow Timeline, and Theo Profile state; exact `Send it`
+      authorization; Electron/web Voice Dock; native background policy; and isolated new-agent handoffs.
+12. `test(desktop): add headed desktop verification coverage`
+13. `docs(operations): document Jordan patch-stack maintenance workflow`
+14. `feat(topic-stack): add replay checklist and audit safeguards`
+15. `feat(dev-launch): add nightly Omarchy launcher`
 
 - Includes `/nightly/` route ownership, the strict nightly verifier, and
   project seeding into the launcher's active dev-state lane.
