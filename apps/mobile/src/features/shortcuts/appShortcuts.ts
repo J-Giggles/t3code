@@ -3,10 +3,11 @@ import type { NavigationState } from "@react-navigation/native";
 import { EnvironmentId, ThreadId, type ScopedThreadRef } from "@t3tools/contracts";
 
 import type { RecentThreadShortcut } from "../../persistence/imperative";
+import { ON_THE_GO_QUICK_ACTION } from "../../localTopics/onTheGo/NativeQuickAction";
 
 // Launchers cap visible shortcuts around 4; one slot is the static
 // "New task" entry, the rest rotate through recently opened threads.
-export const MAX_RECENT_THREAD_SHORTCUTS = 3;
+export const MAX_RECENT_THREAD_SHORTCUTS = 2;
 
 export const NEW_TASK_SHORTCUT_ID = "new-task";
 const NEW_TASK_SHORTCUT_HREF = "/new";
@@ -113,7 +114,7 @@ export function withRecentThreadShortcut(
   ].slice(0, MAX_RECENT_THREAD_SHORTCUTS);
 }
 
-/** Full launcher shortcut list: static "New task" first, then recents. */
+/** Full launcher shortcut list: static actions first, then recents. */
 export function buildShortcutActions(recents: ReadonlyArray<RecentThreadShortcut>): Action[] {
   return [
     {
@@ -122,6 +123,7 @@ export function buildShortcutActions(recents: ReadonlyArray<RecentThreadShortcut
       icon: SHORTCUT_ICON,
       params: { href: NEW_TASK_SHORTCUT_HREF },
     },
+    ON_THE_GO_QUICK_ACTION,
     ...recents.slice(0, MAX_RECENT_THREAD_SHORTCUTS).map(
       (thread): Action => ({
         // The encoded href doubles as the launcher id: URI-encoding makes the

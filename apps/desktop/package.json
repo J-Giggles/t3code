@@ -6,6 +6,8 @@
   "main": "dist-electron/main.cjs",
   "scripts": {
     "ensure:electron": "node scripts/ensure-electron-runtime.mjs",
+    "e2e:on-the-go:smoke": "node scripts/run-on-the-go-e2e.mjs smoke",
+    "e2e:on-the-go:headed": "node scripts/run-on-the-go-e2e.mjs headed",
     "start": "node scripts/start-electron.mjs",
     "typecheck": "tsgo --noEmit",
     "test": "vp test run --passWithNoTests",
@@ -32,6 +34,7 @@
     "@types/node": "catalog:",
     "cross-env": "^10.1.0",
     "electron-builder": "26.15.6",
+    "playwright": "1.60.0",
     "tailwindcss": "^4.0.0",
     "vite-plus": "catalog:"
   },

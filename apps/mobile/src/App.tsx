@@ -17,6 +17,7 @@ import { appAtomRegistry } from "./state/atom-registry";
 import { OverlayPortalHost } from "./components/OverlayPortal";
 import { appBlurTargetRef } from "./lib/appBlurTarget";
 import { useThemeColor } from "./lib/useThemeColor";
+import { OnTheGoNativeDock } from "./localTopics/onTheGo";
 
 import "../global.css";
 
@@ -63,6 +64,7 @@ export default function App() {
                     theme={colorScheme === "dark" ? DarkTheme : DefaultTheme}
                   />
                   <ConfirmDialogHost />
+                  <OnTheGoNativeDock />
                 </BlurTargetView>
                 {/* Anchored-menu overlays render here — in-window, so the
                     keyboard stays up while a dropdown is open. */}
