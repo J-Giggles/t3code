@@ -26,6 +26,7 @@ const ElectronWindowCreateOptions = Schema.Struct({
     contextIsolation: Schema.NullOr(Schema.Boolean),
     nodeIntegration: Schema.NullOr(Schema.Boolean),
     webviewTag: Schema.NullOr(Schema.Boolean),
+    backgroundThrottling: Schema.NullOr(Schema.Boolean),
   }),
 });
 
@@ -183,6 +184,7 @@ export const make = Effect.gen(function* () {
           contextIsolation: webPreferences?.contextIsolation ?? null,
           nodeIntegration: webPreferences?.nodeIntegration ?? null,
           webviewTag: webPreferences?.webviewTag ?? null,
+          backgroundThrottling: webPreferences?.backgroundThrottling ?? null,
         },
       } satisfies typeof ElectronWindowCreateOptions.Type;
 

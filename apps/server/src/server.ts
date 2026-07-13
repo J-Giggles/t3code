@@ -18,6 +18,7 @@ import {
 } from "./http.ts";
 import { fixPath } from "./os-jank.ts";
 import { makePublicPathWebsocketRpcRouteLayer, websocketRpcRouteLayer } from "./ws.ts";
+import * as OnTheGoProduction from "./localTopics/onTheGo/ProductionLayer.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import { layerConfig as SqlitePersistenceLayerLive } from "./persistence/Layers/Sqlite.ts";
 import * as ServerLifecycleEvents from "./serverLifecycleEvents.ts";
@@ -509,7 +510,11 @@ export const makeRoutesLayer = Layer.unwrap(
 
     return Layer.mergeAll(makePublicPathRoutesLayer(config.tailscaleServePath), baseRoutesLayer);
   }),
-).pipe(Layer.provide(PreviewAutomationBroker.layer), Layer.provide(browserApiCorsLayer));
+).pipe(
+  Layer.provide(OnTheGoProduction.layer),
+  Layer.provide(PreviewAutomationBroker.layer),
+  Layer.provide(browserApiCorsLayer),
+);
 
 export const makeServerLayer = Layer.unwrap(
   Effect.gen(function* () {

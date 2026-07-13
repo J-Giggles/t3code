@@ -53,6 +53,7 @@ import {
   createKeybindingsUpdateToastController,
   type KeybindingsUpdateToastController,
 } from "../components/KeybindingsUpdateToast.logic";
+import { OnTheGoRoot } from "../localTopics/onTheGo/OnTheGoRoot";
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
@@ -137,6 +138,7 @@ function RootRouteView() {
         {primaryEnvironmentAuthenticated ? <EventRouter /> : null}
         {primaryEnvironmentAuthenticated ? <ProviderUpdateLaunchNotification /> : null}
         {appShell}
+        {primaryEnvironmentAuthenticated ? <OnTheGoRoot /> : null}
       </AnchoredToastProvider>
     </ToastProvider>
   );
