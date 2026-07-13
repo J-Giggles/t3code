@@ -43,6 +43,11 @@ const PersistedEnvelopeSchema = Schema.Struct({
 });
 const decodePersistedEnvelope = Schema.decodeUnknownSync(PersistedEnvelopeSchema);
 const decodePersistedSnapshot = Schema.decodeUnknownSync(PersistedSnapshotSchema);
+const DISPOSITION_LIMIT = 4_096;
+
+export const boundOnTheGoDispositions = (
+  dispositions: Readonly<Record<string, OnTheGoCommandDispositionType>>,
+) => Object.fromEntries(Object.entries(dispositions).slice(-DISPOSITION_LIMIT));
 
 const readEnvelope = (statePath: string): PersistedEnvelope => {
   try {
@@ -81,7 +86,10 @@ export const makeFileOnTheGoPersistence = (statePath: string): OnTheGoPersistenc
     saveDisposition: (commandId: OnTheGoCommandId, disposition) => {
       envelope = {
         ...envelope,
-        dispositions: { ...envelope.dispositions, [commandId]: disposition },
+        dispositions: boundOnTheGoDispositions({
+          ...envelope.dispositions,
+          [commandId]: disposition,
+        }),
       };
       persist();
     },

@@ -102,10 +102,7 @@ test("On-the-Go core voice journey preserves reciprocal controls @smoke", async 
   );
   await dock.expectQueuedWork(1);
   await dock.say("No steer the running agent");
-  await expect(
-    page.getByText(
-      /The queued prompt was steered into the running agent|There is no unchanged queued prompt in its steering correction window/u,
-    ),
-  ).toBeVisible();
+  await dock.expectCaption("The queued prompt was steered into the running agent");
+  await dock.expectQueuedWork(0);
   expect(pageErrors).toEqual([]);
 });

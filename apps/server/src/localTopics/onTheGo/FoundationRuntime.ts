@@ -25,6 +25,7 @@ export const initialOnTheGoFoundationState = (): OnTheGoFoundationState => ({
   announcementHistory: [],
   selectedResponseId: null,
   followedChatId: null,
+  followPaused: false,
   followTimeline: [],
   followPendingCheckpoints: [],
   followLastSummaryAt: null,
@@ -136,11 +137,50 @@ export const pruneOnTheGoFoundationState = (
   const existingTombstones = new Set(
     normalized.lifecycleTombstones.map((entry) => entry.submissionId),
   );
+  const referencedPromptIds = new Set(
+    normalized.pendingTurns
+      .filter((turn) => activePendingStates.has(turn.state))
+      .map((turn) => turn.promptId),
+  );
+  const recentPrompts = new Set(normalized.prompts.slice(-500).map((prompt) => prompt.promptId));
+  const referencedProfileVersions = new Set(normalized.profileLayers.map((layer) => layer.version));
+  const boundedProfileHistory = normalized.profileHistory.filter(
+    (revision, index) =>
+      referencedProfileVersions.has(revision.version) ||
+      index >= normalized.profileHistory.length - 200,
+  );
+  const boundedEffects = normalized.effectOutbox.filter(
+    (effect, index) =>
+      effect.status === "pending" ||
+      effect.status === "unknown" ||
+      index >= normalized.effectOutbox.length - 1_000,
+  );
   return {
     ...normalized,
-    responses: normalized.responses.filter((response) => epoch(response.expiresAt) > epoch(now)),
-    speechCache: normalized.speechCache.filter((entry) => epoch(entry.expiresAt) > epoch(now)),
-    pendingTurns: normalized.pendingTurns.filter((turn) => !expiredIds.has(turn.submissionId)),
+    responses: normalized.responses
+      .filter((response) => epoch(response.expiresAt) > epoch(now))
+      .slice(-2_000),
+    attention: normalized.attention.slice(-2_000),
+    announcementHistory: normalized.announcementHistory.slice(-500),
+    followTimeline: normalized.followTimeline.slice(-500),
+    followPendingCheckpoints: normalized.followPendingCheckpoints.slice(-100),
+    prompts: normalized.prompts.filter(
+      (prompt) => referencedPromptIds.has(prompt.promptId) || recentPrompts.has(prompt.promptId),
+    ),
+    pendingTurns: normalized.pendingTurns
+      .filter((turn) => !expiredIds.has(turn.submissionId))
+      .slice(-1_000),
+    profileHistory: boundedProfileHistory,
+    profileEvidenceCandidates: normalized.profileEvidenceCandidates.slice(-100),
+    consumedConfirmations: normalized.consumedConfirmations.slice(-1_000),
+    contextEvidence: normalized.contextEvidence.slice(-500),
+    agentHandoffs: normalized.agentHandoffs.slice(-500),
+    modelUsage: normalized.modelUsage.slice(-500),
+    speechCache: normalized.speechCache
+      .filter((entry) => epoch(entry.expiresAt) > epoch(now))
+      .slice(-500),
+    diagnostics: normalized.diagnostics.slice(-500),
+    deprecationWarnings: normalized.deprecationWarnings.slice(-100),
     lifecycleTombstones: [
       ...normalized.lifecycleTombstones.filter((entry) => epoch(entry.expiresAt) > epoch(now)),
       ...expiredTerminalTurns
@@ -151,16 +191,18 @@ export const pruneOnTheGoFoundationState = (
           disposition: turn.state,
           expiresAt: plus(turn.terminalAt!, { days: 90 }),
         })),
-    ],
-    deletionTombstones: normalized.deletionTombstones.filter(
-      (entry) => epoch(entry.expiresAt) > epoch(now),
-    ),
-    effectOutbox: normalized.effectOutbox.filter(
-      (effect) =>
-        effect.status === "pending" ||
-        effect.status === "unknown" ||
-        epoch(effect.createdAt) + 90 * 24 * 60 * 60 * 1_000 > epoch(now),
-    ),
+    ].slice(-2_000),
+    deletionTombstones: normalized.deletionTombstones
+      .filter((entry) => epoch(entry.expiresAt) > epoch(now))
+      .slice(-2_000),
+    effectOutbox: boundedEffects
+      .filter(
+        (effect) =>
+          effect.status === "pending" ||
+          effect.status === "unknown" ||
+          epoch(effect.createdAt) + 90 * 24 * 60 * 60 * 1_000 > epoch(now),
+      )
+      .slice(-1_000),
   };
 };
 
@@ -206,6 +248,40 @@ const accepted = (
 const plus = (value: string, duration: Parameters<typeof DateTime.add>[1]) =>
   DateTime.formatIso(DateTime.add(DateTime.makeUnsafe(value), duration));
 const contentHash = (value: string) => NodeCrypto.createHash("sha256").update(value).digest("hex");
+export const summarizeFollowCheckpoints = (
+  checkpoints: OnTheGoFoundationState["followPendingCheckpoints"],
+) => {
+  const changed = checkpoints
+    .map((checkpoint) => checkpoint.summary)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 280);
+  const latest = checkpoints.at(-1);
+  const risk = checkpoints.some((checkpoint) => checkpoint.kind === "failed")
+    ? "A provider or coding step failed."
+    : checkpoints.some((checkpoint) => checkpoint.kind === "approval")
+      ? "Approval is required before work can continue."
+      : checkpoints.some((checkpoint) => checkpoint.kind === "blocked")
+        ? "The agent is blocked on user input."
+        : checkpoints.some((checkpoint) => checkpoint.kind === "tests")
+          ? "Test evidence was reported; inspect it before accepting the change."
+          : "No material blocker was reported.";
+  const next =
+    latest?.kind === "completed"
+      ? "Review the completed response or ask Theo for detail."
+      : latest?.kind === "approval"
+        ? "Approve or refuse the exact requested action."
+        : latest?.kind === "blocked"
+          ? "Answer the agent's blocking question."
+          : latest?.kind === "failed"
+            ? "Inspect the failure before continuing the queue."
+            : "Keep following for the next material checkpoint.";
+  return `What changed: ${changed || "No material checkpoint details were available."} Risk: ${risk} Next: ${next}`.slice(
+    0,
+    500,
+  );
+};
 const replacePrompt = (
   state: OnTheGoFoundationState,
   prompt: OnTheGoPreparedPrompt,
@@ -343,6 +419,7 @@ export const dispatchOnTheGoFoundation = (
         {
           ...state,
           followedChatId: command.chatId,
+          followPaused: false,
           followPendingCheckpoints: [],
           followQuietCueAt: null,
         },
@@ -357,6 +434,7 @@ export const dispatchOnTheGoFoundation = (
         {
           ...state,
           followedChatId: command.chatId,
+          followPaused: false,
           followPendingCheckpoints: [],
           followQuietCueAt: null,
         },
@@ -369,6 +447,34 @@ export const dispatchOnTheGoFoundation = (
         {
           ...state,
           followedChatId: null,
+          followPaused: false,
+          followPendingCheckpoints: [],
+          followQuietCueAt: null,
+        },
+        { type: "follow.changed", commandId: command.commandId },
+      );
+    case "follow.resume":
+      if (!state.followedChatId || !state.followPaused) return fail("not-found");
+      return accepted(
+        command,
+        { ...state, followPaused: false, followQuietCueAt: null },
+        { type: "follow.changed", commandId: command.commandId },
+      );
+    case "follow.chat-archived":
+      if (state.followedChatId !== command.chatId) return accepted(command, state);
+      return accepted(
+        command,
+        { ...state, followPaused: true, followQuietCueAt: null },
+        { type: "follow.changed", commandId: command.commandId },
+      );
+    case "follow.chat-deleted":
+      if (state.followedChatId !== command.chatId) return accepted(command, state);
+      return accepted(
+        command,
+        {
+          ...state,
+          followedChatId: null,
+          followPaused: false,
           followPendingCheckpoints: [],
           followQuietCueAt: null,
         },
@@ -376,7 +482,8 @@ export const dispatchOnTheGoFoundation = (
       );
     case "follow.checkpoint.record": {
       const checkpoint = command.checkpoint;
-      if (state.followedChatId !== checkpoint.chatId) return accepted(command, state);
+      if (state.followedChatId !== checkpoint.chatId || state.followPaused)
+        return accepted(command, state);
       if (
         state.followTimeline.some((entry) => entry.toCheckpointId === checkpoint.checkpointId) ||
         state.followPendingCheckpoints.some(
@@ -399,10 +506,7 @@ export const dispatchOnTheGoFoundation = (
       }
       const first = pending[0]!;
       const last = pending.at(-1)!;
-      const summary = pending
-        .map((item) => item.summary)
-        .join(" ")
-        .slice(0, 500);
+      const summary = summarizeFollowCheckpoints(pending);
       return accepted(
         command,
         {
@@ -428,7 +532,7 @@ export const dispatchOnTheGoFoundation = (
       );
     }
     case "follow.catch-up": {
-      if (!state.followedChatId) return fail("not-found");
+      if (!state.followedChatId || state.followPaused) return fail("not-found");
       const pending = state.followPendingCheckpoints;
       if (pending.length === 0) return accepted(command, state);
       const first = pending[0]!;
@@ -447,10 +551,7 @@ export const dispatchOnTheGoFoundation = (
               chatId: state.followedChatId,
               fromCheckpointId: first.checkpointId,
               toCheckpointId: last.checkpointId,
-              summary: pending
-                .map((item) => item.summary)
-                .join(" ")
-                .slice(0, 500),
+              summary: summarizeFollowCheckpoints(pending),
               evidence: pending.map((item) => item.evidence),
               createdAt: now,
               priority: "immediate",
@@ -463,6 +564,7 @@ export const dispatchOnTheGoFoundation = (
     case "follow.quiet-tick": {
       if (
         !state.followedChatId ||
+        state.followPaused ||
         state.followLastSummaryAt === null ||
         epoch(now) - epoch(state.followLastSummaryAt) < 120_000 ||
         (state.followQuietCueAt !== null &&
@@ -769,6 +871,34 @@ export const dispatchOnTheGoFoundation = (
               : item,
           ),
         }),
+      );
+    }
+    case "prompt.cancel": {
+      const prompt = state.prompts.find((item) => item.promptId === command.promptId);
+      if (!prompt || prompt.activeRevisionId !== command.revisionId) return fail("not-found");
+      const revision = prompt.revisions.find((item) => item.revisionId === command.revisionId);
+      if (!revision) return fail("not-found");
+      const updated = replacePrompt(state, {
+        ...prompt,
+        revisions: prompt.revisions.map((item) =>
+          item.revisionId === command.revisionId
+            ? { ...item, readiness: "canceled" as const, authorizedAt: null }
+            : item,
+        ),
+      });
+      return accepted(
+        command,
+        {
+          ...updated,
+          pendingTurns: updated.pendingTurns.map((turn) =>
+            turn.promptId === command.promptId &&
+            turn.revisionId === command.revisionId &&
+            activePendingStates.has(turn.state)
+              ? { ...turn, state: "canceled" as const, terminalAt: now }
+              : turn,
+          ),
+        },
+        { type: "prompt.changed", commandId: command.commandId },
       );
     }
     case "prompt.send": {
@@ -1403,19 +1533,10 @@ export const dispatchOnTheGoFoundation = (
       });
     }
     case "scheduler.tick":
-      return dispatchOnTheGoFoundation(
-        state,
-        {
-          type: "turn.complete",
-          commandId: command.commandId,
-          deviceId: command.deviceId,
-          targetAgentId: command.targetAgentId,
-          outcome: "compatible",
-          activeTurnId: "scheduler",
-        },
-        ports,
-        persistIntent,
-      );
+      // A clock tick is not evidence that an agent turn completed. Keep the
+      // legacy command as an inert compatibility seam for persisted clients;
+      // production queue advancement is driven only by `turn.complete`.
+      return accepted(command, state);
     case "delivery.resolve": {
       const submission = state.pendingTurns.find(
         (turn) => turn.submissionId === command.submissionId,

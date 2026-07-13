@@ -15,6 +15,7 @@ export interface TheoWorkspaceContextSource {
   readonly reference: string;
   readonly sourceVersion: string;
   readonly excerpt: string;
+  readonly allowedProviderIds: ReadonlyArray<string>;
 }
 
 const WORKSPACE_CUE = /\b(workspace|project|file|readme|documentation|docs|package|config)\b/i;
@@ -86,6 +87,7 @@ export const buildTheoWorkspaceContext = (input: {
         reference: file.path,
         sourceVersion: file.version,
         excerpt: redactTheoEvidence(`Workspace file: ${file.path}\n${file.text}`).slice(0, 6_000),
+        allowedProviderIds: ["*"],
       }),
     );
 };

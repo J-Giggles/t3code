@@ -1,4 +1,5 @@
 import {
+  OnTheGoConfirmationId,
   OnTheGoDeviceId,
   OnTheGoPromptId,
   OnTheGoPromptRevisionId,
@@ -12,7 +13,7 @@ import {
 } from "@t3tools/contracts";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { makeOnTheGoController } from "./Controller.ts";
+import { extractTheoPreference, makeOnTheGoController, resolveFollowTarget } from "./Controller.ts";
 
 const baseSnapshot = (): OnTheGoSnapshot =>
   ({
@@ -41,6 +42,107 @@ const baseSnapshot = (): OnTheGoSnapshot =>
   }) as unknown as OnTheGoSnapshot;
 
 describe("On-the-Go client controller", () => {
+  it("OTG-UT-017: resolves a unique named chat and refuses ambiguous follow targets", () => {
+    const targets = [
+      { chatId: "chat-auth-api", title: "Auth API" },
+      { chatId: "chat-auth-ui", title: "Auth UI" },
+      { chatId: "chat-billing", title: "Billing" },
+    ];
+    expect(resolveFollowTarget(targets, "Billing")).toEqual({
+      _tag: "Found",
+      chatId: "chat-billing",
+      title: "Billing",
+    });
+    expect(resolveFollowTarget(targets, "auth")).toEqual({
+      _tag: "Ambiguous",
+      titles: ["Auth API", "Auth UI"],
+    });
+    expect(resolveFollowTarget(targets, "missing")).toEqual({ _tag: "NotFound" });
+  });
+
+  it("OTG-UT-011: learns explicit preferences from ordinary Theo conversation but rejects secrets and one-offs", () => {
+    expect(extractTheoPreference("I prefer concise explanations with examples")).toEqual({
+      preference:
+        "conversation-concise-explanations-with-examples: concise explanations with examples",
+      sensitive: false,
+      oneOff: false,
+    });
+    expect(extractTheoPreference("I want Theo to remember my password hunter2")).toMatchObject({
+      sensitive: true,
+    });
+    expect(extractTheoPreference("Please always be verbose just once")).toMatchObject({
+      oneOff: true,
+    });
+    expect(extractTheoPreference("What changed in the agent response?")).toBeNull();
+  });
+
+  it("OTG-UT-010/012: Cancel revokes the durable confirmation and prepared prompt", async () => {
+    const deviceId = OnTheGoDeviceId.make("desktop-device");
+    const promptId = OnTheGoPromptId.make("cancel-prompt");
+    const revisionId = OnTheGoPromptRevisionId.make("cancel-revision");
+    const commands = new Array<OnTheGoCommand>();
+    const snapshot = {
+      ...baseSnapshot(),
+      mode: "command" as const,
+      owner: { deviceId, continueRequired: false },
+      pendingConfirmation: {
+        confirmationId: OnTheGoConfirmationId.make("confirmation:cancel"),
+        action: "data.delete" as const,
+        target: "account",
+        expiresAt: "2026-01-01T00:01:00.000Z",
+      },
+      foundation: {
+        ...baseSnapshot().foundation,
+        prompts: [
+          {
+            promptId,
+            activeRevisionId: revisionId,
+            revisions: [
+              {
+                revisionId,
+                content: "Apply the reviewed change",
+                targetChatId: "chat-1",
+                targetAgentId: "agent-1",
+                createdAt: "2026-01-01T00:00:00.000Z",
+                readiness: "ready" as const,
+                authorizedAt: null,
+                supersedes: null,
+                requiresWorkspace: false,
+              },
+            ],
+          },
+        ],
+      },
+    } as OnTheGoSnapshot;
+    const controller = makeOnTheGoController({
+      scope: { voiceSessionId: OnTheGoVoiceSessionId.make("session"), deviceId },
+      target: () => null,
+      createId: () => `id-${commands.length}`,
+      transport: {
+        snapshot: async () => snapshot,
+        dispatch: async (command) => {
+          commands.push(command);
+          return { status: "accepted", commandId: command.commandId };
+        },
+        subscribe: () => () => undefined,
+      },
+      speech: {
+        availability: () => ({ available: true, background: true }),
+        start: () => () => undefined,
+        speak: async () => undefined,
+        stop: () => undefined,
+      },
+      theo: { ask: async () => ({ reply: "unused", preparedPrompt: null }) },
+    });
+
+    await controller.start();
+    await controller.acceptTranscript("Cancel");
+
+    expect(commands.map((command) => command.type)).toContain("confirmation.respond");
+    expect(commands.map((command) => command.type)).toContain("prompt.cancel");
+    expect(controller.state().preparedPrompt).toBeNull();
+  });
+
   it("OTG-UT-012 restores the latest durable ready or offline-pending Prepared Prompt", async () => {
     const deviceId = OnTheGoDeviceId.make("desktop-device");
     const promptId = OnTheGoPromptId.make("durable-prompt");
@@ -143,6 +245,7 @@ describe("On-the-Go client controller", () => {
     let snapshot = baseSnapshot();
     const commands = new Array<OnTheGoCommand>();
     const spoken = new Array<string>();
+    const tones = new Array<string>();
     let transcriptListener: ((text: string) => void) | null = null;
     const deviceId = OnTheGoDeviceId.make("desktop-device");
     const controller = makeOnTheGoController({
@@ -229,6 +332,7 @@ describe("On-the-Go client controller", () => {
           spoken.push(text);
         },
         stop: () => undefined,
+        tone: (kind) => tones.push(kind),
       },
       theo: {
         ask: async () => ({
@@ -262,7 +366,10 @@ describe("On-the-Go client controller", () => {
     await controller.toggle(true);
     expect(transcriptListener).not.toBeNull();
     await controller.acceptTranscript("T3 what was the last announcement");
-    expect(spoken).toContain("Focused tests passed");
+    expect(spoken).toContain(
+      "Announcement from agent-1 in chat chat-1. Outcome completed. Focused tests passed. No decision is required.",
+    );
+    expect(tones).toEqual(["response"]);
 
     await controller.acceptTranscript("Hey Theo");
     await controller.acceptTranscript("What should we ask the coding agent next?");

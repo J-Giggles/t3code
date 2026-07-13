@@ -17,6 +17,8 @@ describe("On-the-Go settings", () => {
     expect(markup).toContain('aria-label="Theo model provider"');
     expect(markup).toContain('aria-label="Speech model selection"');
     expect(markup).toContain('aria-label="Approved Theo fallback models"');
+    expect(markup).toContain('aria-label="Approved transcription fallback models"');
+    expect(markup).toContain('aria-label="Approved speech fallback models"');
     expect(markup).toContain('aria-label="Theo budget warning calls"');
     expect(markup).toContain('aria-label="Theo budget hard limit calls"');
     expect(ON_THE_GO_TRANSCRIPTION_OPTIONS).toContainEqual(

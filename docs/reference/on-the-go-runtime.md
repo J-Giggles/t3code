@@ -36,7 +36,7 @@ Off rejects voice actions and confirmations. Active voice work requires one trus
 
 ## Internal Adapter Ports
 
-The runtime owns adapters for authorization, capabilities, clock, device trust, persistence/idempotency, wake detection, raw audio, transcription, audio output/focus, command and Theo models, provider checkpoints, context fetch, connectivity, and Turn Scheduler delivery. Production implementations remain internal; deterministic fakes use the same ports. The production service is server-scoped, persists crash-safe intent and idempotency state under the authenticated server base directory, and releases subscriptions, schedulers, and event-ingestion ownership on shutdown.
+The runtime owns adapters for authorization, capabilities, clock, device trust, persistence/idempotency, wake detection, raw audio, transcription, audio output/focus, command and Theo models, provider checkpoints, context fetch, connectivity, and Turn Scheduler delivery. Production implementations remain internal; deterministic fakes use the same ports. The production service is server-scoped, persists crash-safe intent and idempotency state under the authenticated server base directory, and releases subscriptions and schedulers on shutdown. Provider event ingestion is owned by a server-lifetime layer rather than an individual WebSocket, so queue, Attention, and Follow state continue to advance while no renderer is connected.
 
 ## Slice 1 Evidence
 
@@ -76,10 +76,18 @@ Theo normally receives bounded focused-thread context. Retrieval cues can add at
 
 Follow adapters map only known plan, edit, test, approval, blocker, and terminal activity. Unknown provider events remain silent. Timeline summaries retain checkpoint evidence without marking Response Queue items handled.
 
+Context sources declare which reasoning providers may receive their excerpts. Candidate-specific egress filtering runs again for every primary or approved fallback model, so a fallback cannot inherit evidence that its provider is not authorized to receive. Shared sensitive-text filtering removes bearer tokens, credentials, private keys, connection strings, and common secret assignments before context, announcements, speech, or handoff packaging.
+
+Native mobile reads real OS microphone permission, audio route, call/audio-focus state, interruption notifications, and low-power state through the `t3-native-controls` Expo module. The pure native policy remains deterministic and fail-closed when the OS reports an unknown route or unavailable permission. Browser and native speech adapters select only the configured model or an ordered, explicitly approved compatible fallback.
+
+Follow summaries use the stable `What changed`, `Risk`, and `Next` structure. Server restart and archive pause Follow until an explicit resume; deletion clears the followed target. Prompt cancellation durably cancels an active Pending Turn and rejects any outstanding consequential confirmation before local state is cleared.
+
+Runtime event logs, response/attention queues, timelines, model audit, context evidence, disposition history, handoffs, and profiles have deterministic caps with soak coverage. `apps/server/src/localTopics/onTheGo/IntegrationContract.test.ts` additionally fails closed when the topic's semantic RPC, lifecycle, event-ingestion, or renderer seams drift.
+
 ## Verification
 
 - `OTG-UT-001`–`OTG-UT-023`: the feature-level matrix in `docs/architecture/on-the-go-test-contract.md`
-- Focused unit and component suite: 106 tests across 20 contracts, server, controller, web, desktop, and native mobile files
+- Focused unit and component suite: 107 tests across 25 contracts, shared privacy, server, controller, web, desktop, and native mobile files
 - Recognition-driven headed Electron POM: `apps/desktop/e2e/specs/on-the-go.spec.ts`
 - Mobile plugin/config resolution: `pnpm --filter @t3tools/mobile run config:dev -- --type public`
 - Repository gates: `pnpm exec vp check`, `pnpm exec vp run typecheck`, and `pnpm exec vp run lint:mobile`

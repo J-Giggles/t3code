@@ -1,10 +1,12 @@
 import type { OnTheGoSnapshot, OrchestrationThread } from "@t3tools/contracts";
+import { redactSensitiveText } from "@t3tools/shared/sensitiveText";
 
 export interface TheoThreadContextSource {
   readonly source: "t3-thread";
   readonly reference: string;
   readonly sourceVersion: string;
   readonly excerpt: string;
+  readonly allowedProviderIds: ReadonlyArray<string>;
 }
 
 export interface TheoThreadContextBundle {
@@ -45,8 +47,7 @@ const STOP_WORDS = new Set([
 ]);
 
 export const redactTheoEvidence = (value: string) =>
-  value
-    .replace(/\b(api[_ -]?key|access[_ -]?token|password|secret)\s*[:=]\s*\S+/gi, "$1: [redacted]")
+  redactSensitiveText(value)
     .replace(/```[\s\S]*?```/g, "[code omitted]")
     .slice(0, 4_000);
 
@@ -112,6 +113,7 @@ export const buildTheoThreadContext = (input: {
     reference: thread.id,
     sourceVersion: thread.updatedAt,
     excerpt: excerptFor(thread),
+    allowedProviderIds: ["*"],
   }));
   return {
     expanded,

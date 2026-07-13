@@ -675,4 +675,37 @@ describe("OnTheGoRuntime", () => {
     expect(harness.runtime.dispatch(response)).toMatchObject({ status: "accepted" });
     expect(harness.runtime.events(harness.scope)).toHaveLength(1);
   });
+
+  it("OTG-UT-022: bounds the durable audit stream while preserving monotonic sequence", () => {
+    const harness = makeDeterministicOnTheGoHarness();
+    const phone = OnTheGoDeviceId.make("soak-phone");
+    harness.deviceTrust.trust(phone);
+    harness.runtime.dispatch({
+      type: "owner.acquire",
+      commandId: OnTheGoCommandId.make("soak-owner"),
+      deviceId: phone,
+    });
+    harness.runtime.dispatch({
+      type: "mode.set",
+      commandId: OnTheGoCommandId.make("soak-mode"),
+      mode: "command",
+      source: "visual",
+    });
+    for (let index = 0; index < 2_200; index += 1) {
+      harness.runtime.dispatch({
+        type: "action.resolve",
+        commandId: OnTheGoCommandId.make(`soak-action-${index}`),
+        deviceId: phone,
+        phrase: "cancel",
+        source: "voice",
+      });
+    }
+
+    const events = harness.runtime.events(harness.scope);
+    expect(events).toHaveLength(2_048);
+    expect(events[0]!.sequence).toBe(152);
+    expect(events.at(-1)!.sequence).toBe(2_199);
+    harness.restart();
+    expect(harness.runtime.events(harness.scope)).toHaveLength(2_048);
+  });
 });

@@ -1,26 +1,35 @@
+import { resolveSupportedVoiceModel } from "@t3tools/client-runtime/onTheGo";
 import type { OnTheGoSettings } from "@t3tools/contracts";
 import type { ExpoSpeechRecognitionOptions } from "expo-speech-recognition";
 
 export const resolveNativeSpeechSelection = (settings: OnTheGoSettings) => {
-  const transcriptionSupported =
-    settings.transcriptionModel.providerId === "system" &&
-    ["default-transcription", "on-device-transcription"].includes(
-      settings.transcriptionModel.modelId,
-    );
-  const speechSupported =
-    settings.speechModel.providerId === "system" &&
-    settings.speechModel.modelId === "default-speech";
-  const reason = !transcriptionSupported
-    ? `Transcription model ${settings.transcriptionModel.providerId}/${settings.transcriptionModel.modelId} is not available on this device`
-    : !speechSupported
-      ? `Speech model ${settings.speechModel.providerId}/${settings.speechModel.modelId} is not available on this device`
-      : null;
-  return { transcriptionSupported, speechSupported, reason };
+  const transcription = resolveSupportedVoiceModel({
+    settings,
+    capability: "transcription",
+    supported: [
+      { providerId: "system", modelId: "default-transcription" },
+      { providerId: "system", modelId: "on-device-transcription" },
+    ],
+  });
+  const speech = resolveSupportedVoiceModel({
+    settings,
+    capability: "speech",
+    supported: [{ providerId: "system", modelId: "default-speech" }],
+  });
+  return {
+    transcriptionSupported: transcription.selected !== null,
+    speechSupported: speech.selected !== null,
+    transcriptionSelection: transcription.selected,
+    speechSelection: speech.selected,
+    fallback: transcription.fallback || speech.fallback,
+    reason: transcription.reason ?? speech.reason,
+  };
 };
 
 export const makeNativeRecognitionOptions = (
   settings: OnTheGoSettings,
   language: string,
+  transcriptionModelId = settings.transcriptionModel.modelId,
 ): ExpoSpeechRecognitionOptions => ({
   lang: language,
   continuous: true,
@@ -34,14 +43,14 @@ export const makeNativeRecognitionOptions = (
     "Send it",
     "Back to commands",
   ],
-  requiresOnDeviceRecognition: settings.transcriptionModel.modelId === "on-device-transcription",
+  requiresOnDeviceRecognition: transcriptionModelId === "on-device-transcription",
   androidIntent: "android.speech.action.VOICE_SEARCH_HANDS_FREE",
   androidIntentOptions: {
     // The server still enforces ownership and exact authorization. Marking the
     // request secure additionally asks the platform recognizer to constrain
     // what it will do when a headset activates recognition on a locked device.
     EXTRA_SECURE: true,
-    EXTRA_PREFER_OFFLINE: settings.transcriptionModel.modelId === "on-device-transcription",
+    EXTRA_PREFER_OFFLINE: transcriptionModelId === "on-device-transcription",
   },
   iosCategory: {
     category: "playAndRecord",
@@ -70,7 +79,8 @@ export interface NativeVoicePolicyState {
   readonly ownerDeviceId: string | null;
   readonly localDeviceId: string;
   readonly continueRequired: boolean;
-  readonly route: "speaker" | "receiver" | "wired-headset" | "bluetooth";
+  readonly route: "speaker" | "receiver" | "wired-headset" | "bluetooth" | "unknown";
+  readonly lowPowerMode: boolean;
   readonly outputPrivacy: "private" | "public";
 }
 
@@ -126,6 +136,16 @@ export const decideNativeVoicePolicy = (
       reason: "call-active",
     };
   }
+  if (state.lowPowerMode && state.appState !== "foreground") {
+    return {
+      listen: false,
+      speak: false,
+      tones: false,
+      requireContinue: false,
+      speechDetail: "none",
+      reason: "low-power-background",
+    };
+  }
   const interrupted = state.audioFocus === "navigation";
   return {
     listen: true,
@@ -133,7 +153,10 @@ export const decideNativeVoicePolicy = (
     tones: !interrupted,
     requireContinue: false,
     speechDetail:
-      state.outputPrivacy === "public" || state.route === "speaker" || state.route === "receiver"
+      state.outputPrivacy === "public" ||
+      state.route === "speaker" ||
+      state.route === "receiver" ||
+      state.route === "unknown"
         ? "summary"
         : "detail",
     reason: interrupted ? "navigation-active" : null,

@@ -1,20 +1,17 @@
+import { redactSensitiveText } from "@t3tools/shared/sensitiveText";
+
 export type OnTheGoOutputPrivacy = "private" | "public";
 
-const SECRET_LINE =
-  /(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|passwd|secret|authorization)\s*[:=]/iu;
-const INLINE_SECRET =
-  /\b(api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|passwd|secret|authorization)\s*[:=]\s*([^\s,;]+)/giu;
-const BEARER_TOKEN = /\bbearer\s+[a-z0-9._~+/=-]+/giu;
 const STACK_LINE = /^\s*at\s+\S+.*:\d+(?::\d+)?\)?\s*$/u;
+const REDACTED_CREDENTIAL_LINE =
+  /(?:api[_ -]?key|token|password|passwd|secret|authorization|credential).*(?:\[redacted\]|\[provider token redacted\]|\[private key redacted\])/iu;
 
 const stripUnsafeSpeech = (text: string) => {
   const withoutFences = text.replace(/```[\s\S]*?```/gu, " ");
-  return withoutFences
+  return redactSensitiveText(withoutFences)
     .split(/\r?\n/u)
-    .filter((line) => !SECRET_LINE.test(line) && !STACK_LINE.test(line))
+    .filter((line) => !STACK_LINE.test(line) && !REDACTED_CREDENTIAL_LINE.test(line))
     .join(" ")
-    .replace(INLINE_SECRET, "$1: [redacted]")
-    .replace(BEARER_TOKEN, "Bearer [redacted]")
     .replace(/\s+/gu, " ")
     .trim();
 };

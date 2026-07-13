@@ -124,6 +124,10 @@ function ConnectedOnTheGoRoot({ environmentId }: { readonly environmentId: Envir
           activeTurnId: thread?.latestTurn?.state === "running" ? thread.latestTurn.turnId : null,
         };
       },
+      followTargets: () =>
+        threadShellsRef.current
+          .filter((thread) => thread.environmentId === environmentId)
+          .map((thread) => ({ chatId: thread.id, title: thread.title })),
       createId: randomUUID,
       transport,
       speech,

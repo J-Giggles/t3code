@@ -63,6 +63,7 @@ const isCatalogedAction = (action: string): action is OnTheGoActionId =>
   catalogedActions.has(action as OnTheGoActionId);
 
 const normalizePhrase = (phrase: string) => phrase.trim().toLocaleLowerCase();
+const EVENT_LOG_LIMIT = 2_048;
 
 export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime => {
   const restored = ports.persistence.load();
@@ -70,7 +71,10 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
     ? {
         ...restored,
         owner: restored.owner ? { ...restored.owner, continueRequired: true } : null,
-        foundation: normalizeOnTheGoFoundationState(restored.foundation),
+        foundation: {
+          ...normalizeOnTheGoFoundationState(restored.foundation),
+          followPaused: restored.foundation?.followedChatId != null,
+        },
         eventLog: restored.eventLog ?? [],
       }
     : initialSnapshot();
@@ -101,7 +105,15 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
       },
     };
   }
-  const emittedEvents: Array<OnTheGoEvent> = [...current.eventLog];
+  const emittedEvents: Array<OnTheGoEvent> = [...current.eventLog].slice(-EVENT_LOG_LIMIT);
+  let nextEventSequence =
+    emittedEvents.reduce((maximum, event) => Math.max(maximum, event.sequence), -1) + 1;
+  const trimEvents = () => {
+    if (emittedEvents.length > EVENT_LOG_LIMIT) {
+      emittedEvents.splice(0, emittedEvents.length - EVENT_LOG_LIMIT);
+    }
+  };
+  current = { ...current, eventLog: emittedEvents };
   ports.persistence.save(current);
 
   const accept = (commandId: OnTheGoCommand["commandId"]): OnTheGoCommandDisposition => {
@@ -197,7 +209,8 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
       current = { ...current, foundation: result.state };
       const resultEvents = [...(result.event ? [result.event] : []), ...(result.events ?? [])];
       for (const event of resultEvents) {
-        emittedEvents.push({ ...event, sequence: emittedEvents.length, at: ports.clock.now() });
+        emittedEvents.push({ ...event, sequence: nextEventSequence++, at: ports.clock.now() });
+        trimEvents();
       }
       current = { ...current, eventLog: emittedEvents };
       ports.persistence.save(current);
@@ -350,13 +363,14 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
         };
         emittedEvents.push({
           type: "action.resolved",
-          sequence: emittedEvents.length,
+          sequence: nextEventSequence++,
           at: ports.clock.now(),
           commandId: command.commandId,
           action: catalogedAction,
           source: command.source,
           resolution: safetyAction ? "local-safety" : aliasAction ? "alias" : "model",
         });
+        trimEvents();
         current = { ...current, eventLog: emittedEvents };
         ports.persistence.save(current);
         return { status: "accepted", commandId: command.commandId };
@@ -418,7 +432,7 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
         current = { ...current, pendingConfirmation: null };
         emittedEvents.push({
           type: "action.authorized",
-          sequence: emittedEvents.length,
+          sequence: nextEventSequence++,
           at: ports.clock.now(),
           commandId: command.commandId,
           confirmationId: command.confirmationId,
@@ -426,6 +440,7 @@ export const makeOnTheGoRuntime = (ports: OnTheGoRuntimePorts): OnTheGoRuntime =
           target: pending.target,
           source: command.source,
         });
+        trimEvents();
         current = { ...current, eventLog: emittedEvents };
         ports.persistence.save(current);
         return { status: "accepted", commandId: command.commandId };

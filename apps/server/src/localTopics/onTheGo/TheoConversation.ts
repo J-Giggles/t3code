@@ -28,6 +28,34 @@ export interface TheoGenerationOutcome {
   readonly unavailable: boolean;
 }
 
+export interface TheoProviderScopedContextSource {
+  readonly source: string;
+  readonly reference: string;
+  readonly sourceVersion: string;
+  readonly excerpt: string;
+  readonly allowedProviderIds: ReadonlyArray<string>;
+}
+
+export const authorizeTheoContextSources = <Source extends TheoProviderScopedContextSource>(
+  sources: ReadonlyArray<Source>,
+  providerId: string,
+) =>
+  sources.filter(
+    (source) =>
+      source.allowedProviderIds.includes("*") || source.allowedProviderIds.includes(providerId),
+  );
+
+export const renderTheoAuthorizedEvidence = (
+  sources: ReadonlyArray<TheoProviderScopedContextSource>,
+) =>
+  sources
+    .map(
+      (source) =>
+        `<context source=${JSON.stringify(source.source)} reference=${JSON.stringify(source.reference)} version=${JSON.stringify(source.sourceVersion)}>\n${source.excerpt}\n</context>`,
+    )
+    .join("\n\n")
+    .slice(0, 20_000);
+
 const selectionKey = (selection: ModelSelection) => `${selection.instanceId}:${selection.model}`;
 
 export const resolveTheoModelCandidates = (

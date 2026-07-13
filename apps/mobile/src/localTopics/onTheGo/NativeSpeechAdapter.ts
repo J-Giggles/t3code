@@ -42,7 +42,8 @@ export const makeNativeSpeechAdapter = (
     ownerDeviceId: null,
     localDeviceId: "unbound",
     continueRequired: false,
-    route: "speaker",
+    route: "unknown",
+    lowPowerMode: false,
     outputPrivacy: settings.outputPrivacy,
   };
   let policyDecision = decideNativeVoicePolicy(policyState);
@@ -71,7 +72,9 @@ export const makeNativeSpeechAdapter = (
       shouldRouteThroughEarpiece: false,
     });
     recognitionRunning = true;
-    ExpoSpeechRecognitionModule.start(makeNativeRecognitionOptions(settings, language));
+    ExpoSpeechRecognitionModule.start(
+      makeNativeRecognitionOptions(settings, language, selection.transcriptionSelection?.modelId),
+    );
   };
   const scheduleRestart = () => {
     if (!active || disposed || restartTimer) return;
@@ -183,8 +186,6 @@ export const makeNativeSpeechAdapter = (
     },
     armPushToTalk: () => {
       pushToTalkArmed = true;
-      policyState = { ...policyState, audioFocus: "available" };
-      policyDecision = decideNativeVoicePolicy(policyState);
       if (!active) return;
       stopRecognition();
       scheduleRestart();

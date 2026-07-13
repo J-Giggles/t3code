@@ -76,6 +76,10 @@ export interface OnTheGoControllerOptions {
     readonly targetAgentId: string;
     readonly activeTurnId?: string | null;
   } | null;
+  readonly followTargets?: () => ReadonlyArray<{
+    readonly chatId: string;
+    readonly title: string;
+  }>;
   readonly createId: () => string;
   readonly now?: () => number;
   readonly transport: OnTheGoClientTransport;
@@ -87,6 +91,51 @@ export interface OnTheGoControllerOptions {
     readonly outputPrivacy?: "private" | "public";
   };
 }
+
+export const resolveFollowTarget = (
+  targets: ReadonlyArray<{ readonly chatId: string; readonly title: string }>,
+  query: string,
+):
+  | { readonly _tag: "Found"; readonly chatId: string; readonly title: string }
+  | { readonly _tag: "Ambiguous"; readonly titles: ReadonlyArray<string> }
+  | { readonly _tag: "NotFound" } => {
+  const needle = normalize(query);
+  const exact = targets.filter(
+    (target) => normalize(target.chatId) === needle || normalize(target.title) === needle,
+  );
+  const candidates =
+    exact.length > 0
+      ? exact
+      : targets.filter(
+          (target) =>
+            normalize(target.chatId).includes(needle) || normalize(target.title).includes(needle),
+        );
+  if (candidates.length === 0) return { _tag: "NotFound" };
+  if (candidates.length > 1) {
+    return { _tag: "Ambiguous", titles: candidates.slice(0, 3).map((target) => target.title) };
+  }
+  return { _tag: "Found", chatId: candidates[0]!.chatId, title: candidates[0]!.title };
+};
+
+export const extractTheoPreference = (utterance: string) => {
+  const detail = utterance
+    .match(/^(?:i prefer|i want theo to|please always|theo,? always)\s+(.+)$/i)?.[1]
+    ?.trim();
+  if (!detail) return null;
+  const sensitive = /password|secret|token|api[_ -]?key|credential/i.test(detail);
+  const oneOff = /\b(?:just once|this time|for this chat|today only)\b/i.test(detail);
+  const key =
+    detail
+      .toLocaleLowerCase()
+      .match(/[a-z0-9]+/g)
+      ?.slice(0, 4)
+      .join("-") || "general";
+  return {
+    preference: `conversation-${key}: ${detail}`,
+    sensitive,
+    oneOff,
+  };
+};
 
 export interface OnTheGoController {
   readonly start: () => Promise<void>;
@@ -349,7 +398,9 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
       await speak("There is no matching announcement to read");
       return;
     }
-    await speak(response.safeSummary);
+    await speak(
+      `Announcement from ${response.agentId} in chat ${response.chatId}. Outcome ${response.outcome}. ${response.safeSummary}. ${response.outcome === "decision-required" ? "A decision is required." : "No decision is required."}`,
+    );
     await dispatch({
       type: "response.handle",
       commandId: commandId("response-handle"),
@@ -357,6 +408,7 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
       responseId: response.responseId,
     });
     await refresh();
+    options.speech.tone?.("response");
   };
 
   const acceptTranscript = async (
@@ -419,6 +471,27 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
     if (phrase === "cancel") {
       activeTheo?.abort();
       activeTheo = null;
+      const confirmation = snapshot?.pendingConfirmation;
+      if (confirmation) {
+        await dispatch({
+          type: "confirmation.respond",
+          commandId: commandId("confirmation-cancel"),
+          deviceId: options.scope.deviceId,
+          confirmationId: confirmation.confirmationId,
+          phrase: "cancel",
+          target: confirmation.target,
+          source: source === "voice" ? "voice" : "keyboard",
+        });
+      }
+      if (prepared) {
+        await dispatch({
+          type: "prompt.cancel",
+          commandId: commandId("prompt-cancel"),
+          deviceId: options.scope.deviceId,
+          promptId: prepared.promptId,
+          revisionId: prepared.revisionId,
+        });
+      }
       prepared = null;
       stagedHandoff = null;
       lastQueuedCorrection = null;
@@ -607,6 +680,42 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
       }
       return;
     }
+    const namedFollow = transcript.match(/^(follow|switch follow to)\s+(?:chat\s+)?(.+)$/i);
+    if (namedFollow) {
+      const resolved = resolveFollowTarget(options.followTargets?.() ?? [], namedFollow[2] ?? "");
+      if (resolved._tag === "NotFound") {
+        await speak("No chat uniquely matched that follow request");
+        return;
+      }
+      if (resolved._tag === "Ambiguous") {
+        await speak(`That chat name is ambiguous: ${resolved.titles.join(", ")}`);
+        return;
+      }
+      const switching = normalize(namedFollow[1] ?? "") === "switch follow to";
+      const result = await dispatch(
+        switching
+          ? {
+              type: "follow.switch",
+              commandId: commandId("follow-switch-named"),
+              deviceId: options.scope.deviceId,
+              chatId: resolved.chatId,
+              expectedChatId: snapshot?.foundation.followedChatId ?? null,
+            }
+          : {
+              type: "follow.start",
+              commandId: commandId("follow-start-named"),
+              deviceId: options.scope.deviceId,
+              chatId: resolved.chatId,
+            },
+      );
+      if (result.status === "accepted") await refresh();
+      await speak(
+        result.status === "accepted"
+          ? `Following ${resolved.title}`
+          : `Follow selection did not change: ${dispositionReason(result)}`,
+      );
+      return;
+    }
     if (phrase === "stop following") {
       const result = await dispatch({
         type: "follow.stop",
@@ -618,6 +727,20 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
         result.status === "accepted"
           ? "Stopped following"
           : `Follow Mode did not stop: ${dispositionReason(result)}`,
+      );
+      return;
+    }
+    if (phrase === "resume following") {
+      const result = await dispatch({
+        type: "follow.resume",
+        commandId: commandId("follow-resume"),
+        deviceId: options.scope.deviceId,
+      });
+      if (result.status === "accepted") await refresh();
+      await speak(
+        result.status === "accepted"
+          ? `Resumed following ${snapshot?.foundation.followedChatId ?? "the selected chat"}`
+          : "There is no paused followed chat to resume",
       );
       return;
     }
@@ -842,6 +965,25 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
       return;
     }
     if (localMode === "theo-conversation") {
+      const learnedPreference = extractTheoPreference(transcript);
+      let preferenceSaved = false;
+      if (learnedPreference && !learnedPreference.sensitive && !learnedPreference.oneOff) {
+        const observation = await dispatch({
+          type: "profile.observe",
+          commandId: commandId("profile-conversation-observe"),
+          deviceId: options.scope.deviceId,
+          evidence: transcript,
+          preference: learnedPreference.preference,
+          scope: "user",
+          scopeId: "account",
+          projectId: null,
+          confidence: "explicit",
+          sensitive: false,
+          oneOff: false,
+        });
+        preferenceSaved = observation.status === "accepted";
+        if (preferenceSaved) await refresh();
+      }
       theoMessages = [...theoMessages, { role: "user", text: renderOnTheGoDisplay(transcript) }];
       caption = "Theo is thinking";
       notify();
@@ -856,7 +998,7 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
       if (request.signal.aborted || activeTheo !== request) return;
       activeTheo = null;
       const safeReply = renderOnTheGoSpeech(
-        result.reply,
+        preferenceSaved ? `I saved that preference. ${result.reply}` : result.reply,
         options.voiceSettings?.().outputPrivacy ?? "private",
       );
       theoMessages = [...theoMessages, { role: "theo", text: safeReply }];

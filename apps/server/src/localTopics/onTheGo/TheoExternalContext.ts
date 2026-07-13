@@ -10,10 +10,12 @@ export interface TheoExternalContextSource {
   readonly reference: string;
   readonly sourceVersion: string;
   readonly excerpt: string;
+  readonly allowedProviderIds: ReadonlyArray<string>;
 }
 
 export interface TheoConnectedContextProvider {
   readonly id: string;
+  readonly allowedProviderIds: ReadonlyArray<string>;
   readonly matches: (utterance: string) => boolean;
   readonly read: (utterance: string) => Promise<ReadonlyArray<TheoExternalContextSource>>;
 }
@@ -191,6 +193,7 @@ export const readTheoWebContext = async (
         reference: target.url,
         sourceVersion: response.version ?? "unversioned",
         excerpt,
+        allowedProviderIds: ["*"],
       });
     } catch {
       // Unreachable, redirected, slow, or incompatible web evidence is unavailable.
@@ -215,6 +218,7 @@ export const readTheoConnectedContext = async (
             ...source,
             source: `connected-app:${provider.id}` as const,
             excerpt: redactTheoEvidence(source.excerpt),
+            allowedProviderIds: provider.allowedProviderIds,
           })),
         )
         .catch(() => []),

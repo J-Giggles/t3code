@@ -586,10 +586,12 @@ describe("On-the-Go durable server foundation", () => {
     });
     harness.clock.advanceBy(10_001);
     harness.runtime.dispatch({
-      type: "scheduler.tick",
+      type: "turn.complete",
       commandId: OnTheGoCommandId.make("handoff-before-workspace"),
       deviceId: phone,
       targetAgentId: "agent-new",
+      outcome: "compatible",
+      activeTurnId: "real-completion-before-workspace",
     });
     expect(harness.turnDelivery.deliveries()).toHaveLength(0);
     expect(
@@ -650,10 +652,12 @@ describe("On-the-Go durable server foundation", () => {
       includedReferences: ["thread-1"],
     });
     harness.runtime.dispatch({
-      type: "scheduler.tick",
+      type: "turn.complete",
       commandId: OnTheGoCommandId.make("handoff-after-workspace"),
       deviceId: phone,
       targetAgentId: "agent-new",
+      outcome: "compatible",
+      activeTurnId: "real-completion-after-workspace",
     });
     expect(harness.turnDelivery.deliveries()).toHaveLength(1);
     const sharedTarget = `handoff:agent-new:${promptId}:shared`;
@@ -729,6 +733,39 @@ describe("On-the-Go durable server foundation", () => {
     expect(harness.turnDelivery.deliveries().at(-1)?.prompt).toBe("Run focused tests");
   });
 
+  it("OTG-UT-010/012: durably cancels a prepared revision and every unsent pending turn", () => {
+    const { harness, phone, promptId, revisionId } = prepareReadyPrompt("cancel");
+    harness.runtime.dispatch({
+      type: "prompt.send",
+      commandId: OnTheGoCommandId.make("cancel-send"),
+      deviceId: phone,
+      promptId,
+      revisionId,
+      phrase: "send it",
+      source: "voice",
+      intent: "queue",
+      expectedActiveTurnId: "active-turn",
+    });
+
+    expect(
+      harness.runtime.dispatch({
+        type: "prompt.cancel",
+        commandId: OnTheGoCommandId.make("cancel-prompt"),
+        deviceId: phone,
+        promptId,
+        revisionId,
+      }),
+    ).toMatchObject({ status: "accepted" });
+    harness.restart();
+
+    const foundation = harness.runtime.snapshot(harness.scope).foundation;
+    expect(foundation.prompts[0]?.revisions[0]).toMatchObject({
+      readiness: "canceled",
+      authorizedAt: null,
+    });
+    expect(foundation.pendingTurns[0]).toMatchObject({ state: "canceled" });
+  });
+
   it("OTG-UT-017: selects one followed chat and switches atomically while ignoring unrelated evidence", () => {
     const { harness, phone } = activate();
     expect(
@@ -774,6 +811,48 @@ describe("On-the-Go durable server foundation", () => {
       }),
     ).toMatchObject({ status: "accepted" });
     expect(harness.runtime.snapshot(harness.scope).foundation.followedChatId).toBe("chat-2");
+    harness.restart();
+    expect(harness.runtime.snapshot(harness.scope).foundation).toMatchObject({
+      followedChatId: "chat-2",
+      followPaused: true,
+    });
+    harness.runtime.dispatch({
+      type: "owner.continue",
+      commandId: OnTheGoCommandId.make("follow-owner-continue-after-restart"),
+      deviceId: phone,
+    });
+    harness.runtime.dispatch({
+      type: "follow.resume",
+      commandId: OnTheGoCommandId.make("follow-resume-after-restart"),
+      deviceId: phone,
+    });
+    harness.runtime.dispatch({
+      type: "follow.chat-archived",
+      commandId: OnTheGoCommandId.make("follow-archive"),
+      deviceId: phone,
+      chatId: "chat-2",
+    });
+    expect(harness.runtime.snapshot(harness.scope).foundation).toMatchObject({
+      followedChatId: "chat-2",
+      followPaused: true,
+    });
+    expect(
+      harness.runtime.dispatch({
+        type: "follow.resume",
+        commandId: OnTheGoCommandId.make("follow-resume"),
+        deviceId: phone,
+      }),
+    ).toMatchObject({ status: "accepted" });
+    harness.runtime.dispatch({
+      type: "follow.chat-deleted",
+      commandId: OnTheGoCommandId.make("follow-delete"),
+      deviceId: phone,
+      chatId: "chat-2",
+    });
+    expect(harness.runtime.snapshot(harness.scope).foundation).toMatchObject({
+      followedChatId: null,
+      followPaused: false,
+    });
   });
 
   it("OTG-UT-018: rate-limits ordinary summaries, lets blockers bypass, and emits one quiet cue", () => {
@@ -811,7 +890,9 @@ describe("On-the-Go durable server foundation", () => {
       toCheckpointId: "checkpoint-3",
       priority: "immediate",
     });
-    expect(timeline[1]?.summary).toContain("Approval is required");
+    expect(timeline[1]?.summary).toContain("What changed: Added its tests Approval is required");
+    expect(timeline[1]?.summary).toContain("Risk: Approval is required");
+    expect(timeline[1]?.summary).toContain("Next: Approve or refuse");
     harness.clock.advanceBy(120_001);
     harness.runtime.dispatch({
       type: "follow.quiet-tick",
@@ -1066,10 +1147,12 @@ describe("On-the-Go durable server foundation", () => {
     });
     harness.clock.advanceBy(10_001);
     harness.runtime.dispatch({
-      type: "scheduler.tick",
-      commandId: OnTheGoCommandId.make("compatible-tick"),
+      type: "turn.complete",
+      commandId: OnTheGoCommandId.make("compatible-completion-window-retry"),
       deviceId: phone,
       targetAgentId: "agent-1",
+      outcome: "compatible",
+      activeTurnId: "turn-1",
     });
     expect(harness.turnDelivery.deliveries()).toHaveLength(1);
     expect(harness.runtime.snapshot(harness.scope).foundation.pendingTurns[0]?.state).toBe(
@@ -1105,6 +1188,27 @@ describe("On-the-Go durable server foundation", () => {
     expect(harness.runtime.snapshot(harness.scope).foundation.lastRecoverySummary).toContain(
       "1 completed",
     );
+  });
+
+  it("OTG-UT-022: compacts high-volume model usage without losing active policy state", () => {
+    const { harness, phone } = activate();
+    harness.modelPolicy.respondWith("reasoning", {
+      _tag: "Selected",
+      providerId: "codex",
+      modelId: "gpt-5",
+      fallback: false,
+    });
+    for (let index = 0; index < 700; index += 1) {
+      harness.runtime.dispatch({
+        type: "model.use",
+        commandId: OnTheGoCommandId.make(`model-soak-${index}`),
+        deviceId: phone,
+        capability: "reasoning",
+        providerId: "codex",
+        modelId: "gpt-5",
+      });
+    }
+    expect(harness.runtime.snapshot(harness.scope).foundation.modelUsage).toHaveLength(500);
   });
 
   it("OTG-UT-019: selects capabilities independently, announces approved fallback, and preserves local safety at hard budget", () => {

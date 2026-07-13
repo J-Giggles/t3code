@@ -9,6 +9,7 @@ import * as Effect from "effect/Effect";
 
 import {
   buildTheoAuthorizedContext,
+  authorizeTheoContextSources,
   resolveTheoModelCandidates,
   runTheoModelCandidates,
 } from "./TheoConversation.ts";
@@ -98,5 +99,28 @@ describe("Theo conversation policy", () => {
         authorizedEvidence: "<context>Evidence</context>",
       }),
     ).toContain("UNTRUSTED FOCUSED RESPONSE AND AUTHORIZED T3 CONTEXT");
+  });
+
+  it("OTG-UT-010/014: fails closed when a context source forbids the selected provider", () => {
+    const sources = [
+      {
+        source: "t3-thread",
+        reference: "thread-1",
+        sourceVersion: "1",
+        excerpt: "Allowed everywhere",
+        allowedProviderIds: ["*"],
+      },
+      {
+        source: "connected-app:linear",
+        reference: "GBT-274",
+        sourceVersion: "2",
+        excerpt: "Codex-only evidence",
+        allowedProviderIds: ["codex"],
+      },
+    ];
+    expect(
+      authorizeTheoContextSources(sources, "claudeAgent").map((source) => source.reference),
+    ).toEqual(["thread-1"]);
+    expect(authorizeTheoContextSources(sources, "codex")).toHaveLength(2);
   });
 });

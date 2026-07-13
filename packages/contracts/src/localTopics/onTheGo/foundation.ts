@@ -1,3 +1,4 @@
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
 import { IsoDateTime, NonNegativeInt, TrimmedNonEmptyString } from "../../baseSchemas.ts";
@@ -49,7 +50,7 @@ export const OnTheGoPreparedPromptRevision = Schema.Struct({
   targetChatId: TrimmedNonEmptyString,
   targetAgentId: TrimmedNonEmptyString,
   createdAt: IsoDateTime,
-  readiness: Schema.Literals(["draft", "ready", "stale", "pending-reconciliation"]),
+  readiness: Schema.Literals(["draft", "ready", "stale", "pending-reconciliation", "canceled"]),
   authorizedAt: Schema.NullOr(IsoDateTime),
   supersedes: Schema.NullOr(OnTheGoPromptRevisionId),
   requiresWorkspace: Schema.Boolean,
@@ -147,6 +148,7 @@ export const OnTheGoFoundationState = Schema.Struct({
   announcementHistory: Schema.Array(OnTheGoResponseId),
   selectedResponseId: Schema.NullOr(OnTheGoResponseId),
   followedChatId: Schema.NullOr(TrimmedNonEmptyString),
+  followPaused: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   followTimeline: Schema.Array(OnTheGoFollowTimelineEntry),
   followPendingCheckpoints: Schema.Array(OnTheGoAgentCheckpoint),
   followLastSummaryAt: Schema.NullOr(IsoDateTime),
@@ -266,6 +268,17 @@ export const OnTheGoFoundationCommand = Schema.Union([
     expectedChatId: Schema.NullOr(TrimmedNonEmptyString),
   }),
   Schema.Struct({ type: Schema.Literal("follow.stop"), ...Base }),
+  Schema.Struct({ type: Schema.Literal("follow.resume"), ...Base }),
+  Schema.Struct({
+    type: Schema.Literal("follow.chat-archived"),
+    ...Base,
+    chatId: TrimmedNonEmptyString,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("follow.chat-deleted"),
+    ...Base,
+    chatId: TrimmedNonEmptyString,
+  }),
   Schema.Struct({
     type: Schema.Literal("follow.checkpoint.record"),
     ...Base,
@@ -315,6 +328,12 @@ export const OnTheGoFoundationCommand = Schema.Union([
   }),
   Schema.Struct({
     type: Schema.Literal("prompt.mark-ready"),
+    ...Base,
+    promptId: OnTheGoPromptId,
+    revisionId: OnTheGoPromptRevisionId,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("prompt.cancel"),
     ...Base,
     promptId: OnTheGoPromptId,
     revisionId: OnTheGoPromptRevisionId,

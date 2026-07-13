@@ -57,8 +57,23 @@ describe("Browser On-the-Go speech adapter", () => {
       }),
     ).toMatchObject({
       transcription: false,
-      speech: false,
-      reason: "Transcription model remote/whisper is not available in this browser",
+      speech: true,
+      reason:
+        "Transcription model remote/whisper is not available on this device and no approved fallback is supported",
     });
+    expect(
+      resolveBrowserSpeechSelection({
+        ...DEFAULT_ON_THE_GO_SETTINGS,
+        transcriptionModel: {
+          providerId: "remote",
+          modelId: "whisper",
+          capability: "transcription",
+        },
+        fallbackModels: {
+          ...DEFAULT_ON_THE_GO_SETTINGS.fallbackModels,
+          transcription: [DEFAULT_ON_THE_GO_SETTINGS.transcriptionModel],
+        },
+      }),
+    ).toMatchObject({ transcription: true, speech: true, fallback: true, reason: undefined });
   });
 });

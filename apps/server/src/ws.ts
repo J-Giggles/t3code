@@ -115,7 +115,6 @@ import * as VcsDriverRegistry from "./vcs/VcsDriverRegistry.ts";
 import * as VcsProjectConfig from "./vcs/VcsProjectConfig.ts";
 import * as VcsProcess from "./vcs/VcsProcess.ts";
 import * as OnTheGoProduction from "./localTopics/onTheGo/ProductionLayer.ts";
-import { classifyProviderActivity } from "./localTopics/onTheGo/ProviderCheckpoint.ts";
 import {
   buildTheoThreadContext,
   redactTheoEvidence,
@@ -133,6 +132,8 @@ import {
 import {
   buildTheoAuthorizedContext,
   buildTheoGenerationPrompt,
+  authorizeTheoContextSources,
+  renderTheoAuthorizedEvidence,
   resolveTheoModelCandidates,
   runTheoModelCandidates,
 } from "./localTopics/onTheGo/TheoConversation.ts";
@@ -1024,91 +1025,6 @@ const makeWsRpcLayer = (
         ),
       );
 
-      const onTheGoAssistantBuffers = new Map<string, string>();
-      const releaseOnTheGoEventIngestion = onTheGo.acquireEventIngestion();
-      if (releaseOnTheGoEventIngestion) {
-        yield* orchestrationEngine.streamDomainEvents.pipe(
-          Stream.filter(
-            (event) =>
-              (event.type === "thread.message-sent" && event.payload.role === "assistant") ||
-              event.type === "thread.turn-start-requested" ||
-              event.type === "thread.turn-diff-completed" ||
-              event.type === "thread.activity-appended",
-          ),
-          Stream.runForEach((event) =>
-            Effect.sync(() => {
-              if (event.type === "thread.turn-start-requested") {
-                onTheGo.recordAgentCheckpoint({
-                  checkpointId: event.eventId,
-                  chatId: event.payload.threadId,
-                  kind: "started",
-                  summary: "The coding agent started a new turn.",
-                  evidence: `event:${event.eventId}`,
-                  occurredAt: event.occurredAt,
-                });
-                return;
-              }
-              if (event.type === "thread.turn-diff-completed") {
-                const fileCount = event.payload.files.length;
-                onTheGo.recordAgentCheckpoint({
-                  checkpointId: event.eventId,
-                  chatId: event.payload.threadId,
-                  kind: fileCount > 0 ? "file-changed" : "progress",
-                  summary:
-                    fileCount > 0
-                      ? `The coding agent checkpoint changed ${fileCount} file${fileCount === 1 ? "" : "s"}.`
-                      : "The coding agent recorded a checkpoint with no file changes.",
-                  evidence: `checkpoint:${event.payload.checkpointRef}`,
-                  occurredAt: event.payload.completedAt,
-                });
-                return;
-              }
-              if (event.type === "thread.activity-appended") {
-                const activity = event.payload.activity;
-                const kind = classifyProviderActivity(activity);
-                if (!kind) return;
-                onTheGo.recordAgentCheckpoint({
-                  checkpointId: event.eventId,
-                  chatId: event.payload.threadId,
-                  kind,
-                  summary: activity.summary,
-                  evidence: `activity:${activity.id}`,
-                  occurredAt: activity.createdAt,
-                });
-                return;
-              }
-              if (event.type !== "thread.message-sent" || event.payload.role !== "assistant")
-                return;
-              const messageId = event.payload.messageId;
-              if (event.payload.streaming) {
-                onTheGoAssistantBuffers.set(
-                  messageId,
-                  `${onTheGoAssistantBuffers.get(messageId) ?? ""}${event.payload.text}`,
-                );
-                return;
-              }
-              onTheGo.recordAssistantResponse({
-                threadId: event.payload.threadId,
-                messageId,
-                text: onTheGoAssistantBuffers.get(messageId) ?? event.payload.text,
-                completedAt: event.payload.updatedAt,
-              });
-              onTheGo.recordAgentCheckpoint({
-                checkpointId: `assistant:${messageId}`,
-                chatId: event.payload.threadId,
-                kind: "completed",
-                summary: onTheGoAssistantBuffers.get(messageId) ?? event.payload.text,
-                evidence: `message:${messageId}`,
-                occurredAt: event.payload.updatedAt,
-              });
-              onTheGoAssistantBuffers.delete(messageId);
-            }),
-          ),
-          Effect.ensuring(Effect.sync(releaseOnTheGoEventIngestion)),
-          Effect.forkScoped,
-        );
-      }
-
       const loadServerConfig = Effect.gen(function* () {
         const keybindingsConfig = yield* keybindings.loadConfigState;
         const providers = yield* providerRegistry.getProviders;
@@ -1255,29 +1171,6 @@ const makeWsRpcLayer = (
                 ...connectedSources,
               ];
               const ownerScope = `${input.scope.voiceSessionId}:${input.scope.deviceId}`;
-              const acceptedSources = contextSources.filter(
-                (source) =>
-                  onTheGo.recordContextEvidence({
-                    ...source,
-                    deviceId: input.scope.deviceId,
-                    ownerScope,
-                  }).status === "accepted",
-              );
-              const acceptedReferences = new Set(
-                acceptedSources.map((source) => `${source.source}:${source.reference}`),
-              );
-              const authorizedContext = contextSources
-                .filter((source) => acceptedReferences.has(`${source.source}:${source.reference}`))
-                .map(
-                  (source) =>
-                    `<context source=${JSON.stringify(source.source)} reference=${JSON.stringify(source.reference)} version=${JSON.stringify(source.sourceVersion)}>\n${source.excerpt}\n</context>`,
-                )
-                .join("\n\n")
-                .slice(0, 20_000);
-              const context = buildTheoAuthorizedContext({
-                selectedResponseSummary: selectedResponse?.safeSummary ?? null,
-                authorizedEvidence: authorizedContext,
-              });
               const candidates = resolveTheoModelCandidates(settings);
               const generation = yield* Option.match(textGeneration, {
                 onNone: () =>
@@ -1301,6 +1194,22 @@ const makeWsRpcLayer = (
                       ),
                     generate: (candidate) =>
                       Effect.gen(function* () {
+                        const providerCompatibleSources = authorizeTheoContextSources(
+                          contextSources,
+                          candidate.providerId,
+                        );
+                        const acceptedSources = providerCompatibleSources.filter(
+                          (source) =>
+                            onTheGo.recordContextEvidence({
+                              ...source,
+                              deviceId: input.scope.deviceId,
+                              ownerScope,
+                            }).status === "accepted",
+                        );
+                        const context = buildTheoAuthorizedContext({
+                          selectedResponseSummary: selectedResponse?.safeSummary ?? null,
+                          authorizedEvidence: renderTheoAuthorizedEvidence(acceptedSources),
+                        });
                         const uuid = yield* crypto.randomUUIDv4;
                         const modelDisposition = onTheGo.dispatchClient(currentSessionId, {
                           type: "model.use",

@@ -187,7 +187,7 @@ describe("On-the-Go production service", () => {
     );
   });
 
-  it("OTG-UT-012/015: executes one durable ready revision only after the correction window", async () => {
+  it("OTG-UT-012/015: requires a real completion before advancing one durable queue head", async () => {
     vi.useFakeTimers();
     let now = "2026-01-01T00:00:00.000Z";
     let persisted: OnTheGoSnapshot | null = null;
@@ -266,13 +266,69 @@ describe("On-the-Go production service", () => {
       }),
     ).toMatchObject({ status: "accepted" });
 
-    await vi.advanceTimersByTimeAsync(10_000);
+    now = "2026-01-01T00:01:00.000Z";
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(delivered).toEqual([]);
+    now = "2026-01-01T00:00:00.000Z";
+    service.recordAssistantResponse({
+      threadId: "thread-delivery",
+      messageId: "real-completion",
+      text: "The active coding turn completed.",
+      completedAt: now,
+    });
     expect(delivered).toEqual([]);
     now = "2026-01-01T00:00:10.002Z";
-    await vi.advanceTimersByTimeAsync(2);
+    await vi.advanceTimersByTimeAsync(10_002);
     expect(delivered).toEqual(["Run the focused checks"]);
     expect(service.snapshot("auth-delivery", scope).foundation.pendingTurns[0]?.state).toBe(
       "dispatched",
     );
+  });
+
+  it("OTG-UT-008/016: classifies provider approval and failure checkpoints as blocking outcomes", () => {
+    let persisted: OnTheGoSnapshot | null = null;
+    const service = makeOnTheGoServerService({
+      persistence: {
+        load: () => persisted,
+        save: (snapshot) => {
+          persisted = structuredClone(snapshot);
+        },
+        loadDisposition: () => null,
+        saveDisposition: () => undefined,
+      },
+      now: () => "2026-01-01T00:00:00.000Z",
+    });
+    const scope = {
+      voiceSessionId: OnTheGoVoiceSessionId.make("voice-outcome"),
+      deviceId: OnTheGoDeviceId.make("device-outcome"),
+    };
+    service.connect("auth-outcome", scope);
+    service.dispatchClient("auth-outcome", {
+      type: "owner.acquire",
+      commandId: OnTheGoCommandId.make("owner-outcome"),
+      deviceId: scope.deviceId,
+    });
+    service.recordAgentCheckpoint({
+      checkpointId: "approval-1",
+      chatId: "thread-outcome",
+      kind: "approval",
+      summary: "Approval is required before running the command.",
+      evidence: "activity:approval-1",
+      occurredAt: "2026-01-01T00:00:00.000Z",
+    });
+    service.recordAssistantResponse({
+      threadId: "thread-outcome",
+      messageId: "assistant-before-approval",
+      text: "I need approval to continue.",
+      completedAt: "2026-01-01T00:00:01.000Z",
+    });
+
+    const foundation = service.snapshot("auth-outcome", scope).foundation;
+    expect(foundation.responses[0]?.outcome).toBe("decision-required");
+    expect(foundation.attention[0]).toMatchObject({
+      chatId: "thread-outcome",
+      kind: "input",
+    });
+    expect(foundation.frozenAgents).toContain("thread-outcome");
   });
 });

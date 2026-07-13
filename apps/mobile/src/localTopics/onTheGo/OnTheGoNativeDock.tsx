@@ -3,6 +3,7 @@ import { AppState, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import * as QuickActions from "expo-quick-actions";
+import { ExpoSpeechRecognitionModule } from "expo-speech-recognition";
 import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
 import { AsyncResult } from "effect/unstable/reactivity";
@@ -26,6 +27,7 @@ import { useServerConfigs, useThreadShells } from "../../state/entities";
 import { onTheGoMobileEnvironment } from "../../state/on-the-go";
 import { makeNativeSpeechAdapter, type NativeSpeechAdapter } from "./NativeSpeechAdapter";
 import { isOnTheGoQuickAction } from "./NativeQuickAction";
+import { readNativeAudioPolicy, subscribeNativeAudioPolicy } from "./NativeAudioPolicy";
 
 const DEVICE_KEY = "t3code.on-the-go.device";
 const VOICE_SESSION_KEY = "t3code.on-the-go.voice-session";
@@ -67,7 +69,11 @@ function NativeDockView({
   const [expanded, setExpanded] = useState(false);
   const [manualPhrase, setManualPhrase] = useState("");
   const [nativeAppState, setNativeAppState] = useState(AppState.currentState);
-  const [audioFocus, setAudioFocus] = useState<"available" | "call">("available");
+  const [nativeAudioPolicy, setNativeAudioPolicy] = useState(readNativeAudioPolicy);
+  const [audioFocus, setAudioFocus] = useState<"available" | "call">(nativeAudioPolicy.audioFocus);
+  const [microphonePermission, setMicrophonePermission] = useState<
+    "granted" | "denied" | "revoked"
+  >("revoked");
   const [startedController, setStartedController] = useState<OnTheGoController | null>(null);
   const handledInitialQuickAction = useRef(false);
   const persistEnabledRef = useRef(persistEnabled);
@@ -76,6 +82,24 @@ function NativeDockView({
     const subscription = AppState.addEventListener("change", setNativeAppState);
     return () => subscription.remove();
   }, []);
+  useEffect(
+    () =>
+      subscribeNativeAudioPolicy((policy) => {
+        setNativeAudioPolicy(policy);
+        setAudioFocus(policy.audioFocus);
+      }),
+    [],
+  );
+  useEffect(() => {
+    let active = true;
+    void ExpoSpeechRecognitionModule.getPermissionsAsync().then((permission) => {
+      if (!active) return;
+      setMicrophonePermission(permission.granted ? "granted" : "denied");
+    });
+    return () => {
+      active = false;
+    };
+  }, [nativeAppState]);
   useEffect(() => {
     speech.setPolicyState({
       enabled: state.enabled,
@@ -86,14 +110,24 @@ function NativeDockView({
             ? "background"
             : "locked",
       audioFocus,
-      microphonePermission: "granted",
+      microphonePermission,
       ownerDeviceId: state.ownerDeviceId,
       localDeviceId,
       continueRequired: state.continueRequired,
-      route: "speaker",
+      route: nativeAudioPolicy.route,
+      lowPowerMode: nativeAudioPolicy.lowPowerMode,
       outputPrivacy,
     });
-  }, [audioFocus, localDeviceId, nativeAppState, outputPrivacy, speech, state]);
+  }, [
+    audioFocus,
+    localDeviceId,
+    microphonePermission,
+    nativeAppState,
+    nativeAudioPolicy,
+    outputPrivacy,
+    speech,
+    state,
+  ]);
   useEffect(() => {
     speech.setPolicySleepListener((reason) => {
       setAudioFocus("call");
@@ -195,7 +229,7 @@ function NativeDockView({
               accessibilityRole="button"
               accessibilityLabel="Push to talk"
               onPress={() => {
-                setAudioFocus("available");
+                setAudioFocus(nativeAudioPolicy.audioFocus);
                 speech.armPushToTalk();
               }}
               style={styles.action}
@@ -318,6 +352,10 @@ export function OnTheGoNativeDock() {
             }
           : null;
       },
+      followTargets: () =>
+        threadsRef.current
+          .filter((thread) => thread.environmentId === environmentId)
+          .map((thread) => ({ chatId: thread.id, title: thread.title })),
       theo: {
         ask: async ({ utterance, signal }) => {
           if (signal.aborted) throw new Error("Theo stopped");

@@ -18,6 +18,7 @@ const base = (): NativeVoicePolicyState => ({
   localDeviceId: "phone",
   continueRequired: false,
   route: "bluetooth",
+  lowPowerMode: false,
   outputPrivacy: "private",
 });
 
@@ -64,6 +65,13 @@ describe("On-the-Go native voice policy", () => {
       listen: false,
       speak: false,
     });
+    expect(
+      decideNativeVoicePolicy({ ...base(), route: "unknown", outputPrivacy: "private" })
+        .speechDetail,
+    ).toBe("summary");
+    expect(
+      decideNativeVoicePolicy({ ...base(), lowPowerMode: true, appState: "background" }),
+    ).toMatchObject({ listen: false, speak: false, reason: "low-power-background" });
   });
 
   it("OTG-UT-019/021: allows the native on-device recognizer and rejects unsupported providers", () => {
@@ -82,7 +90,9 @@ describe("On-the-Go native voice policy", () => {
         ...DEFAULT_ON_THE_GO_SETTINGS,
         speechModel: { providerId: "cloud", modelId: "tts", capability: "speech" },
       }).reason,
-    ).toBe("Speech model cloud/tts is not available on this device");
+    ).toBe(
+      "Speech model cloud/tts is not available on this device and no approved fallback is supported",
+    );
   });
 
   it("OTG-UT-003/020/021: configures secure hands-free audio and push-to-talk bypasses noisy-place Barge-In policy once", () => {

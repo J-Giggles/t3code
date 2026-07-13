@@ -1,4 +1,7 @@
-import type { OnTheGoSpeechAdapter } from "@t3tools/client-runtime/onTheGo";
+import {
+  resolveSupportedVoiceModel,
+  type OnTheGoSpeechAdapter,
+} from "@t3tools/client-runtime/onTheGo";
 import type { OnTheGoSettings } from "@t3tools/contracts";
 
 export interface BrowserRecognitionPort {
@@ -105,27 +108,24 @@ const recognitionConstructor = () => {
 };
 
 export const resolveBrowserSpeechSelection = (settings: OnTheGoSettings) => {
-  if (
-    settings.transcriptionModel.providerId !== "system" ||
-    settings.transcriptionModel.modelId !== "default-transcription"
-  ) {
-    return {
-      transcription: false,
-      speech: false,
-      reason: `Transcription model ${settings.transcriptionModel.providerId}/${settings.transcriptionModel.modelId} is not available in this browser`,
-    };
-  }
-  if (
-    settings.speechModel.providerId !== "system" ||
-    settings.speechModel.modelId !== "default-speech"
-  ) {
-    return {
-      transcription: true,
-      speech: false,
-      reason: `Speech model ${settings.speechModel.providerId}/${settings.speechModel.modelId} is not available in this browser`,
-    };
-  }
-  return { transcription: true, speech: true, reason: undefined };
+  const transcription = resolveSupportedVoiceModel({
+    settings,
+    capability: "transcription",
+    supported: [{ providerId: "system", modelId: "default-transcription" }],
+  });
+  const speech = resolveSupportedVoiceModel({
+    settings,
+    capability: "speech",
+    supported: [{ providerId: "system", modelId: "default-speech" }],
+  });
+  return {
+    transcription: transcription.selected !== null,
+    speech: speech.selected !== null,
+    transcriptionSelection: transcription.selected,
+    speechSelection: speech.selected,
+    fallback: transcription.fallback || speech.fallback,
+    reason: transcription.reason ?? speech.reason ?? undefined,
+  };
 };
 
 export const makeNativeBrowserSpeechAdapter = (

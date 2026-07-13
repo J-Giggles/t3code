@@ -129,6 +129,53 @@ const LocalVoiceModelField = ({
   );
 };
 
+const FallbackModelsField = ({
+  label,
+  capability,
+  value,
+  onChange,
+}: {
+  readonly label: string;
+  readonly capability: "transcription" | "reasoning" | "speech";
+  readonly value: ReadonlyArray<{ readonly providerId: string; readonly modelId: string }>;
+  readonly onChange: (
+    value: ReadonlyArray<{
+      readonly providerId: string;
+      readonly modelId: string;
+    }>,
+  ) => void;
+}) => (
+  <SettingsRow
+    title={label}
+    description={`Optional ${capability} provider/model pairs, tried in this exact order. Unsupported or unapproved values fail closed.`}
+    control={
+      <DraftInput
+        className="w-full sm:w-[26rem]"
+        value={value.map((selection) => `${selection.providerId}/${selection.modelId}`).join(", ")}
+        onCommit={(input) => {
+          const parsed = input
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter(Boolean)
+            .flatMap((entry) => {
+              const separator = entry.indexOf("/");
+              if (separator <= 0 || separator === entry.length - 1) return [];
+              return [
+                {
+                  providerId: entry.slice(0, separator),
+                  modelId: entry.slice(separator + 1),
+                },
+              ];
+            });
+          onChange(parsed);
+        }}
+        aria-label={label}
+        placeholder="provider/model, provider/model"
+      />
+    }
+  />
+);
+
 export function OnTheGoSettingsPanelView({ settings, update }: OnTheGoSettingsPanelViewProps) {
   const updateVoice = (patch: Partial<OnTheGoSettings>) =>
     update({ onTheGo: { ...settings, ...patch } });
@@ -214,6 +261,22 @@ export function OnTheGoSettingsPanelView({ settings, update }: OnTheGoSettingsPa
           })
         }
       />
+      <FallbackModelsField
+        label="Approved transcription fallback models"
+        capability="transcription"
+        value={settings.fallbackModels.transcription}
+        onChange={(transcription) =>
+          updateVoice({
+            fallbackModels: {
+              ...settings.fallbackModels,
+              transcription: transcription.map((selection) => ({
+                ...selection,
+                capability: "transcription" as const,
+              })),
+            },
+          })
+        }
+      />
       <ModelFields
         label="Theo model"
         capability="reasoning"
@@ -222,38 +285,20 @@ export function OnTheGoSettingsPanelView({ settings, update }: OnTheGoSettingsPa
           updateVoice({ theoModel: { ...settings.theoModel, ...theoModel } })
         }
       />
-      <SettingsRow
-        title="Approved Theo fallbacks"
-        description="Optional provider/model pairs, tried in this exact order and announced before use."
-        control={
-          <DraftInput
-            className="w-full sm:w-[26rem]"
-            value={settings.fallbackModels.reasoning
-              .map((selection) => `${selection.providerId}/${selection.modelId}`)
-              .join(", ")}
-            onCommit={(value) => {
-              const reasoning = value
-                .split(",")
-                .map((entry) => entry.trim())
-                .filter(Boolean)
-                .flatMap((entry) => {
-                  const separator = entry.indexOf("/");
-                  if (separator <= 0 || separator === entry.length - 1) return [];
-                  return [
-                    {
-                      providerId: entry.slice(0, separator),
-                      modelId: entry.slice(separator + 1),
-                      capability: "reasoning" as const,
-                    },
-                  ];
-                });
-              updateVoice({
-                fallbackModels: { ...settings.fallbackModels, reasoning },
-              });
-            }}
-            aria-label="Approved Theo fallback models"
-            placeholder="provider/model, provider/model"
-          />
+      <FallbackModelsField
+        label="Approved Theo fallback models"
+        capability="reasoning"
+        value={settings.fallbackModels.reasoning}
+        onChange={(reasoning) =>
+          updateVoice({
+            fallbackModels: {
+              ...settings.fallbackModels,
+              reasoning: reasoning.map((selection) => ({
+                ...selection,
+                capability: "reasoning" as const,
+              })),
+            },
+          })
         }
       />
       <SettingsRow
@@ -294,6 +339,22 @@ export function OnTheGoSettingsPanelView({ settings, update }: OnTheGoSettingsPa
         options={ON_THE_GO_SPEECH_OPTIONS}
         onChange={(speechModel) =>
           updateVoice({ speechModel: { ...settings.speechModel, ...speechModel } })
+        }
+      />
+      <FallbackModelsField
+        label="Approved speech fallback models"
+        capability="speech"
+        value={settings.fallbackModels.speech}
+        onChange={(speech) =>
+          updateVoice({
+            fallbackModels: {
+              ...settings.fallbackModels,
+              speech: speech.map((selection) => ({
+                ...selection,
+                capability: "speech" as const,
+              })),
+            },
+          })
         }
       />
     </SettingsSection>

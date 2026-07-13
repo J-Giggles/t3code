@@ -1,4 +1,4 @@
-// @effect-diagnostics globalTimers:off - This synchronous runtime schedules persisted queue heads after their correction window.
+// @effect-diagnostics globalTimers:off - A real completion may be held until its correction window expires.
 import {
   OnTheGoDeviceId,
   OnTheGoResponseId,
@@ -11,6 +11,7 @@ import {
   type OnTheGoSnapshot,
 } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
+import { redactSensitiveText } from "@t3tools/shared/sensitiveText";
 
 import { isOnTheGoFoundationCommand, onTheGoFoundationCommandRegistry } from "./CommandRegistry.ts";
 import type { OnTheGoPersistence, OnTheGoRuntimePorts } from "./Ports.ts";
@@ -23,7 +24,6 @@ export interface OnTheGoServerServiceOptions {
 }
 
 export interface OnTheGoServerService {
-  readonly acquireEventIngestion: () => (() => void) | null;
   readonly dispose: () => void;
   readonly setTurnExecutor: (
     executor: (request: OnTheGoTurnDeliveryRequest) => Promise<void>,
@@ -50,6 +50,11 @@ export interface OnTheGoServerService {
     readonly summary: string;
     readonly evidence: string;
     readonly occurredAt: string;
+  }) => void;
+  readonly recordThreadLifecycle: (input: {
+    readonly threadId: string;
+    readonly eventId: string;
+    readonly lifecycle: "archived" | "deleted";
   }) => void;
   readonly recordContextEvidence: (input: {
     readonly deviceId: OnTheGoDeviceId;
@@ -93,14 +98,16 @@ const scopeKey = (scope: OnTheGoReadScope) =>
   JSON.stringify([scope.voiceSessionId, scope.deviceId]);
 
 export const safeAnnouncementSummary = (text: string) => {
-  const prose = text
+  const prose = redactSensitiveText(text)
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`[^`]*`/g, " ")
     .split("\n")
     .filter(
       (line) =>
         !/^\s*(at\s+|[+\-@]{2,}|error:|stack:)/i.test(line) &&
-        !/(api[_-]?key|access[_-]?token|password|secret)\s*[:=]/i.test(line),
+        !/(?:api[_ -]?key|token|password|passwd|secret|authorization|credential).*(?:\[redacted\]|\[provider token redacted\]|\[private key redacted\])/i.test(
+          line,
+        ),
     )
     .join(" ")
     .replace(/\s+/g, " ")
@@ -120,13 +127,13 @@ export const makeOnTheGoServerService = (
     readonly scope: string;
     readonly listener: (event: OnTheGoEvent) => void;
   }>();
-  const scheduledSubmissions = new Set<string>();
-  const schedulerTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const completionTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const availableContext = new Map<
     string,
     { readonly ownerScope: string; readonly excerpt: string }
   >();
   const remoteModelCalls = new Map<string, number>();
+  const agentOutcomes = new Map<string, "failed" | "decision-required">();
   let configuredModels: Readonly<
     Record<
       "transcription" | "reasoning" | "speech",
@@ -136,7 +143,6 @@ export const makeOnTheGoServerService = (
       }
     >
   > | null = null;
-  let eventIngestionClaimed = false;
   let turnExecutor: ((request: OnTheGoTurnDeliveryRequest) => Promise<void>) | null = null;
   let dispatchWithEvents: (command: OnTheGoCommand) => OnTheGoCommandDisposition;
   const followQuietTimer = setInterval(() => {
@@ -308,31 +314,52 @@ export const makeOnTheGoServerService = (
     return disposition;
   };
 
-  const scheduleQueued = () => {
-    if (!turnExecutor) return;
+  const recordCompatibleCompletion = (input: {
+    readonly targetAgentId: string;
+    readonly activeTurnId: string;
+    readonly completionId: string;
+  }) => {
     const deviceId = trustedDevices.values().next().value;
     if (!deviceId) return;
-    const snapshot = options.persistence.load();
-    for (const turn of snapshot?.foundation?.pendingTurns ?? []) {
-      if (turn.state !== "queued" || !turn.workspaceReady) continue;
-      if (scheduledSubmissions.has(turn.submissionId)) continue;
-      scheduledSubmissions.add(turn.submissionId);
-      const delay = Math.max(
-        0,
-        Date.parse(turn.correctionExpiresAt) - Date.parse(options.now()) + 1,
+    dispatchWithEvents({
+      type: "turn.complete",
+      commandId: `turn-complete:${input.completionId}` as OnTheGoCommand["commandId"],
+      deviceId,
+      targetAgentId: input.targetAgentId,
+      outcome: "compatible",
+      activeTurnId: input.activeTurnId,
+    });
+    const queued = options.persistence
+      .load()
+      ?.foundation?.pendingTurns.find(
+        (turn) =>
+          turn.targetAgentId === input.targetAgentId &&
+          turn.state === "queued" &&
+          turn.workspaceReady,
       );
-      const timer = setTimeout(() => {
-        scheduledSubmissions.delete(turn.submissionId);
-        schedulerTimers.delete(turn.submissionId);
-        dispatchWithEvents({
-          type: "scheduler.tick",
-          commandId: `scheduler:${turn.submissionId}` as OnTheGoCommand["commandId"],
-          deviceId,
-          targetAgentId: turn.targetAgentId,
-        });
-      }, delay);
-      schedulerTimers.set(turn.submissionId, timer);
-    }
+    if (!queued || Date.parse(queued.correctionExpiresAt) < Date.parse(options.now())) return;
+    if (completionTimers.has(queued.submissionId)) return;
+    const delay = Math.max(
+      0,
+      Date.parse(queued.correctionExpiresAt) - Date.parse(options.now()) + 1,
+    );
+    const timer = setTimeout(() => {
+      completionTimers.delete(queued.submissionId);
+      const current = options.persistence
+        .load()
+        ?.foundation?.pendingTurns.find((turn) => turn.submissionId === queued.submissionId);
+      if (current?.state !== "queued" || !current.workspaceReady) return;
+      dispatchWithEvents({
+        type: "turn.complete",
+        commandId:
+          `turn-complete:${input.completionId}:${queued.submissionId}` as OnTheGoCommand["commandId"],
+        deviceId,
+        targetAgentId: input.targetAgentId,
+        outcome: "compatible",
+        activeTurnId: input.activeTurnId,
+      });
+    }, delay);
+    completionTimers.set(queued.submissionId, timer);
   };
 
   const assertAuthorized = (authenticatedSessionId: string, scope: OnTheGoReadScope) => {
@@ -342,32 +369,23 @@ export const makeOnTheGoServerService = (
   };
 
   return {
-    acquireEventIngestion: () => {
-      if (eventIngestionClaimed) return null;
-      eventIngestionClaimed = true;
-      return () => {
-        eventIngestionClaimed = false;
-      };
-    },
     dispose: () => {
       clearInterval(followQuietTimer);
-      for (const timer of schedulerTimers.values()) clearTimeout(timer);
-      schedulerTimers.clear();
-      scheduledSubmissions.clear();
+      for (const timer of completionTimers.values()) clearTimeout(timer);
+      completionTimers.clear();
       subscribers.clear();
       authorizedScopes.clear();
       sessionScopes.clear();
       deviceSessions.clear();
       trustedDevices.clear();
       remoteModelCalls.clear();
+      agentOutcomes.clear();
       configuredModels = null;
       availableContext.clear();
       turnExecutor = null;
-      eventIngestionClaimed = false;
     },
     setTurnExecutor: (executor) => {
       turnExecutor = executor;
-      scheduleQueued();
     },
     configureModelPolicy: (settings) => {
       const capabilityPolicy = <Capability extends "transcription" | "reasoning" | "speech">(
@@ -396,6 +414,7 @@ export const makeOnTheGoServerService = (
       const expiresAt = DateTime.formatIso(
         DateTime.add(DateTime.makeUnsafe(completedAt), { days: 30 }),
       );
+      const outcome = agentOutcomes.get(threadId) ?? "completed";
       dispatchWithEvents({
         type: "response.record",
         commandId: `response:${messageId}` as OnTheGoCommand["commandId"],
@@ -405,22 +424,20 @@ export const makeOnTheGoServerService = (
           projectId: "t3-code",
           chatId: threadId,
           agentId: threadId,
-          outcome: "completed",
+          outcome,
           safeSummary: safeAnnouncementSummary(text),
           completedAt,
           handledAt: null,
           expiresAt,
         },
       });
-      dispatchWithEvents({
-        type: "turn.complete",
-        commandId: `turn-complete:${messageId}` as OnTheGoCommand["commandId"],
-        deviceId,
-        targetAgentId: threadId,
-        outcome: "compatible",
-        activeTurnId: messageId,
-      });
-      scheduleQueued();
+      if (outcome === "completed") {
+        recordCompatibleCompletion({
+          targetAgentId: threadId,
+          activeTurnId: messageId,
+          completionId: messageId,
+        });
+      }
     },
     recordAgentCheckpoint: (checkpoint) => {
       const deviceId =
@@ -434,6 +451,40 @@ export const makeOnTheGoServerService = (
           summary: safeAnnouncementSummary(checkpoint.summary),
           confidence: "known",
         },
+      });
+      const blockingOutcome =
+        checkpoint.kind === "approval"
+          ? ("approval" as const)
+          : checkpoint.kind === "blocked"
+            ? ("input" as const)
+            : checkpoint.kind === "failed"
+              ? ("failure" as const)
+              : null;
+      if (blockingOutcome) {
+        agentOutcomes.set(
+          checkpoint.chatId,
+          checkpoint.kind === "failed" ? "failed" : "decision-required",
+        );
+        dispatchWithEvents({
+          type: "turn.complete",
+          commandId: `turn-blocked:${checkpoint.checkpointId}` as OnTheGoCommand["commandId"],
+          deviceId,
+          targetAgentId: checkpoint.chatId,
+          outcome: blockingOutcome,
+          activeTurnId: checkpoint.checkpointId,
+        });
+      } else if (checkpoint.kind === "started") {
+        agentOutcomes.delete(checkpoint.chatId);
+      }
+    },
+    recordThreadLifecycle: ({ threadId, eventId, lifecycle }) => {
+      const deviceId =
+        trustedDevices.values().next().value ?? OnTheGoDeviceId.make("system:on-the-go");
+      dispatchWithEvents({
+        type: lifecycle === "archived" ? "follow.chat-archived" : "follow.chat-deleted",
+        commandId: `follow-lifecycle:${eventId}` as OnTheGoCommand["commandId"],
+        deviceId,
+        chatId: threadId,
       });
     },
     recordContextEvidence: (input) => {
@@ -503,7 +554,6 @@ export const makeOnTheGoServerService = (
       deviceSessions.set(scope.deviceId, authenticatedSessionId);
       authorizedScopes.add(key);
       trustedDevices.add(scope.deviceId);
-      scheduleQueued();
     },
     disconnect: (authenticatedSessionId) => {
       const key = sessionScopes.get(authenticatedSessionId);
@@ -542,7 +592,6 @@ export const makeOnTheGoServerService = (
       ) {
         remoteModelCalls.delete(boundScope);
       }
-      scheduleQueued();
       return disposition;
     },
     dispatchSystem: (command) => dispatchWithEvents(command),
