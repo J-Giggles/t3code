@@ -188,6 +188,13 @@ import {
   DesktopDevLaunchStopInput,
   DesktopDevLaunchThreadRef,
 } from "./devLaunch.ts";
+import {
+  OnTheGoCommand,
+  OnTheGoCommandDisposition,
+  OnTheGoEvent,
+  OnTheGoReadScope,
+  OnTheGoSnapshot,
+} from "./localTopics/onTheGo/index.ts";
 
 export const WS_METHODS = {
   // Project registry methods
@@ -285,6 +292,11 @@ export const WS_METHODS = {
   serverListActiveDevLaunches: "server.listActiveDevLaunches",
   serverBuildDevLaunchCollisionPrompt: "server.buildDevLaunchCollisionPrompt",
 
+  // On-the-Go Topic
+  onTheGoDispatch: "onTheGo.dispatch",
+  onTheGoSnapshot: "onTheGo.snapshot",
+  onTheGoTheo: "onTheGo.theo",
+
   // Cloud environment methods
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
   cloudInstallRelayClient: "cloud.installRelayClient",
@@ -303,6 +315,7 @@ export const WS_METHODS = {
   subscribeServerConfig: "subscribeServerConfig",
   subscribeServerLifecycle: "subscribeServerLifecycle",
   subscribeAuthAccess: "subscribeAuthAccess",
+  subscribeOnTheGoEvents: "subscribeOnTheGoEvents",
 } as const;
 
 export const WsServerUpsertKeybindingRpc = Rpc.make(WS_METHODS.serverUpsertKeybinding, {
@@ -900,6 +913,41 @@ export const WsSubscribeAuthAccessRpc = Rpc.make(WS_METHODS.subscribeAuthAccess,
   stream: true,
 });
 
+export const WsOnTheGoDispatchRpc = Rpc.make(WS_METHODS.onTheGoDispatch, {
+  payload: OnTheGoCommand,
+  success: OnTheGoCommandDisposition,
+  error: EnvironmentAuthorizationError,
+});
+
+export const WsOnTheGoSnapshotRpc = Rpc.make(WS_METHODS.onTheGoSnapshot, {
+  payload: OnTheGoReadScope,
+  success: OnTheGoSnapshot,
+  error: EnvironmentAuthorizationError,
+});
+
+export const OnTheGoTheoRequest = Schema.Struct({
+  utterance: Schema.String,
+  scope: OnTheGoReadScope,
+});
+
+export const OnTheGoTheoResult = Schema.Struct({
+  reply: Schema.String,
+  preparedPrompt: Schema.NullOr(Schema.String),
+});
+
+export const WsOnTheGoTheoRpc = Rpc.make(WS_METHODS.onTheGoTheo, {
+  payload: OnTheGoTheoRequest,
+  success: OnTheGoTheoResult,
+  error: EnvironmentAuthorizationError,
+});
+
+export const WsSubscribeOnTheGoEventsRpc = Rpc.make(WS_METHODS.subscribeOnTheGoEvents, {
+  payload: OnTheGoReadScope,
+  success: OnTheGoEvent,
+  error: EnvironmentAuthorizationError,
+  stream: true,
+});
+
 export const WsRpcGroup = RpcGroup.make(
   WsServerGetConfigRpc,
   WsServerRefreshProvidersRpc,
@@ -986,6 +1034,10 @@ export const WsRpcGroup = RpcGroup.make(
   WsSubscribeServerConfigRpc,
   WsSubscribeServerLifecycleRpc,
   WsSubscribeAuthAccessRpc,
+  WsOnTheGoDispatchRpc,
+  WsOnTheGoSnapshotRpc,
+  WsOnTheGoTheoRpc,
+  WsSubscribeOnTheGoEventsRpc,
   WsOrchestrationDispatchCommandRpc,
   WsOrchestrationGetTurnDiffRpc,
   WsOrchestrationGetFullThreadDiffRpc,

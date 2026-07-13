@@ -102,6 +102,12 @@ export interface WsRpcClient {
     readonly reportOwner: RpcUnaryMethod<typeof WS_METHODS.appAutomationReportOwner>;
     readonly clearOwner: RpcUnaryMethod<typeof WS_METHODS.appAutomationClearOwner>;
   };
+  readonly onTheGo: {
+    readonly dispatch: RpcUnaryMethod<typeof WS_METHODS.onTheGoDispatch>;
+    readonly snapshot: RpcUnaryMethod<typeof WS_METHODS.onTheGoSnapshot>;
+    readonly askTheo: RpcUnaryMethod<typeof WS_METHODS.onTheGoTheo>;
+    readonly onEvent: RpcInputStreamMethod<typeof WS_METHODS.subscribeOnTheGoEvents>;
+  };
   readonly projects: {
     readonly listEntries: RpcUnaryMethod<typeof WS_METHODS.projectsListEntries>;
     readonly readFile: RpcUnaryMethod<typeof WS_METHODS.projectsReadFile>;
@@ -314,6 +320,17 @@ export function createWsRpcClient(
         transport.request((client) => client[WS_METHODS.appAutomationReportOwner](input)),
       clearOwner: (input) =>
         transport.request((client) => client[WS_METHODS.appAutomationClearOwner](input)),
+    },
+    onTheGo: {
+      dispatch: (input) => transport.request((client) => client[WS_METHODS.onTheGoDispatch](input)),
+      snapshot: (input) => transport.request((client) => client[WS_METHODS.onTheGoSnapshot](input)),
+      askTheo: (input) => transport.request((client) => client[WS_METHODS.onTheGoTheo](input)),
+      onEvent: (input, listener, options) =>
+        transport.subscribe(
+          (client) => client[WS_METHODS.subscribeOnTheGoEvents](input),
+          listener,
+          subscriptionOptions(options, WS_METHODS.subscribeOnTheGoEvents),
+        ),
     },
     projects: {
       listEntries: (input) =>

@@ -1,0 +1,3 @@
+# Do not retain raw voice input
+
+Wake-phrase detection and its short rolling buffer stay local, only Activated Utterances are sent to the selected Transcription Model, and T3 Code discards raw microphone audio after transcription succeeds or fails. The resulting Voice Transcript remains visible in the relevant history for audit and correction but is excluded from telemetry by default. Voice Diagnostics contain structured operational metadata only; a user-initiated export may add explicitly previewed redacted excerpts. This reduces sensitive biometric data retention while preserving an inspectable record of what T3 Code understood; Settings must separately disclose the selected provider's data policy.

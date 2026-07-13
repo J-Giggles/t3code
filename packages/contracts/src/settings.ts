@@ -2,10 +2,11 @@ import * as Effect from "effect/Effect";
 import * as Duration from "effect/Duration";
 import * as Schema from "effect/Schema";
 import * as SchemaTransformation from "effect/SchemaTransformation";
-import { TrimmedNonEmptyString, TrimmedString } from "./baseSchemas.ts";
+import { PositiveInt, TrimmedNonEmptyString, TrimmedString } from "./baseSchemas.ts";
 import { DEFAULT_GIT_TEXT_GENERATION_MODEL, ProviderOptionSelections } from "./model.ts";
 import { ModelSelection } from "./orchestration.ts";
 import { ProviderInstanceConfig, ProviderInstanceId } from "./providerInstance.ts";
+import { DEFAULT_ON_THE_GO_SETTINGS, OnTheGoSettings } from "./localTopics/onTheGo/index.ts";
 
 // ── Client Settings (local-only) ───────────────────────────────
 
@@ -439,6 +440,9 @@ export const ServerSettings = Schema.Struct({
   ),
   t3ProviderAccess: T3ProviderAccessSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   observability: ObservabilitySettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+  onTheGo: OnTheGoSettings.pipe(
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_ON_THE_GO_SETTINGS)),
+  ),
   promptOverrides: PromptOverrides.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
 });
 export type ServerSettings = typeof ServerSettings.Type;
@@ -543,6 +547,22 @@ const T3ProviderAccessSettingsPatch = Schema.Struct({
   ),
 });
 
+const OnTheGoModelSelectionPatch = Schema.Struct({
+  providerId: Schema.optionalKey(TrimmedNonEmptyString),
+  modelId: Schema.optionalKey(TrimmedNonEmptyString),
+});
+
+const OnTheGoSettingsPatch = Schema.Struct({
+  enabled: Schema.optionalKey(Schema.Boolean),
+  bargeInEnabled: Schema.optionalKey(Schema.Boolean),
+  wakePhrases: Schema.optionalKey(Schema.Array(TrimmedNonEmptyString)),
+  confirmationWindowMs: Schema.optionalKey(PositiveInt),
+  outputPrivacy: Schema.optionalKey(Schema.Literals(["private", "public"])),
+  transcriptionModel: Schema.optionalKey(OnTheGoModelSelectionPatch),
+  theoModel: Schema.optionalKey(OnTheGoModelSelectionPatch),
+  speechModel: Schema.optionalKey(OnTheGoModelSelectionPatch),
+});
+
 export const ServerSettingsPatch = Schema.Struct({
   // Server settings
   enableAssistantStreaming: Schema.optionalKey(Schema.Boolean),
@@ -574,6 +594,7 @@ export const ServerSettingsPatch = Schema.Struct({
   // The web UI sends a fully-formed map every time it edits this field.
   providerInstances: Schema.optionalKey(Schema.Record(ProviderInstanceId, ProviderInstanceConfig)),
   t3ProviderAccess: Schema.optionalKey(T3ProviderAccessSettingsPatch),
+  onTheGo: Schema.optionalKey(OnTheGoSettingsPatch),
   // Whole-map replacement. Storing only user overrides keeps source defaults
   // live, so upstream prompt changes become the default for uncustomized prompts.
   promptOverrides: Schema.optionalKey(PromptOverrides),

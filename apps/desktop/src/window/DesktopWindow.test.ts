@@ -259,6 +259,7 @@ const makeSplashScenario = (createOutcomes: readonly (Electron.BrowserWindow | n
                   contextIsolation: null,
                   nodeIntegration: null,
                   webviewTag: null,
+                  backgroundThrottling: null,
                 },
               },
               cause: new Error("simulated window-open failure"),

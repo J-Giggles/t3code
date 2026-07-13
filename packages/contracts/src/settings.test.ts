@@ -34,6 +34,30 @@ describe("ClientSettings word wrap", () => {
 });
 
 describe("ServerSettings.providerInstances (slice-2 invariant)", () => {
+  it("OTG-UT-019 persists independent safe voice capability defaults", () => {
+    const settings = decodeServerSettings({});
+    expect(settings.onTheGo.enabled).toBe(false);
+    expect(settings.onTheGo.bargeInEnabled).toBe(true);
+    expect(settings.onTheGo.transcriptionModel.capability).toBe("transcription");
+    expect(settings.onTheGo.theoModel.capability).toBe("reasoning");
+    expect(settings.onTheGo.speechModel.capability).toBe("speech");
+  });
+
+  it("OTG-UT-019 rejects a model selected for the wrong capability", () => {
+    expect(() =>
+      decodeServerSettings({
+        onTheGo: {
+          ...DEFAULT_SERVER_SETTINGS.onTheGo,
+          transcriptionModel: {
+            providerId: "system",
+            modelId: "voice",
+            capability: "speech",
+          },
+        },
+      }),
+    ).toThrow();
+  });
+
   it("enables live assistant output by default", () => {
     expect(DEFAULT_SERVER_SETTINGS.enableAssistantStreaming).toBe(true);
     expect(decodeServerSettings({}).enableAssistantStreaming).toBe(true);
@@ -134,6 +158,22 @@ describe("ServerSettings.promptOverrides", () => {
 });
 
 describe("ServerSettingsPatch.providerInstances", () => {
+  it("OTG-UT-019 patches voice capabilities independently without accepting capability changes", () => {
+    const patch = decodeServerSettingsPatch({
+      onTheGo: {
+        bargeInEnabled: false,
+        transcriptionModel: { providerId: "openai", modelId: "gpt-4o-transcribe" },
+        theoModel: { providerId: "codex", modelId: "gpt-5" },
+        speechModel: { providerId: "openai", modelId: "gpt-4o-mini-tts" },
+      },
+    });
+    expect(patch.onTheGo?.bargeInEnabled).toBe(false);
+    expect(patch.onTheGo?.transcriptionModel?.modelId).toBe("gpt-4o-transcribe");
+    expect(patch.onTheGo?.theoModel?.modelId).toBe("gpt-5");
+    expect(patch.onTheGo?.speechModel?.modelId).toBe("gpt-4o-mini-tts");
+    expect(patch.onTheGo?.speechModel).not.toHaveProperty("capability");
+  });
+
   it("treats providerInstances as an optional whole-map replacement", () => {
     const patch = decodeServerSettingsPatch({});
     expect(patch.providerInstances).toBeUndefined();

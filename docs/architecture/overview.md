@@ -2,6 +2,8 @@
 
 T3 Code runs as a **Node.js WebSocket server** that wraps `codex app-server` (JSON-RPC over stdio) and serves a React web app.
 
+The accepted design for the replayable voice-first companion is documented in [On-the-Go Mode](./on-the-go-mode.md), with its [Test Contract](./on-the-go-test-contract.md) and [implementation handoff](./on-the-go-topic-handoff.md).
+
 ```
 ┌─────────────────────────────────┐
 │  Browser (React + Vite)         │

@@ -13,6 +13,7 @@ import { AppearancePreferencesProvider } from "./features/settings/appearance/Ap
 import { RootStack } from "./Stack";
 import { appAtomRegistry } from "./state/atom-registry";
 import { useThemeColor } from "./lib/useThemeColor";
+import { OnTheGoNativeDock } from "./localTopics/onTheGo";
 
 import "../global.css";
 
@@ -51,6 +52,7 @@ export default function App() {
                   linking={appLinking}
                   theme={colorScheme === "dark" ? DarkTheme : DefaultTheme}
                 />
+                <OnTheGoNativeDock />
               </SafeAreaProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>

@@ -98,6 +98,7 @@ describe("ElectronWindow", () => {
           contextIsolation: true,
           nodeIntegration: false,
           webviewTag: true,
+          backgroundThrottling: null,
         },
       });
       assert.isFalse("icon" in error.options);
