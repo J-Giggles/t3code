@@ -3,7 +3,10 @@
   "id": "desktop-tests",
   "title": "Headed desktop verification coverage",
   "topicKind": "test",
-  "topicCommits": ["57ef11c7fad9d06afb43677d583bb46a4351c965"],
+  "topicCommits": [
+    "57ef11c7fad9d06afb43677d583bb46a4351c965",
+    "bf32ad5856a30a69e65aa4e84bc90ed4ffd5016c"
+  ],
   "ownedPaths": [
     {
       "path": "apps/desktop/e2e",
@@ -12,6 +15,10 @@
     {
       "path": "apps/desktop/package.json",
       "role": "config"
+    },
+    {
+      "path": "apps/desktop/src/window/DesktopWindow.test.ts",
+      "role": "test"
     },
     {
       "path": "docs/operations/headed-staging.md",
@@ -46,7 +53,12 @@
       "role": "consumer"
     }
   ],
-  "verification": ["vp check", "vp run typecheck", "vp run test:desktop-e2e:smoke"],
+  "verification": [
+    "vp check",
+    "vp run typecheck",
+    "vp run test:desktop-e2e:smoke",
+    "CODEX_CI=1 vp test run apps/desktop/src/window/DesktopWindow.test.ts"
+  ],
   "replayContract": {
     "autonomy": "low-risk-auto-repair",
     "risk": "low",

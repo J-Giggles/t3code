@@ -101,7 +101,10 @@
     {
       "id": "desktop-tests",
       "pluginPath": "local-plugins/desktop-tests",
-      "commits": ["57ef11c7fad9d06afb43677d583bb46a4351c965"],
+      "commits": [
+        "57ef11c7fad9d06afb43677d583bb46a4351c965",
+        "bf32ad5856a30a69e65aa4e84bc90ed4ffd5016c"
+      ],
       "subject": "test(desktop): add headed desktop verification coverage"
     },
     {
