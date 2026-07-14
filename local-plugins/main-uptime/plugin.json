@@ -56,12 +56,14 @@
       "Keep Main boot-managed and restart-supervised through the user systemd manager.",
       "Keep the approved SHA fail-closed outside a short exact-candidate promotion lock.",
       "Preserve dirty files, conflict stages, refs, and committed divergence before automatic restoration.",
+      "Keep startup grace, consecutive-failure hysteresis, and loopback discrimination so health monitoring cannot create a restart storm.",
       "Require a fresh canonical Main primary-interface project/chat proof receipt from the same promotion window before approval.",
       "Keep GitHub Main and the Mac checkout unchanged until the live Linux candidate is approved."
     ],
     "safeAutoRepair": [
       "Adapt unit templates, launcher paths, ports, and verifier integration to unambiguous upstream script or package refactors.",
       "Adapt incident capture commands while retaining equivalent full Git and worktree evidence before restoration.",
+      "Adapt health probes and route reconciliation while preserving the rule that a healthy local Main process is never restarted for a public-route-only failure.",
       "Adapt the Main verifier to upstream project-list, composer, or assistant-response selectors while preserving the complete public workflow.",
       "Update promotion skill wording and commands to match equivalent renamed service or verifier interfaces."
     ],

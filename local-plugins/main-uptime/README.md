@@ -8,6 +8,7 @@ Keep `T3 Code Main` available on `giggabit-server`, automatically restore its ap
 
 - `ac47acfdbb90e106a8ba2310d0036e00c6b995ee` `feat(main-uptime): guard and supervise durable main`
 - `69be1da9ad8b4a95fbbe808ceb3ef7ee53d13b1c` `fix(main-uptime): stabilize strict composer proof`
+- `d7b0a924a4b81a49cbc4448f960eaba3cc7dc917` `fix(main-uptime): prevent health restart storms`
 
 ## Squash / Replay History
 
@@ -29,7 +30,8 @@ This topic follows the nightly launcher and replay safeguards because it consume
 - [x] Main starts with the user manager and restarts after unexpected exits (`scripts/localTopics/mainUptime/templates/t3code-main.service`, `Restart=always`).
 - [x] A five-second guard detects dirty files, conflicted indexes, interrupted Git operations, branch drift, and HEAD drift (`scripts/localTopics/mainUptime/templates/t3code-main-guard.timer`, `t3code-main-uptime guard`).
 - [x] Guard recovery preserves refs, conflict stages, Git state, changed files, and a verified bundle before restoring the approved SHA (`scripts/localTopics/mainUptime/templates/t3code-main-uptime.sh`, `$T3CODE_MAIN_UPTIME_STATE_DIR/incidents`).
-- [x] A 30-second public health timer restarts an unavailable approved runtime and defers during a valid promotion (`scripts/localTopics/mainUptime/templates/t3code-main-health.timer`, `t3code-main-uptime health`).
+- [x] A 30-second health timer honors startup grace and three-failure hysteresis before restarting a persistently unhealthy local runtime (`scripts/localTopics/mainUptime/templates/t3code-main-health.timer`, `t3code-main-uptime health`).
+- [x] Route-only failures reconcile Tailscale while preserving a healthy loopback Main process (`scripts/localTopics/mainUptime/templates/t3code-main-uptime.sh`, `t3code-tailscale-reconcile`).
 - [x] Promotion abort and lock expiry restore the prior approved SHA while leaving the remote Main ref untouched (`scripts/localTopics/mainUptime/templates/t3code-main-uptime.sh`, `t3code-main-uptime promotion-abort`).
 
 ## Added Tests
@@ -37,6 +39,7 @@ This topic follows the nightly launcher and replay safeguards because it consume
 - [x] Temp-repository tests prove install rendering, dry-run behavior, Bash validity, and approved-SHA initialization (`scripts/localTopics/mainUptime/index.test.ts`, `vp test run scripts/localTopics/mainUptime/index.test.ts`).
 - [x] Recovery tests prove both dirty and committed unauthorized changes are preserved and rolled back (`scripts/localTopics/mainUptime/index.test.ts`, `t3code-main-uptime guard`).
 - [x] Promotion tests prove the locked candidate can launch but cannot be approved without a fresh exact-SHA public proof (`scripts/localTopics/mainUptime/index.test.ts`, `t3code-main-uptime promotion-approve`).
+- [x] Health tests prove startup grace, consecutive-failure counting, restart hysteresis, and no restart for route-only failure (`scripts/localTopics/mainUptime/index.test.ts`, `T3CODE_MAIN_HEALTH_FAILURE_THRESHOLD`).
 - [x] The live acceptance gate proves primary-interface routing, project visibility, chat creation, message send, assistant response, and screenshot evidence (`apps/desktop/scripts/verify-staging-public.mjs`, `vp run verify:main-public`).
 - [x] The public verifier fills the Lexical editor deterministically and waits for send readiness after runtime recovery (`apps/desktop/scripts/verify-staging-public.mjs`, `composer.fill`).
 

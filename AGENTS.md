@@ -131,7 +131,9 @@ Current topic order:
 15. `feat(main-uptime): guard and supervise durable main`
     - Owns the boot-managed Main service, approved-SHA integrity and health guards,
       preservation-before-rollback incidents, strict Main public proof receipt, and
-      protected publication order in both promotion skills.
+      protected publication order in both promotion skills. Health recovery uses
+      startup grace, consecutive-failure hysteresis, and route-only reconciliation
+      so a transient public probe cannot restart a healthy local Main process.
 
 When upstream changes, prefer the scripted nightly workflow in
 `docs/operations/nightly-upstream-replay.md`. It fetches upstream, backs up and

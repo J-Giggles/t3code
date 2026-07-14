@@ -189,7 +189,10 @@
       "id": "main-uptime",
       "pluginPath": "local-plugins/main-uptime",
       "commits": ["ac47acfdbb90e106a8ba2310d0036e00c6b995ee"],
-      "replayFollowupCommits": ["69be1da9ad8b4a95fbbe808ceb3ef7ee53d13b1c"],
+      "replayFollowupCommits": [
+        "69be1da9ad8b4a95fbbe808ceb3ef7ee53d13b1c",
+        "d7b0a924a4b81a49cbc4448f960eaba3cc7dc917"
+      ],
       "subject": "feat(main-uptime): guard and supervise durable main"
     }
   ]

@@ -1446,8 +1446,10 @@ checks that did not prove the real app workflow.
 
 The `main-uptime` topic makes the Linux user systemd manager the sole durable
 Main supervisor. It records one approved SHA, checks Git integrity every five
-seconds, checks public health every 30 seconds, and preserves a complete
-incident bundle before restoring unauthorized changes.
+seconds, and checks public and loopback health every 30 seconds with startup
+grace and consecutive-failure hysteresis. Route-only failures repair Tailscale
+without restarting the app. Integrity recovery preserves a complete incident
+bundle before restoring unauthorized changes.
 
 Promotion opens a short lock for one exact candidate. The candidate can be
 started on the live route, but it cannot become approved or be published to
