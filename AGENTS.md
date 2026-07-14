@@ -119,17 +119,19 @@ Current topic order:
 11. `test(desktop): add headed desktop verification coverage`
 12. `docs(operations): document Jordan patch-stack maintenance workflow`
 13. `feat(topic-stack): add replay checklist and audit safeguards`
+    - Includes machine-enforced Replay Checklist Items for local plugin READMEs, `topic-audit.md` run artifacts, and
+      human promotion sign-off documentation.
+    - Also owns structured Replay Contracts, constrained autonomous conflict repair, exact-fingerprint Repair Memory,
+      upstream dependency-floor reconciliation, post-replay control-plane metadata sync, completed-stack verification,
+      and Linear run evidence. Human input is reserved for fundamental product, architecture, security, or operator
+      decisions.
 14. `feat(dev-launch): add nightly Omarchy launcher`
-
-- Includes `/nightly/` route ownership, the strict nightly verifier, and
-  project seeding into the launcher's active dev-state lane.
-
-- Includes machine-enforced Replay Checklist Items for local plugin READMEs, `topic-audit.md` run artifacts, and
-  human promotion sign-off documentation.
-- Also owns structured Replay Contracts, constrained autonomous conflict repair, exact-fingerprint Repair Memory,
-  upstream dependency-floor reconciliation, post-replay control-plane metadata sync, completed-stack verification,
-  and Linear run evidence. Human input is reserved for fundamental product, architecture, security, or operator
-  decisions.
+    - Includes `/nightly/` route ownership, the strict nightly verifier, and
+      project seeding into the launcher's active dev-state lane.
+15. `feat(main-uptime): guard and supervise durable main`
+    - Owns the boot-managed Main service, approved-SHA integrity and health guards,
+      preservation-before-rollback incidents, strict Main public proof receipt, and
+      protected publication order in both promotion skills.
 
 When upstream changes, prefer the scripted nightly workflow in
 `docs/operations/nightly-upstream-replay.md`. It fetches upstream, backs up and

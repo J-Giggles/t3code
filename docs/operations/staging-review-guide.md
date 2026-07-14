@@ -37,6 +37,7 @@ Review in this order:
 11. Headed desktop verification coverage.
 12. Patch-stack maintenance workflow and promotion governance.
 13. Autonomous topic replay, checklist, and audit safeguards.
+14. Durable Main supervision, rollback, and strict promotion proof.
 
 The order matters because later topics reuse earlier infrastructure. The app
 launcher depends on correct advertised endpoints. Runtime recovery and project
@@ -1432,6 +1433,47 @@ Reviewers should check:
 - Existing metrics continue to emit method, operation, provider, and outcome
   labels alongside the new worktree labels.
 
+## Topic 25: Durable Main Uptime And Promotion Guard
+
+### User Problem
+
+Main was launched as an ordinary desktop session and could remain down after a
+crash. An interrupted or duplicate replay could also leave the live checkout
+conflicted, causing a permanent restart loop. Promotion relied on shallow route
+checks that did not prove the real app workflow.
+
+### What Changed
+
+The `main-uptime` topic makes the Linux user systemd manager the sole durable
+Main supervisor. It records one approved SHA, checks Git integrity every five
+seconds, checks public health every 30 seconds, and preserves a complete
+incident bundle before restoring unauthorized changes.
+
+Promotion opens a short lock for one exact candidate. The candidate can be
+started on the live route, but it cannot become approved or be published to
+GitHub and the Mac until the canonical Main verifier reaches the app through
+the primary interface, finds a project, creates a chat, sends `Hi`, receives an
+assistant response, and writes a fresh proof receipt plus screenshot.
+
+Important implementation areas:
+
+- `scripts/localTopics/mainUptime/index.ts` renders and installs the machine-local service files.
+- `scripts/localTopics/mainUptime/templates/t3code-main-uptime.sh` owns integrity checks, evidence capture, restore, promotion locks, proof validation, and abort.
+- `apps/desktop/scripts/verify-staging-public.mjs` owns the reusable strict Main proof.
+- `docs/operations/main-uptime.md` defines install, promotion, and recovery operations.
+- `.codex/skills/premote-nightly` and `.codex/skills/premote-staging` enforce proof-before-publication order.
+
+### Review Focus
+
+Reviewers should check:
+
+- A service starts only from the approved SHA or the exact active promotion candidate.
+- Guard recovery archives dirty files, index stages, refs, and a verified bundle before resetting anything.
+- Expired or abandoned promotion locks converge back to the approved SHA.
+- Old, wrong-SHA, non-canonical, or pre-lock proof cannot approve a candidate.
+- GitHub Main and the Mac remain unchanged until the live Linux proof passes.
+- Standalone Main verification outside a promotion does not change approval state.
+
 ## Cross-Topic Risks
 
 ### Endpoint And URL Construction
@@ -1547,6 +1589,10 @@ Use this checklist before approving the stack:
 - Observability tests cover dev-runner env injection, local hub startup warning
   behavior, OTLP log config propagation, browser log forwarding, read-only MCP
   tool registration, and worktree resource attributes.
+- Main uptime tests cover dirty and committed mutation preservation, approved-SHA
+  restoration, exact-candidate launch, proof rejection, approval, and abort.
+- Main promotion proof uses the canonical public route and completes the real
+  project/chat workflow before GitHub Main or the Mac moves.
 - `AGENTS.md` contains a current topical stack ledger, and this review guide is
   updated in the same branch whenever topics are added, squashed, split,
   renamed, or dropped. If a topic changes contracts, RPC/IPC shapes, MCP tools,

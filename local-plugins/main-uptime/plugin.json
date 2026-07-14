@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "id": "main-uptime",
+  "title": "Durable Main uptime and promotion guard",
+  "topicKind": "mixed",
+  "topicCommits": ["ac47acfdbb90e106a8ba2310d0036e00c6b995ee"],
+  "ownedPaths": [
+    { "path": ".codex/skills/premote-nightly", "role": "docs" },
+    { "path": ".codex/skills/premote-staging", "role": "docs" },
+    { "path": "apps/desktop/package.json", "role": "config" },
+    { "path": "apps/desktop/scripts/verify-staging-public.mjs", "role": "script" },
+    { "path": "docs/operations/main-uptime.md", "role": "docs" },
+    { "path": "docs/operations/omarchy-dev-launchers.md", "role": "docs" },
+    { "path": "docs/operations/premote-nightly.md", "role": "docs" },
+    { "path": "docs/operations/premote-staging.md", "role": "docs" },
+    { "path": "package.json", "role": "config" },
+    { "path": "scripts/install-main-uptime.ts", "role": "script" },
+    { "path": "scripts/localTopics/mainUptime", "role": "source" }
+  ],
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "scripts/localTopics/mainUptime/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "scripts/localTopics/mainUptime/index.test.ts",
+        "kind": "test",
+        "publicSurface": "test"
+      }
+    ]
+  },
+  "integrationPoints": [
+    { "path": "scripts/install-main-uptime.ts", "role": "public-facade" },
+    { "path": "apps/desktop/scripts/verify-staging-public.mjs", "role": "thin-wiring" },
+    { "path": "apps/desktop/package.json", "role": "thin-wiring" },
+    { "path": "package.json", "role": "thin-wiring" },
+    { "path": ".codex/skills/premote-nightly", "role": "consumer" },
+    { "path": ".codex/skills/premote-staging", "role": "consumer" }
+  ],
+  "verification": [
+    "vp test run scripts/localTopics/mainUptime/index.test.ts scripts/lib/omarchy-dev-launchers.test.ts",
+    "node --check apps/desktop/scripts/verify-staging-public.mjs",
+    "bash -n scripts/localTopics/mainUptime/templates/t3code-main-uptime.sh",
+    "vp run verify:main-public",
+    "vp check",
+    "vp run typecheck"
+  ],
+  "replayContract": {
+    "autonomy": "guarded-auto-repair",
+    "risk": "high",
+    "intent": "Keep T3 Code Main continuously supervised on giggabit-server, preserve and reverse unauthorized checkout mutations, and publish a candidate only after strict exact-SHA public project-and-chat proof.",
+    "preserve": [
+      "Keep Main boot-managed and restart-supervised through the user systemd manager.",
+      "Keep the approved SHA fail-closed outside a short exact-candidate promotion lock.",
+      "Preserve dirty files, conflict stages, refs, and committed divergence before automatic restoration.",
+      "Require a fresh canonical Main primary-interface project/chat proof receipt from the same promotion window before approval.",
+      "Keep GitHub Main and the Mac checkout unchanged until the live Linux candidate is approved."
+    ],
+    "safeAutoRepair": [
+      "Adapt unit templates, launcher paths, ports, and verifier integration to unambiguous upstream script or package refactors.",
+      "Adapt incident capture commands while retaining equivalent full Git and worktree evidence before restoration.",
+      "Adapt the Main verifier to upstream project-list, composer, or assistant-response selectors while preserving the complete public workflow.",
+      "Update promotion skill wording and commands to match equivalent renamed service or verifier interfaces."
+    ],
+    "stopForHuman": [
+      "Stop if upstream changes the Main runtime ownership model, durable worktree topology, or user-systemd boot assumptions enough to require a new operating decision.",
+      "Stop if preserving the feature would weaken exact-SHA enforcement, evidence capture, automatic rollback, or strict public proof.",
+      "Stop if the canonical Main verifier can no longer create a real project chat and receive a provider response without changing the acceptance contract.",
+      "Stop if a repair would authorize direct product work in the live Main checkout."
+    ],
+    "verification": [
+      "vp test run scripts/localTopics/mainUptime/index.test.ts scripts/lib/omarchy-dev-launchers.test.ts",
+      "node --check apps/desktop/scripts/verify-staging-public.mjs",
+      "bash -n scripts/localTopics/mainUptime/templates/t3code-main-uptime.sh",
+      "vp check",
+      "vp run typecheck"
+    ]
+  }
+}

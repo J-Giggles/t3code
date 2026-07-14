@@ -79,6 +79,13 @@ installable Codex plugins.
       `topic-audit.md` creation, structured Replay Contracts, constrained
       autonomous repair, Exact Repair Memory, completed-stack verification,
       dependency reconciliation, and promotion sign-off documentation.
+19. `feat(dev-launch): add nightly Omarchy launcher`
+    - Follow-up for the durable nightly launcher, `/nightly/` route, and strict
+      nightly public verifier.
+20. `feat(main-uptime): guard and supervise durable main`
+    - Owns the boot-managed Main service, approved-SHA integrity and health
+      guards, incident preservation, exact-candidate promotion lock, strict
+      public proof receipt, and rollback-first promotion flow.
 
 ## Local Topic Plugins
 

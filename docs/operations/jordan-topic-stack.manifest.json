@@ -8,6 +8,7 @@
     "docs/operations/jordan-topic-stack.manifest.json",
     "docs/operations/nightly-upstream-agent.md",
     "docs/operations/nightly-upstream-replay.md",
+    "docs/operations/main-uptime.md",
     "docs/operations/premote-nightly.md",
     "docs/operations/premote-staging.md",
     "docs/operations/staging-review-guide.md",
@@ -183,6 +184,12 @@
         "a56bbc1215ac5df544a8af779fddf7474194105d"
       ],
       "subject": "feat(dev-launch): add nightly Omarchy launcher"
+    },
+    {
+      "id": "main-uptime",
+      "pluginPath": "local-plugins/main-uptime",
+      "commits": ["ac47acfdbb90e106a8ba2310d0036e00c6b995ee"],
+      "subject": "feat(main-uptime): guard and supervise durable main"
     }
   ]
 }
