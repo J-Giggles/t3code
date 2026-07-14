@@ -1494,6 +1494,9 @@ from an authorized send or preserve queued work across reconnects.
 The topic commit recorded in `local-plugins/on-the-go/plugin.json`
 `feat(on-the-go): add voice-first Theo companion` adds a replayable voice layer
 across contracts, server, web/Electron, and native mobile.
+Follow-up topic `fix(on-the-go): add reliable local voice transcription`
+replaces Electron's network-backed browser recognizer with the bounded
+active-environment Whisper path described below.
 
 Important implementation areas:
 

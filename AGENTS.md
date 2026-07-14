@@ -121,9 +121,12 @@ Current topic order:
 9. `feat(project-agent-files): add schemas, CRUD, and scaffold safety`
 10. `feat(observability): add local hub, Grafana provisioning, and digest metrics`
 11. `feat(on-the-go): add voice-first Theo companion`
-    - Adds durable voice ownership, queued announcements, conversational Theo, Follow Mode, exact `Send it`
-      authorization, configurable vocabulary and Barge-In, bounded context fetches, mobile/desktop voice policy,
-      and stable `OTG-UT-001` through `OTG-UT-023` acceptance coverage.
+
+- Follow-up `fix(on-the-go): add reliable local voice transcription` owns bounded Electron PCM capture, the authorized active-environment Whisper RPC, visible fail-closed behavior, real virtual-microphone E2E, and the recorded command-audio audit.
+- Adds durable voice ownership, queued announcements, conversational Theo, Follow Mode, exact `Send it`
+  authorization, configurable vocabulary and Barge-In, bounded context fetches, mobile/desktop voice policy,
+  and stable `OTG-UT-001` through `OTG-UT-023` acceptance coverage.
+
 12. `test(desktop): add headed desktop verification coverage`
 13. `docs(operations): document Jordan patch-stack maintenance workflow`
 14. `feat(topic-stack): add replay checklist and audit safeguards`

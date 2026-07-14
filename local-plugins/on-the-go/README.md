@@ -7,8 +7,11 @@ Add a voice-first Theo companion that can announce durable agent responses, disc
 ## Current Commits
 
 - `d225f64c448cc5bfc6cd9cb0915703ca89ef179d` `feat(on-the-go): add voice-first Theo companion`
+- `1578b0149a693b09dd672c9b44bd42f91d94b5ef` `fix(on-the-go): add reliable local voice transcription`
 
 This is the staging-stack replay of clean source topic `5a529884f6c6d84c219f6245a3b7da68599d5a52`, which applies directly to upstream `c1ec1915fc16f3dc1ec5d47d9a97f6210a574526` with every other Jordan topic absent. The staging replay preserves its focused unit suites and headed Electron harness while wiring through the established routed-server and launcher topics.
+
+The follow-up transcription topic replaces Electron's network-dependent browser recognizer with bounded PCM sent to an approved local Whisper model in the selected active T3 environment. It includes fail-closed runtime handling, a real PipeWire microphone gate, and a 30-phrase Mac acoustic audit.
 
 ## Squash / Replay History
 

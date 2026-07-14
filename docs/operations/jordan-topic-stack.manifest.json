@@ -95,7 +95,10 @@
     {
       "id": "on-the-go",
       "pluginPath": "local-plugins/on-the-go",
-      "commits": ["d225f64c448cc5bfc6cd9cb0915703ca89ef179d"],
+      "commits": [
+        "d225f64c448cc5bfc6cd9cb0915703ca89ef179d",
+        "1578b0149a693b09dd672c9b44bd42f91d94b5ef"
+      ],
       "subject": "feat(on-the-go): add voice-first Theo companion"
     },
     {
