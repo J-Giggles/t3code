@@ -1501,6 +1501,9 @@ Follow-up topic `fix(on-the-go): restore macOS microphone permission identity`
 keeps the development launcher as a signed LaunchServices-owned app, adds the
 native microphone consent gate, and prevents shutdown from leaving a detached
 Electron process.
+Follow-up topic `refactor(on-the-go): isolate macOS launcher runtime` keeps that
+behavior behind the topic-owned module and isolates headed CDP/profile state
+from the normal macOS login profile and keychain.
 
 Important implementation areas:
 
