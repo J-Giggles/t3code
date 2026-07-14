@@ -56,9 +56,9 @@ Implementation evidence is intentionally grouped by the smallest owning module w
 - `OTG-UT-017` and `OTG-UT-018`: `apps/server/src/localTopics/onTheGo/ProviderCheckpoint.test.ts`, `apps/server/src/localTopics/onTheGo/EventIngestion.test.ts`, `apps/server/src/localTopics/onTheGo/FoundationRuntime.test.ts`, and `packages/client-runtime/src/localTopics/onTheGo/Controller.test.ts`.
 - `OTG-UT-019`–`OTG-UT-021`: `packages/client-runtime/src/localTopics/onTheGo/VoiceModelPolicy.test.ts`, `apps/web/src/localTopics/onTheGo/BrowserSpeechAdapter.test.ts`, `apps/desktop/src/localTopics/onTheGo/index.test.ts`, `apps/mobile/src/localTopics/onTheGo/NativeVoicePolicy.test.ts`, `apps/mobile/src/localTopics/onTheGo/NativeAudioPolicy.test.ts`, and `apps/mobile/src/localTopics/onTheGo/NativeQuickAction.test.ts`.
 - `OTG-UT-023`: `apps/server/src/localTopics/onTheGo/IntegrationContract.test.ts` pins semantic RPC, lifecycle, event-ingestion, and renderer integration seams while allowing behavior-preserving mechanical movement.
-- `OTG-UT-024`: `apps/server/src/localTopics/onTheGo/ProductionService.test.ts` pins legacy-binding migration, same-principal relaunch recovery, and different-principal refusal.
+- `OTG-UT-024`: `apps/server/src/localTopics/onTheGo/ProductionService.test.ts` pins legacy-binding migration, same-principal relaunch recovery, and different-principal refusal; `packages/client-runtime/src/localTopics/onTheGo/Controller.test.ts` keeps startup pending until reconnect so persisted voice capture is restored only after the server is ready.
 
-The focused deterministic command currently proves 104 tests across 27 files:
+The focused deterministic command currently proves 105 tests across 27 files:
 
 ```bash
 pnpm exec vp test run packages/contracts/src/localTopics/onTheGo packages/shared/src/sensitiveText.test.ts apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/mobile/src/features/shortcuts/appShortcuts.test.ts apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo

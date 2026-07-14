@@ -215,6 +215,7 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
   let pendingFollowSummary: string | null = null;
   let lastResponseToneAt: number | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let retryWake: (() => void) | null = null;
   let stopped = false;
   const listeners = new Set<(state: OnTheGoControllerState) => void>();
   let availability = options.speech.availability();
@@ -1060,15 +1061,27 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
     start: async () => {
       stopped = false;
       const connect = async (): Promise<void> => {
-        try {
-          await refresh();
-        } catch {
-          localMode = "degraded";
-          caption = "The On-the-Go server is reconnecting";
-          notify();
-          if (!stopped) retryTimer = setTimeout(() => void connect(), 1_000);
-          return;
+        for (;;) {
+          if (stopped) return;
+          try {
+            await refresh();
+            break;
+          } catch {
+            localMode = "degraded";
+            caption = "The On-the-Go server is reconnecting";
+            notify();
+            await new Promise<void>((resolve) => {
+              const wake = () => {
+                retryTimer = null;
+                retryWake = null;
+                resolve();
+              };
+              retryWake = wake;
+              retryTimer = setTimeout(wake, 1_000);
+            });
+          }
         }
+        if (stopped) return;
         stopEvents?.();
         stopEvents = options.transport.subscribe(options.scope, () => {
           const previousResponseBadge = snapshot?.foundation.responseBadge ?? 0;
@@ -1118,6 +1131,8 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
       stopped = true;
       if (retryTimer) clearTimeout(retryTimer);
       retryTimer = null;
+      retryWake?.();
+      retryWake = null;
       stopListening?.();
       stopEvents?.();
       stopListening = null;
