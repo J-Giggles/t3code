@@ -2,6 +2,292 @@
 
 This context defines project-specific language for T3 Code's product and the maintenance of its local topic stack.
 
+## Extension Distribution
+
+**T3 Extension**:
+An independently selectable T3 Code capability that can be adopted without taking the rest of Jordan's preferred feature set.
+_Avoid_: plugin, Codex plugin, local topic, patch
+
+**T3 Extension Catalog**:
+The distributable collection from which adopters discover and select compatible T3 Extensions individually or through a preset.
+_Avoid_: plugin stack, patch stack, Jordan fork
+
+**Jordan Extension Stack**:
+The combined installed experience formed from the public Jordan Base Stack and Jordan's private Operator Overlay.
+_Avoid_: Jordan plugin stack, local patch stack, fork features
+
+**Jordan Base Stack**:
+The public versioned preset containing Jordan's generally reusable T3 Extensions and no machine-specific, credential-bound, or private operational behavior.
+_Avoid_: public copy of Jordan's install, default private stack, full operator stack
+
+**Jordan Operator Overlay**:
+The private or local versioned preset layered over the Jordan Base Stack for machine-specific launchers, credentials, infrastructure, and personal operational behavior.
+_Avoid_: hidden public extensions, private fork, local patches
+
+**Jordan Stack Completeness**:
+The invariant that every Extension Bundle selected by the Jordan Base Stack or Jordan Operator Overlay is required and healthy before Jordan's Main assembly can pass acceptance.
+_Avoid_: best-effort stack, optional preset entry, mostly healthy Main
+
+**Extension Visibility**:
+The required distribution classification of an extension as `public`, `private`, `local-only`, or `deprecated`, enforced independently from whether a preset selects it.
+_Avoid_: repository visibility, catalog trust, install status
+
+**Extension Support Tier**:
+The catalog-disclosed ownership classification `official`, `community-verified`, or `external`, identifying who maintains an extension and which catalog vouches for its distribution without conflating verification with ongoing support.
+_Avoid_: compatibility status, popularity, quality score
+
+**Extension Admission Review**:
+The independent catalog-maintainer decision that accepts a source-reviewed, catalog-built, fully evidenced community extension into the official catalog; the submitter cannot approve their own admission.
+_Avoid_: pull request merge, automated certification, popularity vote
+
+**Privileged Extension Review**:
+The additional explicit security review required when an extension requests shell, network, credential, native-code, or broad filesystem authority.
+_Avoid_: permission prompt, maintainer approval, vulnerability scan
+
+**T3 Extension Host**:
+The small stable T3 Code boundary through which T3 Extensions register and use supported product capabilities without directly patching unrelated core files.
+_Avoid_: plugin loader, patch engine, local topic wiring
+
+**Extension Host Adapter**:
+The upstream-version-specific bridge that maps the stable T3 Extension Host contract onto the capabilities and seams of one T3 Code version.
+_Avoid_: compatibility patch, merge repair, extension shim
+
+**Bootstrap Patch**:
+The minimal source change that attaches the T3 Extension Host to an upstream T3 Code version that does not provide the host natively.
+_Avoid_: extension patch, topic commit, fork delta
+
+**Host Capability**:
+A versioned product contract exposed by the T3 Extension Host that an extension may require or use optionally.
+_Avoid_: hook, file path, integration point
+
+**Host Capability Family**:
+A cohesive discovery group for small independently versioned Host Capabilities that share one product surface or lifecycle concern without becoming a monolithic API.
+_Avoid_: host API module, extension SDK, integration layer
+
+**Capability Version Retirement**:
+The planned removal of an immutable Host Capability major version only after supported locks no longer depend on it, migration guidance exists, and its material-change plan is accepted.
+_Avoid_: API cleanup, adapter drop, deprecation warning
+
+**Required Capability**:
+A Host Capability without which an extension cannot be installed or activated correctly.
+_Avoid_: hard dependency, assumed seam, mandatory hook
+
+**Optional Capability**:
+A Host Capability whose absence disables only the declared integration and leaves the extension in an explicit supported degraded state.
+_Avoid_: best-effort hook, silent fallback, soft dependency
+
+**Capability Compatibility Report**:
+The install-time and runtime account of which required and optional Host Capabilities an extension matched, refused, or degraded against the active Extension Host Adapter.
+_Avoid_: version check, install log, compatibility guess
+
+**Extension Bundle**:
+The atomic catalog release for one user-visible T3 Extension, containing the surface-specific parts it needs under one version and lifecycle.
+_Avoid_: package, platform plugin, topic folder
+
+**Extension Bundle Version**:
+The immutable version identifying one complete Extension Bundle across all of its included product surfaces and acceptance evidence.
+_Avoid_: package version, commit hash, stack version
+
+**Resolved Extension Graph**:
+The cycle-free set of exact Extension Bundle Versions and matched Host Capabilities selected for one installation or stack preset.
+_Avoid_: dependency tree, package lock, topic order
+
+**Preset Entry Criticality**:
+The explicit `required` or `optional` health role of an Extension Bundle within one preset, independently of the Required and Optional Host Capabilities used inside that bundle.
+_Avoid_: dependency type, support tier, install priority
+
+**Extension Capability Provider**:
+An Extension Bundle that implements a Host Capability for other extensions without exposing its internal packages.
+_Avoid_: extension dependency, shared package, plugin import
+
+**Extension Catalog Repository**:
+The public source repository for T3 Extension Host contracts, adapters, Extension Bundles, catalog metadata, presets, installer tooling, compatibility evidence, and documentation.
+_Avoid_: T3 Code fork, plugin submodule, patch repository
+
+**Extension Authoring Kit**:
+The public scaffold, templates, deterministic host fakes, compatibility and acceptance harnesses, catalog validators, provenance checks, and reference bundles required to create and prove a distributable T3 Extension.
+_Avoid_: SDK package, example repository, contributor guide
+
+**Extension Artifact**:
+An immutable provenance-backed release of one Extension Bundle whose identity and integrity can be verified before installation.
+_Avoid_: Git branch, source folder, mutable download
+
+**Catalog Build Provenance**:
+The verifiable chain binding an official Extension Artifact to reviewed source, an immutable source revision, the catalog-controlled build workflow, its checks, and its publishing identity.
+_Avoid_: release note, maintainer assertion, uploaded checksum
+
+**Catalog-Controlled Build**:
+The isolated official-catalog workflow that builds, tests, attests, and signs an accepted Extension Bundle directly from its reviewed immutable source revision; maintainers cannot substitute manually built binaries.
+_Avoid_: publisher upload, local release build, trusted maintainer binary
+
+**Extension Distribution License**:
+The catalog-disclosed source and artifact license governing reuse and redistribution of an Extension Bundle; the official platform and Jordan Extension Stack use Apache-2.0, while third-party entries must declare a distribution-compatible license.
+_Avoid_: repository license assumption, hidden package license, catalog terms
+
+**Extension Installation Lock**:
+The exact record of installed Extension Artifacts, integrity hashes, resolved Host Capabilities, Extension Host Adapter, and upstream T3 Code target.
+_Avoid_: package lockfile, preset, install log
+
+**Public Base Lock**:
+The repository-committed Extension Installation Lock and non-secret Extension Configuration Profile for the Jordan Base Stack.
+_Avoid_: combined lock, package lock, private preset
+
+**Private Overlay Lock**:
+The protected host-local Extension Installation Lock and configuration for the Jordan Operator Overlay, excluded from the public repository and redacted in shared evidence.
+_Avoid_: secret lockfile, ignored public config, local patch manifest
+
+**Combined Assembly Digest**:
+The non-secret cryptographic identity binding the Public Base Lock, Private Overlay Lock, upstream revision, adapter, and Stack Assembly Manifest into the exact state certified and promoted.
+_Avoid_: git commit, lock hash, build ID
+
+**Extension Configuration Profile**:
+The schema-validated portable, non-secret configuration associated with an Extension Installation Lock or preset and applied independently from machine-local secret bindings.
+_Avoid_: environment file, preset settings, extension database
+
+**Extension Secret Reference**:
+A stable extension-declared name for a credential or secret that the host binds to an adopter-controlled secret store without placing its value in artifacts, presets, locks, exports, logs, or evidence.
+_Avoid_: environment variable value, encrypted preset field, credential setting
+
+**Extension Installation Transaction**:
+The all-or-nothing resolution, verification, registration, checking, and activation of a Resolved Extension Graph, with complete rollback on failure.
+_Avoid_: package install, partial setup, best-effort activation
+
+**Autonomous Extension Promotion**:
+The unattended overnight transaction that promotes an exactly locked and fully verified extension candidate through Nightly and Staging to Main, relaunches Main, and proves the live Main experience before reporting success.
+_Avoid_: automatic update, unattended install, nightly merge
+
+**Main Promotion Drain**:
+The bounded pre-relaunch state in which Main stops accepting new interruptible work and waits for active agent turns, writes, migrations, and other non-interruptible operations to finish before promotion may continue.
+_Avoid_: maintenance mode, forced restart, shutdown delay
+
+**Contract-Preserving Update**:
+An extension or preset release that changes no accepted feature behavior, permission scope, durable-data guarantee, or supported surface and is therefore eligible for autonomous promotion after complete certification.
+_Avoid_: patch release, compatible semver, green build
+
+**Material Extension Change**:
+An added, removed, or altered accepted behavior; expanded permission; irreversible or destructive migration; or loss of a supported surface that requires a newly accepted hosted plan before promotion eligibility.
+_Avoid_: major version, failing test, implementation detail
+
+**Live Main Acceptance**:
+The post-relaunch verification against the real Main lane and its public tailnet route that must pass before an Autonomous Extension Promotion is considered complete.
+_Avoid_: staging checks, process health, HTTP smoke test
+
+**Nightly Extension Dashboard**:
+The stable tailnet-only latest-run interface that summarizes assembly status, topic and extension changes, exact revisions and lock, certification, plans, visuals, live proof, rollback evidence, and decisions requiring attention.
+_Avoid_: CI page, report directory, Linear issue
+
+**Immutable Nightly Run Page**:
+The revision- and checksum-bound evidence page for one nightly assembly, retained behind the Nightly Extension Dashboard even after a newer run becomes latest.
+_Avoid_: latest report, mutable plan, build log
+
+**Verified Promotion Rollback**:
+The automatic restoration of Main's previous commit, Extension Installation Lock, configuration, and required data snapshots after failed Live Main Acceptance, followed by relaunch and proof of the restored live service.
+_Avoid_: git reset, best-effort rollback, restart retry
+
+**Trusted Extension Catalog**:
+An Extension Catalog whose publishing identity an adopter has explicitly authorized as a source of installable Extension Artifacts.
+_Avoid_: marketplace, package registry, arbitrary URL
+
+**Extension Permission**:
+A declared category and scope of authority an Extension Bundle requests over T3 Code, the host machine, connected services, or user data.
+_Avoid_: Host Capability, package permission, implicit access
+
+**Extension Permission Grant**:
+The adopter's explicit authorization of an Extension Bundle's declared permissions for one installation, renewed when an upgrade expands authority.
+_Avoid_: preset selection, install confirmation, trust source
+
+**Brokered Extension Execution**:
+The default isolated worker or process and sandboxed or host-rendered UI model in which extension access is possible only through granted Host Capabilities and Extension Secret References.
+_Avoid_: plugin sandbox claim, separate package, permission declaration
+
+**Extension Circuit Breaker**:
+The host-owned bounded-restart guard that disables a repeatedly failing brokered extension, preserves T3 Code availability, records the failure, and prevents an unbounded crash loop.
+_Avoid_: retry loop, disabled setting, process supervisor
+
+**Integrated Extension Execution**:
+An exceptional same-process or build-time official Extension Bundle with full-trust authority, explicit disclosure, Privileged Extension Review, and rebuild activation because capability brokering cannot contain its required integration.
+_Avoid_: normal extension, trusted publisher code, performance mode
+
+**Extension Manager**:
+The host-owned interface for inspecting, installing, disabling, updating, uninstalling, and purging extensions together with their source, support, certification, permissions, retained data, activation, and evidence.
+_Avoid_: marketplace, plugin settings, package manager
+
+**Extension Provenance Disclosure**:
+The contextual identification of the owning extension and its authority at contributed UI details, sensitive actions, and permission prompts without permanently badging every ordinary control.
+_Avoid_: extension watermark, hidden ownership, catalog advertisement
+
+**Extension Data Namespace**:
+The host-governed persistent data boundary owned by one T3 Extension and retained independently from its installed code.
+_Avoid_: core table, plugin storage, shared settings
+
+**Extension Data Migration**:
+A transactional version transition for an Extension Data Namespace, with a tested rollback or an explicit refusal to downgrade.
+_Avoid_: core migration, startup patch, best-effort conversion
+
+**Extension Purge**:
+The explicit destructive removal of an extension's retained Extension Data Namespace after its code and registration have been uninstalled.
+_Avoid_: uninstall, disable, reset
+
+**Extension Compatibility Certification**:
+Evidence that one Extension Host Adapter and Resolved Extension Graph passed the required contract and product checks against an exact upstream T3 Code commit or a proven commit range.
+_Avoid_: semver claim, compatibility guess, successful install
+
+**Certified With Degradation**:
+A compatibility result in which every Required Capability passed and only declared Optional Capabilities are unavailable, with the resulting behavior documented and verified.
+_Avoid_: partial success, best effort, warning-only support
+
+**Capability Emulation**:
+An Extension Host Adapter implementation that preserves a removed or changed upstream capability's accepted semantics and passes its complete contract evidence without weakening permissions, failures, or invariants.
+_Avoid_: compatibility shim, fallback patch, approximate behavior
+
+**Known-Good Assembly**:
+The latest Stack Assembly Manifest, upstream commit, adapter, artifacts, lock, configuration, and data state that completed Live Main Acceptance and can be retained when a newer upstream combination is unsupported.
+_Avoid_: old Main, previous release, rollback commit
+
+**Legacy Replay Topic**:
+A current repo-local topic commit and metadata folder that remains authoritative until an equivalent T3 Extension completes catalog conversion.
+_Avoid_: deprecated extension, old plugin, migration copy
+
+**Stack Assembly Manifest**:
+The single mixed-mode declaration that pins the upstream T3 Code revision, Extension Host Adapter, remaining Legacy Replay Topics, exact Extension Installation Lock, and Platform Evidence Components used to construct one candidate.
+_Avoid_: replay manifest, extension preset, CI matrix
+
+**Assembly Cutover**:
+The atomic manifest change that removes a converted capability from legacy replay and adds its exact Extension Bundle Version to the installation lock, preventing both forms from being active together.
+_Avoid_: gradual activation, duplicate install, conversion flag
+
+**Extension Conversion**:
+The controlled replacement of one Legacy Replay Topic with an independently installable Extension Bundle.
+_Avoid_: package extraction, topic rename, repository move
+
+**Parent Extension Fold-In**:
+The conversion of a legacy fix or follow-up topic into the owning user-visible Extension Bundle rather than publishing it as a separately selectable catalog entry.
+_Avoid_: hidden extension, follow-up package, replay commit preservation
+
+**Platform Evidence Component**:
+Tests, operations documentation, or catalog/replay safeguards that verify and operate the extension platform but are not independently selectable user capabilities.
+_Avoid_: documentation extension, test plugin, internal catalog entry
+
+**Conversion Parity Gate**:
+The evidence boundary proving an Extension Bundle preserves every accepted feature, refusal path, invariant, lifecycle behavior, and required visual flow of its Legacy Replay Topic before atomic cutover.
+_Avoid_: green build, smoke test, manual comparison
+
+**Extension Visual Contract**:
+The version-bound set of architecture, lifecycle, and product visuals required to explain and verify an Extension Bundle at its exact source and artifact revision.
+_Avoid_: screenshots, marketing images, optional diagrams
+
+**Visual Evidence Provenance**:
+The source revision, Extension Bundle Version, caption, alternative text, and producing test or command that bind a visual to verified extension behavior.
+_Avoid_: image filename, screenshot date, manual note
+
+**Extension Activation Mode**:
+The declared per-surface activation requirement for an extension: hot activation, controlled process restart, application rebuild, or unsupported.
+_Avoid_: install type, reload hint, platform support
+
+**Extension Activation Plan**:
+The pre-install account of every process restart, application rebuild, unavailable surface, and rollback action required to activate a Resolved Extension Graph.
+_Avoid_: install output, build script, restart instructions
+
 ## Local Topic Replay
 
 **Replay Checklist Item**:
