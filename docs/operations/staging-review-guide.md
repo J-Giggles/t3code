@@ -1507,6 +1507,10 @@ from the normal macOS login profile and keychain.
 Follow-up topic `fix(on-the-go): normalize cached macOS frameworks` repairs
 flattened framework aliases in an existing Electron install before signing, so
 the durable Staging launcher remains restart-safe without replacing app data.
+Follow-up topic `fix(on-the-go): harden local whisper input` converts captured
+PCM to a private temporary 16 kHz WAV for the supported `whisper-cli` file
+interface and treats early subprocess exits as ordinary transcription failures
+instead of crashing the backend with an unhandled stdin `EPIPE`.
 
 Important implementation areas:
 
