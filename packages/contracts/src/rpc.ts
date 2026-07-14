@@ -194,6 +194,7 @@ import {
   OnTheGoEvent,
   OnTheGoReadScope,
   OnTheGoSnapshot,
+  OnTheGoTranscriptionModelSelection,
 } from "./localTopics/onTheGo/index.ts";
 
 export const WS_METHODS = {
@@ -296,6 +297,7 @@ export const WS_METHODS = {
   onTheGoDispatch: "onTheGo.dispatch",
   onTheGoSnapshot: "onTheGo.snapshot",
   onTheGoTheo: "onTheGo.theo",
+  onTheGoTranscribe: "onTheGo.transcribe",
 
   // Cloud environment methods
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
@@ -941,6 +943,31 @@ export const WsOnTheGoTheoRpc = Rpc.make(WS_METHODS.onTheGoTheo, {
   error: EnvironmentAuthorizationError,
 });
 
+export const OnTheGoPcmTranscriptionRequest = Schema.Struct({
+  pcmBase64: Schema.String,
+  sampleRate: Schema.Literal(16_000),
+  language: Schema.String,
+  model: OnTheGoTranscriptionModelSelection,
+});
+
+export const OnTheGoPcmTranscriptionResult = Schema.Union([
+  Schema.Struct({ status: Schema.Literal("success"), text: Schema.String }),
+  Schema.Struct({
+    status: Schema.Literal("unavailable"),
+    reason: Schema.Literal("model-unavailable"),
+  }),
+  Schema.Struct({
+    status: Schema.Literal("failure"),
+    reason: Schema.Literals(["audio-invalid", "audio-too-large", "transcription-failed"]),
+  }),
+]);
+
+export const WsOnTheGoTranscribeRpc = Rpc.make(WS_METHODS.onTheGoTranscribe, {
+  payload: OnTheGoPcmTranscriptionRequest,
+  success: OnTheGoPcmTranscriptionResult,
+  error: EnvironmentAuthorizationError,
+});
+
 export const WsSubscribeOnTheGoEventsRpc = Rpc.make(WS_METHODS.subscribeOnTheGoEvents, {
   payload: OnTheGoReadScope,
   success: OnTheGoEvent,
@@ -1037,6 +1064,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsOnTheGoDispatchRpc,
   WsOnTheGoSnapshotRpc,
   WsOnTheGoTheoRpc,
+  WsOnTheGoTranscribeRpc,
   WsSubscribeOnTheGoEventsRpc,
   WsOrchestrationDispatchCommandRpc,
   WsOrchestrationGetTurnDiffRpc,

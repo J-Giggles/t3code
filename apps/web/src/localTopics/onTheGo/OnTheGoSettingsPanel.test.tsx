@@ -24,6 +24,9 @@ describe("On-the-Go settings", () => {
     expect(ON_THE_GO_TRANSCRIPTION_OPTIONS).toContainEqual(
       expect.objectContaining({ modelId: "on-device-transcription" }),
     );
+    expect(ON_THE_GO_TRANSCRIPTION_OPTIONS).toContainEqual(
+      expect.objectContaining({ providerId: "local", modelId: "whisper-base-en" }),
+    );
     expect(markup).toContain("T3, Hey Theo");
   });
 });

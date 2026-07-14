@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
+import { normalizeRecognizedVoicePhrase } from "./Controller.ts";
 import { ON_THE_GO_IMMUTABLE_PHRASES, ON_THE_GO_VOICE_PARITY_CATALOG } from "./VoiceParity.ts";
 
 describe("On-the-Go voice parity audit", () => {
@@ -15,5 +16,15 @@ describe("On-the-Go voice parity audit", () => {
       ),
     ).toBe(true);
     for (const immutable of ON_THE_GO_IMMUTABLE_PHRASES) expect(phrases).toContain(immutable);
+  });
+
+  it("OTG-UT-005/021: accepts audited local Whisper variants only for low-risk read commands", () => {
+    expect(normalizeRecognizedVoicePhrase("What changed in the follow chat?")).toBe(
+      "what changed in the followed chat",
+    );
+    expect(normalizeRecognizedVoicePhrase("Inspect the OData.")).toBe("inspect theo data");
+    for (const immutable of ON_THE_GO_IMMUTABLE_PHRASES) {
+      expect(normalizeRecognizedVoicePhrase(immutable)).toBe(immutable.toLocaleLowerCase());
+    }
   });
 });

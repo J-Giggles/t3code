@@ -112,6 +112,7 @@ pnpm exec vp test run packages/contracts/src/localTopics/onTheGo packages/shared
 ### Models And Audio
 
 - Independent Transcription/Theo/Speech model selection and safe switch boundaries.
+- Electron PCM utterance detection, 16 kHz payload bounds, active-environment local Whisper selection, unavailable-model refusal, runtime failure shutdown, and real PipeWire virtual-microphone activation.
 - Capability catalog filtering, modality limits, approved fallback chains, and fail-closed exhaustion.
 - Usage warning/hard limits without disabling local safety controls.
 - Sentence-chunked Theo speech, Stop/Barge-In, call/media/navigation/alarm focus behavior.

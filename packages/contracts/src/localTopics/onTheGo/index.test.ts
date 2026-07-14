@@ -27,10 +27,12 @@ describe("On-the-Go contracts", () => {
       dispatch: WS_METHODS.onTheGoDispatch,
       snapshot: WS_METHODS.onTheGoSnapshot,
       events: WS_METHODS.subscribeOnTheGoEvents,
+      transcribe: WS_METHODS.onTheGoTranscribe,
     }).toEqual({
       dispatch: "onTheGo.dispatch",
       snapshot: "onTheGo.snapshot",
       events: "subscribeOnTheGoEvents",
+      transcribe: "onTheGo.transcribe",
     });
   });
   it("decodes the schema-only command union and rejects unknown commands", () => {

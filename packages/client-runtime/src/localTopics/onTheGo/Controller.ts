@@ -28,7 +28,10 @@ export interface OnTheGoSpeechAdapter {
     readonly background: boolean;
     readonly reason?: string;
   };
-  readonly start: (listener: (transcript: string) => void) => () => void;
+  readonly start: (
+    listener: (transcript: string) => void,
+    onFailure?: (reason: string) => void,
+  ) => () => void;
   readonly speak: (text: string) => Promise<void>;
   readonly stop: () => void;
   readonly dispose?: () => void;
@@ -148,11 +151,21 @@ export interface OnTheGoController {
   readonly subscribe: (listener: (state: OnTheGoControllerState) => void) => () => void;
 }
 
-const normalize = (value: string) =>
-  value
+const acousticPhraseAliases: Readonly<Record<string, string>> = {
+  "what changed in the follow chat": "what changed in the followed chat",
+  "inspect the odata": "inspect theo data",
+  "inspect the o data": "inspect theo data",
+};
+
+export const normalizeRecognizedVoicePhrase = (value: string) => {
+  const normalized = value
     .trim()
     .toLocaleLowerCase()
     .replace(/[?.!,]+/g, "");
+  return acousticPhraseAliases[normalized] ?? normalized;
+};
+
+const normalize = normalizeRecognizedVoicePhrase;
 const dispositionReason = (disposition: OnTheGoCommandDisposition) =>
   disposition.status === "rejected"
     ? disposition.reason
@@ -204,7 +217,7 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
   const listeners = new Set<(state: OnTheGoControllerState) => void>();
-  const availability = options.speech.availability();
+  let availability = options.speech.availability();
   const wakePhrases = () => {
     const configured = options.voiceSettings?.().wakePhrases ?? [];
     const commandDisplay = configured[0]?.trim() || "T3";
@@ -1160,13 +1173,30 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
         });
       }
       await setMode("sleep");
-      stopListening ??= options.speech.start((value) => {
-        void acceptTranscript(value).catch(() => {
-          localMode = "degraded";
-          caption = "The On-the-Go server is reconnecting";
+      stopListening ??= options.speech.start(
+        (value) => {
+          void acceptTranscript(value).catch(() => {
+            localMode = "degraded";
+            caption = "The On-the-Go server is reconnecting";
+            notify();
+          });
+        },
+        (reason) => {
+          availability = { available: false, background: availability.background, reason };
+          localMode = "off";
+          caption = reason;
+          stopListening?.();
+          stopListening = null;
+          options.speech.stop();
           notify();
-        });
-      });
+          void dispatch({
+            type: "mode.set",
+            commandId: commandId("transcription-failed"),
+            mode: "off",
+            source: "voice",
+          }).catch(() => undefined);
+        },
+      );
       const configuredWake = wakePhrases();
       caption = `Listening for ${configuredWake.commandDisplay} or ${configuredWake.theoDisplay}`;
       notify();
