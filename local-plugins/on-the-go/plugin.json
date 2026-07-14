@@ -16,8 +16,7 @@
     { "path": "apps/desktop/src/localTopics/onTheGo", "role": "source" },
     { "path": "apps/desktop/resources/entitlements.mac.plist", "role": "config" },
     { "path": "apps/desktop/resources/entitlements.mac.child.plist", "role": "config" },
-    { "path": "apps/desktop/scripts/sign-mac-launcher.mjs", "role": "script" },
-    { "path": "apps/desktop/scripts/dev-process-cleanup.mjs", "role": "script" },
+    { "path": "apps/desktop/scripts/localTopics/onTheGo", "role": "source" },
     { "path": "apps/desktop/scripts/dev-process-cleanup.test.mjs", "role": "test" },
     { "path": "apps/desktop/scripts/electron-launcher.test.mjs", "role": "test" },
     { "path": "apps/mobile/src/localTopics/onTheGo", "role": "source" },
@@ -69,6 +68,11 @@
       },
       {
         "path": "apps/desktop/src/localTopics/onTheGo/index.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/desktop/scripts/localTopics/onTheGo/mac-development-launcher.mjs",
         "kind": "source",
         "publicSurface": "internal"
       },

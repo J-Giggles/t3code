@@ -11,7 +11,11 @@ import {
   resolveDevProtocolClient,
   resolveElectronLaunchCommand,
 } from "./electron-launcher.mjs";
-import { cleanupDarwinDevProcesses } from "./dev-process-cleanup.mjs";
+import {
+  cleanupDarwinDevProcesses,
+  resolveDarwinDevelopmentUserDataDir,
+  signalDarwinDevProcess,
+} from "./localTopics/onTheGo/mac-development-launcher.mjs";
 import { waitForResources } from "./wait-for-resources.mjs";
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL?.trim();
@@ -271,6 +275,14 @@ function startApp() {
   const electronArgs = remoteDebuggingPort
     ? [`--remote-debugging-port=${remoteDebuggingPort}`]
     : [];
+  if (hostPlatform === "darwin") {
+    electronArgs.push(
+      `--user-data-dir=${resolveDarwinDevelopmentUserDataDir({
+        environment: childEnv,
+        homeDirectory: childEnv.HOME ?? NodeOS.homedir(),
+      })}`,
+    );
+  }
   const devRootArg = `--t3code-dev-root=${desktopDir}`;
   const launchArgs = devProtocolClient
     ? [...electronArgs, devRootArg]
@@ -382,8 +394,9 @@ function notifyRunningCodeChanged() {
   }
 
   if (hostPlatform === "darwin") {
-    NodeChildProcess.spawnSync("pkill", ["-USR2", "-f", "--", `--t3code-dev-root=${desktopDir}`], {
-      stdio: "ignore",
+    signalDarwinDevProcess({
+      devRootArg: `--t3code-dev-root=${desktopDir}`,
+      signal: "USR2",
     });
     return;
   }

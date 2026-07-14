@@ -7,6 +7,12 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 import { ensureElectronRuntime } from "./ensure-electron-runtime.mjs";
+import {
+  installDevelopmentLauncherBootstrap,
+  makeDarwinLaunchServicesCommand,
+  ON_THE_GO_MICROPHONE_USAGE_DESCRIPTION,
+  refreshDevelopmentLaunchConfig,
+} from "./localTopics/onTheGo/mac-development-launcher.mjs";
 
 const isDevelopment = Boolean(process.env.VITE_DEV_SERVER_URL);
 const __dirname = NodePath.dirname(NodeURL.fileURLToPath(import.meta.url));
@@ -28,8 +34,13 @@ const macChildEntitlementsPath = NodePath.join(
   "resources",
   "entitlements.mac.child.plist",
 );
-const macSignerPath = NodePath.join(desktopDir, "scripts", "sign-mac-launcher.mjs");
-const developmentLaunchConfigFileName = `${APP_BUNDLE_ID.replaceAll(/[^a-z0-9.-]+/giu, "-")}.launch.json`;
+const macSignerPath = NodePath.join(
+  desktopDir,
+  "scripts",
+  "localTopics",
+  "onTheGo",
+  "sign-mac-launcher.mjs",
+);
 const developmentMacIconPngPath = NodePath.join(
   repoRoot,
   "assets",
@@ -102,86 +113,6 @@ function runChecked(command, args) {
 
   const details = [result.stdout, result.stderr].filter(Boolean).join("\n");
   throw new Error(`Failed to run ${command} ${args.join(" ")}: ${details}`.trim());
-}
-
-export function makeDevelopmentLaunchConfig({ mainEntryPath, desktopRoot, environment }) {
-  const fallbackEnvironment = Object.fromEntries(
-    [
-      ["VITE_DEV_SERVER_URL", environment.VITE_DEV_SERVER_URL],
-      ["T3CODE_PORT", environment.T3CODE_PORT],
-      ["T3CODE_HOME", environment.T3CODE_HOME],
-      ["T3CODE_COMMIT_HASH", environment.T3CODE_COMMIT_HASH],
-      ["T3CODE_OTLP_TRACES_URL", environment.T3CODE_OTLP_TRACES_URL],
-      ["T3CODE_OTLP_EXPORT_INTERVAL_MS", environment.T3CODE_OTLP_EXPORT_INTERVAL_MS],
-      ["T3CODE_DESKTOP_APP_USER_MODEL_ID", APP_BUNDLE_ID],
-    ].filter((entry) => typeof entry[1] === "string" && entry[1].trim().length > 0),
-  );
-
-  return {
-    desktopRoot,
-    mainEntryPath,
-    fallbackEnvironment,
-  };
-}
-
-export function makeDevelopmentLauncherBootstrapScript({
-  launchConfigFileName = developmentLaunchConfigFileName,
-} = {}) {
-  return [
-    '"use strict";',
-    'const NodeFS = require("node:fs");',
-    'const NodePath = require("node:path");',
-    `const launchConfigPath = NodePath.resolve(__dirname, "..", "..", "..", "..", ${JSON.stringify(launchConfigFileName)});`,
-    'const launchConfig = JSON.parse(NodeFS.readFileSync(launchConfigPath, "utf8"));',
-    "for (const [name, value] of Object.entries(launchConfig.fallbackEnvironment ?? {})) {",
-    '  if (!process.env[name] && typeof value === "string" && value.length > 0) process.env[name] = value;',
-    "}",
-    'if (!process.argv.some((value) => value.startsWith("--t3code-dev-root="))) {',
-    "  process.argv.push(`--t3code-dev-root=${launchConfig.desktopRoot}`);",
-    "}",
-    "require(launchConfig.mainEntryPath);",
-    "",
-  ].join("\n");
-}
-
-function writeDevelopmentLaunchConfig(runtimeDir) {
-  const launchConfigPath = NodePath.join(runtimeDir, developmentLaunchConfigFileName);
-  const temporaryPath = `${launchConfigPath}.${process.pid}.tmp`;
-  const config = makeDevelopmentLaunchConfig({
-    mainEntryPath: NodePath.join(desktopDir, "dist-electron", "main.cjs"),
-    desktopRoot: desktopDir,
-    environment: process.env,
-  });
-
-  try {
-    NodeFS.writeFileSync(temporaryPath, `${JSON.stringify(config, null, 2)}\n`);
-    NodeFS.renameSync(temporaryPath, launchConfigPath);
-  } finally {
-    NodeFS.rmSync(temporaryPath, { force: true });
-  }
-}
-
-function writeDevelopmentLauncherBootstrap(appBundlePath) {
-  const appResourcesPath = NodePath.join(appBundlePath, "Contents", "Resources", "app");
-  NodeFS.rmSync(appResourcesPath, { recursive: true, force: true });
-  NodeFS.mkdirSync(appResourcesPath, { recursive: true });
-  NodeFS.writeFileSync(
-    NodePath.join(appResourcesPath, "package.json"),
-    `${JSON.stringify(
-      {
-        name: "t3code",
-        productName: APP_DISPLAY_NAME,
-        private: true,
-        main: "main.cjs",
-      },
-      null,
-      2,
-    )}\n`,
-  );
-  NodeFS.writeFileSync(
-    NodePath.join(appResourcesPath, "main.cjs"),
-    makeDevelopmentLauncherBootstrapScript(),
-  );
 }
 
 function registerMacLauncherBundle(appBundlePath) {
@@ -274,7 +205,7 @@ function patchMainBundleInfoPlist(appBundlePath, iconPath) {
   setPlistString(
     infoPlistPath,
     "NSMicrophoneUsageDescription",
-    "T3 Code uses the microphone for On-the-Go voice commands and Theo conversations.",
+    ON_THE_GO_MICROPHONE_USAGE_DESCRIPTION,
   );
   setPlistJson(infoPlistPath, "CFBundleURLTypes", [
     {
@@ -359,7 +290,12 @@ function buildMacLauncher(electronBinaryPath) {
 
   const currentMetadata = readJson(metadataPath);
   if (isDevelopment) {
-    writeDevelopmentLaunchConfig(runtimeDir);
+    refreshDevelopmentLaunchConfig({
+      runtimeDir,
+      desktopRoot: desktopDir,
+      appBundleId: APP_BUNDLE_ID,
+      environment: process.env,
+    });
   }
   if (
     NodeFS.existsSync(targetBinaryPath) &&
@@ -382,7 +318,11 @@ function buildMacLauncher(electronBinaryPath) {
   patchMainBundleInfoPlist(targetAppBundlePath, iconPath);
   patchHelperBundleInfoPlists(targetAppBundlePath);
   if (isDevelopment) {
-    writeDevelopmentLauncherBootstrap(targetAppBundlePath);
+    installDevelopmentLauncherBootstrap({
+      appBundlePath: targetAppBundlePath,
+      appDisplayName: APP_DISPLAY_NAME,
+      appBundleId: APP_BUNDLE_ID,
+    });
   }
   signMacLauncherBundle(targetAppBundlePath);
   NodeFS.writeFileSync(metadataPath, `${JSON.stringify(expectedMetadata, null, 2)}\n`);
@@ -430,11 +370,7 @@ export function resolveElectronLaunchCommand(args = []) {
   const electronPath = resolveElectronPath();
 
   if (hostPlatform === "darwin") {
-    const appBundlePath = NodePath.resolve(electronPath, "..", "..", "..");
-    return {
-      electronPath: "/usr/bin/open",
-      args: ["-W", "-n", appBundlePath, "--args", ...args],
-    };
+    return makeDarwinLaunchServicesCommand({ electronPath, args });
   }
 
   return {

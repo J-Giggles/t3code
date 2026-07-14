@@ -1,6 +1,6 @@
 import { assert, describe, it } from "vite-plus/test";
 
-import { cleanupDarwinDevProcesses } from "./dev-process-cleanup.mjs";
+import { cleanupDarwinDevProcesses } from "./localTopics/onTheGo/mac-development-launcher.mjs";
 
 describe("darwin development process cleanup", () => {
   it("terminates app children before the LaunchServices-owned app process", () => {

@@ -15,6 +15,7 @@ const desktopDir = NodePath.resolve(
 const repoRoot = NodePath.resolve(desktopDir, "../..");
 const BASE_SERVER_PORT = 13_773;
 const BASE_WEB_PORT = 5_733;
+const BASE_CDP_PORT = 9_230;
 const OUTER_LAUNCH_ENV_KEYS = [
   "T3CODE_APP_ROOT",
   "T3CODE_DESKTOP_VARIANT",
@@ -79,7 +80,11 @@ async function canListen(port: number, host = "127.0.0.1"): Promise<boolean> {
 async function findPortOffset(workerIndex: number): Promise<number> {
   const start = 3_000 + workerIndex * 100;
   for (let offset = start; offset < start + 2_000; offset += 1) {
-    if ((await canListen(BASE_SERVER_PORT + offset)) && (await canListen(BASE_WEB_PORT + offset))) {
+    if (
+      (await canListen(BASE_SERVER_PORT + offset)) &&
+      (await canListen(BASE_WEB_PORT + offset)) &&
+      (await canListen(BASE_CDP_PORT + offset))
+    ) {
       return offset;
     }
   }
@@ -116,54 +121,6 @@ async function waitForCdpList(port: number): Promise<unknown[]> {
       `Timed out waiting for Electron CDP inspection endpoint at ${url}.`,
       `Last HTTP error: ${String(lastError)}`,
       "Likely causes: Electron did not finish booting, the app crashed before opening the debugger endpoint, or the configured remote debugging port is wrong.",
-    ].join("\n"),
-  );
-}
-
-async function readDevToolsActivePort(filePath: string): Promise<number | undefined> {
-  const contents = await NodeFSP.readFile(filePath, "utf8").catch(() => undefined);
-  const firstLine = contents?.split(/\r?\n/u)[0]?.trim();
-  if (!firstLine) return undefined;
-  const port = Number.parseInt(firstLine, 10);
-  return Number.isInteger(port) && port > 0 ? port : undefined;
-}
-
-async function waitForActiveCdpPort(input: {
-  readonly filePath: string;
-  readonly previousPort?: number;
-}): Promise<number> {
-  const startedAt = Date.now();
-  let lastError: unknown;
-  let lastAttemptedPort: number | undefined;
-  let lastHttpError: unknown;
-  while (Date.now() - startedAt < 300_000) {
-    const port = await readDevToolsActivePort(input.filePath);
-    if (port === undefined) {
-      lastError = new Error(`DevToolsActivePort is not ready at ${input.filePath}`);
-    } else if (input.previousPort !== undefined && port === input.previousPort) {
-      lastError = new Error(`DevToolsActivePort still points to previous port ${port}`);
-    } else {
-      lastAttemptedPort = port;
-      try {
-        await fetchCdpList(port);
-        return port;
-      } catch (error) {
-        lastHttpError = error;
-        lastError = error;
-      }
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-
-  throw new Error(
-    [
-      "Timed out waiting for active Electron CDP inspection port.",
-      `DevToolsActivePort file: ${input.filePath}`,
-      `Last attempted port: ${lastAttemptedPort ?? "none"}`,
-      `Last active-port/read error: ${String(lastError)}`,
-      `Last HTTP error: ${lastHttpError === undefined ? "none" : String(lastHttpError)}`,
-      "Likely causes: Electron did not finish booting, the renderer crashed, the debugger endpoint is still bound to a previous run, or another process consumed the requested port.",
     ].join("\n"),
   );
 }
@@ -351,8 +308,9 @@ async function startElectronHarness(
   const offset = await findPortOffset(workerIndex);
   const serverPort = BASE_SERVER_PORT + offset;
   const webPort = BASE_WEB_PORT + offset;
+  const requestedRemoteDebuggingPort = BASE_CDP_PORT + offset;
   const devServerUrl = `http://127.0.0.1:${webPort}`;
-  const devToolsActivePortPath = NodePath.join(xdgConfigDir, "Electron", "DevToolsActivePort");
+  const e2eDevelopmentIdentity = "e2e";
   let activeRemoteDebuggingPort = 0;
   const runtime: ElectronHarnessRuntime = {
     repoRoot,
@@ -389,7 +347,8 @@ async function startElectronHarness(
       XDG_CONFIG_HOME: xdgConfigDir,
       T3CODE_HOME: t3Home,
       T3CODE_PORT_OFFSET: String(offset),
-      T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT: "0",
+      T3CODE_DEV_INSTANCE: e2eDevelopmentIdentity,
+      T3CODE_DESKTOP_REMOTE_DEBUGGING_PORT: String(requestedRemoteDebuggingPort),
       T3CODE_DISABLE_AUTO_UPDATE: "1",
       T3CODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD: "0",
       ELECTRON_ENABLE_LOGGING: "1",
@@ -407,16 +366,13 @@ async function startElectronHarness(
   let page: Page | null = null;
   let closed = false;
 
-  const connectToElectron = async (previousPort?: number) => {
+  const connectToElectron = async () => {
     const startedAt = Date.now();
     let lastError: unknown;
     while (Date.now() - startedAt < 300_000) {
       let nextBrowser: Browser | null = null;
       try {
-        const port = await waitForActiveCdpPort({
-          filePath: devToolsActivePortPath,
-          previousPort,
-        });
+        const port = requestedRemoteDebuggingPort;
         await waitForCdpList(port);
         nextBrowser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
         const nextPage = await waitForRendererPage(nextBrowser, webPort);
@@ -466,10 +422,9 @@ async function startElectronHarness(
     },
     waitForRelaunch: async () => {
       const previousPage = page;
-      const previousPort = activeRemoteDebuggingPort;
       await previousPage?.waitForEvent("close", { timeout: 30_000 }).catch(() => undefined);
 
-      const connected = await connectToElectron(previousPort || undefined);
+      const connected = await connectToElectron();
       browser = connected.browser;
       page = connected.page;
       return connected.page;

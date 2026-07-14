@@ -184,6 +184,8 @@ test("On-the-Go core voice journey preserves reciprocal controls @smoke", async 
   await page.reload();
   await dock.open();
   await dock.expectPreparedPrompt("Send it should remain ordinary prompt text");
+  await dock.turnOn();
+  await dock.expectCaption("Listening for T3 or Hey Theo");
   await dock.say("Send it");
   await dock.expectCaption(
     "This has been queued. Say No, steer the running agent within ten seconds to correct it.",

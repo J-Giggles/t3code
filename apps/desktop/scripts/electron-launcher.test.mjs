@@ -4,18 +4,19 @@ import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
+import { resolveElectronBinaryPath, resolveElectronLaunchCommand } from "./electron-launcher.mjs";
 import {
   makeDevelopmentLaunchConfig,
   makeDevelopmentLauncherBootstrapScript,
-  resolveElectronBinaryPath,
-  resolveElectronLaunchCommand,
-} from "./electron-launcher.mjs";
+  resolveDarwinDevelopmentUserDataDir,
+} from "./localTopics/onTheGo/mac-development-launcher.mjs";
 
 describe("electron development launcher", () => {
   it("uses captured values only as fallbacks for a live runner environment", () => {
     const config = makeDevelopmentLaunchConfig({
       mainEntryPath: "/repo/apps/desktop/dist-electron/main.cjs",
       desktopRoot: "/repo/apps/desktop",
+      appBundleId: "com.t3tools.t3code.dev.staging",
       environment: {
         VITE_DEV_SERVER_URL: "http://127.0.0.1:8526",
         T3CODE_PORT: "16566",
@@ -29,10 +30,27 @@ describe("electron development launcher", () => {
     assert.equal(config.fallbackEnvironment.VITE_DEV_SERVER_URL, "http://127.0.0.1:8526");
     assert.equal(config.fallbackEnvironment.T3CODE_PORT, "16566");
     assert.equal(config.fallbackEnvironment.T3CODE_HOME, "/tmp/t3");
+    assert.equal(
+      config.fallbackEnvironment.T3CODE_DESKTOP_APP_USER_MODEL_ID,
+      "com.t3tools.t3code.dev.staging",
+    );
     assert.include(script, "com.t3tools.t3code.dev.staging.launch.json");
     assert.include(script, "if (!process.env[name]");
     assert.notInclude(script, "http://127.0.0.1:8526");
     assert.include(script, "require(launchConfig.mainEntryPath)");
+  });
+
+  it("resolves the signed macOS app's isolated development user-data directory", () => {
+    assert.equal(
+      resolveDarwinDevelopmentUserDataDir({
+        environment: {
+          T3CODE_DEV_INSTANCE: " Staging Review ",
+          T3CODE_WORKTREE_ROLE: "dev",
+        },
+        homeDirectory: "/Users/alice",
+      }),
+      "/Users/alice/Library/Application Support/t3code-dev-staging-review",
+    );
   });
 
   it("repairs Electron before loading the package entrypoint", () => {
