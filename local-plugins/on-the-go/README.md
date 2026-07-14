@@ -27,6 +27,7 @@ The clean upstream replay was rebuilt as one feature commit, then replayed onto 
 
 - [x] The accessible web/Electron Voice Dock exposes captions, transcripts, notification badges, Theo Profile, Follow Timeline, visible vocabulary, typed reciprocal controls, and the exact durable Prepared Prompt revision/target before Send it (`apps/web/src/localTopics/onTheGo/VoiceDock.tsx`, `packages/client-runtime/src/localTopics/onTheGo/Controller.ts`).
 - [x] General Settings persists On-the-Go enablement, Barge-In, public/private output, wake phrases, independent supported STT/Theo/TTS selections, ordered approved Theo fallbacks, and remote-call warning/hard limits; unsupported saved speech selections fail closed with a visible reason (`apps/web/src/localTopics/onTheGo/OnTheGoSettingsPanel.tsx`, `apps/web/src/localTopics/onTheGo/BrowserSpeechAdapter.ts`).
+- [x] Electron captures bounded microphone PCM and sends it to the selected active T3 environment for local Whisper transcription; ordinary web keeps its browser-recognition fallback, and runtime recognition failures turn the mode off with a visible reason (`apps/web/src/localTopics/onTheGo/PcmSpeechRecognition.ts`, `apps/server/src/localTopics/onTheGo/PcmTranscription.ts`).
 - [x] Native mobile mounts a secure-identity Voice Dock using platform recognition/TTS plus real OS microphone permission, route, call/audio-focus, interruption, and low-power state; a noisy-place push-to-talk override, reciprocal typed controls, and an On-the-Go launcher quick action remain available (`apps/mobile/src/localTopics/onTheGo/OnTheGoNativeDock.tsx`, `apps/mobile/src/localTopics/onTheGo/NativeAudioPolicy.ts`, `apps/mobile/modules/t3-native-controls/expo-module.config.json`).
 
 ## Added Server And Runtime Behavior
@@ -39,12 +40,14 @@ The clean upstream replay was rebuilt as one feature commit, then replayed onto 
 - [x] New-agent handoffs reuse the transactional thread/worktree bootstrap with bounded source evidence (`apps/server/src/ws.ts`).
 - [x] Theo model use is audited, retries only explicitly approved fallbacks, announces fallback/near-budget use, and hard-stops remote calls without disabling local safety (`apps/server/src/localTopics/onTheGo/TheoConversation.ts`, `apps/server/src/localTopics/onTheGo/ProductionService.ts`).
 - [x] Electron retains voice execution while minimized and permits audio capture only, while renderer throttling is disabled only for an enabled On-the-Go session; hosted web stops voice when hidden (`apps/desktop/src/localTopics/onTheGo/index.ts`, `apps/desktop/src/ipc/methods/window.ts`, `apps/web/src/localTopics/onTheGo/BrowserSpeechAdapter.ts`).
+- [x] The authorized `onTheGo.transcribe` seam validates 16 kHz mono PCM bounds, resolves only an approved local Whisper model, applies a hard subprocess timeout, and discards audio after each attempt (`packages/contracts/src/rpc.ts`, `apps/server/src/localTopics/onTheGo/PcmTranscription.ts`, `apps/server/src/ws.ts`).
 
 ## Added Tests
 
 - [x] Stable `OTG-UT-001`–`OTG-UT-023` IDs cover each accepted feature’s normal path, refusal/failure path, and durable or safety invariant (`docs/architecture/on-the-go-test-contract.md`, `apps/server/src/localTopics/onTheGo/FoundationRuntime.test.ts`).
 - [x] Contracts, runtime, production service, server-lifetime ingestion, controller, context/SSRF bounds and redaction, command parity, model fallback, settings, Follow mapping, durable soak caps, semantic integration seams, desktop policy, native OS audio policy, and launcher actions provide 94 focused deterministic tests across 25 unit/component files (`packages/contracts/src/localTopics/onTheGo/index.test.ts`, `packages/shared/src/sensitiveText.test.ts`, `apps/server/src/localTopics/onTheGo/IntegrationContract.test.ts`, `apps/mobile/src/localTopics/onTheGo/NativeQuickAction.test.ts`).
 - [x] The standalone recognition-driven Electron POM launches the real desktop app and covers a real thread, activation, Theo state, wake-free Stop, the exact T3 announcement phrase, Follow start/stop, protected dictation, Prepared Prompt recovery after reload, queueing, steering correction, reciprocal controls, and renderer errors (`apps/desktop/e2e/specs/on-the-go.spec.ts`, `apps/desktop/e2e/localTopics/onTheGo/VoiceDockPage.ts`, `apps/desktop/e2e/support/electronHarness.ts`).
+- [x] An opt-in real-audio Electron test creates a transient PipeWire microphone and proves spoken-fixture capture through the actual local Whisper RPC; pure detector, payload-bound, unavailable-model, and fail-closed tests remain deterministic in the normal suite (`apps/desktop/e2e/specs/on-the-go.spec.ts`, `apps/web/src/localTopics/onTheGo/PcmSpeechRecognition.test.ts`, `apps/server/src/localTopics/onTheGo/PcmTranscription.test.ts`, `docs/operations/on-the-go-audio-verification.md`).
 
 ## Component Entrypoints
 
@@ -98,11 +101,14 @@ Apply the feature commit as one topic after the provider, composer, project-agen
 - `pnpm exec vp run lint:mobile`
 - `pnpm exec vp test run packages/contracts/src/localTopics/onTheGo packages/shared/src/sensitiveText.test.ts apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo`
 - `pnpm run test:on-the-go:e2e -- --reporter=line`
+- `T3CODE_ON_THE_GO_AUDIO_FIXTURE=/path/to/hey-theo.aiff T3CODE_ON_THE_GO_WHISPER_MODEL=/path/to/ggml-base.en.bin T3CODE_ON_THE_GO_WHISPER_CLI=/path/to/whisper-cli pnpm run test:on-the-go:e2e:headed -- --grep @audio --reporter=line`
 - `pnpm --filter @t3tools/mobile run config:dev -- --type public`
 
 ## Known Operational Checks
 
 Native locked-screen/background listening, Bluetooth/headset routing, Android secure hands-free intent behavior, and OS audio-focus interaction remain physical-device release checks. The deterministic native policy tests and Expo config validation must remain green on every replay.
+
+Electron local transcription additionally requires the selected active T3 environment to expose an approved Whisper CLI/model. Missing models and microphone/RPC failures fail closed visibly rather than silently falling back to a network recognizer.
 
 ## Known Follow-Up Work
 

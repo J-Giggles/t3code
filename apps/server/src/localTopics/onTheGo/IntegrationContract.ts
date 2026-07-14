@@ -12,6 +12,7 @@ export const ON_THE_GO_INTEGRATION_CONTRACT: OnTheGoIntegrationContract = {
     "rpc.snapshot": WS_METHODS.onTheGoSnapshot,
     "rpc.events": WS_METHODS.subscribeOnTheGoEvents,
     "rpc.theo": WS_METHODS.onTheGoTheo,
+    "rpc.transcribe": WS_METHODS.onTheGoTranscribe,
     "settings.path": "serverSettings.onTheGo",
     "provider.events": "orchestration.streamDomainEvents",
     "desktop.audio-permission": "configureOnTheGoDesktopVoice",

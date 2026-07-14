@@ -27,6 +27,7 @@ import { usePrimarySettings, useUpdatePrimarySettings } from "../../hooks/useSet
 import { connectionAtomRuntime } from "../../connection/runtime";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { makeNativeBrowserSpeechAdapter } from "./BrowserSpeechAdapter.ts";
+import type { PcmTranscriptionTransport } from "./PcmSpeechRecognition.ts";
 import { VoiceDock } from "./VoiceDock.tsx";
 
 const DEVICE_STORAGE_KEY = "t3code:on-the-go:device-id";
@@ -60,6 +61,10 @@ const askTheoCommand = createEnvironmentRpcCommand(connectionAtomRuntime, {
   label: "on-the-go:theo",
   tag: WS_METHODS.onTheGoTheo,
 });
+const transcribeCommand = createEnvironmentRpcCommand(connectionAtomRuntime, {
+  label: "on-the-go:transcribe",
+  tag: WS_METHODS.onTheGoTranscribe,
+});
 const eventAtom = createEnvironmentRpcSubscriptionAtomFamily(connectionAtomRuntime, {
   label: "on-the-go:events",
   tag: WS_METHODS.subscribeOnTheGoEvents,
@@ -90,6 +95,7 @@ function ConnectedOnTheGoRoot({ environmentId }: { readonly environmentId: Envir
   const runSnapshot = useAtomCommand(snapshotCommand, { reportFailure: false });
   const runDispatch = useAtomCommand(dispatchCommand, { reportFailure: false });
   const runAskTheo = useAtomCommand(askTheoCommand, { reportFailure: false });
+  const runTranscribe = useAtomCommand(transcribeCommand, { reportFailure: false });
   const eventResult = useAtomValue(eventAtom({ environmentId, input: scope }));
   const latestEvent = Option.getOrNull(AsyncResult.value(eventResult));
   const eventListenerRef = useRef<((event: OnTheGoEvent) => void) | null>(null);
@@ -109,7 +115,16 @@ function ConnectedOnTheGoRoot({ environmentId }: { readonly environmentId: Envir
         };
       },
     };
-    const speech = makeNativeBrowserSpeechAdapter(isElectron, settingsRef.current);
+    const transcriptionTransport: PcmTranscriptionTransport | undefined = isElectron
+      ? {
+          transcribe: async (input) => unwrapCommand(await runTranscribe({ environmentId, input })),
+        }
+      : undefined;
+    const speech = makeNativeBrowserSpeechAdapter(
+      isElectron,
+      settingsRef.current,
+      transcriptionTransport,
+    );
     const controller = makeOnTheGoController({
       scope,
       target: () => {
@@ -145,6 +160,7 @@ function ConnectedOnTheGoRoot({ environmentId }: { readonly environmentId: Envir
     runAskTheo,
     runDispatch,
     runSnapshot,
+    runTranscribe,
     scope,
     settings.speechModel.modelId,
     settings.speechModel.providerId,

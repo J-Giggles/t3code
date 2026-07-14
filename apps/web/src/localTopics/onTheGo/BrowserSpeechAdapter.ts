@@ -4,8 +4,13 @@ import {
 } from "@t3tools/client-runtime/onTheGo";
 import type { OnTheGoSettings } from "@t3tools/contracts";
 
+import { makePcmRecognitionPort, type PcmTranscriptionTransport } from "./PcmSpeechRecognition.ts";
+
 export interface BrowserRecognitionPort {
-  readonly start: (listener: (transcript: string) => void) => void;
+  readonly start: (
+    listener: (transcript: string) => void,
+    onFailure?: (reason: string) => void,
+  ) => void;
   readonly abort: () => void;
 }
 
@@ -50,7 +55,7 @@ export const makeBrowserSpeechAdapter = (
       background: options.backgroundAvailable,
       ...(options.unavailableReason ? { reason: options.unavailableReason } : {}),
     }),
-    start: (nextListener) => {
+    start: (nextListener, onFailure) => {
       listener = nextListener;
       active = true;
       options.recognition?.start((nextTranscript) => {
@@ -60,7 +65,7 @@ export const makeBrowserSpeechAdapter = (
           options.synthesis.cancel();
         }
         listener?.(nextTranscript);
-      });
+      }, onFailure);
       return () => {
         listener = null;
         stopRecognition();
@@ -92,12 +97,29 @@ interface BrowserSpeechRecognitionInstance {
   interimResults: boolean;
   lang: string;
   onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
+  onerror: ((event: { readonly error?: string; readonly message?: string }) => void) | null;
   onend: (() => void) | null;
   start(): void;
   abort(): void;
 }
 
 type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognitionInstance;
+
+const recognitionFailureReason = (error: string | undefined) => {
+  switch (error) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Transcription failed: microphone or speech recognition permission was denied";
+    case "audio-capture":
+      return "Transcription failed: the selected microphone produced no audio";
+    case "language-not-supported":
+      return "Transcription failed: the selected language is not supported on this device";
+    case "network":
+      return "Transcription failed: browser speech service network error";
+    default:
+      return `Transcription failed${error ? `: ${error}` : ""}`;
+  }
+};
 
 const recognitionConstructor = () => {
   const browserWindow = window as typeof window & {
@@ -107,11 +129,20 @@ const recognitionConstructor = () => {
   return browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition ?? null;
 };
 
-export const resolveBrowserSpeechSelection = (settings: OnTheGoSettings) => {
+export const resolveBrowserSpeechSelection = (
+  settings: OnTheGoSettings,
+  environmentTranscriptionAvailable = false,
+) => {
   const transcription = resolveSupportedVoiceModel({
     settings,
     capability: "transcription",
-    supported: [{ providerId: "system", modelId: "default-transcription" }],
+    supported: environmentTranscriptionAvailable
+      ? [
+          { providerId: "system", modelId: "default-transcription" },
+          { providerId: "local", modelId: "whisper-base-en" },
+          { providerId: "local", modelId: "whisper-tiny-en" },
+        ]
+      : [{ providerId: "system", modelId: "default-transcription" }],
   });
   const speech = resolveSupportedVoiceModel({
     settings,
@@ -131,12 +162,21 @@ export const resolveBrowserSpeechSelection = (settings: OnTheGoSettings) => {
 export const makeNativeBrowserSpeechAdapter = (
   backgroundAvailable: boolean,
   settings: OnTheGoSettings,
+  transcriptionTransport?: PcmTranscriptionTransport,
 ) => {
-  const support = resolveBrowserSpeechSelection(settings);
+  const support = resolveBrowserSpeechSelection(settings, transcriptionTransport !== undefined);
   const Recognition = recognitionConstructor();
-  const instance = Recognition && support.transcription ? new Recognition() : null;
+  const forceBrowserRecognition = Boolean(
+    (window as typeof window & { __t3codeOnTheGoUseBrowserRecognition?: boolean })
+      .__t3codeOnTheGoUseBrowserRecognition,
+  );
+  const instance =
+    (!transcriptionTransport || forceBrowserRecognition) && Recognition && support.transcription
+      ? new Recognition()
+      : null;
   let recognitionActive = false;
   let recognitionListener: ((transcript: string) => void) | null = null;
+  let recognitionFailureListener: ((reason: string) => void) | null = null;
   if (instance) {
     instance.continuous = true;
     instance.interimResults = false;
@@ -147,28 +187,42 @@ export const makeNativeBrowserSpeechAdapter = (
         if (result?.isFinal) recognitionListener?.(result[0].transcript);
       }
     };
+    // oxlint-disable-next-line unicorn/prefer-add-event-listener -- Web SpeechRecognition implementations consistently expose onerror but not typed EventTarget overloads.
+    instance.onerror = (event) => {
+      recognitionActive = false;
+      recognitionFailureListener?.(recognitionFailureReason(event.error));
+    };
     instance.onend = () => {
       if (recognitionActive && (backgroundAvailable || document.visibilityState === "visible")) {
         instance.start();
       }
     };
   }
+  const recognition =
+    transcriptionTransport && !forceBrowserRecognition && support.transcription
+      ? makePcmRecognitionPort({ settings, transport: transcriptionTransport })
+      : instance
+        ? {
+            start: (
+              listener: (transcript: string) => void,
+              onFailure?: (reason: string) => void,
+            ) => {
+              recognitionListener = listener;
+              recognitionFailureListener = onFailure ?? null;
+              recognitionActive = true;
+              instance.start();
+            },
+            abort: () => {
+              recognitionActive = false;
+              recognitionFailureListener = null;
+              instance.abort();
+            },
+          }
+        : null;
   const adapter = makeBrowserSpeechAdapter({
     backgroundAvailable,
     visibility: () => document.visibilityState,
-    recognition: instance
-      ? {
-          start: (listener) => {
-            recognitionListener = listener;
-            recognitionActive = true;
-            instance.start();
-          },
-          abort: () => {
-            recognitionActive = false;
-            instance.abort();
-          },
-        }
-      : null,
+    recognition,
     synthesis:
       support.speech && "speechSynthesis" in window
         ? {
@@ -214,7 +268,8 @@ export const makeNativeBrowserSpeechAdapter = (
     dispose: () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       recognitionActive = false;
-      instance?.abort();
+      recognitionFailureListener = null;
+      recognition?.abort();
       window.speechSynthesis?.cancel();
     },
   };

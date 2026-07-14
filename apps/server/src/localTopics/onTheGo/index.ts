@@ -4,6 +4,7 @@ export * from "./ProductionService.ts";
 export * from "./ProductionLayer.ts";
 export { ingestOnTheGoEvent } from "./EventIngestion.ts";
 export * from "./IntegrationContract.ts";
+export * from "./PcmTranscription.ts";
 export * from "./Runtime.ts";
 export * from "./TheoExternalContext.ts";
 export * from "./TheoConversation.ts";

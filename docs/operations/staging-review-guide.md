@@ -1508,14 +1508,18 @@ Important implementation areas:
   mandatory `Send it` authorization.
 - `apps/web/src/localTopics/onTheGo` provides the Voice Dock, settings, typed
   reciprocal controls, captions, notification badges, Follow timeline, and
-  foreground/browser speech policy.
+  foreground/browser speech policy. Electron uses bounded PCM capture through
+  the active environment's authorized local Whisper RPC instead of depending
+  on Chromium's network-backed recognizer.
 - `apps/mobile/src/localTopics/onTheGo` and
   `apps/mobile/modules/t3-native-controls` provide native recognition/TTS,
   microphone and audio-focus policy, secure device identity, push-to-talk, and
   the launcher quick action.
 - `apps/desktop/e2e/specs/on-the-go.spec.ts` drives recognition through the real
   Electron app and verifies activation, Stop, announcements, Follow, protected
-  dictation, reload recovery, queueing, steering, and reciprocal controls.
+  dictation, reload recovery, queueing, steering, and reciprocal controls. Its
+  opt-in `@audio` case also creates a transient PipeWire microphone and proves
+  a spoken fixture through the real PCM/Whisper path.
 
 ### Review Focus
 

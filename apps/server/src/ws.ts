@@ -123,6 +123,7 @@ import * as VcsDriverRegistry from "./vcs/VcsDriverRegistry.ts";
 import * as VcsProjectConfig from "./vcs/VcsProjectConfig.ts";
 import * as VcsProcess from "./vcs/VcsProcess.ts";
 import * as OnTheGoProduction from "./localTopics/onTheGo/ProductionLayer.ts";
+import { localWhisperPcmTranscriber } from "./localTopics/onTheGo/PcmTranscription.ts";
 import {
   buildTheoThreadContext,
   redactTheoEvidence,
@@ -346,6 +347,7 @@ const RPC_REQUIRED_SCOPE = new Map<string, AuthEnvironmentScope>([
   [WS_METHODS.onTheGoDispatch, AuthOrchestrationOperateScope],
   [WS_METHODS.onTheGoSnapshot, AuthOrchestrationReadScope],
   [WS_METHODS.onTheGoTheo, AuthOrchestrationOperateScope],
+  [WS_METHODS.onTheGoTranscribe, AuthOrchestrationOperateScope],
   [WS_METHODS.subscribeOnTheGoEvents, AuthOrchestrationReadScope],
   [WS_METHODS.cloudGetRelayClientStatus, AuthRelayWriteScope],
   [WS_METHODS.cloudInstallRelayClient, AuthRelayWriteScope],
@@ -1404,6 +1406,12 @@ const makeWsRpcLayer = (
                   preparedPrompt.toLocaleUpperCase() === "NONE" ? null : preparedPrompt,
               };
             }),
+            { "rpc.aggregate": "on-the-go" },
+          ),
+        [WS_METHODS.onTheGoTranscribe]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.onTheGoTranscribe,
+            Effect.promise(() => localWhisperPcmTranscriber.transcribe(input)),
             { "rpc.aggregate": "on-the-go" },
           ),
         [WS_METHODS.subscribeOnTheGoEvents]: (scope) =>

@@ -31,6 +31,7 @@
     { "path": "docs/architecture/on-the-go-mode.md", "role": "docs" },
     { "path": "docs/architecture/on-the-go-test-contract.md", "role": "docs" },
     { "path": "docs/architecture/on-the-go-topic-handoff.md", "role": "docs" },
+    { "path": "docs/operations/on-the-go-audio-verification.md", "role": "docs" },
     { "path": "docs/reference/on-the-go-runtime.md", "role": "docs" }
   ],
   "componentization": {
@@ -94,6 +95,7 @@
     "vp run lint:mobile",
     "vp test run packages/contracts/src/localTopics/onTheGo packages/shared/src/sensitiveText.test.ts apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo",
     "pnpm run test:on-the-go:e2e -- --reporter=line",
+    "T3CODE_ON_THE_GO_AUDIO_FIXTURE=/path/to/hey-theo.aiff T3CODE_ON_THE_GO_WHISPER_MODEL=/path/to/ggml-base.en.bin T3CODE_ON_THE_GO_WHISPER_CLI=/path/to/whisper-cli pnpm run test:on-the-go:e2e:headed -- --grep @audio --reporter=line",
     "pnpm --filter @t3tools/mobile run config:dev -- --type public"
   ],
   "replayContract": {
@@ -105,6 +107,7 @@
       "Preserve exact Prepared Prompt revisions and mandatory Send it authorization.",
       "Preserve durable Response, Attention, Pending Turn, Follow Timeline, and Theo Profile state.",
       "Preserve independent STT, Theo, and TTS settings and fail closed for unsupported speech selections.",
+      "Preserve Electron bounded PCM capture through the active environment's authorized local Whisper RPC, including visible fail-closed behavior.",
       "Preserve bounded, redacted, untrusted context retrieval from T3 threads, project docs/source, DNS-pinned public HTTPS pages, and registered connected-app adapters.",
       "Preserve durable authenticated device bindings and exact Prepared Prompt recovery across reconnects.",
       "Preserve explicit approved Theo fallbacks and per-Voice-Session remote call budgets without disabling local safety.",
@@ -127,7 +130,8 @@
       "vp run typecheck",
       "vp run lint:mobile",
       "vp test run packages/contracts/src/localTopics/onTheGo packages/shared/src/sensitiveText.test.ts apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo",
-      "pnpm run test:on-the-go:e2e -- --reporter=line"
+      "pnpm run test:on-the-go:e2e -- --reporter=line",
+      "T3CODE_ON_THE_GO_AUDIO_FIXTURE=/path/to/hey-theo.aiff T3CODE_ON_THE_GO_WHISPER_MODEL=/path/to/ggml-base.en.bin T3CODE_ON_THE_GO_WHISPER_CLI=/path/to/whisper-cli pnpm run test:on-the-go:e2e:headed -- --grep @audio --reporter=line"
     ]
   }
 }

@@ -454,6 +454,53 @@ describe("On-the-Go client controller", () => {
     expect(controller.state().caption).toContain("did not activate");
   });
 
+  it("OTG-UT-003/019: fails closed when the active transcription adapter stops working", async () => {
+    const deviceId = OnTheGoDeviceId.make("desktop-device");
+    let snapshot = baseSnapshot();
+    let reportFailure: (reason: string) => void = () => {
+      throw new Error("speech adapter did not start");
+    };
+    const controller = makeOnTheGoController({
+      scope: { voiceSessionId: OnTheGoVoiceSessionId.make("session"), deviceId },
+      target: () => null,
+      createId: () => "id",
+      transport: {
+        snapshot: async () => snapshot,
+        dispatch: async (command) => {
+          if (command.type === "owner.acquire") {
+            snapshot = { ...snapshot, owner: { deviceId, continueRequired: false } };
+          }
+          if (command.type === "mode.set") snapshot = { ...snapshot, mode: command.mode };
+          return { status: "accepted" as const, commandId: command.commandId };
+        },
+        subscribe: () => () => undefined,
+      },
+      speech: {
+        availability: () => ({ available: true, background: true }),
+        start: (_listener, onFailure) => {
+          reportFailure = onFailure ?? reportFailure;
+          return () => undefined;
+        },
+        speak: async () => undefined,
+        stop: () => undefined,
+      },
+      theo: { ask: async () => ({ reply: "unused", preparedPrompt: null }) },
+    });
+
+    await controller.start();
+    await controller.toggle(true);
+    expect(controller.state()).toMatchObject({ available: true, enabled: true });
+
+    reportFailure("Transcription failed: browser speech service network error");
+
+    expect(controller.state()).toMatchObject({
+      available: false,
+      enabled: false,
+      availabilityReason: "Transcription failed: browser speech service network error",
+      caption: "Transcription failed: browser speech service network error",
+    });
+  });
+
   it("OTG-UT-007/008: coalesces completion tones for two seconds while Attention remains immediate", async () => {
     const deviceId = OnTheGoDeviceId.make("desktop-device");
     let now = 0;

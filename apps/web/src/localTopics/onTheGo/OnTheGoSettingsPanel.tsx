@@ -26,7 +26,21 @@ export interface OnTheGoSettingsPanelViewProps {
 }
 
 export const ON_THE_GO_TRANSCRIPTION_OPTIONS = [
-  { providerId: "system", modelId: "default-transcription", label: "System default" },
+  {
+    providerId: "system",
+    modelId: "default-transcription",
+    label: "Default (browser or active environment)",
+  },
+  {
+    providerId: "local",
+    modelId: "whisper-base-en",
+    label: "Local Whisper Base (active environment)",
+  },
+  {
+    providerId: "local",
+    modelId: "whisper-tiny-en",
+    label: "Local Whisper Tiny (active environment)",
+  },
   {
     providerId: "system",
     modelId: "on-device-transcription",

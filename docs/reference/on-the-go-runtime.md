@@ -66,7 +66,7 @@ Durable-foundation evidence:
 
 ## Production Clients, Context, And Platform Policy
 
-`packages/client-runtime/src/localTopics/onTheGo/Controller.ts` is the shared voice controller. Electron and foreground web use `apps/web/src/localTopics/onTheGo/BrowserSpeechAdapter.ts`; Electron disables renderer background throttling only while On-the-Go is enabled and grants audio capture only. Native mobile uses `expo-speech-recognition`, `expo-speech`, and background `expo-audio` configuration with OS microphone and foreground-service indicators. Hosted web stops listening when hidden.
+`packages/client-runtime/src/localTopics/onTheGo/Controller.ts` is the shared voice controller. Electron captures bounded 16 kHz mono PCM through `apps/web/src/localTopics/onTheGo/PcmSpeechRecognition.ts` and sends each completed utterance through the authorized `onTheGo.transcribe` RPC to the selected active T3 environment. The environment runs only an approved local Whisper CLI/model, applies payload and time bounds, and discards audio after the attempt. Missing models, microphone failures, and transcription failures turn the mode off with a visible reason. Foreground web retains browser recognition and stops listening when hidden. Electron disables renderer background throttling only while On-the-Go is enabled and grants audio capture only. Native mobile uses `expo-speech-recognition`, `expo-speech`, and background `expo-audio` configuration with OS microphone and foreground-service indicators.
 
 Settings are server-authoritative under `ServerSettings.onTheGo`. STT, Theo, and TTS are capability-separated selections. Theo uses the configured reasoning selection; unsupported platform speech selections fail closed with a visible reason rather than silently invoking an unapproved provider.
 
@@ -89,5 +89,6 @@ Runtime event logs, response/attention queues, timelines, model audit, context e
 - `OTG-UT-001`–`OTG-UT-023`: the feature-level matrix in `docs/architecture/on-the-go-test-contract.md`
 - Focused unit and component suite: 107 tests across 25 contracts, shared privacy, server, controller, web, desktop, and native mobile files
 - Recognition-driven headed Electron POM: `apps/desktop/e2e/specs/on-the-go.spec.ts`
+- Real virtual-microphone gate: `docs/operations/on-the-go-audio-verification.md`
 - Mobile plugin/config resolution: `pnpm --filter @t3tools/mobile run config:dev -- --type public`
 - Repository gates: `pnpm exec vp check`, `pnpm exec vp run typecheck`, and `pnpm exec vp run lint:mobile`

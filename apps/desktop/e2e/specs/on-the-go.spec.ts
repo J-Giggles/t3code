@@ -1,3 +1,8 @@
+// @effect-diagnostics nodeBuiltinImport:off - The opt-in Linux audio test owns transient PipeWire test devices.
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
+import * as NodeOS from "node:os";
+
 import { VoiceDockPage } from "../localTopics/onTheGo/VoiceDockPage.ts";
 import { seedOnTheGoProviderState } from "../localTopics/onTheGo/seedOnTheGoProviderState.ts";
 import { expect, test } from "../support/electronHarness.ts";
@@ -5,11 +10,89 @@ import { addAndOpenFixtureProject, createWorkspaceFixture } from "../support/wor
 
 test.use({ e2eSeed: { run: seedOnTheGoProviderState } });
 
+const runPactl = (...args: ReadonlyArray<string>) =>
+  NodeChildProcess.execFileSync("pactl", args, { encoding: "utf8" }).trim();
+
+const playFixture = (fixturePath: string) =>
+  new Promise<void>((resolve, reject) => {
+    const child = NodeChildProcess.spawn("paplay", ["--device=t3code_voice_test", fixturePath], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stderr = "";
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.once("error", reject);
+    child.once("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`paplay exited ${code ?? "without a code"}: ${stderr.trim()}`));
+    });
+  });
+
+test("On-the-Go transcribes a real virtual microphone utterance @audio", async ({ page }) => {
+  const fixturePath = process.env.T3CODE_ON_THE_GO_AUDIO_FIXTURE?.trim();
+  test.skip(
+    // oxlint-disable-next-line t3code/no-global-process-runtime -- This standalone Linux-only E2E owns transient PipeWire devices before an Effect runtime exists.
+    NodeOS.platform() !== "linux" || !fixturePath || !NodeFS.existsSync(fixturePath),
+    "Set T3CODE_ON_THE_GO_AUDIO_FIXTURE to a spoken 'Hey Theo' WAV or AIFF fixture on Linux.",
+  );
+  const verifiedFixturePath = fixturePath!;
+
+  const originalSource = runPactl("get-default-source");
+  const modules = new Array<string>();
+  try {
+    modules.push(
+      runPactl(
+        "load-module",
+        "module-null-sink",
+        "sink_name=t3code_voice_test",
+        "sink_properties=device.description=T3CodeVoiceTest",
+      ),
+    );
+    modules.push(
+      runPactl(
+        "load-module",
+        "module-remap-source",
+        "master=t3code_voice_test.monitor",
+        "source_name=t3code_voice_test_source",
+        "source_properties=device.description=T3CodeVoiceTestSource",
+      ),
+    );
+    runPactl("set-default-source", "t3code_voice_test_source");
+
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    const dock = new VoiceDockPage(page);
+    await dock.open();
+    await dock.turnOn();
+    await dock.expectCaption("Listening for T3 or Hey Theo");
+    await playFixture(verifiedFixturePath);
+    await dock.expectCaption("Theo conversation");
+  } finally {
+    try {
+      runPactl("set-default-source", originalSource);
+    } catch {
+      // Module cleanup must still run if the prior default source disappeared during the test.
+    }
+    for (const moduleId of modules.toReversed()) {
+      try {
+        runPactl("unload-module", moduleId);
+      } catch {
+        // Cleanup remains best effort when PipeWire has already removed a transient module.
+      }
+    }
+  }
+});
+
 test("On-the-Go core voice journey preserves reciprocal controls @smoke", async ({
   harness,
   page,
 }) => {
   await page.addInitScript(() => {
+    (
+      window as typeof window & { __t3codeOnTheGoUseBrowserRecognition?: boolean }
+    ).__t3codeOnTheGoUseBrowserRecognition = true;
     localStorage.setItem("t3code:on-the-go:device-id", "device:e2e-on-the-go");
     localStorage.setItem("t3code:on-the-go:voice-session-id", "voice-session:e2e-on-the-go");
     class FakeRecognition {
