@@ -23,6 +23,23 @@ export interface OnTheGoServerServiceOptions {
   readonly now: () => string;
 }
 
+export interface OnTheGoSessionBinding {
+  readonly durablePrincipalId: string;
+  readonly legacySessionIds?: ReadonlyArray<string>;
+}
+
+export const makeOnTheGoDurablePrincipalId = (input: {
+  readonly subject: string;
+  readonly method: string;
+  readonly proofKeyThumbprint?: string;
+}) =>
+  JSON.stringify([
+    "on-the-go-principal-v1",
+    input.subject,
+    input.method,
+    input.proofKeyThumbprint ?? null,
+  ]);
+
 export interface OnTheGoServerService {
   readonly dispose: () => void;
   readonly setTurnExecutor: (
@@ -75,7 +92,11 @@ export interface OnTheGoServerService {
         readonly used: number;
         readonly reason: "budget-exhausted" | "policy-denied";
       };
-  readonly connect: (authenticatedSessionId: string, scope: OnTheGoReadScope) => void;
+  readonly connect: (
+    authenticatedSessionId: string,
+    scope: OnTheGoReadScope,
+    binding?: OnTheGoSessionBinding,
+  ) => void;
   readonly disconnect: (authenticatedSessionId: string) => void;
   readonly dispatchClient: (
     authenticatedSessionId: string,
@@ -533,7 +554,7 @@ export const makeOnTheGoServerService = (
         warning: next >= Math.min(budget.warningAt, budget.hardLimit),
       };
     },
-    connect: (authenticatedSessionId, scope) => {
+    connect: (authenticatedSessionId, scope, binding) => {
       const key = scopeKey(scope);
       const priorScope = sessionScopes.get(authenticatedSessionId);
       if (priorScope && priorScope !== key) {
@@ -544,11 +565,14 @@ export const makeOnTheGoServerService = (
         throw new Error("The On-the-Go device is active in another authenticated session");
       }
       const durableBinding = options.persistence.loadDeviceBinding?.(scope.deviceId);
-      if (durableBinding && durableBinding !== authenticatedSessionId) {
+      const durablePrincipalId = binding?.durablePrincipalId ?? authenticatedSessionId;
+      const isAuthorizedLegacyBinding =
+        durableBinding != null && binding?.legacySessionIds?.includes(durableBinding) === true;
+      if (durableBinding && durableBinding !== durablePrincipalId && !isAuthorizedLegacyBinding) {
         throw new Error("The On-the-Go device belongs to another authenticated session");
       }
-      if (!durableBinding) {
-        options.persistence.saveDeviceBinding?.(scope.deviceId, authenticatedSessionId);
+      if (durableBinding !== durablePrincipalId) {
+        options.persistence.saveDeviceBinding?.(scope.deviceId, durablePrincipalId);
       }
       sessionScopes.set(authenticatedSessionId, key);
       deviceSessions.set(scope.deviceId, authenticatedSessionId);
