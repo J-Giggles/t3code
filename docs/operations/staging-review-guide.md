@@ -1497,6 +1497,10 @@ across contracts, server, web/Electron, and native mobile.
 Follow-up topic `fix(on-the-go): add reliable local voice transcription`
 replaces Electron's network-backed browser recognizer with the bounded
 active-environment Whisper path described below.
+Follow-up topic `fix(on-the-go): restore macOS microphone permission identity`
+keeps the development launcher as a signed LaunchServices-owned app, adds the
+native microphone consent gate, and prevents shutdown from leaving a detached
+Electron process.
 
 Important implementation areas:
 
@@ -1523,6 +1527,10 @@ Important implementation areas:
   dictation, reload recovery, queueing, steering, and reciprocal controls. Its
   opt-in `@audio` case also creates a transient PipeWire microphone and proves
   a spoken fixture through the real PCM/Whisper path.
+- `apps/desktop/scripts/electron-launcher.test.mjs` verifies the macOS app and
+  helper signatures, entitlements, Mach-O identity, and LaunchServices command;
+  `apps/desktop/src/localTopics/onTheGo/index.test.ts` verifies that renderer
+  audio access waits for the native microphone decision.
 
 ### Review Focus
 

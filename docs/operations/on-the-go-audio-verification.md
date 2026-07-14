@@ -13,6 +13,17 @@ scp /tmp/t3code-hey-theo.aiff giggabit-server:/tmp/t3code-hey-theo.aiff
 
 The fixture contains no user audio and may be regenerated at any time.
 
+## Verify macOS Permission Identity
+
+Before acoustic testing on the Mac, enable On-the-Go once and confirm System Settings > Privacy & Security > Microphone lists `T3 Code (Dev)`. The entry must belong to the running worktree app bundle, not `node` or the source Electron bundle.
+
+```bash
+codesign --verify --deep --strict --verbose=2 "apps/desktop/.electron-runtime/T3 Code (Dev).app"
+codesign --display --entitlements :- "apps/desktop/.electron-runtime/T3 Code (Dev).app"
+```
+
+The first command must pass, and the second must contain `com.apple.security.device.audio-input`. The running main process path must end in `.electron-runtime/T3 Code (Dev).app/Contents/MacOS/Electron`. TCC logs for microphone access should attribute the request to the worktree bundle identifier and app path.
+
 ## Run The Real Audio Gate
 
 On `giggabit-server`, from the feature or Staging worktree:

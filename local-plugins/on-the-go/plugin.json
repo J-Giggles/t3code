@@ -5,7 +5,8 @@
   "topicKind": "mixed",
   "topicCommits": [
     "d225f64c448cc5bfc6cd9cb0915703ca89ef179d",
-    "1578b0149a693b09dd672c9b44bd42f91d94b5ef"
+    "1578b0149a693b09dd672c9b44bd42f91d94b5ef",
+    "cf00e51ad3d4857cefe70c8fa61da6435af5c144"
   ],
   "ownedPaths": [
     { "path": "packages/contracts/src/localTopics/onTheGo", "role": "source" },
@@ -13,6 +14,12 @@
     { "path": "apps/server/src/localTopics/onTheGo", "role": "source" },
     { "path": "apps/web/src/localTopics/onTheGo", "role": "source" },
     { "path": "apps/desktop/src/localTopics/onTheGo", "role": "source" },
+    { "path": "apps/desktop/resources/entitlements.mac.plist", "role": "config" },
+    { "path": "apps/desktop/resources/entitlements.mac.child.plist", "role": "config" },
+    { "path": "apps/desktop/scripts/sign-mac-launcher.mjs", "role": "script" },
+    { "path": "apps/desktop/scripts/dev-process-cleanup.mjs", "role": "script" },
+    { "path": "apps/desktop/scripts/dev-process-cleanup.test.mjs", "role": "test" },
+    { "path": "apps/desktop/scripts/electron-launcher.test.mjs", "role": "test" },
     { "path": "apps/mobile/src/localTopics/onTheGo", "role": "source" },
     { "path": "apps/mobile/modules/t3-native-controls/expo-module.config.json", "role": "source" },
     {
@@ -84,6 +91,9 @@
     { "path": "apps/web/src/components/settings/SettingsPanels.tsx", "role": "thin-wiring" },
     { "path": "apps/desktop/src/electron/ElectronWindow.ts", "role": "thin-wiring" },
     { "path": "apps/desktop/src/window/DesktopWindow.ts", "role": "thin-wiring" },
+    { "path": "apps/desktop/src/window/DesktopWindow.test.ts", "role": "thin-wiring" },
+    { "path": "apps/desktop/scripts/electron-launcher.mjs", "role": "thin-wiring" },
+    { "path": "apps/desktop/scripts/dev-electron.mjs", "role": "thin-wiring" },
     { "path": "apps/desktop/package.json", "role": "thin-wiring" },
     { "path": "apps/mobile/src/App.tsx", "role": "thin-wiring" },
     { "path": "apps/mobile/app.config.ts", "role": "thin-wiring" },
@@ -97,6 +107,7 @@
     "vp run typecheck",
     "vp run lint:mobile",
     "vp test run packages/contracts/src/localTopics/onTheGo packages/shared/src/sensitiveText.test.ts apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo",
+    "vp test run apps/desktop/scripts/electron-launcher.test.mjs apps/desktop/scripts/dev-process-cleanup.test.mjs apps/desktop/src/window/DesktopWindow.test.ts",
     "pnpm run test:on-the-go:e2e -- --reporter=line",
     "T3CODE_ON_THE_GO_AUDIO_FIXTURE=/path/to/hey-theo.aiff T3CODE_ON_THE_GO_WHISPER_MODEL=/path/to/ggml-base.en.bin T3CODE_ON_THE_GO_WHISPER_CLI=/path/to/whisper-cli pnpm run test:on-the-go:e2e:headed -- --grep @audio --reporter=line",
     "pnpm --filter @t3tools/mobile run config:dev -- --type public"
@@ -111,6 +122,7 @@
       "Preserve durable Response, Attention, Pending Turn, Follow Timeline, and Theo Profile state.",
       "Preserve independent STT, Theo, and TTS settings and fail closed for unsupported speech selections.",
       "Preserve Electron bounded PCM capture through the active environment's authorized local Whisper RPC, including visible fail-closed behavior.",
+      "Preserve a signed LaunchServices-owned macOS app identity with native microphone consent, audio-input entitlement, and complete helper cleanup.",
       "Preserve bounded, redacted, untrusted context retrieval from T3 threads, project docs/source, DNS-pinned public HTTPS pages, and registered connected-app adapters.",
       "Preserve durable authenticated device bindings and exact Prepared Prompt recovery across reconnects.",
       "Preserve explicit approved Theo fallbacks and per-Voice-Session remote call budgets without disabling local safety.",
@@ -133,6 +145,7 @@
       "vp run typecheck",
       "vp run lint:mobile",
       "vp test run packages/contracts/src/localTopics/onTheGo packages/shared/src/sensitiveText.test.ts apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo",
+      "vp test run apps/desktop/scripts/electron-launcher.test.mjs apps/desktop/scripts/dev-process-cleanup.test.mjs apps/desktop/src/window/DesktopWindow.test.ts",
       "pnpm run test:on-the-go:e2e -- --reporter=line",
       "T3CODE_ON_THE_GO_AUDIO_FIXTURE=/path/to/hey-theo.aiff T3CODE_ON_THE_GO_WHISPER_MODEL=/path/to/ggml-base.en.bin T3CODE_ON_THE_GO_WHISPER_CLI=/path/to/whisper-cli pnpm run test:on-the-go:e2e:headed -- --grep @audio --reporter=line"
     ]
