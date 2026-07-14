@@ -10,6 +10,7 @@ Add a voice-first Theo companion that can announce durable agent responses, disc
 - `1578b0149a693b09dd672c9b44bd42f91d94b5ef` `fix(on-the-go): add reliable local voice transcription`
 - `cf00e51ad3d4857cefe70c8fa61da6435af5c144` `fix(on-the-go): restore macOS microphone permission identity`
 - `e9bdda63c75514aeb84e2dae1ea3634cd742624f` `refactor(on-the-go): isolate macOS launcher runtime`
+- `7cae5386642e5ef6de9b62b8485b3d159a2ad714` `fix(on-the-go): normalize cached macOS frameworks`
 
 This is the staging-stack replay of clean source topic `5a529884f6c6d84c219f6245a3b7da68599d5a52`, which applies directly to upstream `c1ec1915fc16f3dc1ec5d47d9a97f6210a574526` with every other Jordan topic absent. The staging replay preserves its focused unit suites and headed Electron harness while wiring through the established routed-server and launcher topics.
 
@@ -18,6 +19,8 @@ The follow-up transcription topic replaces Electron's network-dependent browser 
 The macOS permission follow-up keeps development launches inside a signed Mach-O app bundle owned by LaunchServices, carries the hardened-runtime audio-input entitlement, requests native microphone consent before granting Chromium media access, and cleans up the detached app tree during restart or shutdown.
 
 The launcher-runtime refactor keeps that behavior behind the topic-owned macOS module and gives headed runs an explicit isolated profile and CDP port, so test launch state cannot spill into the normal login profile or keychain.
+
+The cached-framework follow-up restores canonical version symlinks when an existing Electron install contains flattened framework aliases, keeping repeated Staging launches signable without replacing application data.
 
 ## Squash / Replay History
 

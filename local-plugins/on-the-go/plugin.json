@@ -7,7 +7,8 @@
     "d225f64c448cc5bfc6cd9cb0915703ca89ef179d",
     "1578b0149a693b09dd672c9b44bd42f91d94b5ef",
     "cf00e51ad3d4857cefe70c8fa61da6435af5c144",
-    "e9bdda63c75514aeb84e2dae1ea3634cd742624f"
+    "e9bdda63c75514aeb84e2dae1ea3634cd742624f",
+    "7cae5386642e5ef6de9b62b8485b3d159a2ad714"
   ],
   "ownedPaths": [
     { "path": "packages/contracts/src/localTopics/onTheGo", "role": "source" },

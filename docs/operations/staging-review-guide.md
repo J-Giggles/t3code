@@ -1504,6 +1504,9 @@ Electron process.
 Follow-up topic `refactor(on-the-go): isolate macOS launcher runtime` keeps that
 behavior behind the topic-owned module and isolates headed CDP/profile state
 from the normal macOS login profile and keychain.
+Follow-up topic `fix(on-the-go): normalize cached macOS frameworks` repairs
+flattened framework aliases in an existing Electron install before signing, so
+the durable Staging launcher remains restart-safe without replacing app data.
 
 Important implementation areas:
 
