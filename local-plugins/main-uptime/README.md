@@ -7,6 +7,7 @@ Keep `T3 Code Main` available on `giggabit-server`, automatically restore its ap
 ## Current Commits
 
 - `ac47acfdbb90e106a8ba2310d0036e00c6b995ee` `feat(main-uptime): guard and supervise durable main`
+- `69be1da9ad8b4a95fbbe808ceb3ef7ee53d13b1c` `fix(main-uptime): stabilize strict composer proof`
 
 ## Squash / Replay History
 
@@ -37,6 +38,7 @@ This topic follows the nightly launcher and replay safeguards because it consume
 - [x] Recovery tests prove both dirty and committed unauthorized changes are preserved and rolled back (`scripts/localTopics/mainUptime/index.test.ts`, `t3code-main-uptime guard`).
 - [x] Promotion tests prove the locked candidate can launch but cannot be approved without a fresh exact-SHA public proof (`scripts/localTopics/mainUptime/index.test.ts`, `t3code-main-uptime promotion-approve`).
 - [x] The live acceptance gate proves primary-interface routing, project visibility, chat creation, message send, assistant response, and screenshot evidence (`apps/desktop/scripts/verify-staging-public.mjs`, `vp run verify:main-public`).
+- [x] The public verifier fills the Lexical editor deterministically and waits for send readiness after runtime recovery (`apps/desktop/scripts/verify-staging-public.mjs`, `composer.fill`).
 
 ## Component Entrypoints
 
