@@ -707,13 +707,29 @@ async function main() {
     failureContext.step = "send-message";
     const composer = page.getByTestId("composer-editor");
     await composer.waitFor({ state: "visible", timeout: 30_000 });
-    await composer.click();
-    await page.keyboard.type(message);
+    await composer.fill(message);
+    await page.waitForFunction(
+      (expectedMessage) => {
+        const editor = document.querySelector('[data-testid="composer-editor"]');
+        return (editor?.textContent ?? "").replace(/\s+/gu, " ").trim() === expectedMessage;
+      },
+      message,
+      { timeout: 30_000 },
+    );
     const sendButton = page.getByRole("button", { name: "Send message" });
     await sendButton.waitFor({ state: "visible", timeout: 30_000 });
-    if (!(await sendButton.isEnabled())) {
-      await fail(failureContext, "The chat composer did not enable the Send message button.");
-    }
+    await page
+      .waitForFunction(
+        () => {
+          const button = document.querySelector('button[aria-label="Send message"]');
+          return button instanceof HTMLButtonElement && !button.disabled;
+        },
+        undefined,
+        { timeout: 30_000 },
+      )
+      .catch(() =>
+        fail(failureContext, "The chat composer did not enable the Send message button."),
+      );
     await sendButton.click();
 
     failureContext.step = "assistant-response";
