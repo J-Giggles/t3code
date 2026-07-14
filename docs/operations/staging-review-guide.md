@@ -1528,6 +1528,9 @@ Important implementation areas:
   foreground/browser speech policy. Electron uses bounded PCM capture through
   the active environment's authorized local Whisper RPC instead of depending
   on Chromium's network-backed recognizer.
+- Typed Voice Dock controls reacquire a local Theo session after microphone
+  transcription fails, so the exact command field remains usable even when the
+  selected macOS input produces invalid or zero-signal audio.
 - `apps/mobile/src/localTopics/onTheGo` and
   `apps/mobile/modules/t3-native-controls` provide native recognition/TTS,
   microphone and audio-focus policy, secure device identity, push-to-talk, and
