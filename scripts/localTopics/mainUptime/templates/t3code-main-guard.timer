@@ -1,0 +1,11 @@
+[Unit]
+Description=Continuously protect the approved T3 Code Main SHA
+
+[Timer]
+OnBootSec=5s
+OnUnitActiveSec=5s
+AccuracySec=1s
+Unit=t3code-main-guard.service
+
+[Install]
+WantedBy=timers.target

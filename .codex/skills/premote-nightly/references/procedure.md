@@ -25,13 +25,15 @@ Use this procedure for the explicit `nightly -> staging -> main` T3 Code promoti
 5. Preserve dirty Mac state as a named stash plus patch and untracked-file archive. Record their paths and verify they are non-empty when changes existed.
 6. Stop T3 Code Staging, reset the checked-out staging worktree to the nightly candidate, and push `staging` with `--force-with-lease=staging:<old-origin-staging>`.
 7. Launch and prove staging through the real public route. Run `vp run verify:staging-public` when public access is applicable. On failure, restore staging from its backup ref and leave main untouched.
-8. Stop T3 Code Main, reset the checked-out main worktree to staging, and push `main` with `--force-with-lease=main:<old-origin-main>`. Publish `nightly` and `original` with their own leases so GitHub exposes only the four current durable lanes.
-9. Restart and prove Linux main through `https://giggabit-server.tailfb378a.ts.net/main/`, including the real project/chat verifier when required.
-10. On the Mac, fetch `origin`, update `main` to the exact promoted SHA, then restore the saved local changes. Verify the checkout and keep the stash/patch until the restored work is inspected.
-11. Comment on the Linear run issue with old and new SHAs, checks, public proof, Mac sync evidence, backup locations, and any warnings. Move it to Done only after every completion criterion passes.
+8. Open an exact-SHA Main promotion lock with `t3code-main-uptime promotion-begin <candidate> 1800`. Stop `t3code-main.service`, reset the checked-out Linux main worktree to staging, and start the service. Do not push `main` yet.
+9. Run `vp run verify:main-public` against `https://giggabit-server.tailfb378a.ts.net/main/`. Require the primary-interface project/chat proof, screenshot, exact candidate SHA, clean checkout, and `promotionProof.written: true`.
+10. Approve the candidate with `t3code-main-uptime promotion-approve <candidate>`. Only then push `main` with `--force-with-lease=main:<old-origin-main>`. Publish `nightly` and `original` with their own leases so GitHub exposes only the four current durable lanes.
+11. On the Mac, fetch `origin`, update `main` to the exact promoted SHA, then restore the saved local changes. Verify the checkout and keep the stash/patch until the restored work is inspected.
+12. Confirm `t3code-main.service`, the guard timer, and the health timer are active. Comment on the Linear run issue with old and new SHAs, checks, proof receipt and screenshot, Mac sync evidence, backup locations, and any warnings. Move it to Done only after every completion criterion passes.
 
 ## Failure Handling
 
 - Before main moves: restore staging if needed, restart staging, and leave main unchanged.
-- After main moves: restore Linux main and `origin/main` from the local backup ref using the captured lease, restart the old main, and do not mark the Linear issue Done.
+- Before Main approval: run `t3code-main-uptime promotion-abort`; it preserves the failed candidate, restores the prior approved SHA, and restarts Main. Leave `origin/main` untouched.
+- After Main approval or publication: restore Linux main and `origin/main` from the local backup ref using the captured lease, establish the restored SHA as the approved Main through the same proof gate, and do not mark the Linear issue Done.
 - Never resolve a failed promotion by editing a durable worktree. Return the defect to the nightly replay topic and produce a new Linear run.

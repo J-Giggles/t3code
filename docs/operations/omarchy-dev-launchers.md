@@ -66,6 +66,10 @@ bash -n ~/.local/bin/t3code-dev-main ~/.local/bin/t3code-dev-staging ~/.local/bi
 
 Do not restart an active `main` dev environment just to apply launcher updates.
 The new launcher behavior applies on the next clean start from the Omarchy menu.
+On `giggabit-server`, the durable Main runtime is owned by `t3code-main.service`,
+which calls the generated launcher in attached mode. The Omarchy Main entry is a
+manual recovery surface, not a second concurrent supervisor. See
+`docs/operations/main-uptime.md`.
 
 Install or reconcile only the nightly launcher after a successful replay:
 
@@ -119,3 +123,15 @@ That command opens `https://giggabit-server.tailfb378a.ts.net/nightly/`, proves 
 primary network interface can reach the route, creates a chat with `Hi`, and
 waits for a non-empty assistant response. Artifacts are written under
 `apps/desktop/test-results/nightly-public/`.
+
+## Main HTTPS Verification
+
+Run the full public Main proof with:
+
+```bash
+vp run verify:main-public
+```
+
+Outside a promotion this proves the live app without changing approval state.
+During an exact-SHA promotion lock it also writes the fresh receipt required by
+`t3code-main-uptime promotion-approve`.

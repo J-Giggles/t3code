@@ -18,12 +18,13 @@ Read `references/procedure.md` before acting. Also read `docs/operations/premote
 ## Operating Rules
 
 - Use `fleet-ssh giggabit-server -- <command>` or `ssh giggabit-server` for Linux work. Prefer the fleet wrapper when Node, pnpm, or repo tools need the development PATH.
-- Do not move `main` while `T3 Code Main` is running from `/home/jgigg/code/t3code`; stop the launcher first and restart it after promotion.
+- Treat Linux Main as an approved-SHA service. Open an exact-candidate promotion lock, stop `t3code-main.service` only for the checkout move, then start and prove the candidate before approval.
 - Do not skip `vp check` or `vp run typecheck`. Run them with Node `24.13.1`.
 - Preserve dirty state with patch files, stashes, or backup refs before removing temporary worktrees or switching the Mac checkout.
 - Keep GitHub limited to the four durable lanes. Use local backup refs and an external git bundle instead of remote backup branches.
-- If a required verification step fails, leave `main` untouched or restore it from the backup ref before reporting.
+- Keep `origin/main` and the Mac unchanged until the live candidate has a fresh strict `/main/` project-and-chat proof receipt.
+- If the live candidate fails, run `t3code-main-uptime promotion-abort` so the approved SHA is restored and restarted.
 
 ## Completion Criteria
 
-The flow is complete only when Linux `main` and the Mac checkout point at the promoted commit, T3 Code Main is running again, required checks are recorded, and temporary local worktrees have either been removed or explicitly left with a reason.
+The flow is complete only when the candidate is the approved Linux Main SHA, its strict proof receipt is recorded, Linux `main`, GitHub `main`, and the Mac checkout agree, the Main service and both timers are active, required checks are recorded, and temporary local worktrees have either been removed or explicitly left with a reason.

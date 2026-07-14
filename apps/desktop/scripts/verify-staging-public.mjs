@@ -13,22 +13,45 @@ const desktopDir = NodePath.resolve(__dirname, "..");
 const repoRoot = NodePath.resolve(desktopDir, "../..");
 
 const PUBLIC_VERIFY_TARGET = process.env.T3CODE_PUBLIC_VERIFY_TARGET?.trim() || "staging";
-const DEFAULT_PUBLIC_URL =
-  PUBLIC_VERIFY_TARGET === "nightly"
-    ? "https://giggabit-server.tailfb378a.ts.net/nightly/"
-    : "https://giggabit-server.tailfb378a.ts.net/staging/";
+const PUBLIC_VERIFY_TARGETS = {
+  main: {
+    publicUrl: "https://giggabit-server.tailfb378a.ts.net/main/",
+    pairingBaseDir: "~/.local/share/t3code-dev/main",
+    pairingDevUrl: "http://127.0.0.1:5753/main/",
+    seedProject: true,
+    projectRoot: repoRoot,
+    projectTitle: "main",
+  },
+  nightly: {
+    publicUrl: "https://giggabit-server.tailfb378a.ts.net/nightly/",
+    pairingBaseDir: "~/.local/share/t3code-dev/nightly",
+    pairingDevUrl: "http://127.0.0.1:5833/nightly/",
+    seedProject: true,
+    projectRoot: repoRoot,
+    projectTitle: "nightly",
+  },
+  staging: {
+    publicUrl: "https://giggabit-server.tailfb378a.ts.net/staging/",
+    pairingBaseDir: "~/.local/share/t3code-dev/staging",
+    pairingDevUrl: "http://127.0.0.1:5793/staging/",
+    seedProject: false,
+    projectRoot: "",
+    projectTitle: "",
+  },
+};
+const PUBLIC_VERIFY_CONFIG = PUBLIC_VERIFY_TARGETS[PUBLIC_VERIFY_TARGET];
+if (!PUBLIC_VERIFY_CONFIG) {
+  throw new Error(
+    `Unknown T3CODE_PUBLIC_VERIFY_TARGET '${PUBLIC_VERIFY_TARGET}'. Expected main, nightly, or staging.`,
+  );
+}
+const DEFAULT_PUBLIC_URL = PUBLIC_VERIFY_CONFIG.publicUrl;
 const DEFAULT_MESSAGE = "Hi";
 const DEFAULT_TIMEOUT_MS = 600_000;
-const DEFAULT_PAIRING_BASE_DIR =
-  PUBLIC_VERIFY_TARGET === "nightly"
-    ? "~/.local/share/t3code-dev/nightly"
-    : "~/.local/share/t3code-dev/staging";
-const DEFAULT_PAIRING_DEV_URL =
-  PUBLIC_VERIFY_TARGET === "nightly"
-    ? "http://127.0.0.1:5833/nightly/"
-    : "http://127.0.0.1:5793/staging/";
-const DEFAULT_PROJECT_ROOT = PUBLIC_VERIFY_TARGET === "nightly" ? repoRoot : "";
-const DEFAULT_PROJECT_TITLE = PUBLIC_VERIFY_TARGET === "nightly" ? "nightly-local" : "";
+const DEFAULT_PAIRING_BASE_DIR = PUBLIC_VERIFY_CONFIG.pairingBaseDir;
+const DEFAULT_PAIRING_DEV_URL = PUBLIC_VERIFY_CONFIG.pairingDevUrl;
+const DEFAULT_PROJECT_ROOT = PUBLIC_VERIFY_CONFIG.projectRoot;
+const DEFAULT_PROJECT_TITLE = PUBLIC_VERIFY_CONFIG.projectTitle;
 const DEFAULT_PAIRING_TTL = "5m";
 const DEFAULT_NETWORK_PREFLIGHT_TIMEOUT_MS = 20_000;
 
@@ -244,14 +267,14 @@ function readPairingDevUrl() {
 }
 
 function readVerificationProjectTitleFallback() {
-  return PUBLIC_VERIFY_TARGET === "nightly" ? NodePath.basename(repoRoot) : DEFAULT_PROJECT_TITLE;
+  return DEFAULT_PROJECT_TITLE || NodePath.basename(repoRoot);
 }
 
 function readProjectSeedConfig() {
   const enabled = readBooleanFallbackEnv(
     "T3CODE_PUBLIC_VERIFY_SEED_PROJECT",
     "T3CODE_STAGING_VERIFY_SEED_PROJECT",
-    PUBLIC_VERIFY_TARGET === "nightly",
+    PUBLIC_VERIFY_CONFIG.seedProject,
   );
   const workspaceRoot = expandHome(
     readFallbackEnv(
@@ -450,6 +473,80 @@ async function waitForAssistantResponse(page, timeoutMs) {
   );
 }
 
+async function writeMainPromotionProof(publicUrl, artifactDir) {
+  if (PUBLIC_VERIFY_TARGET !== "main") return null;
+
+  const stateDir = expandHome(
+    process.env.T3CODE_MAIN_UPTIME_STATE_DIR ?? "~/.local/state/t3code-main-uptime",
+  );
+  const lockPath = NodePath.join(stateDir, "promotion.lock");
+  let lock;
+  try {
+    lock = await NodeFSP.readFile(lockPath, "utf8");
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return { written: false, reason: "no active promotion lock" };
+    }
+    throw error;
+  }
+
+  const fields = lock.trim().split(/\s+/u);
+  const [candidate, startedRaw, expiresRaw] = fields;
+  const started = Number.parseInt(startedRaw ?? "", 10);
+  const expires = Number.parseInt(expiresRaw ?? "", 10);
+  const proofTime = Math.floor(Date.now() / 1_000);
+  if (
+    fields.length !== 3 ||
+    !/^[0-9a-f]{40}$/u.test(candidate ?? "") ||
+    !Number.isSafeInteger(started) ||
+    !Number.isSafeInteger(expires) ||
+    proofTime < started ||
+    proofTime > expires
+  ) {
+    throw new Error(`Main promotion lock is invalid or expired: ${lockPath}`);
+  }
+
+  if (new URL(publicUrl).toString() !== new URL(DEFAULT_PUBLIC_URL).toString()) {
+    throw new Error(`Main promotion proof must use the canonical URL ${DEFAULT_PUBLIC_URL}`);
+  }
+
+  const mainRoot = expandHome(process.env.T3CODE_MAIN_ROOT ?? "~/code/t3code");
+  const [{ stdout: branch }, { stdout: head }, { stdout: status }] = await Promise.all([
+    execFile("git", ["-C", mainRoot, "branch", "--show-current"]),
+    execFile("git", ["-C", mainRoot, "rev-parse", "HEAD"]),
+    execFile("git", ["-C", mainRoot, "status", "--porcelain=v1", "--untracked-files=all"]),
+  ]);
+  const observedBranch = branch.trim();
+  const observedHead = head.trim();
+  if (observedBranch !== "main") {
+    throw new Error(`Main promotion proof found branch '${observedBranch || "detached HEAD"}'.`);
+  }
+  if (observedHead !== candidate) {
+    throw new Error(`Main promotion proof found HEAD ${observedHead}, expected ${candidate}.`);
+  }
+  if (status.trim()) {
+    throw new Error("Main promotion proof requires a clean live checkout.");
+  }
+
+  const proofPath = NodePath.join(stateDir, "main-public-proof");
+  const proofDetails = {
+    candidate,
+    proofTime,
+    publicUrl,
+    artifactDir,
+    mainRoot,
+  };
+  await NodeFSP.writeFile(
+    NodePath.join(artifactDir, "main-promotion-proof.json"),
+    `${JSON.stringify(proofDetails, null, 2)}\n`,
+  );
+  await NodeFSP.mkdir(stateDir, { recursive: true });
+  const temporaryProofPath = `${proofPath}.tmp.${process.pid}`;
+  await NodeFSP.writeFile(temporaryProofPath, `${candidate} ${proofTime}\n`, { mode: 0o600 });
+  await NodeFSP.rename(temporaryProofPath, proofPath);
+  return { written: true, path: proofPath, ...proofDetails };
+}
+
 async function main() {
   const publicUrl = readFallbackEnv(
     "T3CODE_PUBLIC_VERIFY_URL",
@@ -631,6 +728,7 @@ async function main() {
       timeout: timeoutMs,
     });
     await page.screenshot({ path: NodePath.join(artifactDir, "pass.png"), fullPage: true });
+    const promotionProof = await writeMainPromotionProof(publicUrl, artifactDir);
 
     console.log(
       JSON.stringify(
@@ -641,6 +739,7 @@ async function main() {
           assistantText: String(assistantText).slice(0, 500),
           projectSeed,
           networkPreflight,
+          promotionProof,
           artifactDir,
         },
         null,

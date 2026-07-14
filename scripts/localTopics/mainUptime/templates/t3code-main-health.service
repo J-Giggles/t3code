@@ -1,0 +1,9 @@
+[Unit]
+Description=Recover T3 Code Main when its public route is unavailable
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=150
+ExecStart=@@HOME_DIR@@/.local/bin/t3code-main-uptime health

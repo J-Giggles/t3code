@@ -1,0 +1,11 @@
+[Unit]
+Description=Check T3 Code Main public health
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Unit=t3code-main-health.service
+
+[Install]
+WantedBy=timers.target

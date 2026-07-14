@@ -1,0 +1,23 @@
+[Unit]
+Description=T3 Code Main supervised runtime
+Wants=network-online.target graphical-session.target
+After=network-online.target graphical-session.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=@@REPO_ROOT@@
+Environment=DISPLAY=:0
+Environment=WAYLAND_DISPLAY=wayland-1
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+ExecStartPre=@@HOME_DIR@@/.local/bin/t3code-main-uptime launch-preflight
+ExecStart=@@HOME_DIR@@/.local/bin/t3code-dev-main --attached
+ExecStop=@@HOME_DIR@@/.local/bin/t3code-dev-main --kill
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+KillMode=control-group
+
+[Install]
+WantedBy=default.target

@@ -34,11 +34,12 @@ Inspect `topic-audit.md`, `nightly-agent-report.json`, and proof artifacts from 
 3. Preserve Mac dirty state as both a stash and a patch/untracked archive.
 4. Stop the staging launcher and reset `.worktrees/staging` to the reviewed nightly SHA.
 5. Push `staging` with an exact `--force-with-lease` and prove the public staging workflow.
-6. Stop the main launcher and reset `/home/jgigg/code/t3code` to the proven staging SHA.
-7. Push `main`, `nightly`, and `original` with exact leases. Do not create backup branches on GitHub; the remote should contain only the four durable lanes.
-8. Restart and prove Linux main.
-9. Fetch and update the Mac `main` checkout to the exact promoted SHA, then restore its preserved local changes.
-10. Add a promotion evidence comment to the Linear run and move it to Done.
+6. Open an exact-SHA promotion lock, stop `t3code-main.service`, reset `/home/jgigg/code/t3code` to the proven staging SHA, and start the service. Keep `origin/main` unchanged.
+7. Run `vp run verify:main-public` against the canonical public Main route. Require the primary-interface project/chat flow, screenshot, clean exact-SHA checkout, and fresh promotion receipt.
+8. Approve the candidate with `t3code-main-uptime promotion-approve <candidate>`.
+9. Push `main`, `nightly`, and `original` with exact leases. Do not create backup branches on GitHub; the remote should contain only the four durable lanes.
+10. Fetch and update the Mac `main` checkout to the exact promoted SHA, then restore its preserved local changes.
+11. Confirm the Main service and both timers are active. Add a promotion evidence comment to the Linear run and move it to Done.
 
 Do not combine staging and main into a single blind reset. Staging is the rollback boundary that protects the live main lane.
 
@@ -58,4 +59,4 @@ Keep the issue `In Review` when a promotion is incomplete. A failed promotion re
 
 ## Rollback
 
-If staging proof fails, restore staging and leave main untouched. If main has moved and fails verification, restore Linux and GitHub main from the local backup ref using an exact lease, restart the prior launcher, and preserve all evidence on the Linear issue. Product repairs belong in a new nightly replay candidate, never as direct edits to `staging` or `main`.
+If staging proof fails, restore staging and leave main untouched. If the live Main candidate fails before approval, run `t3code-main-uptime promotion-abort`; the guard restores the prior approved SHA and restarts the service while `origin/main` remains unchanged. If a post-approval publication step fails, use the backup refs and the same proof gate for rollback. Product repairs belong in a new nightly replay candidate, never as direct edits to `staging` or `main`.

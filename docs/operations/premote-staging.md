@@ -37,7 +37,14 @@ Use `vp run verify:staging-public` when the staging app is running and the chang
    - Save dirty Mac changes as a patch or stash before switching the Mac checkout.
    - Save dirty Linux worktree patches before removing temporary worktrees.
    - Create local backup refs under `refs/backup/premote-staging/<timestamp>/` for `main`, `staging`, `original`, `nightly` when present, `origin/main`, `origin/staging`, and `upstream/main`.
-4. Stop the running `T3 Code Main` launcher before moving `/home/jgigg/code/t3code`.
+4. Open an exact-SHA promotion lock, then stop `t3code-main.service` before moving `/home/jgigg/code/t3code`:
+
+```bash
+candidate="$(git -C /home/jgigg/code/t3code/.worktrees/staging rev-parse HEAD)"
+~/.local/bin/t3code-main-uptime promotion-begin "$candidate" 1800
+systemctl --user stop t3code-main.service
+```
+
 5. Move Linux `main` to the verified `staging` commit with a checked-out worktree reset:
 
 ```bash
@@ -46,25 +53,39 @@ git status --short --branch
 git reset --hard staging
 ```
 
-6. Write an external git bundle containing the local backup refs, then update the durable remote lanes with lease protection. Do not create extra backup branches on GitHub:
+6. Start the candidate and prove the canonical Main project/chat workflow before publishing it:
+
+```bash
+systemctl --user start t3code-main.service
+cd /home/jgigg/code/t3code/.worktrees/staging
+T3CODE_MAIN_ROOT=/home/jgigg/code/t3code \
+T3CODE_PUBLIC_VERIFY_PROJECT_ROOT=/home/jgigg/code/t3code \
+T3CODE_PUBLIC_VERIFY_PROJECT_TITLE=main \
+vp run verify:main-public
+~/.local/bin/t3code-main-uptime promotion-approve "$candidate"
+```
+
+7. Write an external git bundle containing the local backup refs, then update the durable remote lanes with lease protection. Do not create extra backup branches on GitHub:
 
 ```bash
 git push --force-with-lease=main:<old-origin-main-sha> origin main:main
 git push --force-with-lease=staging:<old-origin-staging-sha> origin staging:staging
 ```
 
-7. Ensure the Linux durable worktrees exist and are clean:
+8. Ensure the Linux durable worktrees exist and are clean:
    - `original` at `upstream/main`
    - `nightly` at the latest verified replay candidate, or equal to `staging` until the next replay
    - `staging` at the promoted candidate
    - `main` at the promoted candidate
-8. Restart `T3 Code Main` with `~/.local/bin/t3code-dev-main`.
-9. Verify the app:
-   - `git -C /home/jgigg/code/t3code rev-parse HEAD`
-   - `curl -fsS https://giggabit-server.tailfb378a.ts.net/main/`
-   - inspect process command lines for `/home/jgigg/code/t3code`
-10. Update the Mac checkout to `origin/main`, restore only intentional saved changes, and keep the Mac on the main lane.
-11. Remove temporary local Linux worktrees after backup. Keep GitHub limited to `original`, `nightly`, `staging`, and `main`.
+9. Confirm `t3code-main.service`, `t3code-main-guard.timer`, and `t3code-main-health.timer` are active.
+10. Verify the app:
+
+- `git -C /home/jgigg/code/t3code rev-parse HEAD`
+- `curl -fsS https://giggabit-server.tailfb378a.ts.net/main/`
+- inspect process command lines for `/home/jgigg/code/t3code`
+
+11. Update the Mac checkout to `origin/main`, restore only intentional saved changes, and keep the Mac on the main lane.
+12. Remove temporary local Linux worktrees after backup. Keep GitHub limited to `original`, `nightly`, `staging`, and `main`.
 
 ## Cleanup Rules
 
@@ -79,4 +100,4 @@ Never remove the durable lane worktrees: `/home/jgigg/code/t3code`, `.worktrees/
 
 ## Failure Rules
 
-If any required check fails, leave `main` untouched and report the failing command. If `main` was already moved but restart or verification fails, use the backup refs to restore the previous `main` and restart the old launcher.
+If any required staging check fails, leave `main` untouched and report the failing command. If the live Main candidate fails before approval, run `~/.local/bin/t3code-main-uptime promotion-abort`; this preserves the failed state, restores the approved SHA, and restarts the service without changing `origin/main`.

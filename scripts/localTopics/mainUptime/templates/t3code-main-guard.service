@@ -1,0 +1,6 @@
+[Unit]
+Description=Protect T3 Code Main from unauthorized Git mutations
+
+[Service]
+Type=oneshot
+ExecStart=@@HOME_DIR@@/.local/bin/t3code-main-uptime guard
