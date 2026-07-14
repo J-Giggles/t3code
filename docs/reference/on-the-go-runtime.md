@@ -1,6 +1,6 @@
 # On-the-Go Runtime Contracts
 
-Status: Slices 1–2 contract, deterministic-harness, and durable-foundation reference. Production transport, provider, and client wiring are not yet implemented.
+Status: Implemented as the replayable `on-the-go` local topic.
 
 The schema-only public contracts are exported from `@t3tools/contracts` and owned by `packages/contracts/src/localTopics/onTheGo/index.ts`. Runtime policy and its internal adapter ports are owned by `apps/server/src/localTopics/onTheGo/`.
 
@@ -57,12 +57,13 @@ bound to an exact ready revision, voice delivery requires `Send it`, scheduler i
 bound to the expected active turn, and unknown/offline outcomes never auto-send. Retrieved context remains evidence
 and cannot alter Theo's fixed read-only or handoff rules.
 
-Slice 2 deterministic evidence:
+Durable-foundation evidence:
 
 - `apps/server/src/localTopics/onTheGo/FoundationRuntime.test.ts` (`OTG-UT-007`–`OTG-UT-016`, `OTG-UT-019`,
   `OTG-UT-020`, and `OTG-UT-022`)
 - `apps/server/src/localTopics/onTheGo/FoundationRuntime.ts`
 - `packages/contracts/src/localTopics/onTheGo/foundation.ts`
+
 ## Production Clients, Context, And Platform Policy
 
 `packages/client-runtime/src/localTopics/onTheGo/Controller.ts` is the shared voice controller. Electron and foreground web use `apps/web/src/localTopics/onTheGo/BrowserSpeechAdapter.ts`; Electron disables renderer background throttling only while On-the-Go is enabled and grants audio capture only. Native mobile uses `expo-speech-recognition`, `expo-speech`, and background `expo-audio` configuration with OS microphone and foreground-service indicators. Hosted web stops listening when hidden.
