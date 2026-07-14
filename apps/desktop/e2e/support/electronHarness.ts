@@ -246,11 +246,13 @@ function killRuntimeProcesses(rootDir: string, signal: NodeJS.Signals = "SIGTERM
   if (process.platform !== "linux") return;
 
   for (const entry of NodeFS.readdirSync("/proc", { withFileTypes: true })) {
-    if (!entry.isDirectory() || !/^\d+$/u.test(entry.name)) continue;
-    const pid = Number.parseInt(entry.name, 10);
-    if (pid === process.pid) continue;
+    if (!/^\d+$/u.test(entry.name)) continue;
 
     try {
+      // procfs entries can disappear even while Dirent resolves their type.
+      if (!entry.isDirectory()) continue;
+      const pid = Number.parseInt(entry.name, 10);
+      if (pid === process.pid) continue;
       const environment = NodeFS.readFileSync(NodePath.join("/proc", entry.name, "environ"));
       if (!environment.includes(rootDir)) continue;
       process.kill(pid, signal);
