@@ -452,15 +452,18 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
         await refresh();
       }
       if (snapshot?.owner?.continueRequired) {
-        caption = "Ownership was restored. Use Continue before typed controls start.";
-        notify();
-        return;
-      }
-      const typedMode = await setMode("sleep");
-      if (typedMode.status !== "accepted") {
-        caption = `Typed controls could not start: ${dispositionReason(typedMode)}`;
-        notify();
-        return;
+        if (phrase !== "continue") {
+          caption = "Ownership was restored. Use Continue before typed controls start.";
+          notify();
+          return;
+        }
+      } else {
+        const typedMode = await setMode("sleep");
+        if (typedMode.status !== "accepted") {
+          caption = `Typed controls could not start: ${dispositionReason(typedMode)}`;
+          notify();
+          return;
+        }
       }
     }
     if (phrase === "stop") {

@@ -633,6 +633,53 @@ describe("On-the-Go client controller", () => {
     });
   });
 
+  it("lets typed Continue restore ownership while microphone controls stay off", async () => {
+    const deviceId = OnTheGoDeviceId.make("desktop-device");
+    let snapshot = {
+      ...baseSnapshot(),
+      owner: { deviceId, continueRequired: true },
+    } as OnTheGoSnapshot;
+    const controller = makeOnTheGoController({
+      scope: { voiceSessionId: OnTheGoVoiceSessionId.make("session"), deviceId },
+      target: () => null,
+      createId: () => "id",
+      transport: {
+        snapshot: async () => snapshot,
+        dispatch: async (command) => {
+          if (command.type === "owner.continue") {
+            snapshot = { ...snapshot, owner: { deviceId, continueRequired: false } };
+          }
+          if (command.type === "mode.set") snapshot = { ...snapshot, mode: command.mode };
+          if (command.type === "wake.detected" && snapshot.mode === "off") {
+            return {
+              status: "rejected" as const,
+              commandId: command.commandId,
+              reason: "invalid-state" as const,
+            };
+          }
+          return { status: "accepted" as const, commandId: command.commandId };
+        },
+        subscribe: () => () => undefined,
+      },
+      speech: {
+        availability: () => ({ available: false, background: true, reason: "audio-invalid" }),
+        start: () => () => undefined,
+        speak: async () => undefined,
+        stop: () => undefined,
+      },
+      theo: { ask: async () => ({ reply: "unused", preparedPrompt: null }) },
+    });
+
+    await controller.start();
+    await controller.acceptTranscript("Continue", "composer");
+    expect(controller.state().caption).toBe(
+      "Ownership continued. Turn on voice control when ready.",
+    );
+
+    await controller.acceptTranscript("Hey Theo", "composer");
+    expect(controller.state().mode).toBe("theo-conversation");
+  });
+
   it("OTG-UT-007/008: coalesces completion tones for two seconds while Attention remains immediate", async () => {
     const deviceId = OnTheGoDeviceId.make("desktop-device");
     let now = 0;
