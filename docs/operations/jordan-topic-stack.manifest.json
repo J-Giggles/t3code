@@ -93,6 +93,12 @@
       "subject": "feat(observability): add local hub, Grafana provisioning, and digest metrics"
     },
     {
+      "id": "on-the-go",
+      "pluginPath": "local-plugins/on-the-go",
+      "commits": ["d225f64c448cc5bfc6cd9cb0915703ca89ef179d"],
+      "subject": "feat(on-the-go): add voice-first Theo companion"
+    },
+    {
       "id": "desktop-tests",
       "pluginPath": "local-plugins/desktop-tests",
       "commits": ["57ef11c7fad9d06afb43677d583bb46a4351c965"],

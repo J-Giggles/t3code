@@ -1,6 +1,6 @@
 # On-the-Go Runtime Contracts
 
-Status: Slices 1–2 contract, deterministic-harness, and durable-foundation reference. Production transport, provider, and client wiring are not yet implemented.
+Status: Implemented as the replayable `on-the-go` local topic.
 
 The schema-only public contracts are exported from `@t3tools/contracts` and owned by `packages/contracts/src/localTopics/onTheGo/index.ts`. Runtime policy and its internal adapter ports are owned by `apps/server/src/localTopics/onTheGo/`.
 
@@ -57,7 +57,7 @@ bound to an exact ready revision, voice delivery requires `Send it`, scheduler i
 bound to the expected active turn, and unknown/offline outcomes never auto-send. Retrieved context remains evidence
 and cannot alter Theo's fixed read-only or handoff rules.
 
-Slice 2 deterministic evidence:
+Durable-foundation evidence:
 
 - `apps/server/src/localTopics/onTheGo/FoundationRuntime.test.ts` (`OTG-UT-007`–`OTG-UT-016`, `OTG-UT-019`,
   `OTG-UT-020`, and `OTG-UT-022`)

@@ -77,9 +77,13 @@
   `local-plugins/<topic>/` folder in the same branch before promotion. If the topic changes public contracts,
   RPC/IPC shapes, MCP tools, browser/app automation controls, launch behavior, or operator workflows, update the
   relevant API/reference/operations documentation in that same branch.
-- Promoting `staging` to `main` requires an explicit user request, clean staging and main worktrees, backup refs for
-  both branches, green `vp check` and `vp run typecheck`, applicable lint/E2E verification, and either a
-  fast-forward update or a documented non-rewrite reconciliation.
+- Promoting `staging` to `main` requires a fresh explicit user approval issued only after the exact staging revision
+  has passed its full checks, headed verification, and `vp run verify:staging-public`, and after the evidence and
+  expected Main downtime have been presented. Earlier implementation or staging approval never authorizes Main.
+  The promotion must use clean staging and main worktrees, backup refs for both branches, a documented non-rewrite
+  reconciliation or fast-forward, and one coordinated Linux/Mac transaction that stops the live launchers before
+  moving either checkout, relaunches both machines at the same revision, verifies both, and restores the backups if
+  either side fails. Never edit or move the root main checkout while T3 Code Main is running.
 
 ## Current Topical Stack Ledger
 
@@ -116,19 +120,23 @@ Current topic order:
      Chrome profile, plus the deterministic temporary-profile Chromium fallback.
 9. `feat(project-agent-files): add schemas, CRUD, and scaffold safety`
 10. `feat(observability): add local hub, Grafana provisioning, and digest metrics`
-11. `test(desktop): add headed desktop verification coverage`
-12. `docs(operations): document Jordan patch-stack maintenance workflow`
-13. `feat(topic-stack): add replay checklist and audit safeguards`
+11. `feat(on-the-go): add voice-first Theo companion`
+    - Adds durable voice ownership, queued announcements, conversational Theo, Follow Mode, exact `Send it`
+      authorization, configurable vocabulary and Barge-In, bounded context fetches, mobile/desktop voice policy,
+      and stable `OTG-UT-001` through `OTG-UT-023` acceptance coverage.
+12. `test(desktop): add headed desktop verification coverage`
+13. `docs(operations): document Jordan patch-stack maintenance workflow`
+14. `feat(topic-stack): add replay checklist and audit safeguards`
     - Includes machine-enforced Replay Checklist Items for local plugin READMEs, `topic-audit.md` run artifacts, and
       human promotion sign-off documentation.
     - Also owns structured Replay Contracts, constrained autonomous conflict repair, exact-fingerprint Repair Memory,
       upstream dependency-floor reconciliation, post-replay control-plane metadata sync, completed-stack verification,
       and Linear run evidence. Human input is reserved for fundamental product, architecture, security, or operator
       decisions.
-14. `feat(dev-launch): add nightly Omarchy launcher`
+15. `feat(dev-launch): add nightly Omarchy launcher`
     - Includes `/nightly/` route ownership, the strict nightly verifier, and
       project seeding into the launcher's active dev-state lane.
-15. `feat(main-uptime): guard and supervise durable main`
+16. `feat(main-uptime): guard and supervise durable main`
     - Owns the boot-managed Main service, approved-SHA integrity and health guards,
       preservation-before-rollback incidents, strict Main public proof receipt, and
       protected publication order in both promotion skills. Health recovery uses

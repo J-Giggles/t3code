@@ -215,9 +215,12 @@ confirm `upstream/main...staging`, `main...staging`, and the final rebuilt
 branch diff were inspected, every topic checklist was reviewed, and unresolved
 risks are either absent or explicitly accepted by the human sign-off. Promote by
 fast-forwarding or cherry-picking the proven topic stack into the reserved
-staging worktree. Do not promote directly to `main` unless the user explicitly
-asks for a main promotion and the main checkout is clean and not actively
-running.
+staging worktree. Launch and prove that exact staging revision first, publish the
+evidence, then stop for a fresh user approval tied to the SHA and Main downtime.
+Earlier implementation or staging authority never permits Main. After fresh
+approval, update Linux and Mac as one backed-up fast-forward transaction; stop
+both Main launchers before moving either checkout and roll both hosts back if
+either relaunch or verification fails.
 
 Manual promotion from the nightly candidate:
 

@@ -34,10 +34,12 @@ Review in this order:
 8. Desktop shell MCP automation controls.
 9. Project agent file schemas, CRUD, and scaffold safety.
 10. Local observability hub, Grafana provisioning, and digest metrics.
-11. Headed desktop verification coverage.
-12. Patch-stack maintenance workflow and promotion governance.
-13. Autonomous topic replay, checklist, and audit safeguards.
-14. Durable Main supervision, rollback, and strict promotion proof.
+11. On-the-Go voice companion and durable Theo orchestration.
+12. Headed desktop verification coverage.
+13. Patch-stack maintenance workflow and promotion governance.
+14. Autonomous topic replay, checklist, and audit safeguards.
+15. Nightly Omarchy launcher and public verifier.
+16. Durable Main supervision, rollback, and strict promotion proof.
 
 The order matters because later topics reuse earlier infrastructure. The app
 launcher depends on correct advertised endpoints. Runtime recovery and project
@@ -1473,8 +1475,67 @@ Reviewers should check:
 - Guard recovery archives dirty files, index stages, refs, and a verified bundle before resetting anything.
 - Expired or abandoned promotion locks converge back to the approved SHA.
 - Old, wrong-SHA, non-canonical, or pre-lock proof cannot approve a candidate.
-- GitHub Main and the Mac remain unchanged until the live Linux proof passes.
+- GitHub Main and the Mac remain unchanged until the exact Staging revision has fresh approval and both Main
+  launchers pass the coordinated transaction.
 - Standalone Main verification outside a promotion does not change approval state.
+
+## Topic 26: On-the-Go Voice Companion And Theo Orchestration
+
+### User Problem
+
+T3 Code normally requires visual attention for new agent responses, follow-up
+questions, approvals, and prompt submission. That makes it difficult to keep a
+coding session moving while walking, commuting, or working away from the
+keyboard, and ordinary browser dictation cannot safely distinguish discussion
+from an authorized send or preserve queued work across reconnects.
+
+### What Changed
+
+The topic commit recorded in `local-plugins/on-the-go/plugin.json`
+`feat(on-the-go): add voice-first Theo companion` adds a replayable voice layer
+across contracts, server, web/Electron, and native mobile.
+
+Important implementation areas:
+
+- `packages/contracts/src/localTopics/onTheGo` owns commands, durable records,
+  settings, notifications, Follow checkpoints, and RPC schemas.
+- `apps/server/src/localTopics/onTheGo` owns authenticated device binding,
+  durable queues, server-lifetime provider event ingestion, bounded/redacted
+  context fetches, Theo conversation and fallbacks, and exact Prepared Prompt
+  revisions.
+- `packages/client-runtime/src/localTopics/onTheGo` owns shared conversation
+  control, command vocabulary, Barge-In behavior, notification delivery, and
+  mandatory `Send it` authorization.
+- `apps/web/src/localTopics/onTheGo` provides the Voice Dock, settings, typed
+  reciprocal controls, captions, notification badges, Follow timeline, and
+  foreground/browser speech policy.
+- `apps/mobile/src/localTopics/onTheGo` and
+  `apps/mobile/modules/t3-native-controls` provide native recognition/TTS,
+  microphone and audio-focus policy, secure device identity, push-to-talk, and
+  the launcher quick action.
+- `apps/desktop/e2e/specs/on-the-go.spec.ts` drives recognition through the real
+  Electron app and verifies activation, Stop, announcements, Follow, protected
+  dictation, reload recovery, queueing, steering, and reciprocal controls.
+
+### Review Focus
+
+Reviewers should check:
+
+- Exactly one authenticated device owns a Voice Session and wake-free local
+  Stop remains available even when remote calls are exhausted.
+- Discussing or revising a response never sends it; only the exact current
+  Prepared Prompt revision is eligible after `Send it`.
+- Response and Attention queues survive reconnects without duplicating work,
+  and completion tones do not read a new announcement until the user asks.
+- Follow Mode narrates conservative provider checkpoints, can switch chats, and
+  does not invent progress from unknown provider events.
+- Context fetches are bounded, redacted, scoped to the authorized device, and
+  treated as untrusted; durable state retains evidence metadata rather than raw
+  excerpts.
+- Unsupported STT/TTS selections, microphone revocation, calls/audio-focus
+  loss, and public-output privacy conflicts fail closed with a visible reason.
+- All stable `OTG-UT-001` through `OTG-UT-023` rows retain normal,
+  refusal/failure, and durable/safety evidence.
 
 ## Cross-Topic Risks
 
@@ -1511,6 +1572,9 @@ Desktop, browser, hosted browser, and mobile clients should agree on:
   when it fails.
 - Whether local observability identifies main, staging, and dev worktrees
   consistently across logs, traces, metrics, and agent diagnostics.
+- Whether On-the-Go ownership, notification counts, Follow state, exact
+  Prepared Prompt revision, and `Send it` authorization agree across desktop,
+  hosted web, and mobile clients.
 - Whether a provider session is recovered, unavailable, or still running.
 - Whether app automation ownership follows the active desktop thread and does
   not leak control across threads or environments.
@@ -1554,6 +1618,8 @@ Reviewers should pay particular attention to:
 - App automation tools should not expose shell control unless the active
   desktop owner and requested thread match.
 - Push notification registration should store minimal required device data.
+- Voice context, speech, announcements, handoffs, and fallback-model egress
+  should share the same sensitive-text redaction and authorization boundary.
 
 ## Reviewer Checklist
 
@@ -1594,7 +1660,10 @@ Use this checklist before approving the stack:
 - Main uptime tests cover dirty and committed mutation preservation, approved-SHA
   restoration, exact-candidate launch, proof rejection, approval, and abort.
 - Main promotion proof uses the canonical public route and completes the real
-  project/chat workflow before GitHub Main or the Mac moves.
+  project/chat workflow before GitHub Main moves.
+- On-the-Go tests cover every `OTG-UT-001`–`OTG-UT-023` acceptance row, native
+  and desktop voice policy, conservative provider mapping, durable queue caps,
+  redaction/SSRF boundaries, exact `Send it`, and the headed recognition flow.
 - `AGENTS.md` contains a current topical stack ledger, and this review guide is
   updated in the same branch whenever topics are added, squashed, split,
   renamed, or dropped. If a topic changes contracts, RPC/IPC shapes, MCP tools,
