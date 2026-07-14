@@ -10,6 +10,7 @@ import { ensureElectronRuntime } from "./ensure-electron-runtime.mjs";
 import {
   installDevelopmentLauncherBootstrap,
   makeDarwinLaunchServicesCommand,
+  normalizeElectronAppFrameworkSymlinks,
   ON_THE_GO_MICROPHONE_USAGE_DESCRIPTION,
   refreshDevelopmentLaunchConfig,
 } from "./localTopics/onTheGo/mac-development-launcher.mjs";
@@ -26,7 +27,7 @@ export const APP_BUNDLE_ID = isDevelopment
   ? `com.t3tools.t3code.dev.${devBundleIdSuffix || "local"}`
   : "com.t3tools.t3code";
 const APP_PROTOCOL_SCHEMES = isDevelopment ? ["t3code-dev"] : ["t3code"];
-const LAUNCHER_VERSION = 16;
+const LAUNCHER_VERSION = 17;
 const defaultIconPath = NodePath.join(desktopDir, "resources", "icon.icns");
 const macEntitlementsPath = NodePath.join(desktopDir, "resources", "entitlements.mac.plist");
 const macChildEntitlementsPath = NodePath.join(
@@ -315,6 +316,7 @@ function buildMacLauncher(electronBinaryPath) {
     recursive: true,
     verbatimSymlinks: true,
   });
+  normalizeElectronAppFrameworkSymlinks({ appBundlePath: targetAppBundlePath });
   patchMainBundleInfoPlist(targetAppBundlePath, iconPath);
   patchHelperBundleInfoPlists(targetAppBundlePath);
   if (isDevelopment) {

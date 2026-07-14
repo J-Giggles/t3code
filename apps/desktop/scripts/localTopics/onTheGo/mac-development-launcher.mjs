@@ -5,6 +5,49 @@ import * as NodePath from "node:path";
 export const ON_THE_GO_MICROPHONE_USAGE_DESCRIPTION =
   "T3 Code uses the microphone for On-the-Go voice commands and Theo conversations.";
 
+export function normalizeElectronAppFrameworkSymlinks({ appBundlePath }) {
+  const frameworksPath = NodePath.join(appBundlePath, "Contents", "Frameworks");
+  if (!NodeFS.existsSync(frameworksPath)) {
+    return;
+  }
+
+  const replaceWithSymlink = (path, target) => {
+    try {
+      if (NodeFS.lstatSync(path).isSymbolicLink() && NodeFS.readlinkSync(path) === target) {
+        return;
+      }
+    } catch {
+      // A missing alias is repaired below.
+    }
+
+    NodeFS.rmSync(path, { recursive: true, force: true });
+    NodeFS.symlinkSync(target, path);
+  };
+
+  for (const entry of NodeFS.readdirSync(frameworksPath, { withFileTypes: true })) {
+    if (!entry.name.endsWith(".framework")) {
+      continue;
+    }
+
+    const frameworkPath = NodePath.join(frameworksPath, entry.name);
+    const versionsPath = NodePath.join(frameworkPath, "Versions");
+    const canonicalVersionPath = NodePath.join(versionsPath, "A");
+    if (!NodeFS.existsSync(canonicalVersionPath)) {
+      continue;
+    }
+
+    replaceWithSymlink(NodePath.join(versionsPath, "Current"), "A");
+    for (const canonicalEntry of NodeFS.readdirSync(canonicalVersionPath, {
+      withFileTypes: true,
+    })) {
+      replaceWithSymlink(
+        NodePath.join(frameworkPath, canonicalEntry.name),
+        `Versions/Current/${canonicalEntry.name}`,
+      );
+    }
+  }
+}
+
 export function resolveDevelopmentLaunchConfigFileName(appBundleId) {
   return `${appBundleId.replaceAll(/[^a-z0-9.-]+/giu, "-")}.launch.json`;
 }

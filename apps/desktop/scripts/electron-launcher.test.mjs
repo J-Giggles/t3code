@@ -8,6 +8,7 @@ import { resolveElectronBinaryPath, resolveElectronLaunchCommand } from "./elect
 import {
   makeDevelopmentLaunchConfig,
   makeDevelopmentLauncherBootstrapScript,
+  normalizeElectronAppFrameworkSymlinks,
   resolveDarwinDevelopmentUserDataDir,
 } from "./localTopics/onTheGo/mac-development-launcher.mjs";
 
@@ -51,6 +52,57 @@ describe("electron development launcher", () => {
       }),
       "/Users/alice/Library/Application Support/t3code-dev-staging-review",
     );
+  });
+
+  it("repairs flattened Electron app framework aliases before signing", () => {
+    const temporaryDirectory = NodeFS.mkdtempSync(
+      NodePath.join(NodeOS.tmpdir(), "t3code-electron-framework-"),
+    );
+    const appBundlePath = NodePath.join(temporaryDirectory, "T3 Code (Dev).app");
+    const frameworksPath = NodePath.join(appBundlePath, "Contents", "Frameworks");
+
+    try {
+      for (const [frameworkName, aliases] of [
+        ["Electron Framework.framework", ["Electron Framework", "Helpers", "Resources"]],
+        ["Mantle.framework", ["Mantle", "Resources"]],
+      ]) {
+        const frameworkPath = NodePath.join(frameworksPath, frameworkName);
+        const canonicalVersionPath = NodePath.join(frameworkPath, "Versions", "A");
+        for (const name of aliases) {
+          const canonicalPath = NodePath.join(canonicalVersionPath, name);
+          const flattenedPath = NodePath.join(frameworkPath, name);
+          if (name === "Electron Framework" || name === "Mantle") {
+            NodeFS.mkdirSync(NodePath.dirname(canonicalPath), { recursive: true });
+            NodeFS.writeFileSync(canonicalPath, "mach-o");
+            NodeFS.writeFileSync(flattenedPath, "mach-o");
+          } else {
+            NodeFS.mkdirSync(canonicalPath, { recursive: true });
+            NodeFS.mkdirSync(flattenedPath, { recursive: true });
+          }
+        }
+        NodeFS.cpSync(canonicalVersionPath, NodePath.join(frameworkPath, "Versions", "Current"), {
+          recursive: true,
+        });
+      }
+
+      normalizeElectronAppFrameworkSymlinks({ appBundlePath });
+
+      for (const [frameworkName, aliases] of [
+        ["Electron Framework.framework", ["Electron Framework", "Helpers", "Resources"]],
+        ["Mantle.framework", ["Mantle", "Resources"]],
+      ]) {
+        const frameworkPath = NodePath.join(frameworksPath, frameworkName);
+        assert.equal(NodeFS.readlinkSync(NodePath.join(frameworkPath, "Versions", "Current")), "A");
+        for (const name of aliases) {
+          assert.equal(
+            NodeFS.readlinkSync(NodePath.join(frameworkPath, name)),
+            `Versions/Current/${name}`,
+          );
+        }
+      }
+    } finally {
+      NodeFS.rmSync(temporaryDirectory, { recursive: true, force: true });
+    }
   });
 
   it("repairs Electron before loading the package entrypoint", () => {
