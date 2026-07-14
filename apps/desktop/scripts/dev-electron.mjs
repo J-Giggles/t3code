@@ -11,6 +11,7 @@ import {
   resolveDevProtocolClient,
   resolveElectronLaunchCommand,
 } from "./electron-launcher.mjs";
+import { cleanupDarwinDevProcesses } from "./dev-process-cleanup.mjs";
 import { waitForResources } from "./wait-for-resources.mjs";
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL?.trim();
@@ -86,7 +87,7 @@ function killChildTreeByPid(pid, signal) {
   NodeChildProcess.spawnSync("pkill", [`-${signal}`, "-P", String(pid)], { stdio: "ignore" });
 }
 
-function cleanupStaleDevApps() {
+function cleanupStaleDevApps(signal = "TERM") {
   if (hostPlatform === "win32") {
     return;
   }
@@ -110,7 +111,7 @@ function cleanupStaleDevApps() {
         const environment = NodeFS.readFileSync(NodePath.join("/proc", entry.name, "environ"));
         if (!scopedEnvEntries.some((value) => environment.includes(value))) continue;
 
-        process.kill(pid, "SIGTERM");
+        process.kill(pid, `SIG${signal}`);
       } catch {
         // Processes can exit or deny access while procfs is being scanned.
       }
@@ -118,7 +119,12 @@ function cleanupStaleDevApps() {
     return;
   }
 
-  NodeChildProcess.spawnSync("pkill", ["-f", "--", `--t3code-dev-root=${desktopDir}`], {
+  if (hostPlatform === "darwin") {
+    cleanupDarwinDevProcesses({ devRootArg, signal });
+    return;
+  }
+
+  NodeChildProcess.spawnSync("pkill", [`-${signal}`, "-f", "--", devRootArg], {
     stdio: "ignore",
   });
 }
@@ -265,9 +271,10 @@ function startApp() {
   const electronArgs = remoteDebuggingPort
     ? [`--remote-debugging-port=${remoteDebuggingPort}`]
     : [];
+  const devRootArg = `--t3code-dev-root=${desktopDir}`;
   const launchArgs = devProtocolClient
-    ? electronArgs
-    : [...electronArgs, `--t3code-dev-root=${desktopDir}`, "dist-electron/main.cjs"];
+    ? [...electronArgs, devRootArg]
+    : [...electronArgs, devRootArg, "dist-electron/main.cjs"];
   const electronCommand = resolveElectronLaunchCommand(launchArgs);
   const app = NodeChildProcess.spawn(electronCommand.electronPath, electronCommand.args, {
     cwd: desktopDir,
@@ -321,9 +328,16 @@ async function stopApp() {
     };
 
     app.once("exit", finish);
-    app.kill("SIGTERM");
-    killChildTreeByPid(app.pid, "TERM");
-    cleanupStaleDevApps();
+    if (hostPlatform === "darwin") {
+      // LaunchServices owns the Electron process. Keep `open -W` alive until the
+      // real app exits so it remains a truthful supervisor instead of detaching
+      // an orphaned Electron process.
+      cleanupStaleDevApps();
+    } else {
+      app.kill("SIGTERM");
+      killChildTreeByPid(app.pid, "TERM");
+      cleanupStaleDevApps();
+    }
 
     setTimeout(() => {
       if (settled) {
@@ -332,9 +346,9 @@ async function stopApp() {
 
       app.kill("SIGKILL");
       killChildTreeByPid(app.pid, "KILL");
-      cleanupStaleDevApps();
+      cleanupStaleDevApps("KILL");
       finish();
-    }, forcedShutdownTimeoutMs).unref();
+    }, forcedShutdownTimeoutMs);
   });
 }
 
@@ -364,6 +378,13 @@ function scheduleRestart() {
 
 function notifyRunningCodeChanged() {
   if (shuttingDown || currentApp === null) {
+    return;
+  }
+
+  if (hostPlatform === "darwin") {
+    NodeChildProcess.spawnSync("pkill", ["-USR2", "-f", "--", `--t3code-dev-root=${desktopDir}`], {
+      stdio: "ignore",
+    });
     return;
   }
 

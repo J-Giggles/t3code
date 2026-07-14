@@ -11,6 +11,10 @@ import { vi } from "vite-plus/test";
 
 vi.mock("electron", async (importOriginal) => ({
   ...(await importOriginal<typeof import("electron")>()),
+  systemPreferences: {
+    askForMediaAccess: vi.fn(async () => true),
+    getMediaAccessStatus: vi.fn(() => "granted"),
+  },
   session: {
     fromPartition: vi.fn(() => ({
       getUserAgent: vi.fn(() => "Mozilla/5.0 Electron/41.5.0 t3code/1.2.3"),

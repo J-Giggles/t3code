@@ -1,11 +1,19 @@
 import { assert, describe, it } from "vite-plus/test";
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
+import * as NodeOS from "node:os";
+import * as NodePath from "node:path";
 
-import { makeDevelopmentLauncherScript, resolveElectronBinaryPath } from "./electron-launcher.mjs";
+import {
+  makeDevelopmentLaunchConfig,
+  makeDevelopmentLauncherBootstrapScript,
+  resolveElectronBinaryPath,
+  resolveElectronLaunchCommand,
+} from "./electron-launcher.mjs";
 
 describe("electron development launcher", () => {
   it("uses captured values only as fallbacks for a live runner environment", () => {
-    const script = makeDevelopmentLauncherScript({
-      electronBinaryPath: "/repo/node_modules/electron/Electron",
+    const config = makeDevelopmentLaunchConfig({
       mainEntryPath: "/repo/apps/desktop/dist-electron/main.cjs",
       desktopRoot: "/repo/apps/desktop",
       environment: {
@@ -14,16 +22,17 @@ describe("electron development launcher", () => {
         T3CODE_HOME: "/tmp/t3",
       },
     });
+    const script = makeDevelopmentLauncherBootstrapScript({
+      launchConfigFileName: "com.t3tools.t3code.dev.staging.launch.json",
+    });
 
-    assert.include(
-      script,
-      "if [ -z \"${VITE_DEV_SERVER_URL:-}\" ]; then export VITE_DEV_SERVER_URL='http://127.0.0.1:8526'; fi",
-    );
-    assert.notInclude(script, "\nexport VITE_DEV_SERVER_URL=");
-    assert.include(
-      script,
-      "exec '/repo/node_modules/electron/Electron' --t3code-dev-root='/repo/apps/desktop' '/repo/apps/desktop/dist-electron/main.cjs' \"$@\"",
-    );
+    assert.equal(config.fallbackEnvironment.VITE_DEV_SERVER_URL, "http://127.0.0.1:8526");
+    assert.equal(config.fallbackEnvironment.T3CODE_PORT, "16566");
+    assert.equal(config.fallbackEnvironment.T3CODE_HOME, "/tmp/t3");
+    assert.include(script, "com.t3tools.t3code.dev.staging.launch.json");
+    assert.include(script, "if (!process.env[name]");
+    assert.notInclude(script, "http://127.0.0.1:8526");
+    assert.include(script, "require(launchConfig.mainEntryPath)");
   });
 
   it("repairs Electron before loading the package entrypoint", () => {
@@ -44,5 +53,129 @@ describe("electron development launcher", () => {
       "/repo/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
     );
     assert.deepEqual(calls, ["ensure", "require:electron"]);
+  });
+
+  // oxlint-disable-next-line t3code/no-global-process-runtime -- Standalone launcher tests gate real macOS bundle assertions before Effect exists.
+  const macIt = NodeOS.platform() === "darwin" ? it : it.skip;
+
+  macIt("launches the app bundle through LaunchServices so macOS owns privacy prompts", () => {
+    const command = resolveElectronLaunchCommand(["--remote-debugging-port=9232"]);
+
+    assert.equal(command.electronPath, "/usr/bin/open");
+    assert.equal(command.args[0], "-W");
+    assert.equal(command.args[1], "-n");
+    assert.match(command.args[2] ?? "", /\.app$/u);
+    assert.deepEqual(command.args.slice(3), ["--args", "--remote-debugging-port=9232"]);
+  });
+
+  macIt("prepares a signed microphone-entitled Mach-O app bundle", () => {
+    const command = resolveElectronLaunchCommand([]);
+    const appBundlePath = command.args[2];
+    assert.ok(appBundlePath);
+
+    const executablePath = NodePath.join(appBundlePath, "Contents", "MacOS", "Electron");
+    const fileResult = NodeChildProcess.spawnSync("/usr/bin/file", ["-b", executablePath], {
+      encoding: "utf8",
+    });
+    assert.equal(fileResult.status, 0, fileResult.stderr);
+    assert.include(fileResult.stdout, "Mach-O");
+
+    const verifyResult = NodeChildProcess.spawnSync(
+      "/usr/bin/codesign",
+      ["--verify", "--deep", "--strict", "--verbose=2", appBundlePath],
+      { encoding: "utf8" },
+    );
+    assert.equal(verifyResult.status, 0, verifyResult.stderr);
+
+    const entitlementResult = NodeChildProcess.spawnSync(
+      "/usr/bin/codesign",
+      ["--display", "--entitlements", ":-", appBundlePath],
+      { encoding: "utf8" },
+    );
+    assert.equal(entitlementResult.status, 0, entitlementResult.stderr);
+    assert.include(
+      `${entitlementResult.stdout}\n${entitlementResult.stderr}`,
+      "com.apple.security.device.audio-input",
+    );
+    assert.include(
+      `${entitlementResult.stdout}\n${entitlementResult.stderr}`,
+      "com.apple.security.cs.disable-library-validation",
+    );
+
+    const helperNames = [
+      "Electron Helper.app",
+      "Electron Helper (GPU).app",
+      "Electron Helper (Plugin).app",
+      "Electron Helper (Renderer).app",
+    ];
+    for (const helperName of helperNames) {
+      const helperResult = NodeChildProcess.spawnSync(
+        "/usr/bin/codesign",
+        [
+          "--display",
+          "--entitlements",
+          ":-",
+          NodePath.join(appBundlePath, "Contents", "Frameworks", helperName),
+        ],
+        { encoding: "utf8" },
+      );
+      assert.equal(helperResult.status, 0, helperResult.stderr);
+      assert.include(
+        `${helperResult.stdout}\n${helperResult.stderr}`,
+        "com.apple.security.cs.disable-library-validation",
+      );
+    }
+  });
+
+  macIt("keeps the development app executable signed Mach-O", () => {
+    const launcherModuleUrl = new URL("./electron-launcher.mjs", import.meta.url).href;
+    const childScript = [
+      `import { resolveElectronLaunchCommand } from ${JSON.stringify(launcherModuleUrl)};`,
+      "console.log(`COMMAND:${JSON.stringify(resolveElectronLaunchCommand([]))}`);",
+    ].join("\n");
+    const childResult = NodeChildProcess.spawnSync(
+      process.execPath,
+      ["--input-type=module", "--eval", childScript],
+      {
+        cwd: NodePath.dirname(new URL(import.meta.url).pathname),
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          VITE_DEV_SERVER_URL: "http://127.0.0.1:5793/staging/",
+          T3CODE_PORT: "13833",
+          T3CODE_HOME: "/tmp/t3code-launcher-test",
+        },
+      },
+    );
+    assert.equal(childResult.status, 0, childResult.stderr);
+
+    const commandLine = childResult.stdout.split("\n").find((line) => line.startsWith("COMMAND:"));
+    assert.ok(commandLine, childResult.stdout);
+    const command = JSON.parse(commandLine.slice("COMMAND:".length));
+    const appBundlePath = command.args[2];
+    assert.match(appBundlePath, /T3 Code \(Dev\)\.app$/u);
+
+    const launcherPackage = JSON.parse(
+      NodeFS.readFileSync(
+        NodePath.join(appBundlePath, "Contents", "Resources", "app", "package.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(launcherPackage.name, "t3code");
+    assert.equal(launcherPackage.productName, "T3 Code (Dev)");
+
+    const executablePath = NodePath.join(appBundlePath, "Contents", "MacOS", "Electron");
+    const fileResult = NodeChildProcess.spawnSync("/usr/bin/file", ["-b", executablePath], {
+      encoding: "utf8",
+    });
+    assert.equal(fileResult.status, 0, fileResult.stderr);
+    assert.include(fileResult.stdout, "Mach-O");
+
+    const verifyResult = NodeChildProcess.spawnSync(
+      "/usr/bin/codesign",
+      ["--verify", "--deep", "--strict", "--verbose=2", appBundlePath],
+      { encoding: "utf8" },
+    );
+    assert.equal(verifyResult.status, 0, verifyResult.stderr);
   });
 });

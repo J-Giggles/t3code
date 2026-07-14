@@ -20,8 +20,16 @@ export const APP_BUNDLE_ID = isDevelopment
   ? `com.t3tools.t3code.dev.${devBundleIdSuffix || "local"}`
   : "com.t3tools.t3code";
 const APP_PROTOCOL_SCHEMES = isDevelopment ? ["t3code-dev"] : ["t3code"];
-const LAUNCHER_VERSION = 12;
+const LAUNCHER_VERSION = 16;
 const defaultIconPath = NodePath.join(desktopDir, "resources", "icon.icns");
+const macEntitlementsPath = NodePath.join(desktopDir, "resources", "entitlements.mac.plist");
+const macChildEntitlementsPath = NodePath.join(
+  desktopDir,
+  "resources",
+  "entitlements.mac.child.plist",
+);
+const macSignerPath = NodePath.join(desktopDir, "scripts", "sign-mac-launcher.mjs");
+const developmentLaunchConfigFileName = `${APP_BUNDLE_ID.replaceAll(/[^a-z0-9.-]+/giu, "-")}.launch.json`;
 const developmentMacIconPngPath = NodePath.join(
   repoRoot,
   "assets",
@@ -96,47 +104,84 @@ function runChecked(command, args) {
   throw new Error(`Failed to run ${command} ${args.join(" ")}: ${details}`.trim());
 }
 
-function shellSingleQuote(value) {
-  return `'${value.replaceAll("'", "'\\''")}'`;
+export function makeDevelopmentLaunchConfig({ mainEntryPath, desktopRoot, environment }) {
+  const fallbackEnvironment = Object.fromEntries(
+    [
+      ["VITE_DEV_SERVER_URL", environment.VITE_DEV_SERVER_URL],
+      ["T3CODE_PORT", environment.T3CODE_PORT],
+      ["T3CODE_HOME", environment.T3CODE_HOME],
+      ["T3CODE_COMMIT_HASH", environment.T3CODE_COMMIT_HASH],
+      ["T3CODE_OTLP_TRACES_URL", environment.T3CODE_OTLP_TRACES_URL],
+      ["T3CODE_OTLP_EXPORT_INTERVAL_MS", environment.T3CODE_OTLP_EXPORT_INTERVAL_MS],
+      ["T3CODE_DESKTOP_APP_USER_MODEL_ID", APP_BUNDLE_ID],
+    ].filter((entry) => typeof entry[1] === "string" && entry[1].trim().length > 0),
+  );
+
+  return {
+    desktopRoot,
+    mainEntryPath,
+    fallbackEnvironment,
+  };
 }
 
-export function makeDevelopmentLauncherScript({
-  electronBinaryPath,
-  mainEntryPath,
-  desktopRoot,
-  environment,
-}) {
-  const envEntries = [
-    ["VITE_DEV_SERVER_URL", environment.VITE_DEV_SERVER_URL],
-    ["T3CODE_PORT", environment.T3CODE_PORT],
-    ["T3CODE_HOME", environment.T3CODE_HOME],
-    ["T3CODE_COMMIT_HASH", environment.T3CODE_COMMIT_HASH],
-    ["T3CODE_OTLP_TRACES_URL", environment.T3CODE_OTLP_TRACES_URL],
-    ["T3CODE_OTLP_EXPORT_INTERVAL_MS", environment.T3CODE_OTLP_EXPORT_INTERVAL_MS],
-    ["T3CODE_DESKTOP_APP_USER_MODEL_ID", APP_BUNDLE_ID],
-  ].filter((entry) => typeof entry[1] === "string" && entry[1].trim().length > 0);
+export function makeDevelopmentLauncherBootstrapScript({
+  launchConfigFileName = developmentLaunchConfigFileName,
+} = {}) {
   return [
-    "#!/bin/sh",
-    ...envEntries.map(
-      ([name, value]) =>
-        `if [ -z "\${${name}:-}" ]; then export ${name}=${shellSingleQuote(value)}; fi`,
-    ),
-    `exec ${shellSingleQuote(electronBinaryPath)} --t3code-dev-root=${shellSingleQuote(desktopRoot)} ${shellSingleQuote(mainEntryPath)} "$@"`,
+    '"use strict";',
+    'const NodeFS = require("node:fs");',
+    'const NodePath = require("node:path");',
+    `const launchConfigPath = NodePath.resolve(__dirname, "..", "..", "..", "..", ${JSON.stringify(launchConfigFileName)});`,
+    'const launchConfig = JSON.parse(NodeFS.readFileSync(launchConfigPath, "utf8"));',
+    "for (const [name, value] of Object.entries(launchConfig.fallbackEnvironment ?? {})) {",
+    '  if (!process.env[name] && typeof value === "string" && value.length > 0) process.env[name] = value;',
+    "}",
+    'if (!process.argv.some((value) => value.startsWith("--t3code-dev-root="))) {',
+    "  process.argv.push(`--t3code-dev-root=${launchConfig.desktopRoot}`);",
+    "}",
+    "require(launchConfig.mainEntryPath);",
     "",
   ].join("\n");
 }
 
-function writeDevelopmentLauncherScript(targetBinaryPath, electronBinaryPath) {
+function writeDevelopmentLaunchConfig(runtimeDir) {
+  const launchConfigPath = NodePath.join(runtimeDir, developmentLaunchConfigFileName);
+  const temporaryPath = `${launchConfigPath}.${process.pid}.tmp`;
+  const config = makeDevelopmentLaunchConfig({
+    mainEntryPath: NodePath.join(desktopDir, "dist-electron", "main.cjs"),
+    desktopRoot: desktopDir,
+    environment: process.env,
+  });
+
+  try {
+    NodeFS.writeFileSync(temporaryPath, `${JSON.stringify(config, null, 2)}\n`);
+    NodeFS.renameSync(temporaryPath, launchConfigPath);
+  } finally {
+    NodeFS.rmSync(temporaryPath, { force: true });
+  }
+}
+
+function writeDevelopmentLauncherBootstrap(appBundlePath) {
+  const appResourcesPath = NodePath.join(appBundlePath, "Contents", "Resources", "app");
+  NodeFS.rmSync(appResourcesPath, { recursive: true, force: true });
+  NodeFS.mkdirSync(appResourcesPath, { recursive: true });
   NodeFS.writeFileSync(
-    targetBinaryPath,
-    makeDevelopmentLauncherScript({
-      electronBinaryPath,
-      mainEntryPath: NodePath.join(desktopDir, "dist-electron", "main.cjs"),
-      desktopRoot: desktopDir,
-      environment: process.env,
-    }),
+    NodePath.join(appResourcesPath, "package.json"),
+    `${JSON.stringify(
+      {
+        name: "t3code",
+        productName: APP_DISPLAY_NAME,
+        private: true,
+        main: "main.cjs",
+      },
+      null,
+      2,
+    )}\n`,
   );
-  NodeFS.chmodSync(targetBinaryPath, 0o755);
+  NodeFS.writeFileSync(
+    NodePath.join(appResourcesPath, "main.cjs"),
+    makeDevelopmentLauncherBootstrapScript(),
+  );
 }
 
 function registerMacLauncherBundle(appBundlePath) {
@@ -226,6 +271,11 @@ function patchMainBundleInfoPlist(appBundlePath, iconPath) {
   setPlistString(infoPlistPath, "CFBundleName", APP_DISPLAY_NAME);
   setPlistString(infoPlistPath, "CFBundleIdentifier", APP_BUNDLE_ID);
   setPlistString(infoPlistPath, "CFBundleIconFile", "icon.icns");
+  setPlistString(
+    infoPlistPath,
+    "NSMicrophoneUsageDescription",
+    "T3 Code uses the microphone for On-the-Go voice commands and Theo conversations.",
+  );
   setPlistJson(infoPlistPath, "CFBundleURLTypes", [
     {
       CFBundleURLName: APP_BUNDLE_ID,
@@ -236,6 +286,15 @@ function patchMainBundleInfoPlist(appBundlePath, iconPath) {
   const resourcesDir = NodePath.join(appBundlePath, "Contents", "Resources");
   NodeFS.copyFileSync(iconPath, NodePath.join(resourcesDir, "icon.icns"));
   NodeFS.copyFileSync(iconPath, NodePath.join(resourcesDir, "electron.icns"));
+}
+
+function signMacLauncherBundle(appBundlePath) {
+  runChecked(process.execPath, [
+    macSignerPath,
+    appBundlePath,
+    macEntitlementsPath,
+    macChildEntitlementsPath,
+  ]);
 }
 
 function patchHelperBundleInfoPlists(appBundlePath) {
@@ -292,22 +351,21 @@ function buildMacLauncher(electronBinaryPath) {
     sourceAppBundlePath,
     sourceAppMtimeMs: NodeFS.statSync(sourceAppBundlePath).mtimeMs,
     iconMtimeMs: NodeFS.statSync(iconPath).mtimeMs,
+    entitlementsMtimeMs: NodeFS.statSync(macEntitlementsPath).mtimeMs,
+    childEntitlementsMtimeMs: NodeFS.statSync(macChildEntitlementsPath).mtimeMs,
     appBundleId: APP_BUNDLE_ID,
     appProtocolSchemes: APP_PROTOCOL_SCHEMES,
   };
 
   const currentMetadata = readJson(metadataPath);
+  if (isDevelopment) {
+    writeDevelopmentLaunchConfig(runtimeDir);
+  }
   if (
     NodeFS.existsSync(targetBinaryPath) &&
     currentMetadata &&
     JSON.stringify(currentMetadata) === JSON.stringify(expectedMetadata)
   ) {
-    if (isDevelopment) {
-      // The launcher also handles protocol activations outside the dev runner,
-      // so refresh its fallback environment on every launch. Never let a value
-      // captured by an older parent app override the live dev-runner environment.
-      writeDevelopmentLauncherScript(targetBinaryPath, electronBinaryPath);
-    }
     registerMacLauncherBundle(targetAppBundlePath);
     return targetBinaryPath;
   }
@@ -324,8 +382,9 @@ function buildMacLauncher(electronBinaryPath) {
   patchMainBundleInfoPlist(targetAppBundlePath, iconPath);
   patchHelperBundleInfoPlists(targetAppBundlePath);
   if (isDevelopment) {
-    writeDevelopmentLauncherScript(targetBinaryPath, electronBinaryPath);
+    writeDevelopmentLauncherBootstrap(targetAppBundlePath);
   }
+  signMacLauncherBundle(targetAppBundlePath);
   NodeFS.writeFileSync(metadataPath, `${JSON.stringify(expectedMetadata, null, 2)}\n`);
   registerMacLauncherBundle(targetAppBundlePath);
 
@@ -369,6 +428,15 @@ export function resolveElectronPath() {
 
 export function resolveElectronLaunchCommand(args = []) {
   const electronPath = resolveElectronPath();
+
+  if (hostPlatform === "darwin") {
+    const appBundlePath = NodePath.resolve(electronPath, "..", "..", "..");
+    return {
+      electronPath: "/usr/bin/open",
+      args: ["-W", "-n", appBundlePath, "--args", ...args],
+    };
+  }
+
   return {
     electronPath,
     args: [...resolveLinuxSandboxArgs(electronPath), ...args],

@@ -5,7 +5,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 
-import type * as Electron from "electron";
+import * as Electron from "electron";
 
 import * as DesktopAssets from "../app/DesktopAssets.ts";
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
@@ -291,7 +291,10 @@ export const make = Effect.gen(function* () {
       },
     });
 
-    configureOnTheGoDesktopVoice(window);
+    configureOnTheGoDesktopVoice(window, {
+      platform: environment.platform,
+      nativeMediaAccess: Electron.systemPreferences,
+    });
 
     if (environment.platform === "darwin") {
       window.setAutoHideCursor(false);
