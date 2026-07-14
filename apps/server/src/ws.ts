@@ -493,6 +493,29 @@ const makeWsRpcLayer = (
         yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const serverEnvironment = yield* ServerEnvironment.ServerEnvironment;
       const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
+      const onTheGoDurablePrincipalId = OnTheGoProduction.makeOnTheGoDurablePrincipalId({
+        subject: currentSession.subject,
+        method: currentSession.method,
+        ...(currentSession.proofKeyThumbprint
+          ? { proofKeyThumbprint: currentSession.proofKeyThumbprint }
+          : {}),
+      });
+      const onTheGoSessionBinding = yield* serverAuth.listSessions().pipe(
+        Effect.map((activeSessions) => ({
+          durablePrincipalId: onTheGoDurablePrincipalId,
+          legacySessionIds: activeSessions
+            .filter(
+              (session) =>
+                session.subject === currentSession.subject &&
+                session.method === currentSession.method,
+            )
+            .map((session) => session.sessionId),
+        })),
+        Effect.orElseSucceed(() => ({
+          durablePrincipalId: onTheGoDurablePrincipalId,
+          legacySessionIds: [currentSessionId],
+        })),
+      );
       const sourceControlDiscovery = yield* SourceControlDiscovery.SourceControlDiscovery;
       const automaticGitFetchInterval = serverSettings.getSettings.pipe(
         Effect.map((settings) => settings.automaticGitFetchInterval),
@@ -1227,7 +1250,7 @@ const makeWsRpcLayer = (
           observeRpcEffect(
             WS_METHODS.onTheGoSnapshot,
             Effect.sync(() => {
-              onTheGo.connect(currentSessionId, scope);
+              onTheGo.connect(currentSessionId, scope, onTheGoSessionBinding);
               return onTheGo.snapshot(currentSessionId, scope);
             }),
             { "rpc.aggregate": "on-the-go" },
@@ -1420,7 +1443,7 @@ const makeWsRpcLayer = (
             Stream.callback((queue) =>
               Effect.acquireRelease(
                 Effect.sync(() => {
-                  onTheGo.connect(currentSessionId, scope);
+                  onTheGo.connect(currentSessionId, scope, onTheGoSessionBinding);
                   for (const event of onTheGo.events(currentSessionId, scope)) {
                     Queue.offerUnsafe(queue, event);
                   }

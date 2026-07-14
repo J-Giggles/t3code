@@ -115,7 +115,7 @@
       "Preserve durable authenticated device bindings and exact Prepared Prompt recovery across reconnects.",
       "Preserve explicit approved Theo fallbacks and per-Voice-Session remote call budgets without disabling local safety.",
       "Preserve isolated new-agent handoff bootstrap and conservative provider checkpoint mapping.",
-      "Preserve the standalone headed Electron harness and feature-level OTG-UT-001 through OTG-UT-023 contract."
+      "Preserve the standalone headed Electron harness and feature-level OTG-UT-001 through OTG-UT-024 contract."
     ],
     "safeAutoRepair": [
       "Move thin RPC, root-mount, settings-panel, Electron-window, quick-action, or mobile-root wiring to equivalent upstream seams while interface tests remain green.",

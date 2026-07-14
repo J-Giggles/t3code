@@ -20,6 +20,9 @@ import * as ServerConfig from "../../config.ts";
 import type { OnTheGoPersistence, OnTheGoPersistedSnapshot } from "./Ports.ts";
 import { makeOnTheGoServerService, type OnTheGoServerService } from "./ProductionService.ts";
 
+export { makeOnTheGoDurablePrincipalId } from "./ProductionService.ts";
+export type { OnTheGoSessionBinding } from "./ProductionService.ts";
+
 interface PersistedEnvelope {
   readonly version: 1;
   readonly snapshot: OnTheGoPersistedSnapshot | null;

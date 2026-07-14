@@ -1541,7 +1541,7 @@ Reviewers should check:
   excerpts.
 - Unsupported STT/TTS selections, microphone revocation, calls/audio-focus
   loss, and public-output privacy conflicts fail closed with a visible reason.
-- All stable `OTG-UT-001` through `OTG-UT-023` rows retain normal,
+- All stable `OTG-UT-001` through `OTG-UT-024` rows retain normal,
   refusal/failure, and durable/safety evidence.
 
 ## Cross-Topic Risks
@@ -1668,7 +1668,7 @@ Use this checklist before approving the stack:
   restoration, exact-candidate launch, proof rejection, approval, and abort.
 - Main promotion proof uses the canonical public route and completes the real
   project/chat workflow before GitHub Main moves.
-- On-the-Go tests cover every `OTG-UT-001`–`OTG-UT-023` acceptance row, native
+- On-the-Go tests cover every `OTG-UT-001`–`OTG-UT-024` acceptance row, native
   and desktop voice policy, conservative provider mapping, durable queue caps,
   redaction/SSRF boundaries, exact `Send it`, and the headed recognition flow.
 - `AGENTS.md` contains a current topical stack ledger, and this review guide is

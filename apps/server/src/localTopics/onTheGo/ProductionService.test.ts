@@ -10,7 +10,11 @@ import {
 } from "@t3tools/contracts";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { makeOnTheGoServerService, safeAnnouncementSummary } from "./ProductionService.ts";
+import {
+  makeOnTheGoDurablePrincipalId,
+  makeOnTheGoServerService,
+  safeAnnouncementSummary,
+} from "./ProductionService.ts";
 
 describe("On-the-Go production service", () => {
   afterEach(() => vi.useRealTimers());
@@ -185,6 +189,49 @@ describe("On-the-Go production service", () => {
     expect(() => service.connect("auth-b", scope)).toThrow(
       "belongs to another authenticated session",
     );
+  });
+
+  it("OTG-UT-024: preserves device ownership across desktop session rotation without weakening principal isolation", () => {
+    const deviceBindings = new Map<string, string>();
+    const service = makeOnTheGoServerService({
+      persistence: {
+        load: () => null,
+        save: () => undefined,
+        loadDisposition: () => null,
+        saveDisposition: () => undefined,
+        loadDeviceBinding: (deviceId) => deviceBindings.get(deviceId) ?? null,
+        saveDeviceBinding: (deviceId, bindingId) => deviceBindings.set(deviceId, bindingId),
+      },
+      now: () => "2026-01-01T00:00:00.000Z",
+    });
+    const scope = {
+      voiceSessionId: OnTheGoVoiceSessionId.make("voice-desktop"),
+      deviceId: OnTheGoDeviceId.make("device-desktop"),
+    };
+    const desktopPrincipal = makeOnTheGoDurablePrincipalId({
+      subject: "desktop-bootstrap",
+      method: "bearer-access-token",
+    });
+
+    service.connect("legacy-session", scope);
+    service.disconnect("legacy-session");
+    service.connect("rotated-session", scope, {
+      durablePrincipalId: desktopPrincipal,
+      legacySessionIds: ["legacy-session", "rotated-session"],
+    });
+    expect(deviceBindings.get(scope.deviceId)).toBe(desktopPrincipal);
+    service.disconnect("rotated-session");
+    service.connect("next-session", scope, { durablePrincipalId: desktopPrincipal });
+    service.disconnect("next-session");
+
+    expect(() =>
+      service.connect("other-session", scope, {
+        durablePrincipalId: makeOnTheGoDurablePrincipalId({
+          subject: "another-paired-client",
+          method: "bearer-access-token",
+        }),
+      }),
+    ).toThrow("belongs to another authenticated session");
   });
 
   it("OTG-UT-012/015: requires a real completion before advancing one durable queue head", async () => {
