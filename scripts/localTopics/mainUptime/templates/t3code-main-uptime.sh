@@ -7,11 +7,17 @@ APPROVED_FILE="$STATE_DIR/approved-head"
 LOCK_FILE="$STATE_DIR/promotion.lock"
 PROOF_FILE="$STATE_DIR/main-public-proof"
 LAST_PROOF_FILE="$STATE_DIR/last-approved-main-public-proof"
+STARTED_FILE="$STATE_DIR/main-started-at"
+HEALTH_FAILURE_FILE="$STATE_DIR/health-failures"
 INCIDENT_DIR="$STATE_DIR/incidents"
 HEALTH_URL="${T3CODE_MAIN_HEALTH_URL:-https://giggabit-server.tailfb378a.ts.net/main/api/auth/session}"
+LOCAL_HEALTH_URL="${T3CODE_MAIN_LOCAL_HEALTH_URL:-http://127.0.0.1:13793/main/api/auth/session}"
+HEALTH_FAILURE_THRESHOLD="${T3CODE_MAIN_HEALTH_FAILURE_THRESHOLD:-3}"
+HEALTH_STARTUP_GRACE_SECONDS="${T3CODE_MAIN_HEALTH_STARTUP_GRACE_SECONDS:-120}"
 GIT="${T3CODE_MAIN_UPTIME_GIT:-/usr/bin/git}"
 SYSTEMCTL="${T3CODE_MAIN_UPTIME_SYSTEMCTL:-systemctl}"
 CURL="${T3CODE_MAIN_UPTIME_CURL:-curl}"
+TAILSCALE_RECONCILE="${T3CODE_MAIN_TAILSCALE_RECONCILE:-@@HOME_DIR@@/.local/bin/t3code-tailscale-reconcile}"
 
 die() {
   echo "t3code-main-uptime: $*" >&2
@@ -212,7 +218,41 @@ restart_main() {
 }
 
 health_ok() {
-  "$CURL" -fsS --max-time 15 -o /dev/null "$HEALTH_URL"
+  local url="${1:-$HEALTH_URL}"
+  "$CURL" -fsS --max-time 8 -o /dev/null "$url"
+}
+
+mark_started() {
+  atomic_write "$STARTED_FILE" "$(date +%s)"
+  rm -f "$HEALTH_FAILURE_FILE"
+}
+
+within_startup_grace() {
+  [[ "$HEALTH_STARTUP_GRACE_SECONDS" =~ ^[0-9]+$ ]] ||
+    die "startup grace must be a non-negative number of seconds"
+  [[ -f "$STARTED_FILE" ]] || return 1
+  local started now
+  started="$(tr -d '[:space:]' <"$STARTED_FILE")"
+  [[ "$started" =~ ^[0-9]+$ ]] || return 1
+  now="$(date +%s)"
+  ((now - started < HEALTH_STARTUP_GRACE_SECONDS))
+}
+
+record_health_failure() {
+  [[ "$HEALTH_FAILURE_THRESHOLD" =~ ^[1-9][0-9]*$ ]] ||
+    die "health failure threshold must be a positive integer"
+  local count=0
+  if [[ -f "$HEALTH_FAILURE_FILE" ]]; then
+    count="$(tr -d '[:space:]' <"$HEALTH_FAILURE_FILE")"
+    [[ "$count" =~ ^[0-9]+$ ]] || count=0
+  fi
+  count=$((count + 1))
+  atomic_write "$HEALTH_FAILURE_FILE" "$count"
+  printf '%s\n' "$count"
+}
+
+clear_health_failures() {
+  rm -f "$HEALTH_FAILURE_FILE"
 }
 
 initialize() {
@@ -248,24 +288,45 @@ guard() {
 
 health() {
   if health_ok; then
+    clear_health_failures
     return 0
   fi
   if promotion_lock_active; then
     echo "t3code-main-uptime: health check deferred during approved promotion" >&2
     return 0
   fi
+  if within_startup_grace; then
+    echo "t3code-main-uptime: health check deferred during startup grace" >&2
+    return 0
+  fi
   if ! preflight >/dev/null 2>&1; then
     guard
-  else
-    restart_main
+    clear_health_failures
+    return 0
   fi
-  for _ in $(seq 1 60); do
+  local local_healthy=false failures
+  if health_ok "$LOCAL_HEALTH_URL"; then
+    local_healthy=true
+  fi
+  failures="$(record_health_failure)"
+  if ((failures < HEALTH_FAILURE_THRESHOLD)); then
+    echo "t3code-main-uptime: health failure $failures/$HEALTH_FAILURE_THRESHOLD; leaving Main running" >&2
+    return 0
+  fi
+  clear_health_failures
+  if [[ "$local_healthy" == true ]]; then
+    echo "t3code-main-uptime: public route unhealthy while local Main is healthy; reconciling Tailscale" >&2
+    if [[ -x "$TAILSCALE_RECONCILE" ]]; then
+      "$TAILSCALE_RECONCILE" || true
+    fi
     if health_ok; then
       return 0
     fi
-    sleep 2
-  done
-  die "Main did not recover at $HEALTH_URL"
+    echo "t3code-main-uptime: public route remains unhealthy; preserving the healthy Main process" >&2
+    return 1
+  fi
+  echo "t3code-main-uptime: local and public health failed $HEALTH_FAILURE_THRESHOLD consecutive checks; restarting Main" >&2
+  restart_main
 }
 
 promotion_begin() {
@@ -333,11 +394,12 @@ case "${1:-status}" in
   initialize) initialize ;;
   preflight) preflight ;;
   launch-preflight) launch_preflight ;;
+  mark-started) mark_started ;;
   guard) guard ;;
   health) health ;;
   promotion-begin) shift; promotion_begin "$@" ;;
   promotion-approve) shift; promotion_approve "$@" ;;
   promotion-abort) promotion_abort ;;
   status) status_command ;;
-  *) die "usage: $0 {initialize|preflight|launch-preflight|guard|health|promotion-begin SHA [TTL]|promotion-approve SHA|promotion-abort|status}" ;;
+  *) die "usage: $0 {initialize|preflight|launch-preflight|mark-started|guard|health|promotion-begin SHA [TTL]|promotion-approve SHA|promotion-abort|status}" ;;
 esac

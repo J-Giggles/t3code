@@ -6,13 +6,14 @@
 
 - `t3code-main.service` starts Main at user-manager boot and restarts it after any unexpected exit.
 - `t3code-main-guard.timer` checks the live branch, HEAD, worktree, index, and Git operation state every five seconds.
-- `t3code-main-health.timer` checks the public Main auth route every 30 seconds and restarts the runtime when the approved checkout is healthy but the route is unavailable.
+- `t3code-main-health.timer` checks the public and loopback Main auth routes every 30 seconds. It honors a two-minute startup grace and requires three consecutive failures before recovery.
+- When loopback is healthy but the public route is not, health recovery reconciles Tailscale and preserves the healthy Main process. A restart is reserved for persistent loopback and public failure together.
 - `~/.local/state/t3code-main-uptime/approved-head` is the only SHA the guard accepts outside a promotion window.
 - Unauthorized dirty, conflicted, or committed changes are preserved under `~/.local/state/t3code-main-uptime/incidents/` before Main is restored and restarted.
 - A promotion lock accepts one exact candidate for at most 30 minutes. It does not approve that candidate.
 - Approval requires a fresh receipt from `vp run verify:main-public`. The verifier must reach the canonical `/main/` URL through the primary interface, show a project, create a chat, send `Hi`, receive a non-empty assistant response, and save a screenshot.
 
-The target is near-continuous availability. Planned promotion downtime is limited to stopping the old runtime, moving the clean checkout, and starting the candidate. Main stays available while the strict browser proof runs.
+The target is near-continuous availability. Planned promotion downtime is limited to stopping the old runtime, moving the clean checkout, and starting the candidate. Main stays available while the strict browser proof runs. Slow builds and isolated route failures never justify killing an otherwise healthy runtime.
 
 ## Install
 

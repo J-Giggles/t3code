@@ -54,6 +54,11 @@ function installedScript(homeDir: string): string {
   return NodePath.join(homeDir, ".local", "bin", "t3code-main-uptime");
 }
 
+function writeExecutable(path: string, content: string): void {
+  NodeFS.writeFileSync(path, content);
+  NodeFS.chmodSync(path, 0o755);
+}
+
 function testEnv(fixture: {
   readonly homeDir: string;
   readonly repoRoot: string;
@@ -85,6 +90,7 @@ describe("main uptime installer", () => {
     expect(files[0]?.content).toContain('ROOT="${T3CODE_MAIN_ROOT:-/srv/t3code}"');
     expect(files[1]?.content).toContain("Restart=always");
     expect(files[1]?.content).toContain("t3code-main-uptime launch-preflight");
+    expect(files[1]?.content).toContain("t3code-main-uptime mark-started");
     expect(files[3]?.content).toContain("OnUnitActiveSec=5s");
     expect(files[5]?.content).toContain("OnUnitActiveSec=30s");
   });
@@ -195,6 +201,85 @@ describe("main uptime installer", () => {
       expect(NodeFS.existsSync(NodePath.join(stateDir, "last-approved-main-public-proof"))).toBe(
         true,
       );
+    } finally {
+      cleanup(fixture.root);
+    }
+  });
+
+  it("defers health during startup and requires consecutive local failures", () => {
+    const fixture = makeFixture();
+    try {
+      installMainUptime({ mode: "write", homeDir: fixture.homeDir, repoRoot: fixture.repoRoot });
+      const script = installedScript(fixture.homeDir);
+      const stateDir = NodePath.join(fixture.homeDir, ".local", "state", "t3code-main-uptime");
+      const failurePath = NodePath.join(stateDir, "health-failures");
+      const baseEnv = {
+        ...testEnv(fixture),
+        T3CODE_MAIN_UPTIME_CURL: "/usr/bin/false",
+      };
+
+      run(script, ["mark-started"], fixture.repoRoot, baseEnv);
+      run(script, ["health"], fixture.repoRoot, {
+        ...baseEnv,
+        T3CODE_MAIN_HEALTH_STARTUP_GRACE_SECONDS: "120",
+      });
+      expect(NodeFS.existsSync(failurePath)).toBe(false);
+
+      const thresholdEnv = {
+        ...baseEnv,
+        T3CODE_MAIN_HEALTH_STARTUP_GRACE_SECONDS: "0",
+        T3CODE_MAIN_HEALTH_FAILURE_THRESHOLD: "3",
+      };
+      run(script, ["health"], fixture.repoRoot, thresholdEnv);
+      expect(NodeFS.readFileSync(failurePath, "utf8").trim()).toBe("1");
+      run(script, ["health"], fixture.repoRoot, thresholdEnv);
+      expect(NodeFS.readFileSync(failurePath, "utf8").trim()).toBe("2");
+      run(script, ["health"], fixture.repoRoot, thresholdEnv);
+      expect(NodeFS.existsSync(failurePath)).toBe(false);
+    } finally {
+      cleanup(fixture.root);
+    }
+  });
+
+  it("repairs a public-route failure without restarting a healthy local Main", () => {
+    const fixture = makeFixture();
+    try {
+      installMainUptime({ mode: "write", homeDir: fixture.homeDir, repoRoot: fixture.repoRoot });
+      const script = installedScript(fixture.homeDir);
+      const curlStub = NodePath.join(fixture.root, "curl-stub.sh");
+      const systemctlStub = NodePath.join(fixture.root, "systemctl-stub.sh");
+      const reconcileStub = NodePath.join(fixture.root, "reconcile-stub.sh");
+      const systemctlLog = NodePath.join(fixture.root, "systemctl.log");
+      const reconcileLog = NodePath.join(fixture.root, "reconcile.log");
+      writeExecutable(
+        curlStub,
+        '#!/usr/bin/env bash\nfor arg in "$@"; do\n  [[ "$arg" == http://127.0.0.1:* ]] && exit 0\ndone\nexit 1\n',
+      );
+      writeExecutable(
+        systemctlStub,
+        '#!/usr/bin/env bash\nprintf "%s\\n" "$*" >>"$T3_TEST_SYSTEMCTL_LOG"\n',
+      );
+      writeExecutable(
+        reconcileStub,
+        '#!/usr/bin/env bash\nprintf "reconciled\\n" >>"$T3_TEST_RECONCILE_LOG"\n',
+      );
+      const env = {
+        ...testEnv(fixture),
+        T3CODE_MAIN_UPTIME_CURL: curlStub,
+        T3CODE_MAIN_UPTIME_SYSTEMCTL: systemctlStub,
+        T3CODE_MAIN_TAILSCALE_RECONCILE: reconcileStub,
+        T3CODE_MAIN_HEALTH_STARTUP_GRACE_SECONDS: "0",
+        T3CODE_MAIN_HEALTH_FAILURE_THRESHOLD: "3",
+        T3_TEST_SYSTEMCTL_LOG: systemctlLog,
+        T3_TEST_RECONCILE_LOG: reconcileLog,
+      };
+
+      run(script, ["mark-started"], fixture.repoRoot, env);
+      run(script, ["health"], fixture.repoRoot, env);
+      run(script, ["health"], fixture.repoRoot, env);
+      expect(() => run(script, ["health"], fixture.repoRoot, env)).toThrow();
+      expect(NodeFS.readFileSync(reconcileLog, "utf8")).toBe("reconciled\n");
+      expect(NodeFS.existsSync(systemctlLog)).toBe(false);
     } finally {
       cleanup(fixture.root);
     }
