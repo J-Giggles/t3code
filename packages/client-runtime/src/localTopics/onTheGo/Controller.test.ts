@@ -538,6 +538,13 @@ describe("On-the-Go client controller", () => {
             snapshot = { ...snapshot, owner: { deviceId, continueRequired: false } };
           }
           if (command.type === "mode.set") snapshot = { ...snapshot, mode: command.mode };
+          if (command.type === "wake.detected" && snapshot.mode === "off") {
+            return {
+              status: "rejected" as const,
+              commandId: command.commandId,
+              reason: "invalid-state",
+            };
+          }
           return { status: "accepted" as const, commandId: command.commandId };
         },
         subscribe: () => () => undefined,
@@ -565,6 +572,64 @@ describe("On-the-Go client controller", () => {
       enabled: false,
       availabilityReason: "Transcription failed: browser speech service network error",
       caption: "Transcription failed: browser speech service network error",
+    });
+  });
+
+  it("keeps typed Theo controls available after microphone transcription fails", async () => {
+    const deviceId = OnTheGoDeviceId.make("desktop-device");
+    let snapshot = baseSnapshot();
+    let reportFailure: (reason: string) => void = () => {
+      throw new Error("speech adapter did not start");
+    };
+    const controller = makeOnTheGoController({
+      scope: { voiceSessionId: OnTheGoVoiceSessionId.make("session"), deviceId },
+      target: () => null,
+      createId: () => "id",
+      transport: {
+        snapshot: async () => snapshot,
+        dispatch: async (command) => {
+          if (command.type === "owner.acquire") {
+            snapshot = { ...snapshot, owner: { deviceId, continueRequired: false } };
+          }
+          if (command.type === "mode.set") snapshot = { ...snapshot, mode: command.mode };
+          if (command.type === "wake.detected" && snapshot.mode === "off") {
+            return {
+              status: "rejected" as const,
+              commandId: command.commandId,
+              reason: "invalid-state",
+            };
+          }
+          return { status: "accepted" as const, commandId: command.commandId };
+        },
+        subscribe: () => () => undefined,
+      },
+      speech: {
+        availability: () => ({ available: true, background: true }),
+        start: (_listener, onFailure) => {
+          reportFailure = onFailure ?? reportFailure;
+          return () => undefined;
+        },
+        speak: async () => undefined,
+        stop: () => undefined,
+      },
+      theo: { ask: async () => ({ reply: "Typed Theo still works", preparedPrompt: null }) },
+    });
+
+    await controller.start();
+    await controller.toggle(true);
+    reportFailure("Transcription failed: audio-invalid");
+
+    await controller.acceptTranscript("Hey Theo", "composer");
+    await controller.acceptTranscript("Can you hear this typed request?", "composer");
+
+    expect(controller.state()).toMatchObject({
+      mode: "theo-conversation",
+      available: false,
+      caption: "Typed Theo still works",
+    });
+    expect(controller.state().theoMessages.at(-1)).toEqual({
+      role: "theo",
+      text: "Typed Theo still works",
     });
   });
 

@@ -432,6 +432,37 @@ export const makeOnTheGoController = (options: OnTheGoControllerOptions): OnTheG
     transcript = rawTranscript.trim();
     const phrase = normalize(transcript);
     notify();
+    if (
+      source === "composer" &&
+      localMode === "off" &&
+      phrase !== "turn off on the go mode" &&
+      phrase !== "turn off on-the-go mode"
+    ) {
+      if (snapshot?.owner?.deviceId !== options.scope.deviceId) {
+        const owner = await dispatch({
+          type: "owner.acquire",
+          commandId: commandId("typed-owner-acquire"),
+          deviceId: options.scope.deviceId,
+        });
+        if (owner.status !== "accepted") {
+          caption = `Typed controls could not start: ${dispositionReason(owner)}`;
+          notify();
+          return;
+        }
+        await refresh();
+      }
+      if (snapshot?.owner?.continueRequired) {
+        caption = "Ownership was restored. Use Continue before typed controls start.";
+        notify();
+        return;
+      }
+      const typedMode = await setMode("sleep");
+      if (typedMode.status !== "accepted") {
+        caption = `Typed controls could not start: ${dispositionReason(typedMode)}`;
+        notify();
+        return;
+      }
+    }
     if (phrase === "stop") {
       activeTheo?.abort();
       activeTheo = null;
