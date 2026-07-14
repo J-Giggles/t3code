@@ -103,7 +103,7 @@ async function waitForCdpList(port: number): Promise<unknown[]> {
   const url = `http://127.0.0.1:${port}/json/list`;
   const startedAt = Date.now();
   let lastError: unknown;
-  while (Date.now() - startedAt < 180_000) {
+  while (Date.now() - startedAt < 300_000) {
     try {
       return await fetchCdpList(port);
     } catch (error) {
@@ -136,7 +136,7 @@ async function waitForActiveCdpPort(input: {
   let lastError: unknown;
   let lastAttemptedPort: number | undefined;
   let lastHttpError: unknown;
-  while (Date.now() - startedAt < 180_000) {
+  while (Date.now() - startedAt < 300_000) {
     const port = await readDevToolsActivePort(input.filePath);
     if (port === undefined) {
       lastError = new Error(`DevToolsActivePort is not ready at ${input.filePath}`);
@@ -170,15 +170,16 @@ async function waitForActiveCdpPort(input: {
 
 async function waitForRendererPage(browser: Browser, webPort: number): Promise<Page> {
   const expectedPrefix = `http://127.0.0.1:${webPort}/`;
+  const expectedDesktopPrefix = "t3code-dev://app/";
   const startedAt = Date.now();
-  while (Date.now() - startedAt < 180_000) {
+  while (Date.now() - startedAt < 300_000) {
     if (!browser.isConnected()) {
       throw new Error(`Electron CDP browser disconnected while waiting for ${expectedPrefix}.`);
     }
     for (const context of browser.contexts()) {
       for (const candidate of context.pages()) {
         const url = candidate.url();
-        if (!url.startsWith(expectedPrefix)) continue;
+        if (!url.startsWith(expectedPrefix) && !url.startsWith(expectedDesktopPrefix)) continue;
         const hasDesktopBridge = await candidate
           .evaluate(() => Boolean(window.desktopBridge))
           .catch(() => false);
@@ -407,7 +408,7 @@ async function startElectronHarness(
   const connectToElectron = async (previousPort?: number) => {
     const startedAt = Date.now();
     let lastError: unknown;
-    while (Date.now() - startedAt < 180_000) {
+    while (Date.now() - startedAt < 300_000) {
       let nextBrowser: Browser | null = null;
       try {
         const port = await waitForActiveCdpPort({

@@ -206,6 +206,10 @@
     "./httpReadiness": {
       "types": "./src/httpReadiness.ts",
       "import": "./src/httpReadiness.ts"
+    },
+    "./sensitiveText": {
+      "types": "./src/sensitiveText.ts",
+      "import": "./src/sensitiveText.ts"
     }
   },
   "scripts": {

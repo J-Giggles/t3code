@@ -11,6 +11,8 @@
     "verify:staging-public": "node scripts/verify-staging-public.mjs",
     "verify:nightly-public": "T3CODE_PUBLIC_VERIFY_TARGET=nightly node scripts/verify-staging-public.mjs",
     "verify:main-public": "T3CODE_PUBLIC_VERIFY_TARGET=main node scripts/verify-staging-public.mjs",
+    "e2e:on-the-go:smoke": "node scripts/run-on-the-go-e2e.mjs smoke",
+    "e2e:on-the-go:headed": "node scripts/run-on-the-go-e2e.mjs headed",
     "start": "node scripts/start-electron.mjs",
     "typecheck": "tsgo --noEmit",
     "test": "vp test run --passWithNoTests",

@@ -39,6 +39,35 @@ describe("ServerSettings.providerInstances (slice-2 invariant)", () => {
     expect(decodeServerSettings({}).enableAssistantStreaming).toBe(true);
   });
 
+  it("OTG-UT-019 persists independent safe voice capability defaults", () => {
+    const settings = decodeServerSettings({});
+    expect(settings.onTheGo.enabled).toBe(false);
+    expect(settings.onTheGo.bargeInEnabled).toBe(true);
+    expect(settings.onTheGo.transcriptionModel.capability).toBe("transcription");
+    expect(settings.onTheGo.theoModel.capability).toBe("reasoning");
+    expect(settings.onTheGo.speechModel.capability).toBe("speech");
+    expect(settings.onTheGo.fallbackModels).toEqual({
+      transcription: [],
+      reasoning: [],
+      speech: [],
+    });
+    expect(settings.onTheGo.remoteCallBudget).toEqual({ warningAt: 80, hardLimit: 100 });
+  });
+
+  it("OTG-UT-019 rejects a model selected for the wrong capability", () => {
+    expect(() =>
+      decodeServerSettings({
+        onTheGo: {
+          ...DEFAULT_SERVER_SETTINGS.onTheGo,
+          transcriptionModel: {
+            providerId: "system",
+            modelId: "voice",
+            capability: "speech",
+          },
+        },
+      }),
+    ).toThrow();
+  });
   it("defaults to an empty record so legacy configs without the key still decode", () => {
     expect(DEFAULT_SERVER_SETTINGS.providerInstances).toEqual({});
   });
@@ -134,6 +163,30 @@ describe("ServerSettings.promptOverrides", () => {
 });
 
 describe("ServerSettingsPatch.providerInstances", () => {
+  it("OTG-UT-019 patches voice capabilities independently without accepting capability changes", () => {
+    const patch = decodeServerSettingsPatch({
+      onTheGo: {
+        bargeInEnabled: false,
+        transcriptionModel: { providerId: "openai", modelId: "gpt-4o-transcribe" },
+        theoModel: { providerId: "codex", modelId: "gpt-5" },
+        speechModel: { providerId: "openai", modelId: "gpt-4o-mini-tts" },
+        fallbackModels: {
+          reasoning: [{ providerId: "claudeAgent", modelId: "sonnet", capability: "reasoning" }],
+        },
+        remoteCallBudget: { warningAt: 4, hardLimit: 5 },
+      },
+    });
+    expect(patch.onTheGo?.bargeInEnabled).toBe(false);
+    expect(patch.onTheGo?.transcriptionModel?.modelId).toBe("gpt-4o-transcribe");
+    expect(patch.onTheGo?.theoModel?.modelId).toBe("gpt-5");
+    expect(patch.onTheGo?.speechModel?.modelId).toBe("gpt-4o-mini-tts");
+    expect(patch.onTheGo?.speechModel).not.toHaveProperty("capability");
+    expect(patch.onTheGo?.fallbackModels?.reasoning).toEqual([
+      { providerId: "claudeAgent", modelId: "sonnet", capability: "reasoning" },
+    ]);
+    expect(patch.onTheGo?.remoteCallBudget).toEqual({ warningAt: 4, hardLimit: 5 });
+  });
+
   it("treats providerInstances as an optional whole-map replacement", () => {
     const patch = decodeServerSettingsPatch({});
     expect(patch.providerInstances).toBeUndefined();

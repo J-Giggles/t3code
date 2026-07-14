@@ -1,6 +1,6 @@
 # On-the-Go Mode Test Contract
 
-Status: approved design contract. Implementation is incomplete until every applicable row has evidence.
+Status: implemented acceptance contract. Every stable feature row has deterministic evidence, and the release gates below remain mandatory for each replay and promotion.
 
 ## Test Harness
 
@@ -46,6 +46,21 @@ Coverage rules:
 - Every implementation slice lists the `OTG-UT-*` IDs it owns and cannot exit while any owned ID lacks passing evidence.
 - Each unit-test ID must cover a normal path, a denial/failure path, and the durable or safety invariant relevant to that feature.
 - Cross-feature property, fault-injection, integration, headed, native, accessibility, performance, replay, and live smoke suites remain required in addition to this matrix.
+
+Implementation evidence is intentionally grouped by the smallest owning module while retaining the stable IDs in test names and assertions:
+
+- `OTG-UT-001`–`OTG-UT-006`: `apps/server/src/localTopics/onTheGo/Runtime.test.ts`, `apps/server/src/localTopics/onTheGo/Adapters.test.ts`, and `packages/client-runtime/src/localTopics/onTheGo/VoiceParity.test.ts`.
+- `OTG-UT-007`–`OTG-UT-016`, `OTG-UT-019`, `OTG-UT-020`, and `OTG-UT-022`: `apps/server/src/localTopics/onTheGo/FoundationRuntime.test.ts`, `apps/server/src/localTopics/onTheGo/ProductionService.test.ts`, `apps/server/src/localTopics/onTheGo/ProductionLayer.test.ts`, and `packages/client-runtime/src/localTopics/onTheGo/Controller.test.ts`.
+- `OTG-UT-010`, `OTG-UT-011`, and `OTG-UT-019`: `apps/server/src/localTopics/onTheGo/TheoContext.test.ts`, `apps/server/src/localTopics/onTheGo/TheoExternalContext.test.ts`, `apps/server/src/localTopics/onTheGo/TheoConversation.test.ts`, and `packages/shared/src/sensitiveText.test.ts`.
+- `OTG-UT-017` and `OTG-UT-018`: `apps/server/src/localTopics/onTheGo/ProviderCheckpoint.test.ts`, `apps/server/src/localTopics/onTheGo/EventIngestion.test.ts`, `apps/server/src/localTopics/onTheGo/FoundationRuntime.test.ts`, and `packages/client-runtime/src/localTopics/onTheGo/Controller.test.ts`.
+- `OTG-UT-019`–`OTG-UT-021`: `packages/client-runtime/src/localTopics/onTheGo/VoiceModelPolicy.test.ts`, `apps/web/src/localTopics/onTheGo/BrowserSpeechAdapter.test.ts`, `apps/desktop/src/localTopics/onTheGo/index.test.ts`, `apps/mobile/src/localTopics/onTheGo/NativeVoicePolicy.test.ts`, `apps/mobile/src/localTopics/onTheGo/NativeAudioPolicy.test.ts`, and `apps/mobile/src/localTopics/onTheGo/NativeQuickAction.test.ts`.
+- `OTG-UT-023`: `apps/server/src/localTopics/onTheGo/IntegrationContract.test.ts` pins semantic RPC, lifecycle, event-ingestion, and renderer integration seams while allowing behavior-preserving mechanical movement.
+
+The focused deterministic command currently proves 107 tests across 25 files:
+
+```bash
+pnpm exec vp test run packages/contracts/src/localTopics/onTheGo packages/shared/src/sensitiveText.test.ts apps/desktop/src/localTopics/onTheGo apps/mobile/src/localTopics/onTheGo apps/mobile/src/features/shortcuts/appShortcuts.test.ts apps/server/src/localTopics/onTheGo apps/web/src/localTopics/onTheGo packages/client-runtime/src/localTopics/onTheGo
+```
 
 ### State And Property Tests
 

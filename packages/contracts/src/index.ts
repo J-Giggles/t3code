@@ -29,3 +29,4 @@ export * from "./browserAutomation.ts";
 export * from "./previewAutomation.ts";
 export * from "./appAutomation.ts";
 export * from "./rpc.ts";
+export * from "./localTopics/onTheGo/index.ts";

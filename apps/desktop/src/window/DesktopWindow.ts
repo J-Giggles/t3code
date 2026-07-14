@@ -17,6 +17,7 @@ import * as ElectronTheme from "../electron/ElectronTheme.ts";
 import * as ElectronWindow from "../electron/ElectronWindow.ts";
 import { MENU_ACTION_CHANNEL } from "../ipc/channels.ts";
 import * as PreviewManager from "../preview/Manager.ts";
+import { configureOnTheGoDesktopVoice } from "../localTopics/onTheGo/index.ts";
 
 const TITLEBAR_HEIGHT = 40;
 const TITLEBAR_COLOR = "#01000000"; // #00000000 does not work correctly on Linux
@@ -289,6 +290,8 @@ export const make = Effect.gen(function* () {
         webviewTag: true,
       },
     });
+
+    configureOnTheGoDesktopVoice(window);
 
     if (environment.platform === "darwin") {
       window.setAutoHideCursor(false);

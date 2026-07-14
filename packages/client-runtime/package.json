@@ -138,6 +138,10 @@
     "./wsTransport": {
       "types": "./src/wsTransport.ts",
       "default": "./src/wsTransport.ts"
+    },
+    "./onTheGo": {
+      "types": "./src/localTopics/onTheGo/index.ts",
+      "default": "./src/localTopics/onTheGo/index.ts"
     }
   },
   "scripts": {

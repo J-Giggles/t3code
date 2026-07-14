@@ -23,6 +23,7 @@ import * as ElectronMenu from "../../electron/ElectronMenu.ts";
 import * as ElectronShell from "../../electron/ElectronShell.ts";
 import * as ElectronTheme from "../../electron/ElectronTheme.ts";
 import * as ElectronWindow from "../../electron/ElectronWindow.ts";
+import { setOnTheGoBackgroundEnabled as setOnTheGoWindowBackgroundEnabled } from "../../localTopics/onTheGo/index.ts";
 import * as IpcChannels from "../channels.ts";
 import * as DesktopIpc from "../DesktopIpc.ts";
 import {
@@ -226,6 +227,17 @@ export const setTheme = DesktopIpc.makeIpcMethod({
   handler: Effect.fn("desktop.ipc.window.setTheme")(function* (theme) {
     const electronTheme = yield* ElectronTheme.ElectronTheme;
     yield* electronTheme.setSource(theme);
+  }),
+});
+
+export const setOnTheGoBackgroundEnabled = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.SET_ON_THE_GO_BACKGROUND_ENABLED_CHANNEL,
+  payload: Schema.Boolean,
+  result: Schema.Void,
+  handler: Effect.fn("desktop.ipc.window.setOnTheGoBackgroundEnabled")(function* (enabled) {
+    const electronWindow = yield* ElectronWindow.ElectronWindow;
+    const window = yield* electronWindow.currentMainOrFirst;
+    if (Option.isSome(window)) setOnTheGoWindowBackgroundEnabled(window.value, enabled);
   }),
 });
 
