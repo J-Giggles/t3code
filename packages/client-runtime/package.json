@@ -130,6 +130,10 @@
     "./state/vcs": {
       "types": "./src/state/vcs.ts",
       "default": "./src/state/vcs.ts"
+    },
+    "./onTheGo": {
+      "types": "./src/localTopics/onTheGo/index.ts",
+      "default": "./src/localTopics/onTheGo/index.ts"
     }
   },
   "scripts": {

@@ -88,6 +88,7 @@ import {
 } from "./settingsLayout";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { OnTheGoSettingsPanel } from "../../localTopics/onTheGo/OnTheGoSettingsPanel";
 
 const THEME_OPTIONS = [
   {
@@ -951,6 +952,8 @@ export function GeneralSettingsPanel() {
           }
         />
       </SettingsSection>
+
+      <OnTheGoSettingsPanel />
 
       <SettingsSection title="About">
         {isElectron || HOSTED_APP_CHANNEL ? (

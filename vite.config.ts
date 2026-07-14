@@ -15,6 +15,7 @@ export default defineConfig({
       "**/node_modules/**",
       "**/dist/**",
       "**/dist-electron/**",
+      "apps/desktop/e2e/**",
       "**/.{idea,git,cache,output,temp}/**",
     ],
     hookTimeout: 60_000,

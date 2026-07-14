@@ -2,6 +2,10 @@
 
 - [Getting started](./getting-started/quick-start.md)
 - [Architecture](./architecture/overview.md)
+  - [On-the-Go Mode](./architecture/on-the-go-mode.md)
+  - [On-the-Go Test Contract](./architecture/on-the-go-test-contract.md)
+  - [On-the-Go Topic Handoff](./architecture/on-the-go-topic-handoff.md)
+- [Architecture decisions](./adr/README.md)
 - [T3 Connect](./cloud/t3-connect-clerk.md)
 - [Integrations](./integrations/source-control-providers.md)
 - [Mobile](./mobile/app.md)

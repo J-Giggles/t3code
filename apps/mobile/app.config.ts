@@ -213,6 +213,25 @@ const config: ExpoConfig = {
       },
     ],
     [
+      "expo-audio",
+      {
+        microphonePermission:
+          "Allow T3 Code to listen for your chosen On-the-Go wake phrase and commands.",
+        enableBackgroundRecording: true,
+        enableBackgroundPlayback: true,
+      },
+    ],
+    [
+      "expo-speech-recognition",
+      {
+        microphonePermission:
+          "Allow T3 Code to listen for your chosen On-the-Go wake phrase and commands.",
+        speechRecognitionPermission:
+          "Allow T3 Code to transcribe activated On-the-Go voice commands.",
+        androidSpeechServicePackages: ["com.google.android.googlequicksearchbox"],
+      },
+    ],
+    [
       "expo-camera",
       {
         cameraPermission: "Allow T3 Code to access your camera so you can scan pairing QR codes.",

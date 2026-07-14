@@ -1,0 +1,3 @@
+# Confirm consequential voice actions separately
+
+T3 executes high-confidence navigation, playback, queue control, and other read-only voice actions immediately, but reads back every Consequential Voice Action and target before requiring a separate spoken “Confirm.” An uncertain transcript or intent blocks every action until Voice Clarification succeeds; ambiguity, silence, timeout, or “Cancel” aborts. Prompt submission keeps its distinct “Send it” handoff. This adds friction only where transcription or intent errors could cause meaningful side effects and prevents a misheard utterance from becoming an irreversible operation.
