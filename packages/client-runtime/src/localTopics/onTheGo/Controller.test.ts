@@ -42,6 +42,73 @@ const baseSnapshot = (): OnTheGoSnapshot =>
   }) as unknown as OnTheGoSnapshot;
 
 describe("On-the-Go client controller", () => {
+  it("OTG-UT-024: waits for desktop reconnect before restoring enabled voice capture", async () => {
+    vi.useFakeTimers();
+    const deviceId = OnTheGoDeviceId.make("desktop-reconnect-device");
+    let snapshotAttempts = 0;
+    let speechStarts = 0;
+    const snapshot = {
+      ...baseSnapshot(),
+      mode: "sleep" as const,
+      owner: { deviceId, continueRequired: false },
+    } as OnTheGoSnapshot;
+    const controller = makeOnTheGoController({
+      scope: {
+        voiceSessionId: OnTheGoVoiceSessionId.make("desktop-reconnect-session"),
+        deviceId,
+      },
+      target: () => null,
+      createId: () => "reconnect-command",
+      transport: {
+        snapshot: async () => {
+          snapshotAttempts += 1;
+          if (snapshotAttempts === 1) throw new Error("server restarting");
+          return snapshot;
+        },
+        dispatch: async (command) => ({ status: "accepted", commandId: command.commandId }),
+        subscribe: () => () => undefined,
+      },
+      speech: {
+        availability: () => ({ available: true, background: true }),
+        start: () => {
+          speechStarts += 1;
+          return () => undefined;
+        },
+        speak: async () => undefined,
+        stop: () => undefined,
+      },
+      theo: { ask: async () => ({ reply: "unused", preparedPrompt: null }) },
+    });
+
+    try {
+      let started = false;
+      const start = controller.start().then(() => {
+        started = true;
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(controller.state()).toMatchObject({
+        mode: "degraded",
+        caption: "The On-the-Go server is reconnecting",
+      });
+      expect(started).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await start;
+      await controller.toggle(true);
+
+      expect(snapshotAttempts).toBeGreaterThanOrEqual(2);
+      expect(speechStarts).toBe(1);
+      expect(controller.state()).toMatchObject({
+        enabled: true,
+        mode: "sleep",
+        caption: "Listening for T3 or Hey Theo",
+      });
+    } finally {
+      controller.stop();
+      vi.useRealTimers();
+    }
+  });
+
   it("OTG-UT-017: resolves a unique named chat and refuses ambiguous follow targets", () => {
     const targets = [
       { chatId: "chat-auth-api", title: "Auth API" },
