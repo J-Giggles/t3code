@@ -1,10 +1,20 @@
 # T3 Extension Catalog Architecture
 
-Status: accepted design, awaiting hosted-plan acceptance
+Status: accepted for implementation
 
 Linear: GBT-37
 
 Source baseline: `fa184dceb92188d965583fa237e84499426b10d7`
+
+## Acceptance
+
+- Accepted by: Jordan
+- Accepted on: 2026-07-14
+- Accepted design revision: `27e91b6dc53d8f672463d7c5d88fb6a1028354ee`
+- Accepted hosted artifact SHA-256: `7294881cec5fb4e99d29eddf9f32945ed5e9175f6b0ed064ff96669ca4a4809b`
+- Stable acceptance URL: `https://giggabit-server.tailfb378a.ts.net/reports/t3code-nightly-topic-review.html`
+
+Implementation is authorized only for this accepted contract. A Material Extension Change returns to hosted-plan review under ADR 0047.
 
 ## Outcome
 

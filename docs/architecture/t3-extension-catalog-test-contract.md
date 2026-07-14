@@ -1,6 +1,6 @@
 # T3 Extension Catalog Test Contract
 
-Status: accepted feature inventory, awaiting hosted-plan acceptance
+Status: accepted for implementation on 2026-07-14
 
 Every accepted platform feature has three deterministic unit cases: normal (`-N`), refusal or failure (`-F`), and durable or safety invariant (`-I`). These unit tests are mandatory in addition to integration, fault, headed, replay, supply-chain, performance, accessibility, migration, and live-tailnet evidence.
 
