@@ -92,6 +92,39 @@ const modelCandidates = (modelId: string) => {
   ];
 };
 
+const PCM_SAMPLE_RATE = 16_000;
+const PCM_CHANNELS = 1;
+const PCM_BITS_PER_SAMPLE = 16;
+const WAV_HEADER_BYTES = 44;
+
+export const encodePcm16Wav = (pcm: Uint8Array): Uint8Array => {
+  const wav = new Uint8Array(WAV_HEADER_BYTES + pcm.byteLength);
+  const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
+  const writeAscii = (offset: number, value: string) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  const bytesPerSample = PCM_BITS_PER_SAMPLE / 8;
+  const byteRate = PCM_SAMPLE_RATE * PCM_CHANNELS * bytesPerSample;
+
+  writeAscii(0, "RIFF");
+  view.setUint32(4, 36 + pcm.byteLength, true);
+  writeAscii(8, "WAVE");
+  writeAscii(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, PCM_CHANNELS, true);
+  view.setUint32(24, PCM_SAMPLE_RATE, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, PCM_CHANNELS * bytesPerSample, true);
+  view.setUint16(34, PCM_BITS_PER_SAMPLE, true);
+  writeAscii(36, "data");
+  view.setUint32(40, pcm.byteLength, true);
+  wav.set(pcm, WAV_HEADER_BYTES);
+  return wav;
+};
+
 export const resolveLocalWhisperModel = (model: {
   readonly providerId: string;
   readonly modelId: string;
@@ -104,36 +137,68 @@ export const resolveLocalWhisperModel = (model: {
   return modelCandidates(model.modelId).find((candidate) => NodeFS.existsSync(candidate)) ?? null;
 };
 
+export const runLocalWhisperWithExecutable = async (
+  input: OnTheGoPcmTranscriptionRunnerInput,
+  executable: string,
+): Promise<string> => {
+  const temporaryDirectory = await NodeFS.promises.mkdtemp(
+    NodePath.join(NodeOS.tmpdir(), "t3code-whisper-"),
+  );
+  const audioPath = NodePath.join(temporaryDirectory, "utterance.wav");
+  try {
+    await NodeFS.promises.writeFile(audioPath, encodePcm16Wav(input.pcm), { mode: 0o600 });
+    return await new Promise((resolve, reject) => {
+      const child = NodeChildProcess.spawn(
+        executable,
+        [
+          "-m",
+          input.modelPath,
+          "-l",
+          input.language,
+          "--no-timestamps",
+          "--no-prints",
+          "-f",
+          audioPath,
+        ],
+        { stdio: ["ignore", "pipe", "pipe"] },
+      );
+      let stdout = "";
+      let stderr = "";
+      let settled = false;
+      const settle = (effect: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        effect();
+      };
+      const timeout = setTimeout(() => child.kill("SIGKILL"), 30_000);
+      child.stdout.setEncoding("utf8");
+      child.stderr.setEncoding("utf8");
+      child.stdout.on("data", (chunk: string) => {
+        if (stdout.length < 65_536) stdout += chunk;
+      });
+      child.stderr.on("data", (chunk: string) => {
+        if (stderr.length < 8_192) stderr += chunk;
+      });
+      child.once("error", (error) => settle(() => reject(error)));
+      child.once("exit", (code) =>
+        settle(() => {
+          if (code === 0) resolve(stdout);
+          else
+            reject(new Error(`Local Whisper exited ${code ?? "without a code"}: ${stderr.trim()}`));
+        }),
+      );
+    });
+  } finally {
+    await NodeFS.promises.rm(temporaryDirectory, { recursive: true, force: true });
+  }
+};
+
 export const runLocalWhisper = (input: OnTheGoPcmTranscriptionRunnerInput): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const executable = process.env.T3CODE_ON_THE_GO_WHISPER_CLI?.trim() || "whisper-cli";
-    const child = NodeChildProcess.spawn(
-      executable,
-      ["--stream", "-m", input.modelPath, "-l", input.language, "-f", "-"],
-      { stdio: ["pipe", "pipe", "pipe"] },
-    );
-    let stdout = "";
-    let stderr = "";
-    const timeout = setTimeout(() => child.kill("SIGKILL"), 30_000);
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => {
-      if (stdout.length < 65_536) stdout += chunk;
-    });
-    child.stderr.on("data", (chunk: string) => {
-      if (stderr.length < 8_192) stderr += chunk;
-    });
-    child.once("error", (error) => {
-      clearTimeout(timeout);
-      reject(error);
-    });
-    child.once("exit", (code) => {
-      clearTimeout(timeout);
-      if (code === 0) resolve(stdout);
-      else reject(new Error(`Local Whisper exited ${code ?? "without a code"}: ${stderr.trim()}`));
-    });
-    child.stdin.end(input.pcm);
-  });
+  runLocalWhisperWithExecutable(
+    input,
+    process.env.T3CODE_ON_THE_GO_WHISPER_CLI?.trim() || "whisper-cli",
+  );
 
 export const localWhisperPcmTranscriber = makeOnTheGoPcmTranscriber({
   resolveModel: resolveLocalWhisperModel,

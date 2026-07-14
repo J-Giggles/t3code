@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { makeOnTheGoPcmTranscriber } from "./PcmTranscription.ts";
+import {
+  encodePcm16Wav,
+  makeOnTheGoPcmTranscriber,
+  runLocalWhisperWithExecutable,
+} from "./PcmTranscription.ts";
 
 describe("On-the-Go PCM transcription", () => {
   it("OTG-UT-004/019: sends bounded PCM to the selected local model and returns only text", async () => {
@@ -62,5 +66,31 @@ describe("On-the-Go PCM transcription", () => {
       }),
     ).resolves.toEqual({ status: "failure", reason: "audio-invalid" });
     expect(runs).toBe(0);
+  });
+
+  it("OTG-UT-004/019: wraps captured PCM in a mono 16 kHz WAV for whisper-cli", () => {
+    const wav = encodePcm16Wav(Uint8Array.from([1, 2, 3, 4]));
+    const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
+
+    expect(new TextDecoder().decode(wav.subarray(0, 4))).toBe("RIFF");
+    expect(new TextDecoder().decode(wav.subarray(8, 12))).toBe("WAVE");
+    expect(view.getUint16(22, true)).toBe(1);
+    expect(view.getUint32(24, true)).toBe(16_000);
+    expect(view.getUint16(34, true)).toBe(16);
+    expect(view.getUint32(40, true)).toBe(4);
+    expect([...wav.subarray(44)]).toEqual([1, 2, 3, 4]);
+  });
+
+  it("OTG-UT-004/019: reports an early whisper-cli exit without writing PCM to a closed stdin", async () => {
+    await expect(
+      runLocalWhisperWithExecutable(
+        {
+          pcm: Uint8Array.from([1, 2, 3, 4]),
+          modelPath: "/models/ggml-base.en.bin",
+          language: "en",
+        },
+        process.execPath,
+      ),
+    ).rejects.toThrow(/Local Whisper exited/);
   });
 });
