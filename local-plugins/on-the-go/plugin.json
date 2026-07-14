@@ -3,7 +3,10 @@
   "id": "on-the-go",
   "title": "Voice-first Theo companion and durable agent orchestration",
   "topicKind": "mixed",
-  "topicCommits": ["d225f64c448cc5bfc6cd9cb0915703ca89ef179d"],
+  "topicCommits": [
+    "d225f64c448cc5bfc6cd9cb0915703ca89ef179d",
+    "1578b0149a693b09dd672c9b44bd42f91d94b5ef"
+  ],
   "ownedPaths": [
     { "path": "packages/contracts/src/localTopics/onTheGo", "role": "source" },
     { "path": "packages/client-runtime/src/localTopics/onTheGo", "role": "source" },
