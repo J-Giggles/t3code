@@ -40,7 +40,7 @@ These ADRs record hard-to-reverse T3 Code product and architecture decisions, in
 - [0061 — Require every extension in Jordan's presets](./0061-require-every-extension-in-jordans-presets.md)
 - [0062 — Include an authoring kit in the first public release](./0062-include-an-authoring-kit-in-the-first-public-release.md)
 - [0063 — Split public and private extension lock state](./0063-split-public-and-private-extension-lock-state.md)
-- [0064 — Hold verified Staging for an approved two-host Main promotion (proposed)](./0064-hold-verified-staging-for-approved-two-host-main-promotion.md)
+- [0064 — Reserve autonomous Main promotion for the Extension Catalog (proposed)](./0064-reserve-autonomous-main-promotion-for-the-extension-catalog.md)
 
 ## Companion, Context, And Data
 
