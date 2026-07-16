@@ -6,12 +6,12 @@
 
 A candidate is eligible only when these sources agree:
 
-1. The latest Linear nightly run under `GBT-38` is `In Review` and its final report says the replay passed.
-2. The issue identity matches `.worktrees/nightly/.t3code-nightly-runs/<run>/linear-run.json`.
-3. `nightly-agent-report.json` identifies the current nightly HEAD and current original/upstream commit.
+1. The latest `nightly-agent-report.json` has status `success`.
+2. Its candidate SHA matches the current Nightly HEAD.
+3. Its upstream SHA matches the current Original and `upstream/main` SHAs.
 4. `control-plane-sync.json` proves the replay copied current workflow metadata into the candidate after topic replay.
 
-Linear is the review surface. Git and the run artifacts are the technical source of truth. Promotion to staging remains explicit, and Main requires a second, fresh approval after the exact staging revision has passed its live public proof.
+The run directory is the review surface, while Git and its machine-readable artifacts are the technical source of truth. Promotion to staging remains explicit, and Main requires a second, fresh approval after the exact staging revision has passed its live public proof.
 
 ## Preflight
 
@@ -25,7 +25,7 @@ mise x node@24.13.1 -- bash -lc './node_modules/.bin/vp run lint:mobile'
 mise x node@24.13.1 -- bash -lc 'pnpm run topic-plugins:check'
 ```
 
-Inspect `topic-audit.md`, `nightly-agent-report.json`, and proof artifacts from the matching run. A failed run, unresolved fundamental conflict, dirty nightly worktree, stale upstream base, or mismatched Linear issue blocks promotion.
+Inspect `topic-audit.md`, `nightly-agent-report.json`, and proof artifacts from the matching run. A failed run, unresolved fundamental conflict, dirty nightly worktree, stale upstream base, or mismatched candidate SHA blocks promotion.
 
 ## Promotion Order
 
@@ -39,15 +39,15 @@ Inspect `topic-audit.md`, `nightly-agent-report.json`, and proof artifacts from 
 8. Run `vp run verify:main-public` against the canonical public Main route and verify the Mac app shell. Require the primary-interface project/chat flow, screenshot, clean exact-SHA checkouts, and fresh promotion receipt.
 9. Approve the candidate with `t3code-main-uptime promotion-approve <candidate>`, then push `main`, `nightly`, and `original` with exact leases. Do not create backup branches on GitHub.
 10. If either host fails before publication, roll both hosts back and restart the old versions. If publication fails, restore Linux, GitHub, and Mac from the captured refs. A split-version fleet is not success.
-11. Confirm the Main service and both timers are active, add the full two-host evidence to the Linear run, and move it to Done only after both hosts and GitHub agree.
+11. Confirm the Main service and both timers are active, write the full two-host evidence into the promotion evidence directory, and mark it complete only after both hosts and GitHub agree.
 
 Do not combine staging and Main approval into one request, and do not reset a checked-out durable lane. Staging proof and the fresh approval boundary protect the live Main fleet.
 
-## Linear Evidence
+## Promotion Evidence
 
 The completion comment records:
 
-- Linear run identifier and replay run ID;
+- replay run ID and artifact directory;
 - old and new SHAs for `original`, `nightly`, `staging`, and `main`;
 - origin lease SHAs and local backup locations;
 - required check results and headed/public proof;
@@ -55,7 +55,7 @@ The completion comment records:
 - Mac HEAD and restored dirty-state status;
 - rollback or warning details, if any.
 
-Keep the issue `In Review` when a promotion is incomplete. A failed promotion returns to `Todo` only when additional agent repair is required.
+Keep the promotion evidence marked incomplete until every host and ref agrees. Record whether additional agent repair is required.
 
 ## Rollback
 

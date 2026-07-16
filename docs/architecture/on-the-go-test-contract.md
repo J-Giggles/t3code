@@ -12,7 +12,7 @@ Use virtual clocks and virtual microphone/audio fixtures for endpointing, correc
 
 ### Feature Unit-Test Acceptance Matrix
 
-Every accepted feature must ship with deterministic unit tests against the smallest owning Module. A feature is not complete with only headed, integration, snapshot, or live-provider coverage. Each row below requires at least the named success, refusal/failure, and invariant cases; implementation may split a case into additional tests. Test names and evidence must retain these IDs so the topic README, Linear handoff, and replay audit can prove coverage without guessing.
+Every accepted feature must ship with deterministic unit tests against the smallest owning Module. A feature is not complete with only headed, integration, snapshot, or live-provider coverage. Each row below requires at least the named success, refusal/failure, and invariant cases; implementation may split a case into additional tests. Test names and evidence must retain these IDs so the topic README, implementation handoff, and replay audit can prove coverage without guessing.
 
 | ID           | Feature                                            | Required unit cases                                                                                                                                                                                               |
 | ------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

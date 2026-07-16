@@ -818,7 +818,7 @@ function formatConflictPacket(input: {
     "",
     "## Ask Hermes",
     "",
-    `- Linear: attach this brief to the matching nightly run and include a recommended resolution.`,
+    `- Review: include this brief in the matching nightly run artifacts with a recommended resolution.`,
     `- CLI: \`hermes -z "Read ${promptPath} and propose the safest resolution."\``,
     "",
     "## Current Unmerged Files",

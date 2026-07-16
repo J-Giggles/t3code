@@ -9,7 +9,7 @@ description: Promote an independently prepared T3 Code staging lane to main acro
 
 This skill runs the project-specific T3 Code promotion flow. It treats `original`, `nightly`, `staging`, and `main` as the only durable Linux lanes, promotes `staging` to the live `main` lane only after verification and backups, and then updates the Mac checkout to match.
 
-When `staging` should be sourced from the latest Linear-reviewed nightly replay, stop and use `$premote-nightly`; it owns the `nightly -> staging -> main` transaction and Linear evidence.
+When `staging` should be sourced from the latest verified nightly replay, stop and use `$premote-nightly`; it owns the `nightly -> staging -> main` transaction and run evidence.
 
 ## Required Reading
 

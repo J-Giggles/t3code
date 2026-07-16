@@ -48,9 +48,9 @@ describe("Theo external context", () => {
     ).toEqual([]);
     expect(fetch).not.toHaveBeenCalled();
     expect(
-      await readTheoConnectedContext("check linear", [
+      await readTheoConnectedContext("check calendar", [
         {
-          id: "linear",
+          id: "calendar",
           allowedProviderIds: ["codex"],
           matches: () => true,
           read: async () => Promise.reject(new Error("down")),
@@ -61,27 +61,27 @@ describe("Theo external context", () => {
 
   it("OTG-UT-010/023: lets optional connected-app topics register bounded context", async () => {
     const unregister = registerTheoConnectedContextProvider({
-      id: "linear",
+      id: "calendar",
       allowedProviderIds: ["codex"],
-      matches: (utterance) => utterance.includes("Linear"),
+      matches: (utterance) => utterance.includes("Calendar"),
       read: async () => [
         {
           source: "connected-app:ignored",
-          reference: "GBT-274",
+          reference: "calendar:event/274",
           sourceVersion: "1",
           excerpt: "Implementation is active",
           allowedProviderIds: ["ignored-by-provider-policy"],
         },
       ],
     });
-    expect(await readRegisteredTheoConnectedContext("Check Linear")).toEqual([
+    expect(await readRegisteredTheoConnectedContext("Check Calendar")).toEqual([
       expect.objectContaining({
-        source: "connected-app:linear",
-        reference: "GBT-274",
+        source: "connected-app:calendar",
+        reference: "calendar:event/274",
         allowedProviderIds: ["codex"],
       }),
     ]);
     unregister();
-    expect(await readRegisteredTheoConnectedContext("Check Linear")).toEqual([]);
+    expect(await readRegisteredTheoConnectedContext("Check Calendar")).toEqual([]);
   });
 });

@@ -8,7 +8,7 @@ This design does not copy, read, or share Chrome's cookie database with Electron
 
 1. Open Google Chrome on `giggabit-server` using the existing agent-only `Default` profile.
 2. Install the Microsoft [Playwright Extension](https://chromewebstore.google.com/detail/playwright-extension/mmlmfjhmonkocbjadbfplnigmagldckm).
-3. Open the extension status page and copy its `PLAYWRIGHT_MCP_EXTENSION_TOKEN` value. Treat the token as a local browser-control credential: do not paste it into Linear, logs, documentation, or shell history.
+3. Open the extension status page and copy its `PLAYWRIGHT_MCP_EXTENSION_TOKEN` value. Treat the token as a local browser-control credential: do not paste it into task trackers, logs, documentation, or shell history.
 4. Configure Codex from the T3 Code checkout:
 
 ```bash

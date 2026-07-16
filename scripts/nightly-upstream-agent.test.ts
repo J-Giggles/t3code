@@ -381,9 +381,8 @@ describe("nightly-upstream-agent", () => {
       controlRoot: "/repo",
       resultPath:
         "/repo/.worktrees/nightly/.t3code-nightly-runs/run/autonomous-repair-result-attempt-1.json",
-      linearIssue: "GBT-99",
-      linearEvidencePath:
-        "/repo/.worktrees/nightly/.t3code-nightly-runs/run/linear-repair-evidence-attempt-1.md",
+      repairEvidencePath:
+        "/repo/.worktrees/nightly/.t3code-nightly-runs/run/repair-evidence-attempt-1.md",
       conflictFiles: ["apps/web/src/components/ChatView.tsx"],
       topic: {
         id: "provider-settings",
@@ -411,9 +410,9 @@ describe("nightly-upstream-agent", () => {
     });
 
     expect(prompt).toContain("You may edit only this nightly worktree");
-    expect(prompt).toContain("bound to Linear issue GBT-99");
-    expect(prompt).toContain("Do not open Linear MCP calls or create repo files");
-    expect(prompt).toContain("linear-repair-evidence-attempt-1.md");
+    expect(prompt).toContain("records its host, worktree policy, service, timer, checks");
+    expect(prompt).toContain("Do not create tracker issues or unrelated repo files");
+    expect(prompt).toContain("repair-evidence-attempt-1.md");
     expect(prompt).toContain("Do not print or read the full conflict packet");
     expect(prompt).toContain("apps/web/src/components/ChatView.tsx");
     expect(prompt).toContain(
@@ -501,7 +500,7 @@ describe("nightly-upstream-agent", () => {
     expect(JSON.stringify(messages[0]!.replyMarkup)).toContain("Copy: explain upstream");
   });
 
-  it("prompts Hermes for a Linear-ready feature-level Conflict Brief", () => {
+  it("prompts Hermes for a standalone feature-level Conflict Brief", () => {
     const prompt = formatConflictBriefGenerationPrompt({
       conflictPromptPath: "/run/hermes-conflict-prompt.md",
       conflictPacketPath: "/run/conflict-packet.md",
@@ -509,7 +508,7 @@ describe("nightly-upstream-agent", () => {
       topicCatalogPath: "/run/topic-catalog.md",
     });
 
-    expect(prompt).toContain("Linear-ready Conflict Brief");
+    expect(prompt).toContain("standalone Conflict Brief");
     expect(prompt).toContain("feature-level, not file-by-file");
     expect(prompt).toContain("Default to auto-repair when the local topic feature can still work");
     expect(prompt).toContain("Auto-repair eligibility:");
@@ -797,7 +796,7 @@ describe("nightly-upstream-agent", () => {
     expect(JSON.stringify(messages[0]!.replyMarkup)).toContain("Copy: show failed/conflicted");
   });
 
-  it("creates a topic catalog that points Linear and agents at topic docs and tests", () => {
+  it("creates a topic catalog that points agents at local topic docs and tests", () => {
     const catalog = formatTopicCatalog({
       status: "success" satisfies NightlyAgentStatus,
       startedAt: "2026-07-09T00:00:00.000Z",

@@ -34,7 +34,7 @@ Always run `vp run verify:staging-public` against the exact candidate. It must p
 1. Audit Staging, its source dev topic, dirty state, worktrees, and running processes. Do not stop or edit Main.
 2. Promote only the committed, verified dev topic into the reserved Staging worktree.
 3. Launch T3 Code Staging and run the required static, unit, native, headed, topic-plugin, and public-path checks.
-4. Record the exact Staging SHA, commands, results, public artifact paths, source topic SHA, and Linear issue.
+4. Record the exact Staging SHA, commands, results, public artifact paths, and source topic SHA in the local promotion evidence.
 5. Confirm the proposed candidate can be applied without rewriting Main history:
 
 ```bash
@@ -84,7 +84,7 @@ git -C /home/jgigg/code/t3code push origin staging:staging main:main
 ```
 
 10. Confirm GitHub, Linux, and Mac all resolve to the approved SHA; confirm `t3code-main.service`, `t3code-main-guard.timer`, and `t3code-main-health.timer` are active.
-11. Record old/new SHAs, backup artifacts, downtime, provisioning, both host checks, proof receipts, and any rollback on Linear. Only then clean temporary worktrees and backup material under retention policy.
+11. Record old/new SHAs, backup artifacts, downtime, provisioning, both host checks, proof receipts, and any rollback in the local promotion evidence. Only then clean temporary worktrees and backup material under retention policy.
 
 ## Cleanup Rules
 

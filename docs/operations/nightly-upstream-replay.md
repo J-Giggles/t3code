@@ -45,13 +45,13 @@ Apply directly:
 pnpm run topic-stack:nightly -- --apply
 ```
 
-Scheduled Linear-aware wrapper:
+Scheduled artifact-first wrapper:
 
 ```bash
 pnpm run nightly:upstream-agent -- --root /home/jgigg/code/t3code
 ```
 
-The wrapper is the production entrypoint because it fetches first, creates a Linear issue only for actionable work, invokes bounded repair, and records the final issue status.
+The wrapper is the production entrypoint because it fetches first, invokes bounded repair, and records the final status and proof locally without a task-tracker dependency.
 
 ## Apply Sequence
 
@@ -79,7 +79,7 @@ Routine conflicts are resolved autonomously when the topic feature still has one
 4. The parent validates paths, rejects conflict markers and unrelated edits, stages only approved files, records rerere, and reruns the full stack from clean upstream.
 5. Repaired-topic verification runs against the completed stack.
 
-The run stops for Jordan only when preserving the desired local feature requires a materially different product, architecture, security, or operator choice. Linear then receives one feature-level overview containing the collision, meaningful options, and an explicit recommendation. Individual conflict files remain in the technical artifact, not the decision request.
+The run stops for Jordan only when preserving the desired local feature requires a materially different product, architecture, security, or operator choice. The run then records one feature-level overview containing the collision, meaningful options, and an explicit recommendation. Individual conflict files remain in the technical artifact, not the decision request.
 
 An optional internal `hermes -z` summarizer may produce `conflict-brief.md`; it does not send messages or own the decision workflow.
 
@@ -100,8 +100,6 @@ topic-audit.md
 nightly-agent-report.md
 nightly-agent-report.json
 topic-catalog.md
-linear-run.json
-linear-summary.md
 dependency-reconciliation.json
 control-plane-sync.json
 ```
@@ -119,7 +117,7 @@ autonomous-repair-prompt-attempt-<n>.md
 autonomous-repair-result-schema-attempt-<n>.json
 autonomous-repair-result-attempt-<n>.json
 autonomous-repair-command-attempt-<n>.log
-linear-repair-evidence-attempt-<n>.md
+repair-evidence-attempt-<n>.md
 ```
 
 `topic-audit.md` records the base, backups, topic outcomes, verification, risk, and promotion sign-off. `topic-catalog.md` is the feature/test index for agents answering questions about the stack.
@@ -149,4 +147,4 @@ Stop only this lane with `~/.local/bin/t3code-dev-nightly --kill` before a rebui
 
 ## Promotion
 
-Do not merge or reset staging from this workflow. A successful Linear run reaches `In Review`, then the explicit `$premote-nightly` flow verifies the issue and artifacts, advances `nightly -> staging`, proves staging, and only then advances `staging -> main` across Linux, GitHub, and the Mac. See `docs/operations/premote-nightly.md`.
+Do not merge or reset staging from this workflow. A successful run becomes promotion-eligible, then the explicit `$premote-nightly` flow verifies its exact artifacts, advances `nightly -> staging`, proves staging, and only then advances `staging -> main` across Linux, GitHub, and the Mac. See `docs/operations/premote-nightly.md`.

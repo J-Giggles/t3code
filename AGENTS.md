@@ -134,7 +134,7 @@ Current topic order:
       human promotion sign-off documentation.
     - Also owns structured Replay Contracts, constrained autonomous conflict repair, exact-fingerprint Repair Memory,
       upstream dependency-floor reconciliation, post-replay control-plane metadata sync, completed-stack verification,
-      and Linear run evidence. Human input is reserved for fundamental product, architecture, security, or operator
+      and durable local run evidence. Human input is reserved for fundamental product, architecture, security, or operator
       decisions.
 15. `feat(dev-launch): add nightly Omarchy launcher`
     - Includes `/nightly/` route ownership, the strict nightly verifier, and

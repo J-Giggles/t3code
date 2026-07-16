@@ -12,7 +12,7 @@ Use this procedure for the explicit `nightly -> staging -> main` T3 Code promoti
 
 ## Transaction
 
-1. Resolve the latest Linear child issue under `GBT-38`. Require `In Review`, a successful final comment, no unresolved fundamental decision, and the exact run ID from `.worktrees/nightly/.t3code-nightly-runs/latest/linear-run.json`.
+1. Resolve the latest run directory under `.worktrees/nightly/.t3code-nightly-runs/`. Require a successful report, no unresolved fundamental decision, and exact agreement between its candidate SHA and Nightly HEAD.
 2. Audit all durable worktrees, refs, origin leases, launchers, and dirty state. Require no cherry-pick, merge, or rebase in progress.
 3. Verify the candidate:
    - report status is `success`;
@@ -29,11 +29,11 @@ Use this procedure for the explicit `nightly -> staging -> main` T3 Code promoti
 9. Run `vp run verify:main-public` against `https://giggabit-server.tailfb378a.ts.net/main/`. Require the primary-interface project/chat proof, screenshot, exact candidate SHA, clean checkout, and `promotionProof.written: true`.
 10. Approve the candidate with `t3code-main-uptime promotion-approve <candidate>`. Only then push `main` with `--force-with-lease=main:<old-origin-main>`. Publish `nightly` and `original` with their own leases so GitHub exposes only the four current durable lanes.
 11. On the Mac, fetch `origin`, update `main` to the exact promoted SHA, then restore the saved local changes. Verify the checkout and keep the stash/patch until the restored work is inspected.
-12. Confirm `t3code-main.service`, the guard timer, and the health timer are active. Comment on the Linear run issue with old and new SHAs, checks, proof receipt and screenshot, Mac sync evidence, backup locations, and any warnings. Move it to Done only after every completion criterion passes.
+12. Confirm `t3code-main.service`, the guard timer, and the health timer are active. Write old and new SHAs, checks, proof receipt and screenshot, Mac sync evidence, backup locations, and any warnings into the promotion evidence directory. Mark it complete only after every completion criterion passes.
 
 ## Failure Handling
 
 - Before main moves: restore staging if needed, restart staging, and leave main unchanged.
 - Before Main approval: run `t3code-main-uptime promotion-abort`; it preserves the failed candidate, restores the prior approved SHA, and restarts Main. Leave `origin/main` untouched.
-- After Main approval or publication: restore Linux main and `origin/main` from the local backup ref using the captured lease, establish the restored SHA as the approved Main through the same proof gate, and do not mark the Linear issue Done.
-- Never resolve a failed promotion by editing a durable worktree. Return the defect to the nightly replay topic and produce a new Linear run.
+- After Main approval or publication: restore Linux main and `origin/main` from the local backup ref using the captured lease, establish the restored SHA as the approved Main through the same proof gate, and retain the failed promotion evidence.
+- Never resolve a failed promotion by editing a durable worktree. Return the defect to the nightly replay topic and produce a new Nightly Run.

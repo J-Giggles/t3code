@@ -6,7 +6,7 @@ Implement [On-the-Go Mode](./on-the-go-mode.md) as one independently replayable 
 
 ## Required Working Method
 
-1. Bind every implementation run to the existing Linear delivery task and a dedicated Agent Run.
+1. Record every implementation run in a dedicated Agent Run worktree and durable local handoff.
 2. Work only in a new `dev-` worktree and feature branch; never implement in root main, original, nightly, or reserved staging.
 3. Build in reviewable slices with green focused tests.
 4. Assign every accepted feature to its `OTG-UT-*` IDs from the Test Contract and implement those deterministic unit tests in the same slice as the feature.

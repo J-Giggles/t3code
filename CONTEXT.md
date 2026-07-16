@@ -16,12 +16,12 @@ _Avoid_: replay notes, checklist copy, promotion log
 A human-readable explanation of a replay conflict that starts from the feature or topic intent, names the upstream and local intents that collide, presents resolution options, and gives a recommended path before any repair is applied.
 _Avoid_: conflict packet, merge notes, hunk summary
 
-**Linear Nightly Run**:
-A child issue under the T3 Code nightly operations issue that records one actionable upstream replay from discovery through proof and promotion. It contains the official-change overview, topic task list, repair evidence, recommendation, and final promotion state.
-_Avoid_: notification, chat message, nightly alert
+**Nightly Run**:
+A durable server-local artifact set that records one actionable upstream replay from discovery through proof and promotion. It contains the official-change overview, topic task list, repair evidence, recommendation, and final promotion state.
+_Avoid_: notification, tracker issue, nightly alert
 
 **Topic Stack Checklist**:
-The Linear task list and run-artifact inventory for a nightly replay. It marks each topic as replayed, auto-repaired, skipped, conflicted, pending, or not run and links the feature and test evidence needed to understand it.
+The run-artifact inventory for a nightly replay. It marks each topic as replayed, auto-repaired, skipped, conflicted, pending, or not run and links the feature and test evidence needed to understand it.
 _Avoid_: topic list, feature dump, replay summary
 
 **Control-Plane Sync**:
@@ -57,7 +57,7 @@ The rebuilt candidate produced by replaying Jordan-local topic commits on top of
 _Avoid_: nightly-local, dev/nightly-topic-stack branch
 
 **Nightly Promotion Candidate**:
-A Nightly Lane commit whose Linear Nightly Run is in review and whose replay report, upstream base, control-plane sync, topic checks, and required public or headed proof all agree. Eligibility does not itself authorize promotion.
+A Nightly Lane commit whose Nightly Run report, upstream base, control-plane sync, topic checks, and required public or headed proof all agree. Eligibility does not itself authorize promotion.
 _Avoid_: latest nightly, automatic release, approved build
 
 **Staging Lane**:
