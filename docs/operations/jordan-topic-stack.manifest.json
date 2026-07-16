@@ -176,7 +176,8 @@
         "f754e9d208cbc4b8d1db232ca597a3ddaf9f29b9",
         "820348b2b8d662e10f95033dbb67d0bbe8d6c296",
         "27ed804757e681ec4976b3356294b3b2b0d4ed3e",
-        "7f8eb6b54720709d843910161aef1577855a7850"
+        "7f8eb6b54720709d843910161aef1577855a7850",
+        "622d211c57b99f1c085db53f20b6d68b49abf0de"
       ],
       "subject": "feat(topic-stack): add replay checklist and audit safeguards"
     },

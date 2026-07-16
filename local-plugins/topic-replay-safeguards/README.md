@@ -29,6 +29,7 @@ Replay support follow-ups currently listed in the nightly manifest:
 - `f754e9d208cbc4b8d1db232ca597a3ddaf9f29b9` `fix(topic-stack): refresh pnpm lockfile patch metadata`
 - `820348b2b8d662e10f95033dbb67d0bbe8d6c296` `feat(topic-stack): automate nightly upstream repair`
 - `27ed804757e681ec4976b3356294b3b2b0d4ed3e` `fix(topic-stack): skip clean rerere no-ops`
+- `622d211c57b99f1c085db53f20b6d68b49abf0de` `fix(topic-stack): make nightly control artifact-first`
 
 ## Added Features
 
