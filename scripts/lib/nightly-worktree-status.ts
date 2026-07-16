@@ -1,6 +1,9 @@
 const INTERNAL_NIGHTLY_ARTIFACT_DIRS = [
   ".t3code-nightly-runs",
   ".t3code-nightly-agent-runs",
+  "apps/desktop/playwright-report",
+  "apps/desktop/test-results",
+  "apps/web/playwright-report",
 ] as const;
 
 export function isInternalNightlyArtifactPath(path: string): boolean {

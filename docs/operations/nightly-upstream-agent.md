@@ -99,10 +99,10 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/jgigg/code/t3code
+WorkingDirectory=/home/jgigg/code/t3code/.worktrees/staging
 Environment=PATH=%h/.local/share/mise/installs/node/24.13.1/bin:%h/.local/bin:%h/.local/share/pnpm:/usr/local/bin:/usr/bin
 EnvironmentFile=-%h/.config/t3code/nightly-upstream-agent.env
-ExecStart=/home/jgigg/.local/share/mise/installs/node/24.13.1/bin/node /home/jgigg/code/t3code/.worktrees/staging/scripts/nightly-upstream-agent.ts --root /home/jgigg/code/t3code
+ExecStart=/home/jgigg/.local/share/mise/installs/node/24.13.1/bin/node /home/jgigg/code/t3code/.worktrees/staging/scripts/nightly-upstream-agent.ts --root /home/jgigg/code/t3code/.worktrees/staging
 ```
 
 `~/.config/systemd/user/t3code-nightly-upstream-agent.timer`:

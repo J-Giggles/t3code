@@ -173,6 +173,7 @@ describe("nightly-upstream-agent", () => {
           "apps/web/src/declared.ts",
           "apps/server/src/undeclared.ts",
           ".t3code-nightly-runs/20260710/plan.json",
+          "apps/desktop/test-results/nightly-public/run/pass.png",
         ],
         ["apps/web/src/declared.ts"],
       ),

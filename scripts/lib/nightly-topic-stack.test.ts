@@ -351,6 +351,11 @@ describe("nightly topic stack", () => {
       hasMaterialPorcelainChanges("?? .t3code-nightly-agent-runs/run/report.md\n"),
       false,
     );
+    assert.equal(
+      hasMaterialPorcelainChanges("?? apps/desktop/test-results/nightly-public/run/pass.png\n"),
+      false,
+    );
+    assert.equal(hasMaterialPorcelainChanges("?? apps/web/playwright-report/index.html\n"), false);
     assert.equal(hasMaterialPorcelainChanges(" M apps/web/src/example.ts\n"), true);
   });
 

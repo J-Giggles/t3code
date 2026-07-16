@@ -65,6 +65,7 @@ Replay support follow-ups currently listed in the nightly manifest:
 - [x] Current workflow metadata is synchronized after topic replay and committed into Nightly without a self-referential manifest hash (`scripts/lib/nightly-topic-stack.ts`, `docs/operations/jordan-topic-stack.manifest.json`).
 - [x] Shared synchronous command execution keeps exit handling and audit output consistent across replay CLIs (`scripts/lib/command-runner.ts`, `scripts/reconcile-nightly-dependencies.ts`).
 - [x] Rerere-resolved cherry-picks that become clean no-ops are skipped without being mislabeled as conflicts (`scripts/lib/nightly-topic-stack.ts`, `scripts/lib/nightly-topic-stack.test.ts`).
+- [x] Existing headed and public proof directories remain non-material while the Nightly reset temporarily restores upstream ignore rules (`scripts/lib/nightly-worktree-status.ts`, `scripts/lib/nightly-topic-stack.test.ts`, `scripts/nightly-upstream-agent.test.ts`).
 
 ## Added Tests
 
