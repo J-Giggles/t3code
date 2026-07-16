@@ -160,6 +160,8 @@ transaction across Linux, GitHub, and the Mac checkout.
 
 Current staging includes the June 26 follow-up topic
 `fix(remote-access): harden public staging verification`.
+Current staging also includes the July 16 follow-up topic
+`fix(remote-access): load oversized thread details reliably`.
 Current staging also includes the replay-safeguards topic that keeps checklist enforcement and run-audit generation in
 the manifest.
 

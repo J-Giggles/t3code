@@ -214,6 +214,12 @@
         "d7b0a924a4b81a49cbc4448f960eaba3cc7dc917"
       ],
       "subject": "feat(main-uptime): guard and supervise durable main"
+    },
+    {
+      "id": "remote-access-thread-detail-loading",
+      "pluginPath": "local-plugins/remote-access-thread-detail-loading",
+      "commits": ["89dc1c114f21cd909a641f2fc1d4a8e95a1e1400"],
+      "subject": "fix(remote-access): load oversized thread details reliably"
     }
   ]
 }

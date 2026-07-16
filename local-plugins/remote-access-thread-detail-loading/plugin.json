@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "id": "remote-access-thread-detail-loading",
+  "title": "Oversized thread detail loading",
+  "topicKind": "code",
+  "topicCommits": ["89dc1c114f21cd909a641f2fc1d4a8e95a1e1400"],
+  "ownedPaths": [
+    {
+      "path": "apps/server/src/localTopics/remoteAccess/httpCompression.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/web/src/localTopics/remoteAccess/threadDetailLoading.ts",
+      "role": "source"
+    },
+    {
+      "path": "packages/client-runtime/src/localTopics/remoteAccess/threadDetailLoading.ts",
+      "role": "source"
+    },
+    {
+      "path": "apps/server/src/localTopics/remoteAccess/httpCompression.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "apps/web/src/components/Sidebar.logic.test.ts",
+      "role": "test"
+    },
+    {
+      "path": "apps/desktop/e2e/specs/thread-detail-loading.spec.ts",
+      "role": "test"
+    },
+    {
+      "path": "apps/desktop/e2e/localTopics/remoteAccess/ThreadDetailLoadingPage.ts",
+      "role": "test"
+    },
+    {
+      "path": "apps/desktop/e2e/support/seedChatLayoutState.ts",
+      "role": "test"
+    }
+  ],
+  "componentization": {
+    "status": "complete",
+    "entrypoints": [
+      {
+        "path": "apps/server/src/localTopics/remoteAccess/httpCompression.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "apps/web/src/localTopics/remoteAccess/threadDetailLoading.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      },
+      {
+        "path": "packages/client-runtime/src/localTopics/remoteAccess/threadDetailLoading.ts",
+        "kind": "source",
+        "publicSurface": "internal"
+      }
+    ]
+  },
+  "integrationPoints": [
+    {
+      "path": "apps/server/src/server.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/web/src/components/Sidebar.logic.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "packages/client-runtime/src/state/threadSnapshotHttp.ts",
+      "role": "thin-wiring"
+    },
+    {
+      "path": "apps/desktop/e2e/localTopics/remoteAccess/ThreadDetailLoadingPage.ts",
+      "role": "consumer"
+    },
+    {
+      "path": "apps/desktop/e2e/support/seedChatLayoutState.ts",
+      "role": "consumer"
+    }
+  ],
+  "verification": [
+    "vp check",
+    "vp run typecheck",
+    "vp test apps/server/src/localTopics/remoteAccess/httpCompression.test.ts apps/web/src/components/Sidebar.logic.test.ts",
+    "vp run --filter @t3tools/desktop e2e:headed -- -- e2e/specs/thread-detail-loading.spec.ts",
+    "vp run verify:staging-public"
+  ],
+  "replayContract": {
+    "autonomy": "low-risk-auto-repair",
+    "risk": "low",
+    "intent": "Keep very large task histories loadable over remote HTTP connections without making sidebar startup fetch every task body.",
+    "preserve": [
+      "Keep sidebar startup shell-only and fetch task detail only after selection.",
+      "Compress large JSON responses while preserving CORS and cache negotiation headers.",
+      "Retain the WebSocket fallback after the bounded HTTP detail-load timeout."
+    ],
+    "safeAutoRepair": [
+      "Adapt the compression middleware to upstream Effect HTTP response APIs while preserving streaming and already-encoded responses.",
+      "Adapt sidebar selection wiring when upstream changes task summary or detail query ownership.",
+      "Tune the compression threshold or timeout when measured task sizes and remote latency justify it."
+    ],
+    "stopForHuman": [
+      "Stop if upstream replaces task-detail HTTP loading with a different transport contract that needs an architecture decision.",
+      "Stop if compression would expose secret-bearing responses to a shared intermediary cache."
+    ],
+    "verification": [
+      "vp check",
+      "vp run typecheck",
+      "vp test apps/server/src/localTopics/remoteAccess/httpCompression.test.ts apps/web/src/components/Sidebar.logic.test.ts",
+      "vp run --filter @t3tools/desktop e2e:headed -- -- e2e/specs/thread-detail-loading.spec.ts"
+    ]
+  }
+}

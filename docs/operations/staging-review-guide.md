@@ -422,6 +422,34 @@ Reviewers should check:
 - Inspect a window without local server cwd or git-ref data and confirm the
   header does not show a stale or fabricated worktree/branch pill.
 
+## Oversized Thread Detail Loading Follow-up
+
+### User Problem
+
+Task histories can grow to tens of megabytes. Sidebar startup previously began
+fetching several full task histories before the user selected one, and the
+selected HTTP request timed out quickly enough to duplicate that large snapshot
+over the WebSocket fallback. On remote links, some Lifepass tasks appeared not
+to load at all.
+
+### What Changed
+
+- Sidebar startup remains shell-only until the user selects a task.
+- Large JSON HTTP responses use gzip when the client advertises support.
+- The task-detail HTTP timeout allows a measured compressed remote transfer to
+  finish before falling back to the existing WebSocket snapshot.
+- Compression negotiation preserves CORS cache variation with
+  `Vary: Origin, Accept-Encoding`.
+
+### Review Focus
+
+- Confirm small, non-JSON, streaming, and already-encoded responses are not
+  compressed by this middleware.
+- Confirm selecting a task still falls back to WebSocket state when HTTP detail
+  loading genuinely fails.
+- Confirm sidebar startup produces no task-detail HTTP requests and selecting a
+  production-sized task produces exactly one successful compressed response.
+
 ## Topic 4: Session Recovery After Provider Or Server Restarts
 
 ### User Problem
