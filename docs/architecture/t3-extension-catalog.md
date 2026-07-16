@@ -1,6 +1,6 @@
 # T3 Extension Catalog Architecture
 
-Status: accepted for implementation
+Status: material S6 amendment awaiting explicit acceptance
 
 Linear: GBT-37
 
@@ -15,6 +15,8 @@ Source baseline: `fa184dceb92188d965583fa237e84499426b10d7`
 - Stable acceptance URL: `https://giggabit-server.tailfb378a.ts.net/reports/t3code-nightly-topic-review.html`
 
 Implementation is authorized only for this accepted contract. A Material Extension Change returns to hosted-plan review under ADR 0047.
+
+The S6 promotion contract below is a material amendment proposed on 2026-07-16. Current workspace policy already overrides ADR 0044's earlier no-approval language: automation may verify and hold an exact Staging assembly, but it may not drain, snapshot, stop, move, or relaunch Main until Jordan freshly approves that exact held revision. The uncommitted S6 remediation remains implementation-draft evidence only until the amended hosted plan is explicitly accepted.
 
 ## Outcome
 
@@ -127,17 +129,29 @@ Stack Assembly Manifest
 Nightly assemble → certify → visual/test evidence
    │ all gates pass and contract is unchanged
    ▼
-Staging proof → bounded Main drain → promote exact assembly
+Durable Nightly proof → durable Staging proof
    │
    ▼
-Relaunch Main → Live Main Acceptance on real tailnet route
+Awaiting Main approval (Main remains untouched)
+   │ fresh approval bound to held revision, locks, artifacts, and lane proofs
+   ▼
+Complete Main drain → snapshot Linux + Mac → prepare both
+   │
+   ▼
+Activate both → relaunch both → Live Main Acceptance on both hosts
    ├── pass: publish `promoted`
    └── fail: restore previous complete assembly
               ├── restored proof passes: publish `recovered`
               └── recovery proof fails: stop + critical alert
 ```
 
-Contract-Preserving Updates may promote autonomously. A Material Extension Change—changed accepted behavior, expanded permission, destructive or irreversible migration, or lost surface—requires a newly accepted hosted plan first. Main must drain active turns, writes, migrations, and other non-interruptible work within a bounded window; timeout holds the candidate instead of killing active work.
+Contract-Preserving Updates may autonomously reach a durable, fully verified Staging hold. Main promotion always requires fresh explicit approval bound to that exact held record, candidate revision, artifact vector, split locks, Combined Assembly Digest, and Nightly/Staging lane proofs. Before approval, the truthful terminal status is `awaiting-main-approval`, never `promoted`, and Main remains untouched. A Material Extension Change—changed accepted behavior, expanded permission, destructive or irreversible migration, or lost surface—requires a newly accepted hosted plan before even entering this promotion path.
+
+After approval, one coordinated two-host transaction closes admission, drains all product-owned work, snapshots the Linux primary and Mac launcher checkout, prepares both without activating either, activates and relaunches both, and proves the live application on both hosts. Any failure after either host changes restores both snapshots and verifies the previous Known-Good Assembly on both hosts.
+
+The drain covers the complete product lifecycle: admitted orchestration/SQLite transactions, provider turns through fully processed terminal events, runtime ingestion, extension and product migrations, durable writes, streams, reactor/checkpoint queues, thread deletion, and registered background work. Already-admitted work may finish nested writes under its inherited admission token; unrelated work is refused. Admission cannot reopen while tracked work remains unresolved.
+
+Protected activation receipts prove real installation, not archive metadata: the verifier removes every artifact-owned path from an exact source checkout, reinstalls the immutable artifact closure, performs frozen dependency installation, runs the focused behavior suite and launcher proof from the activated checkout, and binds artifact, installed-tree, behavior, path, and receipt digests. Operational helper, launcher, and command logs remain mode-protected and are omitted from public evidence.
 
 Every bundle in Jordan's two presets is required. Optional capability degradation inside a bundle remains possible only when declared, certified, tested, and visible. A brokered runtime crash receives bounded restart, then opens an Extension Circuit Breaker. A required bundle failure invalidates Live Main Acceptance and promotion.
 
@@ -149,16 +163,16 @@ The stable tailnet Nightly Extension Dashboard links to immutable run pages cont
 
 ## Implementation Slices
 
-| Slice | Deliverable                                                                                                        | Exit boundary                                                                                                                 |
-| ----- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| S1    | Public monorepo, immutable capability schemas, Host/Adapter/Bootstrap skeleton, split-lock and manifest schemas    | Contract tests prove versioning, graph resolution, and public/private state boundaries without product behavior               |
-| S2    | Catalog build, artifact provenance, installer transaction, trust/license/support metadata, admission workflow      | A tiny reference bundle can be built twice reproducibly, installed, refused, rolled back, and audited                         |
-| S3    | Brokered runtime, permission/secret broker, data lifecycle, activation, health, circuit breaker, Extension Manager | Fault tests prove isolation and lifecycle; integrated execution remains an explicit official-only exception                   |
-| S4    | `prompt-settings` tracer conversion and mixed-mode nightly assembly                                                | Clean upstream parity proves legacy and bundle forms are mutually exclusive and behavior-equivalent                           |
-| S5    | Public bundles converted one at a time; parent follow-ups folded into owners                                       | Each bundle passes its existing topic matrix, new platform contract, visuals, and clean-upstream certification before cutover |
-| S6    | Operator Overlay, autonomous promotion, drain, live Main proof, verified rollback                                  | Exact combined assembly promotes and recovers without exposing overlay or interrupting active work                            |
-| S7    | Authoring kit, reference bundles, contributor workflow, versioned docs and dashboard                               | A fresh contributor can scaffold, test, document, build, and submit without private repository knowledge                      |
-| S8    | On-the-Go conversion and eligible legacy replay retirement                                                         | All eligible topics are locked bundles; remaining evidence components have explicit platform ownership                        |
+| Slice | Deliverable                                                                                                             | Exit boundary                                                                                                                 |
+| ----- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| S1    | Public monorepo, immutable capability schemas, Host/Adapter/Bootstrap skeleton, split-lock and manifest schemas         | Contract tests prove versioning, graph resolution, and public/private state boundaries without product behavior               |
+| S2    | Catalog build, artifact provenance, installer transaction, trust/license/support metadata, admission workflow           | A tiny reference bundle can be built twice reproducibly, installed, refused, rolled back, and audited                         |
+| S3    | Brokered runtime, permission/secret broker, data lifecycle, activation, health, circuit breaker, Extension Manager      | Fault tests prove isolation and lifecycle; integrated execution remains an explicit official-only exception                   |
+| S4    | `prompt-settings` tracer conversion and mixed-mode nightly assembly                                                     | Clean upstream parity proves legacy and bundle forms are mutually exclusive and behavior-equivalent                           |
+| S5    | Public bundles converted one at a time; parent follow-ups folded into owners                                            | Each bundle passes its existing topic matrix, new platform contract, visuals, and clean-upstream certification before cutover |
+| S6    | Operator Overlay, verified Staging hold, approval-bound two-host Main transaction, complete drain, live proof, rollback | Exact combined assembly waits without touching Main, then promotes only after bound approval and recovers both hosts safely   |
+| S7    | Authoring kit, reference bundles, contributor workflow, versioned docs and dashboard                                    | A fresh contributor can scaffold, test, document, build, and submit without private repository knowledge                      |
+| S8    | On-the-Go conversion and eligible legacy replay retirement                                                              | All eligible topics are locked bundles; remaining evidence components have explicit platform ownership                        |
 
 No slice may exit with an uncovered stable test ID from [the catalog test contract](./t3-extension-catalog-test-contract.md) or from an affected topic plan.
 
@@ -169,7 +183,7 @@ No slice may exit with an uncovered stable test ID from [the catalog test contra
 - Split public/private locks can drift. The Combined Assembly Digest and transaction must bind and roll them back together.
 - Exact upstream certification can slow adoption. Known-good retention is intentional; weakening a required behavior is not an acceptable shortcut.
 - Converting commit-shaped topics directly would expose historical boundaries as product choices. Parent fold-ins and Platform Evidence Components prevent that.
-- Autonomous Main promotion has a larger blast radius than staging-only replay. Safe drain, exact-lock promotion, live proof, and complete verified rollback are one indivisible feature.
+- Main promotion has a larger blast radius than staging-only replay. A fresh approval bound to the exact held assembly, complete product drain, coordinated Linux/Mac snapshots, live proof on both hosts, and complete verified rollback are one indivisible feature.
 
 ## Definition Of Done
 
@@ -183,4 +197,4 @@ No slice may exit with an uncovered stable test ID from [the catalog test contra
 
 ## Accepted Decisions
 
-ADRs [0028 through 0063](../adr/README.md#extension-distribution) are normative for this design.
+ADRs [0028 through 0063](../adr/README.md#extension-distribution) remain the accepted baseline. Proposed ADR [0064](../adr/0064-hold-verified-staging-for-approved-two-host-main-promotion.md) operationally supersedes ADR 0044's no-approval language and narrows ADR 0060 when this amended hosted revision is explicitly accepted.

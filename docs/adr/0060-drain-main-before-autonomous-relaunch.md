@@ -1,6 +1,8 @@
 # Drain Main before autonomous relaunch
 
-Status: accepted
+Status: accepted on 2026-07-14; proposed to be narrowed by ADR 0064
+
+The drain remains mandatory, but proposed ADR 0064 moves it after fresh approval of an exact held Staging assembly and expands it to the complete product-owned work lifecycle on both durable Main hosts.
 
 Autonomous Extension Promotion must complete a Main Promotion Drain before mutating or relaunching Main. The drain stops admission of new interruptible work and waits within a declared bounded window for active agent turns, durable writes, extension migrations, streams, and other non-interruptible operations to reach a safe checkpoint. The promotion evidence records what was drained, the deadline, and the resulting durable state.
 
