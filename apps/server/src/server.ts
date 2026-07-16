@@ -105,6 +105,7 @@ import {
   persistServerRuntimeState,
 } from "./serverRuntimeState.ts";
 import { orchestrationHttpApiLayer } from "./orchestration/http.ts";
+import { gzipJsonResponseLayer } from "./localTopics/remoteAccess/httpCompression.ts";
 import * as NetService from "@t3tools/shared/Net";
 import * as RelayClient from "@t3tools/shared/relayClient";
 import {
@@ -515,6 +516,7 @@ export const makeRoutesLayer = Layer.unwrap(
 ).pipe(
   Layer.provide(OnTheGoProduction.layer),
   Layer.provide(PreviewAutomationBroker.layer),
+  Layer.provide(gzipJsonResponseLayer),
   Layer.provide(browserApiCorsLayer),
 );
 

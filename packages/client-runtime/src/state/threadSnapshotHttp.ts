@@ -9,17 +9,13 @@ import { HttpClient } from "effect/unstable/http";
 import type { PreparedConnection } from "../connection/model.ts";
 import { environmentEndpointUrl } from "../environment/endpoint.ts";
 import { ManagedRelayDpopSigner } from "../relay/managedRelay.ts";
+import { DEFAULT_THREAD_SNAPSHOT_TIMEOUT_MS } from "../localTopics/remoteAccess/threadDetailLoading.ts";
 import {
   executeEnvironmentHttpRequest,
   makeEnvironmentHttpApiClient,
   type RemoteEnvironmentRequestError,
 } from "../rpc/http.ts";
 import { buildEnvironmentAuthHeaders, withEnvironmentCredentials } from "./environmentHttpAuth.ts";
-
-// Bounded so a pathologically slow endpoint cannot block the (cheaper) socket
-// fallback for long. The cached thread renders while this runs, so the wait only
-// delays the transition to live data on the first open, not the initial paint.
-const DEFAULT_THREAD_SNAPSHOT_TIMEOUT_MS = 6_000;
 
 /**
  * Load a thread's detail snapshot over HTTP instead of embedding it in the

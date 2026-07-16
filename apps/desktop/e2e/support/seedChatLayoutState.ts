@@ -37,6 +37,7 @@ export const CHAT_LAYOUT_THREAD_TITLES = [
   "Layout history thread 5",
   "Layout history thread 6",
 ] as const;
+const OVERSIZED_THREAD_DETAIL = "Oversized task history payload. ".repeat(4_000);
 
 function commandId(id: string) {
   return CommandId.make(`cmd-e2e-chat-layout-${id}`);
@@ -87,7 +88,10 @@ function makeServerConfigLayer(runtime: ElectronHarnessRuntime, workspaceRoot: s
   );
 }
 
-export async function seedChatLayoutState(runtime: ElectronHarnessRuntime): Promise<void> {
+async function seedChatLayoutStateWithOptions(
+  runtime: ElectronHarnessRuntime,
+  options: { readonly oversizedFirstThread: boolean },
+): Promise<void> {
   const workspaceRoot = NodePath.join(runtime.rootDir, "chat-layout-workspace");
   await NodeFSP.mkdir(workspaceRoot, { recursive: true });
   await NodeFSP.writeFile(NodePath.join(workspaceRoot, "README.md"), "# chat layout\n");
@@ -135,7 +139,10 @@ export async function seedChatLayoutState(runtime: ElectronHarnessRuntime): Prom
         threadId,
         messageId: MessageId.make(`message-e2e-chat-layout-${threadNumber}`),
         turnId,
-        delta: `Seeded assistant response for layout thread ${threadNumber}.`,
+        delta:
+          options.oversizedFirstThread && threadNumber === 1
+            ? OVERSIZED_THREAD_DETAIL
+            : `Seeded assistant response for layout thread ${threadNumber}.`,
         createdAt,
       });
     }
@@ -177,4 +184,14 @@ export async function seedChatLayoutState(runtime: ElectronHarnessRuntime): Prom
   );
 
   await Effect.runPromise(program);
+}
+
+export async function seedChatLayoutState(runtime: ElectronHarnessRuntime): Promise<void> {
+  await seedChatLayoutStateWithOptions(runtime, { oversizedFirstThread: false });
+}
+
+export async function seedOversizedThreadDetailState(
+  runtime: ElectronHarnessRuntime,
+): Promise<void> {
+  await seedChatLayoutStateWithOptions(runtime, { oversizedFirstThread: true });
 }

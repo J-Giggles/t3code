@@ -10,12 +10,12 @@ import type { SidebarThreadSummary, Thread } from "../types";
 import { cn } from "../lib/utils";
 import { isLatestTurnSettled } from "../session-logic";
 import { resolveServerBackedAppStageLabel } from "../branding.logic";
+import { SIDEBAR_THREAD_PREWARM_LIMIT } from "../localTopics/remoteAccess/threadDetailLoading";
+
+export { SIDEBAR_THREAD_PREWARM_LIMIT } from "../localTopics/remoteAccess/threadDetailLoading";
 
 export const THREAD_SELECTION_SAFE_SELECTOR = "[data-thread-item], [data-thread-selection-safe]";
 export const THREAD_JUMP_HINT_SHOW_DELAY_MS = 100;
-// Visible sidebar rows are prewarmed into the thread-detail cache so opening a
-// nearby thread usually reuses an already-hot subscription.
-export const SIDEBAR_THREAD_PREWARM_LIMIT = 10;
 export type SidebarNewThreadEnvMode = "local" | "worktree";
 type SidebarProject = {
   id: string;
