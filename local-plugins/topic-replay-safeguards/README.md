@@ -31,6 +31,7 @@ Replay support follow-ups currently listed in the nightly manifest:
 - `27ed804757e681ec4976b3356294b3b2b0d4ed3e` `fix(topic-stack): skip clean rerere no-ops`
 - `622d211c57b99f1c085db53f20b6d68b49abf0de` `fix(topic-stack): make nightly control artifact-first`
 - `b7bf0438afb23363b65225318cedc4003c0a2bef` `fix(topic-stack): preserve prior nightly proof artifacts`
+- `83ed3db828020904b736f29e1ff55986426d2b34` `fix(topic-stack): tolerate ignored repair format targets`
 
 ## Added Features
 
@@ -67,6 +68,7 @@ Replay support follow-ups currently listed in the nightly manifest:
 - [x] Shared synchronous command execution keeps exit handling and audit output consistent across replay CLIs (`scripts/lib/command-runner.ts`, `scripts/reconcile-nightly-dependencies.ts`).
 - [x] Rerere-resolved cherry-picks that become clean no-ops are skipped without being mislabeled as conflicts (`scripts/lib/nightly-topic-stack.ts`, `scripts/lib/nightly-topic-stack.test.ts`).
 - [x] Existing headed and public proof directories remain non-material while the Nightly reset temporarily restores upstream ignore rules (`scripts/lib/nightly-worktree-status.ts`, `scripts/lib/nightly-topic-stack.test.ts`, `scripts/nightly-upstream-agent.test.ts`).
+- [x] Autonomous repair accepts Vite+'s exact ignored-target formatter result as a no-op while real formatter errors still fail closed (`scripts/lib/nightly-upstream-agent.ts`).
 
 ## Added Tests
 
@@ -77,6 +79,7 @@ Replay support follow-ups currently listed in the nightly manifest:
 - [x] Dependency reconciliation tests prove current upstream exact pins win while local-only dependencies survive (`scripts/lib/nightly-dependency-reconciliation.test.ts`).
 - [x] Nightly stack tests cover artifact-safe worktree checks, missing original-lane creation, and replay contract propagation (`scripts/lib/nightly-topic-stack.test.ts`).
 - [x] Nightly stack tests prove manifest control-plane paths are validated, copied after replay, and captured in a generated commit plus run artifact (`scripts/lib/local-topic-stack.test.ts`, `scripts/lib/nightly-topic-stack.test.ts`).
+- [x] Nightly agent tests distinguish ignored formatter targets such as `pnpm-lock.yaml` from real formatter failures (`scripts/nightly-upstream-agent.test.ts`).
 
 ## Component Entrypoints
 
