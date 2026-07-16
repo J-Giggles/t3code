@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Tailnet-only acceptance plan for approval-bound T3 Extension Catalog Main promotion."
+      content="Tailnet-only acceptance plan for catalog-exclusive autonomous T3 Extension Catalog Main promotion."
     />
     <title>T3 Extension Catalog — S6 amendment awaiting acceptance</title>
     <script>
@@ -477,12 +477,12 @@
 
       <header id="top">
         <div class="eyebrow">Material S6 amendment · GBT-37 · 2026-07-16</div>
-        <h1>Verify overnight. Hold Staging. Move Main only after exact approval.</h1>
+        <h1>Let this catalog upgrade Main. Keep every other path gated.</h1>
         <p class="lede">
           The catalog, package boundaries, twenty conversion plans, protected Operator Overlay, and
-          split-lock model remain unchanged. This revision corrects one consequential contract: a
-          fully verified candidate may wait unattended in durable Staging, but Main stays untouched
-          until Jordan freshly approves the exact held assembly.
+          split-lock model remain unchanged. This revision grants one narrow exception: only the
+          official T3 Extension Catalog coordinator may take its exact fully verified assembly from
+          durable Staging directly to Main. Every other Main-promotion path still requires approval.
         </p>
         <div class="callout danger">
           <strong>This revision is not yet accepted.</strong> Implementation remediation exists as
@@ -506,8 +506,8 @@
           <div class="value">3 × N/F/I</div>
         </div>
         <div class="metric">
-          <div class="label">Main changes before approval</div>
-          <div class="value">0</div>
+          <div class="label">Autonomous Main entry points</div>
+          <div class="value">1 · catalog only</div>
         </div>
       </div>
 
@@ -517,30 +517,29 @@
           <h2>The amended decision</h2>
         </div>
         <p class="intro">
-          Current repository policy already overrides ADR 0044's earlier no-human-approval language.
-          Proposed ADR 0064 makes the architecture truthful and durable.
+          Proposed ADR 0064 creates one explicit exception to repository policy and makes widening
+          that exception a new Material Extension Change.
         </p>
         <div class="decision-grid">
           <article class="decision">
-            <strong>Autonomy stops at durable Staging</strong>
+            <strong>Catalog autonomy reaches Main</strong>
             <p>
-              Nightly and Staging may assemble, activate, and verify the exact candidate. The
-              durable terminal state is <code>awaiting-main-approval</code>, never
-              <code>promoted</code>.
+              The official coordinator may continue from fully verified durable Staging through the
+              complete two-host Main transaction without waiting for another approval.
             </p>
           </article>
           <article class="decision">
-            <strong>Approval binds evidence, not a moving branch</strong>
+            <strong>The exception is not reusable</strong>
             <p>
-              Approval names the held record, revision, artifact vector, Public Base Lock, Private
-              Overlay Lock, Combined Assembly Digest, and both lane proofs.
+              A single-use eligibility record binds the coordinator, revision, artifacts, split
+              locks, behavior contract, Combined Assembly Digest, and both lane proofs.
             </p>
           </article>
           <article class="decision">
             <strong>Main is one Linux/Mac transaction</strong>
             <p>
-              After approval only, both durable hosts are drained, snapshotted, prepared, activated,
-              relaunched, and live-verified as one coordinated operation.
+              After eligibility is consumed, both durable hosts are drained, snapshotted, prepared,
+              activated, relaunched, and live-verified as one coordinated operation.
             </p>
           </article>
           <article class="decision">
@@ -559,16 +558,16 @@
           <h2>Promotion state machine</h2>
         </div>
         <p class="intro">
-          The approval boundary is a real persisted state, not a prompt inside a running command. No
-          Main-side preparation happens on its left.
+          Autonomous authority exists only inside the official catalog coordinator. Generic tools,
+          manual staging, topic-only replay, external callers, and configuration cannot mint it.
         </p>
         <figure class="diagram">
           <svg viewBox="0 0 1180 330" role="img" aria-labelledby="flow-title flow-desc">
-            <title id="flow-title">Approval-bound two-host Main promotion</title>
+            <title id="flow-title">Catalog-exclusive autonomous two-host Main promotion</title>
             <desc id="flow-desc">
-              A candidate passes durable Nightly and Staging, waits for exact approval without
-              touching Main, then drains and snapshots Linux and Mac, activates and verifies both,
-              or restores both on failure.
+              A catalog candidate passes durable Nightly and Staging, consumes single-use exact
+              eligibility, then drains and snapshots Linux and Mac, activates and verifies both, or
+              restores both on failure. Non-catalog callers are refused without touching Main.
             </desc>
             <defs>
               <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto">
@@ -584,14 +583,14 @@
             <text class="sub" x="365" y="116" text-anchor="middle">same exact assembly</text>
             <line x1="460" y1="103" x2="508" y2="103" marker-end="url(#arrow)" />
             <rect class="node held" x="520" y="50" width="210" height="106" rx="12" />
-            <text x="625" y="84" text-anchor="middle">awaiting-main-approval</text>
-            <text class="sub" x="625" y="108" text-anchor="middle">persisted exact hold</text>
-            <text class="sub" x="625" y="126" text-anchor="middle">Main remains untouched</text>
+            <text x="625" y="84" text-anchor="middle">Catalog eligibility</text>
+            <text class="sub" x="625" y="108" text-anchor="middle">exact + single-use</text>
+            <text class="sub" x="625" y="126" text-anchor="middle">coordinator-owned only</text>
             <line x1="730" y1="103" x2="778" y2="103" marker-end="url(#arrow)" />
             <rect class="node live" x="790" y="50" width="170" height="106" rx="12" />
-            <text x="875" y="83" text-anchor="middle">Fresh approval</text>
-            <text class="sub" x="875" y="107" text-anchor="middle">exact evidence binding</text>
-            <text class="sub" x="875" y="125" text-anchor="middle">then complete drain</text>
+            <text x="875" y="83" text-anchor="middle">Complete drain</text>
+            <text class="sub" x="875" y="107" text-anchor="middle">all product-owned work</text>
+            <text class="sub" x="875" y="125" text-anchor="middle">then snapshot both</text>
             <line x1="960" y1="103" x2="1008" y2="103" marker-end="url(#arrow)" />
             <rect class="node live" x="1020" y="50" width="140" height="106" rx="12" />
             <text x="1090" y="83" text-anchor="middle">Both hosts</text>
@@ -605,17 +604,15 @@
             </text>
             <path d="M625 156 V283 H510" marker-end="url(#arrow)" />
             <text class="sub" x="610" y="202" text-anchor="end">
-              missing / stale / tampered approval
+              non-catalog / stale / replayed eligibility
             </text>
             <rect class="node" x="290" y="254" width="220" height="58" rx="12" />
             <text x="400" y="280" text-anchor="middle">Refuse without touching Main</text>
-            <text class="sub" x="400" y="298" text-anchor="middle">
-              hold evidence remains immutable
-            </text>
+            <text class="sub" x="400" y="298" text-anchor="middle">evidence remains immutable</text>
           </svg>
           <figcaption>
-            The exact assembly crosses the live boundary once. Approval failure is a safe refusal;
-            live failure is a coordinated two-host recovery.
+            The exact assembly crosses the live boundary once. Eligibility failure is a safe
+            refusal; live failure is a coordinated two-host recovery.
           </figcaption>
         </figure>
       </section>
@@ -647,11 +644,11 @@
             </p>
           </article>
           <article class="slice">
-            <strong>C · Persistent exact approval hold</strong>
+            <strong>C · Single-use catalog eligibility</strong>
             <p>
-              Persist the held Staging record and approval receipt across restart. Resume from held
-              proofs without re-resolution or re-staging. Refuse stale, replayed, missing, or
-              tampered approval.
+              Mint and consume authority only inside the official coordinator after complete proof.
+              Refuse generic, manual, external, non-catalog, stale, replayed, or tampered use
+              without touching Main.
             </p>
           </article>
           <article class="slice">
@@ -693,14 +690,14 @@
             <tbody>
               <tr>
                 <td><strong>ECAT-UT-017</strong></td>
-                <td>Verified hold and approved Main</td>
+                <td>Catalog-exclusive autonomous Main</td>
                 <td>
-                  <span class="test-id">ECAT-UT-017-N</span>hold verified Staging, then promote
-                  after exact approval
+                  <span class="test-id">ECAT-UT-017-N</span>promote an eligible fully verified
+                  catalog assembly and prove both Main hosts
                 </td>
                 <td>
-                  <span class="test-id">ECAT-UT-017-F</span>refuse invalid approval or incomplete
-                  evidence
+                  <span class="test-id">ECAT-UT-017-F</span>refuse incomplete evidence and every
+                  non-catalog or non-eligible caller
                 </td>
                 <td>
                   <span class="test-id">ECAT-UT-017-I</span>all lanes bind the same artifacts and
@@ -772,18 +769,18 @@
               </tr>
               <tr>
                 <td><strong>ECAT-UT-038</strong></td>
-                <td>Exact held-assembly approval</td>
+                <td>Single-use catalog-only eligibility</td>
                 <td>
-                  <span class="test-id">ECAT-UT-038-N</span>resume only when all held evidence
-                  bindings match
+                  <span class="test-id">ECAT-UT-038-N</span>mint and consume eligibility only for
+                  the exact fully proven official catalog attempt
                 </td>
                 <td>
-                  <span class="test-id">ECAT-UT-038-F</span>refuse missing, stale, replayed, or
-                  tampered approval
+                  <span class="test-id">ECAT-UT-038-F</span>refuse manual, generic, external,
+                  non-catalog, stale, replayed, or tampered use
                 </td>
                 <td>
-                  <span class="test-id">ECAT-UT-038-I</span>hold survives restart; resume never
-                  re-resolves or re-stages
+                  <span class="test-id">ECAT-UT-038-I</span>only the coordinator can mint or consume
+                  eligibility and configuration cannot widen it
                 </td>
               </tr>
               <tr>
@@ -799,7 +796,7 @@
                 </td>
                 <td>
                   <span class="test-id">ECAT-UT-039-I</span>neither host is promoted unless both run
-                  the same approved assembly
+                  the same eligible assembly
                 </td>
               </tr>
             </tbody>
@@ -898,8 +895,8 @@
         </div>
         <div class="checklist">
           <div>
-            Accepting this revision supersedes ADR 0044's no-approval rule and narrows ADR 0060
-            through proposed ADR 0064.
+            Accepting this revision narrows ADR 0044 to one catalog-owned exception and expands ADR
+            0060's complete drain across both durable hosts.
           </div>
           <div>
             No draft remediation is committed as accepted implementation until this exact hosted
@@ -910,8 +907,8 @@
             tests, build, and two-axis review before durable staging.
           </div>
           <div>
-            Main still requires a later fresh approval of the exact verified Staging revision, its
-            evidence, and expected downtime.
+            Only the exact fully verified Extension Catalog pipeline may continue directly to Main;
+            every other staging, topic, manual, generic, or external path still requires approval.
           </div>
           <div>
             Durable promotion uses clean worktrees, backup refs and snapshots, no re-resolution, and
@@ -924,13 +921,13 @@
         </div>
         <div class="callout">
           <strong>Decision requested:</strong> explicitly accept this hosted revision to authorize
-          completing and committing the S6 remediation. This acceptance does not itself authorize
-          any future Staging-to-Main move.
+          completing and committing the S6 remediation, including this catalog-only autonomous Main
+          exception. It grants no autonomous authority to any other promotion path.
         </div>
       </section>
 
       <footer>
-        GBT-37 · Proposed source revision <code>dc47224765dfcaa9eda1a07bfc576f461d099524</code> ·
+        GBT-37 · Proposed source revision <code>97c4e31637abb34bb872deec493d77a5be710ca9</code> ·
         Prior accepted design <code>27e91b6dc53d8f672463d7c5d88fb6a1028354ee</code> · Prior accepted
         hosted artifact
         <code>7294881cec5fb4e99d29eddf9f32945ed5e9175f6b0ed064ff96669ca4a4809b</code> · Generated
