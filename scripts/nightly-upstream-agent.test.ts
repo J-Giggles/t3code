@@ -21,6 +21,7 @@ import {
   formatTelegramSummary,
   formatUpstreamTelegramNotice,
   formatUpstreamTelegramNoticeMessages,
+  isIgnoredAutonomousRepairFormatResult,
   isSafeAutonomousRepairPath,
   normalizeConflictBriefForTelegram,
   outOfScopeAutonomousRepairPaths,
@@ -197,6 +198,28 @@ describe("nightly-upstream-agent", () => {
     expect(
       existingAutonomousRepairFiles(root, ["docs/repair.md", "docs/deleted.md", "docs/repair.md"]),
     ).toEqual(["docs/repair.md"]);
+  });
+
+  it("accepts formatter no-ops only when every repair path is ignored", () => {
+    expect(
+      isIgnoredAutonomousRepairFormatResult({
+        command: "vp fmt pnpm-lock.yaml",
+        cwd: "/repo/.worktrees/nightly",
+        exitCode: 2,
+        stdout: "",
+        stderr:
+          "Expected at least one target file. All matched files may have been excluded by ignore rules.",
+      }),
+    ).toBe(true);
+    expect(
+      isIgnoredAutonomousRepairFormatResult({
+        command: "vp fmt apps/web/src/example.ts",
+        cwd: "/repo/.worktrees/nightly",
+        exitCode: 1,
+        stdout: "",
+        stderr: "Syntax error in apps/web/src/example.ts",
+      }),
+    ).toBe(false);
   });
 
   it("bounds repair attempts per conflict instead of per nightly run", () => {

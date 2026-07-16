@@ -105,6 +105,13 @@ export interface AutonomousRepairWorkerResult {
   readonly rerereReady: boolean;
 }
 
+export function isIgnoredAutonomousRepairFormatResult(result: CommandResult): boolean {
+  if (result.exitCode === 0) return false;
+  return /Expected at least one target file\. All matched files may have been excluded by ignore rules\./u.test(
+    `${result.stdout}\n${result.stderr}`,
+  );
+}
+
 export interface AutonomousRepairAttempt {
   readonly attempt: number;
   readonly topicId: string;
@@ -2165,7 +2172,7 @@ function stageDeclaredRepairPaths(input: {
       timeoutMs: 240_000,
     });
     input.commandResults.push(formatResult);
-    if (formatResult.exitCode !== 0) {
+    if (formatResult.exitCode !== 0 && !isIgnoredAutonomousRepairFormatResult(formatResult)) {
       return {
         ok: false,
         message:
