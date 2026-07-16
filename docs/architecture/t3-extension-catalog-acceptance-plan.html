@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Tailnet-only acceptance plan for approval-bound T3 Extension Catalog Main promotion."
+    />
+    <title>T3 Extension Catalog — S6 amendment awaiting acceptance</title>
+    <script>
+      (() => {
+        const key = "t3-extension-catalog-plan-theme";
+        let saved = null;
+        try {
+          saved = localStorage.getItem(key);
+        } catch (_) {}
+        const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.classList.toggle("dark", dark);
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f5ef;
+        --paper: #ffffff;
+        --ink: #3d3d3a;
+        --title: #171715;
+        --muted: #77766f;
+        --line: #d5d2c8;
+        --wash: #efede5;
+        --clay: #d97757;
+        --clay-dark: #a94f35;
+        --clay-soft: #f4dfd6;
+        --olive: #788c5d;
+        --olive-soft: #e6ebdf;
+        --amber: #a56c22;
+        --amber-soft: #f5e7cc;
+        --rust: #a9473c;
+        --shadow: 0 18px 54px rgb(28 27 24 / 8%);
+        --serif: ui-serif, Georgia, "Times New Roman", serif;
+        --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+        --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      }
+      html.dark {
+        color-scheme: dark;
+        --bg: #141412;
+        --paper: #1c1c19;
+        --ink: #d8d5cc;
+        --title: #f3f0e7;
+        --muted: #aaa79e;
+        --line: #3b3a35;
+        --wash: #272620;
+        --clay: #e58b69;
+        --clay-dark: #f0a080;
+        --clay-soft: #3d2922;
+        --olive: #9caf7f;
+        --olive-soft: #283124;
+        --amber: #e0ad64;
+        --amber-soft: #3a3021;
+        --rust: #e1786d;
+        --shadow: 0 22px 65px rgb(0 0 0 / 28%);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.58 var(--sans);
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      button {
+        font: inherit;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+      }
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: var(--wash);
+        overflow-wrap: anywhere;
+      }
+      .page {
+        width: min(1160px, calc(100% - 36px));
+        margin: auto;
+        padding: 20px 0 96px;
+      }
+      .topbar {
+        position: sticky;
+        top: 10px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 48px;
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--paper) 88%, transparent);
+        box-shadow: 0 8px 30px rgb(20 20 18 / 7%);
+        backdrop-filter: blur(16px);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        text-decoration: none;
+      }
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 29px;
+        height: 29px;
+        border-radius: 8px;
+        background: var(--clay);
+        color: white;
+        font: italic 18px var(--serif);
+      }
+      .brand-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font: 650 11px var(--mono);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .status,
+      .theme {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
+      }
+      .status {
+        padding: 7px 10px;
+        color: var(--amber);
+        font: 650 11px var(--mono);
+      }
+      .theme {
+        width: 34px;
+        height: 34px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      h1,
+      h2,
+      h3 {
+        color: var(--title);
+        font-family: var(--serif);
+        font-weight: 520;
+      }
+      h1 {
+        margin: 10px 0 20px;
+        font-size: clamp(40px, 6vw, 68px);
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+      }
+      h2 {
+        margin: 0;
+        font-size: 29px;
+      }
+      h3 {
+        margin: 0 0 7px;
+        font-size: 19px;
+      }
+      .eyebrow,
+      .label,
+      .section-num,
+      th,
+      .test-id {
+        font-family: var(--mono);
+      }
+      .eyebrow {
+        color: var(--clay-dark);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .lede {
+        max-width: 860px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+      .callout {
+        margin: 24px 0;
+        padding: 17px 19px;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--amber);
+        border-radius: 11px;
+        background: var(--amber-soft);
+      }
+      .callout.safe {
+        border-left-color: var(--olive);
+        background: var(--olive-soft);
+      }
+      .callout.danger {
+        border-left-color: var(--rust);
+        background: var(--clay-soft);
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin: 34px 0 60px;
+      }
+      .metric,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+      }
+      .metric {
+        padding: 17px;
+      }
+      .label {
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .value {
+        margin-top: 5px;
+        color: var(--title);
+        font-weight: 750;
+      }
+      section {
+        margin: 62px 0;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      .section-num {
+        padding: 3px 8px;
+        border-radius: 7px;
+        background: var(--wash);
+        color: var(--clay-dark);
+        font-size: 11px;
+      }
+      .intro {
+        max-width: 840px;
+        margin: 0 0 22px;
+        color: var(--muted);
+      }
+      .panel {
+        padding: 20px;
+      }
+      .decision-grid,
+      .slice-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+      .decision,
+      .slice {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: var(--paper);
+      }
+      .decision strong,
+      .slice strong {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--title);
+      }
+      .decision p,
+      .slice p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .diagram {
+        overflow-x: auto;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+      }
+      .diagram svg {
+        display: block;
+        min-width: 920px;
+        width: 100%;
+        height: auto;
+      }
+      .diagram .node {
+        fill: var(--paper);
+        stroke: var(--line);
+        stroke-width: 2;
+      }
+      .diagram .verified {
+        fill: var(--olive-soft);
+        stroke: var(--olive);
+      }
+      .diagram .held {
+        fill: var(--amber-soft);
+        stroke: var(--amber);
+      }
+      .diagram .live {
+        fill: var(--clay-soft);
+        stroke: var(--clay);
+      }
+      .diagram .rollback {
+        fill: var(--wash);
+        stroke: var(--rust);
+      }
+      .diagram text {
+        fill: var(--title);
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .diagram .sub {
+        fill: var(--muted);
+        font-size: 10px;
+      }
+      .diagram line,
+      .diagram path {
+        stroke: var(--muted);
+        stroke-width: 2;
+        fill: none;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--paper);
+      }
+      table {
+        width: 100%;
+        min-width: 1040px;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 12px 13px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        background: var(--wash);
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      .test-id {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--clay-dark);
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .topic-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .topic {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper);
+        text-decoration: none;
+      }
+      .topic:hover {
+        border-color: var(--clay);
+      }
+      .topic .n {
+        color: var(--clay-dark);
+        font: 700 11px var(--mono);
+      }
+      .topic strong {
+        display: block;
+        margin-top: 7px;
+        color: var(--title);
+        font-size: 13px;
+      }
+      .topic span:last-child {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .checklist {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .checklist div {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+      }
+      footer {
+        margin-top: 70px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font: 11px/1.7 var(--mono);
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 900px) {
+        .topic-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 760px) {
+        .metrics,
+        .decision-grid,
+        .slice-grid,
+        .checklist {
+          grid-template-columns: 1fr 1fr;
+        }
+        .page {
+          width: min(100% - 22px, 1160px);
+        }
+        .status {
+          display: none;
+        }
+      }
+      @media (max-width: 520px) {
+        .metrics,
+        .decision-grid,
+        .slice-grid,
+        .checklist,
+        .topic-grid {
+          grid-template-columns: 1fr;
+        }
+        h1 {
+          font-size: 40px;
+        }
+        .topbar {
+          top: 5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topbar">
+        <a class="brand" href="#top"
+          ><span class="mark">T3</span
+          ><span class="brand-text">Extension Catalog acceptance plan</span></a
+        >
+        <div class="top-actions">
+          <span class="status">Awaiting explicit acceptance</span
+          ><button class="theme" id="theme" aria-label="Toggle dark mode" title="Toggle dark mode">
+            ◐
+          </button>
+        </div>
+      </div>
+
+      <header id="top">
+        <div class="eyebrow">Material S6 amendment · GBT-37 · 2026-07-16</div>
+        <h1>Verify overnight. Hold Staging. Move Main only after exact approval.</h1>
+        <p class="lede">
+          The catalog, package boundaries, twenty conversion plans, protected Operator Overlay, and
+          split-lock model remain unchanged. This revision corrects one consequential contract: a
+          fully verified candidate may wait unattended in durable Staging, but Main stays untouched
+          until Jordan freshly approves the exact held assembly.
+        </p>
+        <div class="callout danger">
+          <strong>This revision is not yet accepted.</strong> Implementation remediation exists as
+          an uncommitted draft and has focused test evidence, but it must not be committed as the
+          accepted S6 result or executed against durable Nightly, Staging, or Main until this exact
+          hosted revision is explicitly accepted.
+        </div>
+      </header>
+
+      <div class="metrics" aria-label="Plan metrics">
+        <div class="metric">
+          <div class="label">Topic plans retained</div>
+          <div class="value">20</div>
+        </div>
+        <div class="metric">
+          <div class="label">Catalog test features</div>
+          <div class="value">39</div>
+        </div>
+        <div class="metric">
+          <div class="label">New S6 feature contracts</div>
+          <div class="value">3 × N/F/I</div>
+        </div>
+        <div class="metric">
+          <div class="label">Main changes before approval</div>
+          <div class="value">0</div>
+        </div>
+      </div>
+
+      <section>
+        <div class="section-head">
+          <span class="section-num">01</span>
+          <h2>The amended decision</h2>
+        </div>
+        <p class="intro">
+          Current repository policy already overrides ADR 0044's earlier no-human-approval language.
+          Proposed ADR 0064 makes the architecture truthful and durable.
+        </p>
+        <div class="decision-grid">
+          <article class="decision">
+            <strong>Autonomy stops at durable Staging</strong>
+            <p>
+              Nightly and Staging may assemble, activate, and verify the exact candidate. The
+              durable terminal state is <code>awaiting-main-approval</code>, never
+              <code>promoted</code>.
+            </p>
+          </article>
+          <article class="decision">
+            <strong>Approval binds evidence, not a moving branch</strong>
+            <p>
+              Approval names the held record, revision, artifact vector, Public Base Lock, Private
+              Overlay Lock, Combined Assembly Digest, and both lane proofs.
+            </p>
+          </article>
+          <article class="decision">
+            <strong>Main is one Linux/Mac transaction</strong>
+            <p>
+              After approval only, both durable hosts are drained, snapshotted, prepared, activated,
+              relaunched, and live-verified as one coordinated operation.
+            </p>
+          </article>
+          <article class="decision">
+            <strong>Rollback restores both hosts</strong>
+            <p>
+              If either host fails after activation starts, both snapshots return and the previous
+              Known-Good Assembly is verified live on both.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <span class="section-num">02</span>
+          <h2>Promotion state machine</h2>
+        </div>
+        <p class="intro">
+          The approval boundary is a real persisted state, not a prompt inside a running command. No
+          Main-side preparation happens on its left.
+        </p>
+        <figure class="diagram">
+          <svg viewBox="0 0 1180 330" role="img" aria-labelledby="flow-title flow-desc">
+            <title id="flow-title">Approval-bound two-host Main promotion</title>
+            <desc id="flow-desc">
+              A candidate passes durable Nightly and Staging, waits for exact approval without
+              touching Main, then drains and snapshots Linux and Mac, activates and verifies both,
+              or restores both on failure.
+            </desc>
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto">
+                <path d="M0,0 L0,8 L8,4 z" fill="var(--muted)" stroke="none" />
+              </marker>
+            </defs>
+            <rect class="node verified" x="20" y="62" width="190" height="82" rx="12" />
+            <text x="115" y="94" text-anchor="middle">Durable Nightly</text>
+            <text class="sub" x="115" y="116" text-anchor="middle">real activation + proof</text>
+            <line x1="210" y1="103" x2="258" y2="103" marker-end="url(#arrow)" />
+            <rect class="node verified" x="270" y="62" width="190" height="82" rx="12" />
+            <text x="365" y="94" text-anchor="middle">Durable Staging</text>
+            <text class="sub" x="365" y="116" text-anchor="middle">same exact assembly</text>
+            <line x1="460" y1="103" x2="508" y2="103" marker-end="url(#arrow)" />
+            <rect class="node held" x="520" y="50" width="210" height="106" rx="12" />
+            <text x="625" y="84" text-anchor="middle">awaiting-main-approval</text>
+            <text class="sub" x="625" y="108" text-anchor="middle">persisted exact hold</text>
+            <text class="sub" x="625" y="126" text-anchor="middle">Main remains untouched</text>
+            <line x1="730" y1="103" x2="778" y2="103" marker-end="url(#arrow)" />
+            <rect class="node live" x="790" y="50" width="170" height="106" rx="12" />
+            <text x="875" y="83" text-anchor="middle">Fresh approval</text>
+            <text class="sub" x="875" y="107" text-anchor="middle">exact evidence binding</text>
+            <text class="sub" x="875" y="125" text-anchor="middle">then complete drain</text>
+            <line x1="960" y1="103" x2="1008" y2="103" marker-end="url(#arrow)" />
+            <rect class="node live" x="1020" y="50" width="140" height="106" rx="12" />
+            <text x="1090" y="83" text-anchor="middle">Both hosts</text>
+            <text class="sub" x="1090" y="107" text-anchor="middle">snapshot → activate</text>
+            <text class="sub" x="1090" y="125" text-anchor="middle">relaunch → verify</text>
+            <path d="M1090 156 V214 H875 V254" marker-end="url(#arrow)" />
+            <rect class="node rollback" x="760" y="254" width="230" height="58" rx="12" />
+            <text x="875" y="280" text-anchor="middle">Failure: restore both snapshots</text>
+            <text class="sub" x="875" y="298" text-anchor="middle">
+              verify previous Known-Good on both
+            </text>
+            <path d="M625 156 V283 H510" marker-end="url(#arrow)" />
+            <text class="sub" x="610" y="202" text-anchor="end">
+              missing / stale / tampered approval
+            </text>
+            <rect class="node" x="290" y="254" width="220" height="58" rx="12" />
+            <text x="400" y="280" text-anchor="middle">Refuse without touching Main</text>
+            <text class="sub" x="400" y="298" text-anchor="middle">
+              hold evidence remains immutable
+            </text>
+          </svg>
+          <figcaption>
+            The exact assembly crosses the live boundary once. Approval failure is a safe refusal;
+            live failure is a coordinated two-host recovery.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <span class="section-num">03</span>
+          <h2>Implementation slices in this amendment</h2>
+        </div>
+        <p class="intro">
+          These are narrow S6 components in the public extensions monorepo and T3 adapter. They
+          remain package-owned so they can be reattached after upstream T3 Code changes.
+        </p>
+        <div class="slice-grid">
+          <article class="slice">
+            <strong>A · Protected activation receipts</strong>
+            <p>
+              Remove every artifact-owned path from an exact checkout, reinstall the immutable
+              closure, run frozen install, focused behavior, and launcher proof from that activated
+              tree, then independently verify all receipt digests.
+            </p>
+          </article>
+          <article class="slice">
+            <strong>B · Complete product drain lifecycle</strong>
+            <p>
+              Track orchestration/SQLite transactions, provider turns through processed terminal
+              events, ingestion, migrations, streams, reactors, deletion, checkpoints, and
+              registered background work under inherited admission authority.
+            </p>
+          </article>
+          <article class="slice">
+            <strong>C · Persistent exact approval hold</strong>
+            <p>
+              Persist the held Staging record and approval receipt across restart. Resume from held
+              proofs without re-resolution or re-staging. Refuse stale, replayed, missing, or
+              tampered approval.
+            </p>
+          </article>
+          <article class="slice">
+            <strong>D · Durable two-host adapter</strong>
+            <p>
+              Require one Linux primary and one distinct Mac launcher host. Prepare both before
+              activating either; preserve both snapshots until both live proofs accept the same
+              Known-Good Assembly.
+            </p>
+          </article>
+        </div>
+        <div class="callout safe">
+          <strong>Privacy boundary:</strong> helper commands, launcher output, artifact locations,
+          and operational logs stay in mode-<code>0600</code> protected evidence outside the public
+          ledger. Public evidence carries only safe receipts and digests.
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <span class="section-num">04</span>
+          <h2>Stable unit-test acceptance contract</h2>
+        </div>
+        <p class="intro">
+          The accepted baseline remains in force. These S6 rows are modified or added by this
+          revision; each has a normal path, refusal/failure path, and durable/safety invariant.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Behavior</th>
+                <th>Normal</th>
+                <th>Refusal / failure</th>
+                <th>Invariant</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ECAT-UT-017</strong></td>
+                <td>Verified hold and approved Main</td>
+                <td>
+                  <span class="test-id">ECAT-UT-017-N</span>hold verified Staging, then promote
+                  after exact approval
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-017-F</span>refuse invalid approval or incomplete
+                  evidence
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-017-I</span>all lanes bind the same artifacts and
+                  locks without re-resolution
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ECAT-UT-018</strong></td>
+                <td>Complete verified rollback</td>
+                <td>
+                  <span class="test-id">ECAT-UT-018-N</span>restore and prove the previous complete
+                  assembly
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-018-F</span>stop and critically alert when recovery
+                  proof fails
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-018-I</span>failed candidate and rollback evidence
+                  remain immutable
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ECAT-UT-033</strong></td>
+                <td>Complete bounded drain</td>
+                <td>
+                  <span class="test-id">ECAT-UT-033-N</span>drain all tracked product-owned work
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-033-F</span>hold when any tracked work misses the
+                  deadline
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-033-I</span>nested admitted work finishes; unrelated
+                  work and early reopen are refused
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ECAT-UT-036</strong></td>
+                <td>Split locks and combined digest</td>
+                <td>
+                  <span class="test-id">ECAT-UT-036-N</span>assemble and verify both locks under one
+                  digest
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-036-F</span>reject drift, leakage, or missing
+                  protected lock
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-036-I</span>promotion and rollback move both lock
+                  states together
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ECAT-UT-037</strong></td>
+                <td>Protected real activation receipt</td>
+                <td>
+                  <span class="test-id">ECAT-UT-037-N</span>reinstall and prove behavior from
+                  activated checkout
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-037-F</span>reject any
+                  artifact/tree/path/behavior/receipt digest drift
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-037-I</span>metadata alone cannot prove health;
+                  private logs never publish
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ECAT-UT-038</strong></td>
+                <td>Exact held-assembly approval</td>
+                <td>
+                  <span class="test-id">ECAT-UT-038-N</span>resume only when all held evidence
+                  bindings match
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-038-F</span>refuse missing, stale, replayed, or
+                  tampered approval
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-038-I</span>hold survives restart; resume never
+                  re-resolves or re-stages
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ECAT-UT-039</strong></td>
+                <td>Durable Linux/Mac transaction</td>
+                <td>
+                  <span class="test-id">ECAT-UT-039-N</span>snapshot, prepare, activate, relaunch,
+                  and verify both
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-039-F</span>restore and verify both after either
+                  host fails
+                </td>
+                <td>
+                  <span class="test-id">ECAT-UT-039-I</span>neither host is promoted unless both run
+                  the same approved assembly
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <span class="section-num">05</span>
+          <h2>Twenty topic conversion plans remain unchanged</h2>
+        </div>
+        <p class="intro">
+          The package/component strategy, public/private classification, parity gates, visuals, and
+          per-topic test matrices from the accepted 2026-07-14 plan stay authoritative.
+        </p>
+        <div class="topic-grid">
+          <a class="topic" href="t3code-nightly-topic-remote-access.html"
+            ><span class="n">01</span><strong>Remote access</strong><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-dev-launch.html"
+            ><span class="n">02</span><strong>Dev launch</strong><span>operator overlay</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-runtime.html"
+            ><span class="n">03</span><strong>Runtime</strong><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-project-git.html"
+            ><span class="n">04</span><strong>Project Git</strong><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-provider-settings.html"
+            ><span class="n">05</span><strong>Provider settings</strong
+            ><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-composer.html"
+            ><span class="n">06</span><strong>Composer</strong><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-prompt-settings.html"
+            ><span class="n">07</span><strong>Prompt settings</strong><span>tracer bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-app-automation.html"
+            ><span class="n">08</span><strong>App automation</strong><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-project-agent-files.html"
+            ><span class="n">09</span><strong>Project agent files</strong
+            ><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-observability.html"
+            ><span class="n">10</span><strong>Observability</strong><span>public bundle</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-desktop-tests.html"
+            ><span class="n">11</span><strong>Desktop tests</strong
+            ><span>platform evidence</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-operations-docs.html"
+            ><span class="n">12</span><strong>Operations docs</strong
+            ><span>platform evidence</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-remote-access-reserved-routes.html"
+            ><span class="n">13</span><strong>Reserved routes</strong
+            ><span>remote-access fold-in</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-remote-access-staging-tailnet-paths.html"
+            ><span class="n">14</span><strong>Tailnet paths</strong
+            ><span>remote-access fold-in</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-runtime-staging-identity.html"
+            ><span class="n">15</span><strong>Staging identity</strong
+            ><span>runtime fold-in</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-remote-access-staging-asset-prefixes.html"
+            ><span class="n">16</span><strong>Asset prefixes</strong
+            ><span>remote-access fold-in</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-remote-access-public-verifier-hardening.html"
+            ><span class="n">17</span><strong>Public verifier</strong
+            ><span>remote-access fold-in</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-topic-replay-safeguards.html"
+            ><span class="n">18</span><strong>Replay safeguards</strong
+            ><span>platform evidence</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-nightly-omarchy-launcher.html"
+            ><span class="n">19</span><strong>Nightly launcher</strong
+            ><span>operator overlay</span></a
+          >
+          <a class="topic" href="t3code-nightly-topic-on-the-go.html"
+            ><span class="n">20</span><strong>On-the-Go</strong><span>future public bundle</span></a
+          >
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <span class="section-num">06</span>
+          <h2>Acceptance and stop conditions</h2>
+        </div>
+        <div class="checklist">
+          <div>
+            Accepting this revision supersedes ADR 0044's no-approval rule and narrows ADR 0060
+            through proposed ADR 0064.
+          </div>
+          <div>
+            No draft remediation is committed as accepted implementation until this exact hosted
+            checksum is approved.
+          </div>
+          <div>
+            After acceptance, the extension worktree must pass its complete checks, typecheck,
+            tests, build, and two-axis review before durable staging.
+          </div>
+          <div>
+            Main still requires a later fresh approval of the exact verified Staging revision, its
+            evidence, and expected downtime.
+          </div>
+          <div>
+            Durable promotion uses clean worktrees, backup refs and snapshots, no re-resolution, and
+            one coordinated Linux/Mac transaction.
+          </div>
+          <div>
+            Completion requires live public proof on both hosts plus verified rollback evidence for
+            every exercised failure path.
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Decision requested:</strong> explicitly accept this hosted revision to authorize
+          completing and committing the S6 remediation. This acceptance does not itself authorize
+          any future Staging-to-Main move.
+        </div>
+      </section>
+
+      <footer>
+        GBT-37 · Proposed source revision <code>dc47224765dfcaa9eda1a07bfc576f461d099524</code> ·
+        Prior accepted design <code>27e91b6dc53d8f672463d7c5d88fb6a1028354ee</code> · Prior accepted
+        hosted artifact
+        <code>7294881cec5fb4e99d29eddf9f32945ed5e9175f6b0ed064ff96669ca4a4809b</code> · Generated
+        2026-07-16
+      </footer>
+    </main>
+    <script>
+      const key = "t3-extension-catalog-plan-theme";
+      const root = document.documentElement;
+      const button = document.getElementById("theme");
+      function sync() {
+        button.title = root.classList.contains("dark") ? "Use light theme" : "Use dark theme";
+      }
+      sync();
+      button.addEventListener("click", () => {
+        root.classList.toggle("dark");
+        try {
+          localStorage.setItem(key, root.classList.contains("dark") ? "dark" : "light");
+        } catch (_) {}
+        sync();
+      });
+    </script>
+  </body>
+</html>
