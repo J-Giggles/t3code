@@ -30,6 +30,7 @@ Replay support follow-ups currently listed in the nightly manifest:
 - `820348b2b8d662e10f95033dbb67d0bbe8d6c296` `feat(topic-stack): automate nightly upstream repair`
 - `27ed804757e681ec4976b3356294b3b2b0d4ed3e` `fix(topic-stack): skip clean rerere no-ops`
 - `622d211c57b99f1c085db53f20b6d68b49abf0de` `fix(topic-stack): make nightly control artifact-first`
+- `b7bf0438afb23363b65225318cedc4003c0a2bef` `fix(topic-stack): preserve prior nightly proof artifacts`
 
 ## Added Features
 
