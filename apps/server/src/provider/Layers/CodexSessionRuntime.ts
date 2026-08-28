@@ -19,6 +19,7 @@ import {
 } from "@t3tools/contracts";
 import { resolveSpawnCommand } from "@t3tools/shared/shell";
 import { normalizeModelSlug } from "@t3tools/shared/model";
+import { collectComposerInlineTokens } from "@t3tools/shared/composerInlineTokens";
 import { PROMPT_IDS, resolvePromptContent } from "@t3tools/shared/prompts";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -361,16 +362,37 @@ export function buildTurnStartParams(input: {
   readonly effort?: EffectCodexSchema.V2TurnStartParams__ReasoningEffort;
   readonly interactionMode?: ProviderInteractionMode;
   readonly promptOverrides?: PromptOverrides | undefined;
+  readonly skills?: ReadonlyArray<{
+    readonly name: string;
+    readonly path: string;
+  }>;
 }): Effect.Effect<
   CodexTurnStartParamsWithCollaborationMode,
   CodexErrors.CodexAppServerProtocolParseError
 > {
   const turnInput: Array<EffectCodexSchema.V2TurnStartParams__UserInput> = [];
   if (input.prompt) {
-    turnInput.push({
-      type: "text",
-      text: input.prompt,
-    });
+    const skillsByName = new Map((input.skills ?? []).map((skill) => [skill.name, skill]));
+    const skillTokens = collectComposerInlineTokens(`${input.prompt} `).filter(
+      (token) => token.type === "skill" && token.end <= input.prompt!.length,
+    );
+    let cursor = 0;
+
+    for (const token of skillTokens) {
+      const skill = skillsByName.get(token.value);
+      if (!skill) {
+        continue;
+      }
+      if (token.start > cursor) {
+        turnInput.push({ type: "text", text: input.prompt.slice(cursor, token.start) });
+      }
+      turnInput.push({ type: "skill", name: skill.name, path: skill.path });
+      cursor = token.end;
+    }
+
+    if (cursor < input.prompt.length) {
+      turnInput.push({ type: "text", text: input.prompt.slice(cursor) });
+    }
   }
   for (const attachment of input.attachments ?? []) {
     turnInput.push(attachment);
@@ -1303,6 +1325,22 @@ export const makeCodexSessionRuntime = (
           const normalizedModel = normalizeCodexModelSlug(
             input.model ?? (yield* Ref.get(sessionRef)).model,
           );
+          const skills = input.input?.includes("$")
+            ? yield* client.request("skills/list", { cwds: [options.cwd] }).pipe(
+                Effect.map((response) =>
+                  response.data
+                    .flatMap((entry) => entry.skills)
+                    .filter((skill) => skill.enabled)
+                    .map((skill) => ({ name: skill.name, path: skill.path })),
+                ),
+                Effect.catch((cause) =>
+                  Effect.logWarning(
+                    "Failed to resolve Codex skill mentions; sending prompt as plain text.",
+                    { cause },
+                  ).pipe(Effect.as(undefined)),
+                ),
+              )
+            : undefined;
           const params = yield* buildTurnStartParams({
             threadId: providerThreadId,
             runtimeMode: options.runtimeMode,
@@ -1313,6 +1351,7 @@ export const makeCodexSessionRuntime = (
             ...(input.effort ? { effort: input.effort } : {}),
             ...(input.interactionMode ? { interactionMode: input.interactionMode } : {}),
             ...(input.promptOverrides ? { promptOverrides: input.promptOverrides } : {}),
+            ...(skills ? { skills } : {}),
           });
           const rawResponse = yield* client.raw.request("turn/start", params);
           const response = yield* decodeV2TurnStartResponse(rawResponse).pipe(

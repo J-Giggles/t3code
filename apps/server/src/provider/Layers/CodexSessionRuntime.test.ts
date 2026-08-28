@@ -173,6 +173,56 @@ describe("buildTurnStartParams", () => {
     });
   });
 
+  it.effect("sends explicit Codex skills as native skill input", () =>
+    Effect.gen(function* () {
+      const result = yield* buildTurnStartParams({
+        threadId: "provider-thread-1",
+        runtimeMode: "full-access",
+        prompt: "$handoff-and-stop next session",
+        skills: [
+          {
+            name: "handoff-and-stop",
+            path: "/tmp/codex/skills/handoff-and-stop/SKILL.md",
+          },
+        ],
+      });
+
+      NodeAssert.deepStrictEqual(result.input, [
+        {
+          type: "skill",
+          name: "handoff-and-stop",
+          path: "/tmp/codex/skills/handoff-and-stop/SKILL.md",
+        },
+        { type: "text", text: " next session" },
+      ]);
+    }),
+  );
+
+  it.effect("preserves unknown skill tokens as text and resolves a trailing skill", () =>
+    Effect.gen(function* () {
+      const result = yield* buildTurnStartParams({
+        threadId: "provider-thread-1",
+        runtimeMode: "full-access",
+        prompt: "Keep $not-installed and use $handoff-and-stop",
+        skills: [
+          {
+            name: "handoff-and-stop",
+            path: "/tmp/codex/skills/handoff-and-stop/SKILL.md",
+          },
+        ],
+      });
+
+      NodeAssert.deepStrictEqual(result.input, [
+        { type: "text", text: "Keep $not-installed and use " },
+        {
+          type: "skill",
+          name: "handoff-and-stop",
+          path: "/tmp/codex/skills/handoff-and-stop/SKILL.md",
+        },
+      ]);
+    }),
+  );
+
   it("omits collaboration mode when interaction mode is absent", () => {
     const params = Effect.runSync(
       buildTurnStartParams({
