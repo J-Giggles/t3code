@@ -1,0 +1,45 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "t3code-local-workspace",
+    },
+    "local-dev-bundle/convex": {
+      "name": "@t3code-local/convex",
+    },
+    "local-dev-bundle/main-desktop": {
+      "name": "@t3code-local/main-desktop",
+    },
+    "local-dev-bundle/main-t3-build": {
+      "name": "@t3code-local/main-t3-build",
+    },
+    "local-dev-bundle/main-web": {
+      "name": "@t3code-local/main-web",
+    },
+    "local-dev-bundle/staging-desktop": {
+      "name": "@t3code-local/staging-desktop",
+    },
+    "local-dev-bundle/staging-t3-build": {
+      "name": "@t3code-local/staging-t3-build",
+    },
+    "local-dev-bundle/staging-web": {
+      "name": "@t3code-local/staging-web",
+    },
+  },
+  "packages": {
+    "@t3code-local/convex": ["@t3code-local/convex@workspace:local-dev-bundle/convex"],
+
+    "@t3code-local/main-desktop": ["@t3code-local/main-desktop@workspace:local-dev-bundle/main-desktop"],
+
+    "@t3code-local/main-t3-build": ["@t3code-local/main-t3-build@workspace:local-dev-bundle/main-t3-build"],
+
+    "@t3code-local/main-web": ["@t3code-local/main-web@workspace:local-dev-bundle/main-web"],
+
+    "@t3code-local/staging-desktop": ["@t3code-local/staging-desktop@workspace:local-dev-bundle/staging-desktop"],
+
+    "@t3code-local/staging-t3-build": ["@t3code-local/staging-t3-build@workspace:local-dev-bundle/staging-t3-build"],
+
+    "@t3code-local/staging-web": ["@t3code-local/staging-web@workspace:local-dev-bundle/staging-web"],
+  }
+}
