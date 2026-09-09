@@ -41,6 +41,17 @@ RUN npm install -g pnpm@10.24.0
 # Default agent provider in T3 Code — required for thread messaging in pod mode.
 RUN npm install -g @openai/codex@latest && codex --version
 
+# Tailscale CLI (talks to sidecar daemon via shared /var/run/tailscale socket).
+RUN . /etc/os-release && \
+    curl -fsSL "https://pkgs.tailscale.com/stable/debian/${VERSION_CODENAME}.noarmor.gpg" \
+      -o /usr/share/keyrings/tailscale-archive-keyring.gpg && \
+    curl -fsSL "https://pkgs.tailscale.com/stable/debian/${VERSION_CODENAME}.tailscale-keyring.list" \
+      -o /etc/apt/sources.list.d/tailscale.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends tailscale && \
+    rm -rf /var/lib/apt/lists/* && \
+    tailscale version
+
 WORKDIR /workspace/t3code
 
-RUN node --version && pnpm --version && bun --version
+RUN node --version && pnpm --version && bun --version && codex --version && tailscale version

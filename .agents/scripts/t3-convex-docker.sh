@@ -31,6 +31,7 @@ Commands:
   tailscale-status [slug|all]
   start-pod [slug|worktree]   Full bootstrap for one pod (provision, keys, up, deploy, desktop+noVNC)
   start-all                   Full bootstrap for main + staging pods
+  apps <slug|worktree>        Start pod if down, then open Caddy + noVNC + pairing URLs
   open [slug|worktree|all]    Open browser URLs (Caddy app, dashboard, noVNC)
 
 Examples:
@@ -196,6 +197,7 @@ cmd_destroy() {
     echo "Refusing destroy without --i-know-what-im-doing" >&2
     exit 1
   fi
+  echo "WARN: destroy removes postgres + t3code_home volumes — browser pairing will be required again (use bootstrap-pairing-url)." >&2
   local dir project
   dir="$(compose_dir "$target")"
   project="$(compose_project "$target")"
@@ -348,7 +350,7 @@ cmd_bootstrap_pairing_url() {
     echo "Could not find pairing URL in container logs for $target." >&2
     echo "Ensure desktop or stack is running, then check logs:" >&2
     echo "  docker logs $container 2>&1 | rg 'Pairing URL|pair#token'" >&2
-    exit 1
+    return 1
   fi
   # Prefer Caddy origin for browser pairing (matches VITE_DEV_SERVER_URL).
   if [[ "$pairing_url" =~ pair#token=([^ ]+) ]]; then
@@ -412,7 +414,7 @@ cmd_desktop() {
       echo "[desktop] Using Xvfb + noVNC (Hyprland/Wayland has no X11 auth for Docker)" >&2
       T3CODE_DESKTOP_DISPLAY=novnc DISPLAY= DOCKER_XAUTH_FILE=/dev/null \
         docker compose --project-directory "$dir" -p "$project" --env-file "$dir/.env" \
-          --profile local --profile desktop up -d --force-recreate t3-desktop novnc
+          --profile local --profile desktop up -d --build --force-recreate t3-desktop novnc
     fi
   else
     docker compose --project-directory "$dir" -p "$project" --env-file "$dir/.env" stop t3-desktop novnc
@@ -440,11 +442,74 @@ cmd_open() {
   novnc="${caddy%/}/vnc/vnc.html?autoconnect=true&resize=scale&path=vnc/websocket"
   echo "Opening pod $slug:"
   echo "  Clipboard: Ctrl+C in VNC copies to host; Ctrl+V pastes from host"
+  if pairing_line="$(cmd_bootstrap_pairing_url "$target" 2>/dev/null | rg '^pairing_url=' || true)"; then
+    pairing_url="${pairing_line#pairing_url=}"
+    if [[ -n "$pairing_url" ]]; then
+      echo "  Pairing (open once per fresh pod DB or new browser origin):"
+      open_url "$pairing_url"
+    fi
+  else
+    echo "  (pairing URL not ready — stack/desktop may still be booting; retry: bootstrap-pairing-url $target)" >&2
+  fi
   open_url "$caddy"
   open_url "${caddy%/}/dashboard/"
   open_url "$novnc"
   open_url "$dashboard"
-  open_url "$app"
+}
+
+pod_stack_running() {
+  local target="$1"
+  local project
+  project="$(compose_project "$target")"
+  docker ps --format '{{.Names}}' 2>/dev/null | rg -qx "${project}-t3-stack-1"
+}
+
+pod_is_healthy() {
+  local target="$1"
+  local out
+  out="$(cmd_health "$target" 2>&1)" || true
+  echo "$out" | grep -q 'convex_ok=yes' \
+    && echo "$out" | grep -q 'web_ok=yes' \
+    && echo "$out" | grep -q 'server_ok=yes'
+}
+
+wait_for_pod_health() {
+  local target="$1"
+  local max_attempts="${2:-36}"
+  local attempt=0
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    if pod_is_healthy "$target"; then
+      echo "[apps] $target healthy"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    echo "[apps] waiting for $target health ($attempt/$max_attempts)…"
+    sleep 5
+  done
+  echo "[apps] WARN: $target not fully healthy yet — opening URLs anyway" >&2
+  cmd_health "$target" || true
+  return 1
+}
+
+cmd_apps() {
+  local target="${1:?slug|worktree}"
+  if [[ "$target" == "t3code-main" || "$target" == *"/t3code-main"* ]]; then
+    target="t3code-main"
+  elif [[ "$target" == "t3code-staging" || "$target" == *"/t3code-staging"* ]]; then
+    target="t3code-staging"
+  fi
+
+  echo "== apps $target =="
+  if pod_stack_running "$target" && pod_is_healthy "$target"; then
+    echo "[apps] Pod already running — ensuring desktop + noVNC…"
+    cmd_desktop "$target" start --novnc 2>/dev/null || true
+  else
+    echo "[apps] Pod not running or unhealthy — full bootstrap…"
+    cmd_start_pod "$target" || echo "[apps] WARN: bootstrap had errors — opening URLs anyway" >&2
+    wait_for_pod_health "$target" || true
+  fi
+  cmd_open "$target"
+  return 0
 }
 
 cmd_start_pod() {
@@ -469,10 +534,14 @@ cmd_start_pod() {
   echo "[pod] Deploying Convex functions for $target…"
   cmd_deploy "$target" || echo "[pod] WARN: convex deploy failed for $target (stack may still be starting)" >&2
   echo "[pod] Starting desktop + noVNC for $target…"
-  cmd_desktop "$target" start --novnc
-  cmd_health "$target"
+  cmd_desktop "$target" start --novnc || echo "[pod] WARN: desktop start failed — retry: desktop $target start --novnc" >&2
+  cmd_health "$target" || true
   echo ""
-  echo "Pod $target is up. Open UIs with: pnpm run pod:open"
+  echo "[pod] Pairing URL (required after volume wipe or first boot; always use Caddy origin):"
+  cmd_bootstrap_pairing_url "$target" 2>/dev/null || echo "  (retry when server is ready: ./.agents/scripts/t3-convex-docker.sh bootstrap-pairing-url $target)" >&2
+  echo ""
+  echo "Pod $target is up."
+  return 0
 }
 
 cmd_start_all() {
@@ -482,7 +551,7 @@ cmd_start_all() {
   echo ""
   cmd_start_pod t3code-staging
   echo ""
-  echo "All pods are up. Open UIs with: pnpm run pod:open"
+  echo "All pods are up. Open with: pnpm run apps && pnpm run apps:staging"
   cmd_health all
 }
 
@@ -576,6 +645,7 @@ main() {
     shell) cmd_shell "$@" ;;
     desktop) cmd_desktop "$@" ;;
     open) cmd_open "$@" ;;
+    apps) cmd_apps "$@" ;;
     start-pod) cmd_start_pod "$@" ;;
     start-all) cmd_start_all ;;
     dev-start) cmd_dev_start "$@" ;;

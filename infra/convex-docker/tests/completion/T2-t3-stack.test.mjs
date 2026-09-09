@@ -58,4 +58,30 @@ if (codexCheck.status !== 0) {
 }
 console.log("T2.7 codex CLI on PATH");
 
+const tailscaleCheck = spawnSync(
+  "docker",
+  [
+    "compose",
+    "--project-directory",
+    m.generatedDir,
+    "-p",
+    m.composeProject,
+    "--env-file",
+    NodePath.join(m.generatedDir, ".env"),
+    "exec",
+    "-T",
+    "t3-stack",
+    "sh",
+    "-c",
+    "command -v tailscale && tailscale version",
+  ],
+  { encoding: "utf8" },
+);
+if (tailscaleCheck.status !== 0) {
+  throw new Error(
+    `T2.8 tailscale CLI missing in t3-stack: ${tailscaleCheck.stderr || tailscaleCheck.stdout}`,
+  );
+}
+console.log("T2.8 tailscale CLI on PATH");
+
 console.log("T2 OK");

@@ -1,0 +1,50 @@
+{
+  "slug": "t3code-main",
+  "worktreePath": "/home/giggabit-server/Desktop/code/t3code-local/t3code-main",
+  "codeRoot": "/home/giggabit-server/Desktop/code/t3code-local/code",
+  "instanceName": "t3code-main",
+  "composeProject": "t3code-pod-t3code-main",
+  "postgresDb": "t3code_main",
+  "generatedDir": "/home/giggabit-server/Desktop/code/t3code-local/infra/convex-docker/.generated/t3code-main",
+  "templateDir": "/home/giggabit-server/Desktop/code/t3code-local/infra/convex-docker/template",
+  "ports": {
+    "cloud": 3210,
+    "site": 3211,
+    "dashboard": 6791,
+    "postgres": 5432,
+    "web": 8207,
+    "server": 16247,
+    "cdp": 9224,
+    "caddy": 8081,
+    "novnc": 6081
+  },
+  "tailscale": {
+    "hostname": "t3code-main",
+    "enabled": false,
+    "publicBaseUrl": null
+  },
+  "mounts": {
+    "t3code": "/workspace/t3code",
+    "code": "/workspace/code",
+    "t3codeHome": "/data/t3code-home",
+    "codeMountPath": "/home/giggabit-server/Desktop/code/t3code-local/t3code-staging"
+  },
+  "urls": {
+    "local": {
+      "convexUrl": "http://127.0.0.1:3210",
+      "convexSiteUrl": "http://127.0.0.1:3211",
+      "appUrl": "http://127.0.0.1:8207",
+      "serverUrl": "http://127.0.0.1:16247",
+      "dashboardUrl": "http://127.0.0.1:6791",
+      "caddyUrl": "http://127.0.0.1:8081"
+    },
+    "remote": null
+  },
+  "secrets": {
+    "instanceSecret": "9e9c8736169a7737d9671358485242abdc40cc91bb12689fb9bfc8829e6b8d38",
+    "postgresPassword": "ee8e69fac1fd4f70cf36fce8"
+  },
+  "adminKeyFile": ".local/convex-docker/admin.key",
+  "localOnly": true,
+  "updatedAt": "2026-06-14T14:22:15.737Z"
+}

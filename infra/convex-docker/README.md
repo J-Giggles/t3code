@@ -5,7 +5,11 @@ Provision and run isolated Docker stacks (Postgres + Convex + T3 server/web) per
 ## Quick start
 
 ```bash
-# From workspace root
+# From workspace root — start stack + open browser (recommended)
+pnpm run apps              # main pod (Caddy :8081, noVNC, pairing)
+pnpm run apps:staging      # staging pod (Caddy :8080, noVNC, pairing)
+
+# Or step by step:
 ./.agents/scripts/t3-convex-docker.sh provision t3code-staging
 ./.agents/scripts/t3-convex-docker.sh up t3code-staging
 ./.agents/scripts/t3-convex-docker.sh keys t3code-staging
@@ -33,9 +37,48 @@ Provision and run isolated Docker stacks (Postgres + Convex + T3 server/web) per
 
 **Note:** Pairing is per browser origin — `:8081` (Caddy) and `:8207` (direct Vite) are separate.
 
+### Why pairing repeats (read this before wiping pod volumes)
+
+Pairing links a **browser origin** to a **server session** in the pod's Postgres + `t3code_home` volumes. You must pair again when:
+
+- Agents run `destroy` or `docker volume rm` during tests (common — wipes auth state)
+- You open raw Vite (`:6657` / `:8207`) instead of Caddy (`:8080` / `:8081`)
+- Convex gets a fresh database (cold `up` after volume delete)
+
+**Agent fix:** after pod start, always run and open:
+
+```bash
+./.agents/scripts/t3-convex-docker.sh bootstrap-pairing-url t3code-staging
+# or: pnpm run pod:pair
+```
+
+`pnpm run pod:open` opens the pairing URL automatically when the stack is ready. Use `down` (not `destroy`) to stop pods without losing pairing.
+
+See `.cursor/rules/convex-docker-pod-pairing.mdc` for full agent instructions.
+
 **Clipboard (noVNC desktop):** With the pod desktop running, **Ctrl+C** inside the VNC session copies to your host clipboard, and **Ctrl+V** pastes from the host into the container. The noVNC **Clipboard** panel is a fallback if browser permissions block auto-sync.
 
 ## With Tailscale
+
+Pod images include the **Tailscale CLI**; the **tailscale sidecar** provides the daemon when an auth key is configured.
+
+1. Save a one-line auth key (never commit):
+
+   ```bash
+   mkdir -p ~/.local/share/t3code-local/convex-docker
+   cp infra/convex-docker/template/ts-authkey.example ~/.local/share/t3code-local/convex-docker/ts-authkey
+   # edit ts-authkey — replace with your tskey-auth-...
+   ```
+
+2. Re-provision (reads key from env, `~/.local/share/t3code-local/convex-docker/ts-authkey`, or `{worktree}/.local/convex-docker/ts-authkey`):
+
+   ```bash
+   ./.agents/scripts/t3-convex-docker.sh provision t3code-staging
+   ./.agents/scripts/t3-convex-docker.sh up t3code-staging
+   ./.agents/scripts/t3-convex-docker.sh tailscale-status t3code-staging
+   ```
+
+Or export for one session:
 
 ```bash
 export TS_AUTHKEY=tskey-auth-...
@@ -94,7 +137,14 @@ Admin keys are stored per manifest worktree (`t3code-main/.local/convex-docker/a
 
 ## Provider CLIs
 
-Pod images install **Codex CLI** (`@openai/codex`) at build time and verify on boot via `install-pod-cli-tools.sh`. Codex OAuth is required for live model responses — the CLI alone clears the “not on PATH” provider error.
+Pod images install at **build time** and verify on boot via `install-pod-cli-tools.sh`:
+
+| Tool | Image | Runtime |
+|------|-------|---------|
+| **Codex CLI** (`@openai/codex`) | `Dockerfile.t3-pod` | `/usr/local/bin/codex` — clears “not on PATH” provider error |
+| **Tailscale CLI** | `Dockerfile.t3-pod` | `/usr/bin/tailscale` — talks to sidecar via `/var/run/tailscale/tailscaled.sock` |
+
+Tailscale **networking** requires the sidecar profile (`TS_AUTHKEY` or `ts-authkey` file at provision). LOCAL_ONLY pods still have both CLIs on PATH.
 
 ### Codex login in pods (headless)
 

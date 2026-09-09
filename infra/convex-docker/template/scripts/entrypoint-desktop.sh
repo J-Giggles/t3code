@@ -4,6 +4,7 @@ set -eu
 export HOME=/data/t3code-home
 export XDG_CONFIG_HOME=/data/provider-config
 export CODEX_HOME="${CODEX_HOME:-/data/t3code-home/.codex}"
+export TS_SOCKET="${TS_SOCKET:-/var/run/tailscale/tailscaled.sock}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-/dev/null}"
 export CI=true
 export WORKTREE_PATH=/workspace/t3code

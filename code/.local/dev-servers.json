@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "name": "sample-vite-app",
+      "path": "/workspace/code/sample-vite-app",
+      "port": 9100,
+      "pid": 571,
+      "command": "pnpm dev",
+      "publicUrl": null,
+      "startedAt": "2026-06-13T11:30:13.189Z"
+    }
+  ]
+}

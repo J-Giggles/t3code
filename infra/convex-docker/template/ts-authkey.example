@@ -1,0 +1,11 @@
+# One-line Tailscale auth key for pod networking (never commit the real file).
+# Copy to ONE of:
+#   ~/.local/share/t3code-local/convex-docker/ts-authkey
+#   {worktree}/.local/convex-docker/ts-authkey
+#   infra/convex-docker/.local/ts-authkey
+#
+# Then re-provision and up:
+#   ./.agents/scripts/t3-convex-docker.sh provision t3code-staging
+#   ./.agents/scripts/t3-convex-docker.sh up t3code-staging
+#
+tskey-auth-REPLACE-ME

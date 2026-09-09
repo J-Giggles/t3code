@@ -96,6 +96,24 @@ function postgresDbName(instanceName) {
   return instanceName.replace(/-/g, "_");
 }
 
+/** Read Tailscale auth key from env or durable local files (never commit keys). */
+function resolveTsAuthKey(worktreePath) {
+  if (process.env.TS_AUTHKEY?.trim()) {
+    return process.env.TS_AUTHKEY.trim();
+  }
+  const candidates = [
+    NodePath.join(worktreePath, ".local", "convex-docker", "ts-authkey"),
+    NodePath.join(process.env.HOME ?? "", ".local", "share", "t3code-local", "convex-docker", "ts-authkey"),
+    NodePath.join(INFRA_ROOT, ".local", "ts-authkey"),
+  ];
+  for (const file of candidates) {
+    if (!NodeFS.existsSync(file)) continue;
+    const key = NodeFS.readFileSync(file, "utf8").trim();
+    if (key && !key.startsWith("#")) return key;
+  }
+  return "";
+}
+
 /** Host path bind-mounted as /workspace/t3code (falls back when worktree checkout is empty). */
 function resolvePodCodeMountPath(worktreePath) {
   if (NodeFS.existsSync(NodePath.join(worktreePath, "package.json"))) {
@@ -130,7 +148,8 @@ export async function provisionWorktree(options) {
 
   const instanceSecret = existing?.secrets?.instanceSecret ?? secretHex();
   const postgresPassword = existing?.secrets?.postgresPassword ?? secretHex().slice(0, 24);
-  const tailscaleEnabled = Boolean(options.tailscale ?? process.env.TS_AUTHKEY?.trim());
+  const tsAuthKey = resolveTsAuthKey(worktreePath);
+  const tailscaleEnabled = Boolean(options.tailscale ?? tsAuthKey);
   const localOnly = options.localOnly ?? !tailscaleEnabled;
 
   const convexCloudOrigin = localOnly
@@ -222,7 +241,7 @@ export async function provisionWorktree(options) {
     `NOVNC_PORT=${ports.novnc ?? 6080}`,
     `INSTANCE_SECRET=${instanceSecret}`,
     `POSTGRES_PASSWORD=${postgresPassword}`,
-    `TS_AUTHKEY=${process.env.TS_AUTHKEY ?? ""}`,
+    `TS_AUTHKEY=${tsAuthKey}`,
     `TS_EXTRA_ARGS="${process.env.TS_EXTRA_ARGS ?? "--ssh --accept-routes"}"`,
     `TAILSCALE_SERVE=${localOnly ? "0" : "1"}`,
     `CONVEX_CLOUD_ORIGIN=${convexCloudOrigin}`,
@@ -259,7 +278,12 @@ export async function provisionWorktree(options) {
     NodePath.join(TEMPLATE_DIR, "entrypoint-tailscale.sh"),
     NodePath.join(generatedDir, "entrypoint-tailscale.sh"),
   );
-  for (const name of ["entrypoint-t3-stack.sh", "entrypoint-desktop.sh", "dev-manager.mjs"]) {
+  for (const name of [
+    "entrypoint-t3-stack.sh",
+    "entrypoint-desktop.sh",
+    "dev-manager.mjs",
+    "install-pod-cli-tools.sh",
+  ]) {
     const src = NodePath.join(TEMPLATE_DIR, "scripts", name);
     const dest = NodePath.join(generatedDir, name);
     NodeFS.copyFileSync(src, dest);

@@ -1,0 +1,7 @@
+
+> sample-vite-app@ dev /workspace/code/sample-vite-app
+> vite --host 127.0.0.1 --port ${PORT:-5173}
+
+sh: 1: vite: not found
+ ELIFECYCLE  Command failed.
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?

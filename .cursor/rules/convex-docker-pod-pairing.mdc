@@ -1,0 +1,63 @@
+---
+description: Convex Docker pod browser pairing — why it repeats and how agents must bootstrap it
+alwaysApply: true
+---
+
+# Convex Docker pod pairing (agents)
+
+## Why pairing keeps coming back
+
+Pairing is **not a one-time install step**. It binds:
+
+1. **Browser origin** (`http://127.0.0.1:<caddyPort>`) — localStorage / session for the web UI
+2. **Server auth session** — stored in the pod's **Postgres + `t3code_home` Docker volumes**
+
+Re-pairing is **expected** when any of these happen:
+
+| Cause | What agents did | Fix |
+|-------|-----------------|-----|
+| **Volume wipe** | `destroy`, `docker volume rm`, or fresh bootstrap during tests | Run `bootstrap-pairing-url` and open the Caddy pairing link once |
+| **Wrong origin** | Opened raw Vite (`:6657` / `:8207`) instead of Caddy (`:8080` / `:8081`) | Always use **Caddy URL** from manifest `caddyUrl` for browse + pair |
+| **New Convex deployment** | New `postgres_data` after cold start | Same as volume wipe — new pairing token |
+| **noVNC only** | Electron runs in VNC but host browser never paired at Caddy | Pair in **host browser** at Caddy URL, not only inside VNC |
+
+**Do not** treat repeated pairing as a bug unless volumes are preserved **and** the user always uses the same Caddy origin.
+
+## Agent workflow (mandatory)
+
+After `pod:up`, `start-pod`, or any pod restart that wiped volumes:
+
+```bash
+./.agents/scripts/t3-convex-docker.sh bootstrap-pairing-url t3code-staging
+# or: pnpm run pod:pair
+```
+
+Open the printed `pairing_url` in the **host** browser (Caddy origin). `pod:open` now opens this automatically when the stack is ready.
+
+## Preserve pairing (avoid unnecessary resets)
+
+- Prefer `./.agents/scripts/t3-convex-docker.sh down <slug>` — **does not** remove volumes.
+- **Never** `destroy` or `docker volume rm` on `t3code_home` / `postgres_data` unless the user explicitly wants a clean slate.
+- When testing pod bases or redeploying, warn the user that pairing will be required again.
+
+## Stable URLs per slug (LOCAL_ONLY)
+
+| Slug | Caddy (pair here) | Raw Vite (do not pair here) |
+|------|-------------------|-----------------------------|
+| `t3code-staging` | `http://127.0.0.1:8080` | `http://127.0.0.1:6657` |
+| `t3code-main` | `http://127.0.0.1:8081` | `http://127.0.0.1:8207` |
+
+Electron in noVNC: http://127.0.0.1:8080/vnc/vnc.html (view only — pairing still happens at Caddy app URL).
+
+## Pod CLIs (Codex + Tailscale)
+
+Both are **baked into `Dockerfile.t3-pod`** and verified on boot by `install-pod-cli-tools.sh`.
+
+| CLI | Out of the gate | One-time user setup |
+|-----|-----------------|---------------------|
+| **Codex** | On PATH in every pod | OAuth: `docker exec … codex login --device-auth` |
+| **Tailscale** | CLI on PATH in every pod | Save `tskey-auth-…` to `~/.local/share/t3code-local/convex-docker/ts-authkey`, then `provision` + `up` |
+
+Without `ts-authkey`, pods run LOCAL_ONLY — Tailscale CLI is still present but no sidecar daemon.
+
+See `infra/convex-docker/README.md` and `.context/docs.md` (Agent-maintained notes → Pod pairing).

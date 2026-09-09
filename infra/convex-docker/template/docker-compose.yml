@@ -16,6 +16,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - tailscale_state:/var/lib/tailscale
+      - tailscale_run:/var/run/tailscale
       - ./entrypoint-tailscale.sh:/entrypoint-tailscale.sh:ro
     environment:
       TS_AUTHKEY: ${TS_AUTHKEY:-}
@@ -167,9 +168,11 @@ services:
       - t3code_home:/data/t3code-home
       - provider_config:/data/provider-config
       - provider_cache:/data/provider-cache
+      - tailscale_run:/var/run/tailscale
       - ${TEMPLATE_DIR}/scripts:/opt/pod-scripts:ro
     environment:
       T3CODE_HOME: /data/t3code-home
+      TS_SOCKET: /var/run/tailscale/tailscaled.sock
       T3CODE_CONTAINER_MODE: "1"
       T3CODE_CONVEX_DOCKER: "1"
       T3CODE_PERSISTENCE: convex
@@ -215,11 +218,13 @@ services:
       - ${MANIFEST_WORKTREE_PATH}/.local/convex-docker/admin.key:/pod-secrets/admin.key:ro
       - t3code_home:/data/t3code-home
       - provider_config:/data/provider-config
+      - tailscale_run:/var/run/tailscale
       - ${TEMPLATE_DIR}/scripts:/opt/pod-scripts:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${DOCKER_XAUTH_FILE:-/dev/null}:/tmp/.docker.xauth:ro
     environment:
       T3CODE_HOME: /data/t3code-home
+      TS_SOCKET: /var/run/tailscale/tailscaled.sock
       T3CODE_CONTAINER_MODE: "1"
       T3CODE_CONVEX_DOCKER: "1"
       T3CODE_PERSISTENCE: convex
@@ -271,6 +276,7 @@ services:
 volumes:
   postgres_data:
   tailscale_state:
+  tailscale_run:
   t3code_home:
   provider_config:
   provider_cache:
