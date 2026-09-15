@@ -1,5 +1,8 @@
 name: Mobile EAS Preview
 
+# Note: This fork uses standard GitHub-hosted runners instead of Blacksmith runners.
+# See Release workflow for more details.
+
 on:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
@@ -8,7 +11,7 @@ jobs:
   preview:
     name: EAS Preview
     if: contains(github.event.pull_request.labels.*.name, '🚀 Mobile Continuous Deployment')
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: write

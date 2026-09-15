@@ -1,5 +1,8 @@
 name: Mobile EAS Production
 
+# Note: This fork uses standard GitHub-hosted runners instead of Blacksmith runners.
+# See Release workflow for more details.
+
 # Production builds and OTA updates run from CI (Linux) — never from a laptop.
 # Under the fingerprint runtime-version policy the fingerprint must be computed
 # in the same OS/pnpm as the EAS build; a macOS `eas build` computes a different
@@ -33,7 +36,7 @@ on:
 jobs:
   production:
     name: EAS Production ${{ inputs.mode }}
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     env:

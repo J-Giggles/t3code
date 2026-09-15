@@ -1,5 +1,8 @@
 name: Deploy T3 Connect relay
 
+# Note: This fork uses standard GitHub-hosted runners instead of Blacksmith runners.
+# See Release workflow for more details.
+
 on:
   push:
     branches:
@@ -17,7 +20,7 @@ concurrency:
 jobs:
   deploy_relay:
     name: Deploy production relay
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
       name: production
