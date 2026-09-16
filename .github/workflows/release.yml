@@ -95,11 +95,7 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Use pnpm --no-bail to continue past relay package install failure
-          run-install: |
-            args:
-              - --
-              - --no-bail
+          run-install: true
 
       - name: Ensure Electron runtime is installed
         run: vp run --filter @t3tools/desktop ensure:electron
