@@ -95,10 +95,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Exclude relay packages that require private registry access
+          # Fork note: Use --no-bail to continue past relay package install failure
           run-install: |
             args:
-              - --filter=!t3code-relay...
+              - --no-bail
 
       - name: Ensure Electron runtime is installed
         run: vp run --filter @t3tools/desktop ensure:electron

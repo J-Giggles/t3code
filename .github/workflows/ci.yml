@@ -23,10 +23,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Exclude relay packages that require private registry access
+          # Fork note: Use --no-bail to continue past relay package install failure
           run-install: |
             args:
-              - --filter=!t3code-relay...
+              - --no-bail
 
       - name: Ensure Electron runtime is installed
         run: vp run --filter @t3tools/desktop ensure:electron
@@ -59,10 +59,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Exclude relay packages that require private registry access
+          # Fork note: Use --no-bail to continue past relay package install failure
           run-install: |
             args:
-              - --filter=!t3code-relay...
+              - --no-bail
 
       - name: Ensure Electron runtime is installed
         run: vp run --filter @t3tools/desktop ensure:electron
@@ -83,10 +83,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Exclude relay packages that require private registry access
+          # Fork note: Use --no-bail to continue past relay package install failure
           run-install: |
             args:
-              - --filter=!t3code-relay...
+              - --no-bail
 
       - name: Install headed Electron runtime
         run: sudo apt-get update && sudo apt-get install -y xvfb
@@ -110,10 +110,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Exclude relay packages that require private registry access
+          # Fork note: Use --no-bail to continue past relay package install failure
           run-install: |
             args:
-              - --filter=!t3code-relay...
+              - --no-bail
 
       - name: Cache Playwright browsers
         uses: actions/cache@v5
@@ -159,10 +159,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Exclude relay packages that require private registry access
+          # Fork note: Use --no-bail to continue past relay package install failure
           run-install: |
             args:
-              - --filter=!t3code-relay...
+              - --no-bail
 
       - name: Install mobile native static analysis tools
         run: brew bundle install --file apps/mobile/Brewfile
@@ -183,10 +183,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Exclude relay packages that require private registry access
+          # Fork note: Use --no-bail to continue past relay package install failure
           run-install: |
             args:
-              - --filter=!t3code-relay...
+              - --no-bail
 
       - name: Exercise release-only workflow steps
         run: node scripts/release-smoke.ts
