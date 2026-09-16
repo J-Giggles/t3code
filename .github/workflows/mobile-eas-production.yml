@@ -2,6 +2,10 @@ name: Mobile EAS Production
 
 # Note: This fork uses standard GitHub-hosted runners instead of Blacksmith runners.
 # See Release workflow for more details.
+#
+# FORK NOTE: This workflow requires EXPO_TOKEN secret.
+# It will skip if the secret is not available, which is expected on forks.
+# See PR #2 for details on fork-inapplicable workflows.
 
 # Production builds and OTA updates run from CI (Linux) — never from a laptop.
 # Under the fingerprint runtime-version policy the fingerprint must be computed
