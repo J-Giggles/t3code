@@ -23,9 +23,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Use --no-bail to continue past relay package install failure
+          # Fork note: Use pnpm --no-bail to continue past relay package install failure
           run-install: |
             args:
+              - --
               - --no-bail
 
       - name: Ensure Electron runtime is installed
@@ -59,9 +60,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Use --no-bail to continue past relay package install failure
+          # Fork note: Use pnpm --no-bail to continue past relay package install failure
           run-install: |
             args:
+              - --
               - --no-bail
 
       - name: Ensure Electron runtime is installed
@@ -83,9 +85,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Use --no-bail to continue past relay package install failure
+          # Fork note: Use pnpm --no-bail to continue past relay package install failure
           run-install: |
             args:
+              - --
               - --no-bail
 
       - name: Install headed Electron runtime
@@ -110,9 +113,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Use --no-bail to continue past relay package install failure
+          # Fork note: Use pnpm --no-bail to continue past relay package install failure
           run-install: |
             args:
+              - --
               - --no-bail
 
       - name: Cache Playwright browsers
@@ -159,9 +163,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Use --no-bail to continue past relay package install failure
+          # Fork note: Use pnpm --no-bail to continue past relay package install failure
           run-install: |
             args:
+              - --
               - --no-bail
 
       - name: Install mobile native static analysis tools
@@ -183,9 +188,10 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-          # Fork note: Use --no-bail to continue past relay package install failure
+          # Fork note: Use pnpm --no-bail to continue past relay package install failure
           run-install: |
             args:
+              - --
               - --no-bail
 
       - name: Exercise release-only workflow steps
