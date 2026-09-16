@@ -1,5 +1,12 @@
 name: Deploy T3 Connect relay
 
+# Note: This fork uses standard GitHub-hosted runners instead of Blacksmith runners.
+# See Release workflow for more details.
+#
+# FORK NOTE: This workflow requires private relay dependencies (alchemy package)
+# and production secrets. It is NOT expected to run on this fork.
+# See PR #2 for details on fork-inapplicable workflows.
+
 on:
   push:
     branches:
@@ -17,8 +24,10 @@ concurrency:
 jobs:
   deploy_relay:
     name: Deploy production relay
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # Fork: Skip this job - requires private registry access
+    if: github.repository == 'pingdotgg/t3code'
     environment:
       name: production
     env:

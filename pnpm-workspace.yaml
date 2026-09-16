@@ -1,6 +1,7 @@
 packages:
   - apps/*
-  - infra/*
+  # Fork note: infra/* excluded due to private alchemy dependency in relay
+  # - infra/*
   - oxlint-plugin-t3code
   - packages/*
   - scripts
